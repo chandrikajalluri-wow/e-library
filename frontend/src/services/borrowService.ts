@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Borrow } from '../types';
 
-const API_URL = 'https://e-library-7k 5l.onrender.com/api/borrows';
+const API_URL = 'https://e-library-7k5l.onrender.com/api/borrows';
 
 const getConfig = () => {
   const token = localStorage.getItem('token');
