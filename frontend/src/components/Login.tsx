@@ -28,7 +28,7 @@ const Login: React.FC = () => {
       if (role === 'admin') {
         navigate('/admin-dashboard'); //  admins go here
       } else {
-        navigate('/home'); //  normal users go here
+        navigate('/books'); //  normal users go here
       }
     } catch (err: unknown) {
       const msg =
