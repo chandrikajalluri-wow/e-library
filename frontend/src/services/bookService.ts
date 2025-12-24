@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Book } from '../types';
 
-const API_URL = 'http://localhost:5000/api/books';
+const API_URL = 'https://e-library-7k5l.onrender.com/api/books';
 
 const getConfig = () => {
   const token = localStorage.getItem('token');

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Category } from '../types';
 
-const API_URL = 'http://localhost:5000/api/categories';
+const API_URL = 'https://e-library-7k5l.onrender.com/api/categories';
 
 const getConfig = () => {
   const token = localStorage.getItem('token');
