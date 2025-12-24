@@ -1,0 +1,140 @@
+.dashboard-wrapper {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.profile-link {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.profile-name {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.profile-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.profile-avatar:hover {
+    transform: scale(1.05);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.stat-fine {
+    color: var(--danger-color);
+}
+
+.back-link {
+    margin-bottom: 2rem;
+    display: inline-block;
+}
+
+.dashboard-section {
+    margin-top: 2rem;
+}
+
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dashboard-table th {
+    text-align: left;
+    color: var(--text-secondary);
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1rem;
+}
+
+.dashboard-table td {
+    border-bottom: 1px solid #f3f4f6;
+    padding: 1rem;
+}
+
+.book-title {
+    font-weight: 500;
+}
+
+.overdue-date {
+    color: var(--danger-color);
+}
+
+.fine-amount {
+    font-weight: 600;
+}
+
+.fine-danger {
+    color: var(--danger-color);
+}
+
+.actions-cell {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pending-badge {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.empty-message {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.remove-btn {
+    color: var(--danger-color) !important;
+    border-color: var(--danger-color);
+}
+
+.remove-btn:hover {
+    color: #dc2626 !important;
+    background-color: #fef2f2;
+    border-color: #dc2626;
+}

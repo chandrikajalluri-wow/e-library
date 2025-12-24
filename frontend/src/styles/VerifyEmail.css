@@ -1,0 +1,12 @@
+.verify-container {
+    text-align: center;
+    margin-top: 50px;
+}
+
+.verify-success {
+    color: green;
+}
+
+.verify-error {
+    color: red;
+}

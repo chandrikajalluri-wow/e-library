@@ -1,0 +1,123 @@
+.contact-page {
+    min-height: 100vh;
+    background-color: #f8fafc;
+    color: var(--text-primary);
+}
+
+.contact-nav {
+    padding: 1.25rem 5%;
+    background-color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.contact-logo-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+}
+
+.contact-logo-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.contact-logo-text {
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.contact-login-link {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.contact-content {
+    padding: 4rem 5%;
+    max-width: 1000px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 4rem;
+}
+
+.contact-heading {
+    font-size: 2.5rem;
+    font-weight: 850;
+    margin-bottom: 1.5rem;
+    letter-spacing: -1px;
+}
+
+.contact-description {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+}
+
+.contact-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.contact-info-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.contact-info-icon {
+    padding: 0.75rem;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.contact-info-title {
+    font-weight: 700;
+}
+
+.contact-info-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.contact-form-card {
+    padding: 3rem;
+}
+
+.contact-label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.contact-input {
+    padding: 0.8rem 1rem;
+}
+
+.contact-textarea {
+    min-height: 150px;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 100%;
+    font-family: inherit;
+}
+
+.contact-submit-btn {
+    width: 100%;
+    padding: 1rem;
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+}

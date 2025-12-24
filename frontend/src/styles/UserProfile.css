@@ -1,0 +1,77 @@
+.profile-container {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-title {
+    margin-bottom: 1.5rem;
+}
+
+.nav-links {
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.profile-card {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+}
+
+.profile-section-title {
+    margin-bottom: 1.25rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.profile-detail-row {
+    margin-bottom: 0.75rem;
+}
+
+.profile-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.profile-email-readonly {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.profile-form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.profile-info-text {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.logout-container {
+    text-align: center;
+    margin-top: 3rem;
+}
+
+.btn-logout {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.btn-logout:hover {
+    background-color: #fef2f2;
+    border-color: #ef4444;
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: inherit;
+    resize: vertical;
+}

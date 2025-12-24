@@ -1,0 +1,30 @@
+.sidebar {
+  width: 250px;
+  background: #111827;
+  color: white;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 2rem;
+}
+
+.sidebar-link {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  background: #374151;
+  color: white;
+  text-decoration: none;
+}
+
+.main-content {
+  margin-left: 250px;
+  padding: 2rem;
+}
