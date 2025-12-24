@@ -18,7 +18,7 @@ const VerifyEmail: React.FC = () => {
             hasCalledVerify.current = true;
 
             try {
-                await axios.get(`http://localhost:5000/api/auth/verify/${token}`);
+                await axios.get(`https://e-library-7k5l.onrender.com/api/auth/verify/${token}`);
                 setStatus('success');
                 setTimeout(() => {
                     navigate('/login');
