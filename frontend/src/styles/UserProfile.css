@@ -75,3 +75,55 @@
     font-family: inherit;
     resize: vertical;
 }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 1.5rem;
+    }
+
+    .nav-links {
+        flex-wrap: wrap;
+    }
+
+    .profile-card {
+        padding: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-container {
+        padding: 1rem;
+    }
+
+    .profile-title {
+        font-size: 1.5rem;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nav-links a,
+    .nav-links button {
+        width: 100%;
+        text-align: center;
+    }
+
+    .profile-form-actions {
+        flex-direction: column;
+    }
+
+    .profile-form-actions button {
+        width: 100%;
+    }
+
+    .profile-card {
+        padding: 1rem;
+    }
+
+    .profile-section-title {
+        font-size: 1.1rem;
+    }
+}

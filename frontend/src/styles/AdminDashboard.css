@@ -298,3 +298,115 @@
     font-size: 0.875rem;
     font-style: italic;
 }
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .admin-sidebar {
+        width: 220px;
+    }
+
+    .admin-book-form {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .admin-categories-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1rem;
+    }
+
+    .admin-logo-section {
+        margin-bottom: 1rem;
+    }
+
+    .admin-nav {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.5rem;
+    }
+
+    .admin-nav-item {
+        white-space: nowrap;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0;
+    }
+
+    .admin-logout-btn {
+        margin-top: 1rem;
+    }
+
+    .admin-main-content {
+        padding: 1.5rem;
+    }
+
+    .admin-header-title {
+        font-size: 1.5rem;
+    }
+
+    .admin-book-form {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-submit-btn {
+        grid-column: span 1;
+    }
+
+    .admin-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .admin-table {
+        min-width: 600px;
+    }
+
+    .admin-filter-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .admin-filter-select {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-main-content {
+        padding: 1rem;
+    }
+
+    .admin-header-title {
+        font-size: 1.25rem;
+    }
+
+    .admin-form-section {
+        padding: 1.5rem;
+    }
+
+    .admin-table th,
+    .admin-table td {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .admin-actions-flex {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .admin-btn-edit,
+    .admin-btn-delete {
+        width: 100%;
+        text-align: center;
+    }
+}

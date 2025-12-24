@@ -258,3 +258,156 @@
 .home-footer-tagline {
   font-size: 0.875rem;
 }
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .home-about-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .home-genres-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-nav {
+    padding: 1rem 3%;
+  }
+
+  .home-nav-links {
+    gap: 1rem;
+  }
+
+  .home-logo-text {
+    font-size: 1.25rem;
+  }
+
+  .home-hero {
+    padding: 4rem 3% 3rem;
+  }
+
+  .home-hero-title {
+    font-size: 2.5rem;
+  }
+
+  .home-hero-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .home-explore-btn {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+  }
+
+  .home-about-section,
+  .home-genres-section {
+    padding: 4rem 3%;
+  }
+
+  .home-about-title {
+    font-size: 1.75rem;
+  }
+
+  .home-genres-title {
+    font-size: 2rem;
+  }
+
+  .home-footer {
+    padding: 3rem 3%;
+  }
+
+  .home-footer-links {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .home-nav-links {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .home-logo-text {
+    font-size: 1.1rem;
+  }
+
+  .home-logo-icon {
+    width: 35px;
+    height: 35px;
+  }
+
+  .home-hero {
+    padding: 3rem 5% 2rem;
+  }
+
+  .home-hero-title {
+    font-size: 2rem;
+    letter-spacing: -1px;
+  }
+
+  .home-hero-subtitle {
+    font-size: 1rem;
+  }
+
+  .home-explore-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .home-about-section,
+  .home-genres-section {
+    padding: 3rem 5%;
+  }
+
+  .home-about-title {
+    font-size: 1.5rem;
+  }
+
+  .home-about-text {
+    font-size: 1rem;
+  }
+
+  .home-quote-card {
+    padding: 2rem;
+  }
+
+  .home-quote-icon {
+    font-size: 3rem;
+  }
+
+  .home-quote-text {
+    font-size: 1.1rem;
+  }
+
+  .home-genres-title {
+    font-size: 1.75rem;
+  }
+
+  .home-genres-subtitle {
+    font-size: 1rem;
+  }
+
+  .home-genres-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .home-genre-card {
+    padding: 1.5rem;
+  }
+
+  .home-footer-links {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
