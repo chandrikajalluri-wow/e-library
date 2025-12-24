@@ -12,7 +12,7 @@ app.use(express.json());
 // Connect to MongoDB
 connectDB();
 initCronJobs();
-app.use(cors({ origin: ["http://localhost:5173", "https://chic-gelato-5dc4d2.netlify.app/"] }));
+app.use(cors({ origin: ["http://localhost:5173", "https://chic-gelato-5dc4d2.netlify.app"], allowedHeaders: ["Content-Type", "Authorization"] }));
 
 // Routes
 import authRoutes from './routes/auth';
