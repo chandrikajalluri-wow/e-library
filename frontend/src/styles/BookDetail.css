@@ -225,3 +225,93 @@
     width: 100%;
     padding: 1rem;
 }
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .reviews-grid-borrowed {
+        grid-template-columns: 1fr;
+    }
+
+    .review-form-container {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .book-detail-card {
+        flex-direction: column;
+    }
+
+    .book-cover-wrapper {
+        max-width: 100%;
+    }
+
+    .book-image-placeholder {
+        height: 300px;
+    }
+
+    .book-info-main {
+        padding: 0.5rem;
+    }
+
+    .book-detail-title {
+        font-size: 2rem;
+    }
+
+    .book-detail-author {
+        font-size: 1.1rem;
+    }
+
+    .book-specs-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .borrow-btn {
+        width: 100%;
+    }
+
+    .wishlist-toggle-btn {
+        width: 100%;
+        height: 50px;
+    }
+
+    .reviews-section-container {
+        margin-top: 2rem;
+    }
+
+    .review-form-container {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .book-detail-title {
+        font-size: 1.75rem;
+    }
+
+    .book-detail-author {
+        font-size: 1rem;
+    }
+
+    .borrow-btn {
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .review-item {
+        padding: 1rem;
+    }
+
+    .reviewer-name {
+        font-size: 1rem;
+    }
+
+    .review-form-container {
+        padding: 1rem;
+    }
+}
