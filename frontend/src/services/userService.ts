@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/users';
+const API_URL = 'https://e-library-7k5l.onrender.com/api/users';
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem('token');

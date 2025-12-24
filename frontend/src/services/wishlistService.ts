@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/wishlists';
+const API_URL = 'https://e-library-7k5l.onrender.com/api/wishlists';
 
 const getConfig = () => {
   const token = localStorage.getItem('token');

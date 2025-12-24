@@ -12,7 +12,7 @@ app.use(express.json());
 // Connect to MongoDB
 connectDB();
 initCronJobs();
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({ origin: ["http://localhost:5173", "https://chic-gelato-5dc4d2.netlify.app/"] }));
 
 // Routes
 import authRoutes from './routes/auth';
@@ -32,6 +32,7 @@ app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/logs', activityLogRoutes);
 app.use('/api/users', userRoutes);
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
