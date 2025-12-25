@@ -54,7 +54,8 @@ router.post('/signup', async (req: Request, res: Response) => {
       verificationToken: crypto.randomBytes(20).toString('hex'),
     });
 
-    const verifyLink = `http://localhost:5173/verify/${user.verificationToken}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const verifyLink = `${frontendUrl}/verify/${user.verificationToken}`;
     await sendEmail(
       email,
       'Verify Your Email',
@@ -82,7 +83,8 @@ router.post('/login', async (req: Request, res: Response) => {
       // If no token exists (legacy user), create one and send email
       if (!user.verificationToken) {
         user.verificationToken = crypto.randomBytes(20).toString('hex');
-        const verifyLink = `http://localhost:5173/verify/${user.verificationToken}`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const verifyLink = `${frontendUrl}/verify/${user.verificationToken}`;
         await sendEmail(
           user.email,
           'Verify Your Email',
@@ -135,7 +137,8 @@ router.post('/forgot', async (req: Request, res: Response) => {
       expires_at: expiresAt,
     });
 
-    const resetLink = `http://localhost:5173/reset/${token}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset/${token}`;
     await sendEmail(
       email,
       'Password Reset',

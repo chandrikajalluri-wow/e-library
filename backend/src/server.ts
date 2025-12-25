@@ -14,11 +14,9 @@ connectDB();
 initCronJobs();
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "https://chic-gelato-5dc4d2.netlify.app"
-    ],
+    origin: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : ["http://localhost:5173", "http://localhost:5174", "https://chic-gelato-5dc4d2.netlify.app"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"]
   })
