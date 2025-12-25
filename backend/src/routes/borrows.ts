@@ -15,6 +15,19 @@ router.post('/issue', auth, async (req: AuthRequest, res: Response) => {
     if (book.noOfCopies <= 0)
       return res.status(400).json({ error: 'No copies available' });
 
+    // Check if user already has an active borrow for this book
+    const activeBorrow = await Borrow.findOne({
+      user_id: req.user!._id,
+      book_id: book._id,
+      status: { $in: ['borrowed', 'overdue', 'return_requested'] },
+    });
+
+    if (activeBorrow) {
+      return res.status(400).json({
+        error: 'You already have an active borrow for this book. Please return it before borrowing again.',
+      });
+    }
+
     const returnDate = new Date();
     returnDate.setDate(returnDate.getDate() + days);
 

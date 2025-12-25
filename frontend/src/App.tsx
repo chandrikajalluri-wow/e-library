@@ -17,32 +17,38 @@ import Contact from './pages/Contact';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
+import { ThemeProvider } from './context/ThemeContext';
+import ThemeToggle from './components/ThemeToggle';
+
 const App: React.FC = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot" element={<ForgotPassword />} />
-        <Route path="/reset/:token" element={<ResetPassword />} />
-        <Route path="/verify/:token" element={<VerifyEmail />} />
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot" element={<ForgotPassword />} />
+          <Route path="/reset/:token" element={<ResetPassword />} />
+          <Route path="/verify/:token" element={<VerifyEmail />} />
 
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
-          <Route path="/home" element={<Home />} />
-          <Route path="/books" element={<BookList />} />
-          <Route path="/books/:id" element={<BookDetail />} />
-          <Route path="/dashboard" element={<UserDashboard />} />
-          <Route path="/profile" element={<UserProfile />} />
-        </Route>
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
+            <Route path="/home" element={<Home />} />
+            <Route path="/books" element={<BookList />} />
+            <Route path="/books/:id" element={<BookDetail />} />
+            <Route path="/dashboard" element={<UserDashboard />} />
+            <Route path="/profile" element={<UserProfile />} />
+          </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        </Route>
-      </Routes>
-    </Router>
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          </Route>
+        </Routes>
+        <ThemeToggle />
+      </Router>
+    </ThemeProvider>
   );
 };
 
