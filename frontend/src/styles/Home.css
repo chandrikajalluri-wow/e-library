@@ -1,6 +1,6 @@
 .home-page {
   min-height: 100vh;
-  background-color: #fff;
+  background-color: var(--bg-color);
   color: var(--text-primary);
 }
 
@@ -9,7 +9,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 5%;
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: var(--card-bg);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
@@ -66,7 +66,7 @@
 .home-hero {
   padding: 6rem 5% 4rem;
   text-align: center;
-  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+  background-color: var(--bg-color);
   position: relative;
   overflow: hidden;
 }
@@ -87,7 +87,7 @@
   font-size: 3.5rem;
   font-weight: 850;
   margin-bottom: 1.5rem;
-  color: #0f172a;
+  color: var(--text-primary);
   letter-spacing: -1.5px;
   line-height: 1.1;
 }
@@ -123,7 +123,7 @@
 
 .home-about-section {
   padding: 6rem 5%;
-  background-color: #fff;
+  background-color: var(--bg-color);
 }
 
 .home-about-grid {
@@ -150,7 +150,7 @@
 }
 
 .home-quote-card {
-  background-color: #f1f5f9;
+  background-color: var(--card-bg);
   border-radius: 24px;
   padding: 3rem;
   position: relative;
@@ -165,7 +165,7 @@
   font-weight: 600;
   font-size: 1.25rem;
   font-style: italic;
-  color: #334155;
+  color: var(--text-primary);
 }
 
 .home-quote-author {
@@ -177,7 +177,7 @@
 
 .home-genres-section {
   padding: 6rem 5%;
-  background-color: #f8fafc;
+  background-color: var(--bg-color);
 }
 
 .home-genres-container {

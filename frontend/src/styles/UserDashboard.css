@@ -87,12 +87,12 @@
 .dashboard-table th {
     text-align: left;
     color: var(--text-secondary);
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border-color);
     padding: 1rem;
 }
 
 .dashboard-table td {
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--border-color);
     padding: 1rem;
 }
 

@@ -154,11 +154,26 @@ router.put(
                 return res.status(400).json({ error: 'Invalid status' });
             }
 
-            const request = await BookRequest.findById(req.params.id);
+            const request = await BookRequest.findById(req.params.id).populate('user_id', 'name email');
             if (!request) return res.status(404).json({ error: 'Request not found' });
 
+            const oldStatus = request.status;
             request.status = status;
             await request.save();
+
+            // Send email if approved
+            if (status === 'approved' && oldStatus !== 'approved') {
+                const user = request.user_id as any;
+                if (user && user.email) {
+                    const subject = 'Book Request Approved';
+                    const text = `Hi ${user.name},\n\nYour request for the book "${request.title}" by ${request.author} has been approved.\n\nRegards,\nLibrary Administration`;
+                    try {
+                        await sendEmail(user.email, subject, text);
+                    } catch (emailErr) {
+                        console.error('Failed to send approval email:', emailErr);
+                    }
+                }
+            }
 
             res.json({ message: 'Request status updated', request });
         } catch (err) {
