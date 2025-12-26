@@ -1,0 +1,121 @@
+.user-sidebar {
+    width: 280px;
+    background-color: var(--card-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+}
+
+.user-logo-section {
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-logo-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--primary-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.user-logo-text {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.user-nav {
+    flex: 1;
+}
+
+.user-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 1rem;
+    border-radius: 12px;
+    border: none;
+    transition: all 0.3s ease;
+    text-align: left;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: inherit;
+}
+
+.user-nav-item-active {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.user-nav-item-inactive {
+    background-color: transparent;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.user-nav-item:hover {
+    background-color: var(--bg-hover);
+}
+
+.user-logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    color: var(--danger-color);
+    font-weight: 600;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 12px;
+    margin-top: auto;
+    justify-content: center;
+    background-color: transparent;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+.user-logout-btn:hover {
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .user-sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 1rem;
+    }
+
+    .user-nav {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .user-nav-item {
+        white-space: nowrap;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0;
+    }
+
+    .user-logout-btn {
+        margin-top: 1rem;
+    }
+}

@@ -1,16 +1,13 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
 import { getMyBorrows, returnBook } from '../services/borrowService';
-import { getWishlist, removeFromWishlist } from '../services/wishlistService';
 import { getDashboardStats } from '../services/userService';
 import { toast } from 'react-toastify';
-import { Link } from 'react-router-dom';
 import FinePaymentModal from '../components/FinePaymentModal';
 import '../styles/UserDashboard.css';
 
 const UserDashboard: React.FC = () => {
   const [borrows, setBorrows] = useState<any[]>([]);
-  const [wishlist, setWishlist] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0 });
   const [selectedBorrow, setSelectedBorrow] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,8 +20,6 @@ const UserDashboard: React.FC = () => {
     try {
       const bData = await getMyBorrows();
       setBorrows(bData);
-      const wData = await getWishlist();
-      setWishlist(wData);
       const sData = await getDashboardStats();
       setStats(sData);
     } catch (err) {
@@ -34,7 +29,6 @@ const UserDashboard: React.FC = () => {
   };
 
   const handleReturn = async (borrow: any) => {
-    // Check if there is a fine and it's not paid
     let fine = borrow.fine_amount || 0;
     if (borrow.status !== 'returned' && borrow.status !== 'archived' && new Date() > new Date(borrow.return_date)) {
       const diffTime = Math.abs(new Date().getTime() - new Date(borrow.return_date).getTime());
@@ -52,38 +46,19 @@ const UserDashboard: React.FC = () => {
     try {
       await returnBook(borrow._id);
       toast.success('Return requested successfully. Admin will process it.');
-      loadData(); // Refresh
+      loadData();
     } catch (err: any) {
       console.error(err);
       toast.error(err.response?.data?.error || 'Failed to return book');
     }
   };
 
-  const handleRemoveWishlist = async (id: string) => {
-    try {
-      await removeFromWishlist(id);
-      toast.success('Removed from wishlist');
-      loadData();
-    } catch (err) {
-      console.log(err);
-      toast.error('Failed to remove from wishlist');
-    }
-  };
-
   return (
     <div className="dashboard-wrapper">
-      <div className="dashboard-header">
-        <h1>My Dashboard</h1>
-        <Link to="/profile" className="profile-link">
-          <span className="profile-name">My Profile</span>
-          <div className="profile-avatar" title="View Profile">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </div>
-        </Link>
-      </div>
+      <header className="admin-header">
+        <h1 className="admin-header-title">My Dashboard</h1>
+        <p className="admin-header-subtitle">Overview of your activity and fines</p>
+      </header>
 
       <div className="stats-grid">
         <div className="card stat-card">
@@ -99,8 +74,6 @@ const UserDashboard: React.FC = () => {
           <p className="stat-value">{stats.wishlistCount}</p>
         </div>
       </div>
-
-      <Link to="/books" className="back-link">Back to Catalog</Link>
 
       <section className="card dashboard-section">
         <h2>My Borrows</h2>
@@ -188,53 +161,6 @@ const UserDashboard: React.FC = () => {
         {borrows.length === 0 && (
           <p className="empty-message">
             You haven't borrowed any books.
-          </p>
-        )}
-      </section>
-
-      <section className="card dashboard-section">
-        <h2>My Wishlist</h2>
-        <table className="dashboard-table">
-          <thead>
-            <tr>
-              <th style={{ padding: '1rem' }}>Book</th>
-              <th>Author</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {wishlist.map((w) => (
-              <tr key={w._id}>
-                <td className="book-title">
-                  {w.book_id ? (
-                    <Link
-                      to={`/books/${w.book_id._id}`}
-                      style={{ textDecoration: 'none', color: 'inherit' }}
-                    >
-                      {w.book_id.title}
-                    </Link>
-                  ) : (
-                    <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                      Book Removed
-                    </span>
-                  )}
-                </td>
-                <td>{w.book_id?.author || '-'}</td>
-                <td>
-                  <button
-                    onClick={() => handleRemoveWishlist(w._id)}
-                    className="btn-secondary remove-btn"
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {wishlist.length === 0 && (
-          <p className="empty-message">
-            Your wishlist is empty.
           </p>
         )}
       </section>
