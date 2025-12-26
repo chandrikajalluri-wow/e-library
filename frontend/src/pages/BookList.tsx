@@ -17,6 +17,10 @@ const BookList: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (search === '') {
+      loadData();
+      return;
+    }
     const timeoutId = setTimeout(() => {
       loadData();
     }, 500); // Debounce search
