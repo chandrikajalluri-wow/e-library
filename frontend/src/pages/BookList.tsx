@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { getBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 import type { Book } from '../types';
+import Loader from '../components/Loader';
 import '../styles/BookList.css';
 
 const BookList: React.FC = () => {
@@ -144,7 +145,7 @@ const BookList: React.FC = () => {
             disabled={loading}
             className="btn-primary"
           >
-            {loading ? 'Loading...' : 'Load More'}
+            {loading ? <Loader small /> : 'Load More'}
           </button>
         </div>
       )}

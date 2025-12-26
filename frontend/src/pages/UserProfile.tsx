@@ -7,6 +7,7 @@ import {
   requestBook,
 } from "../services/userService";
 import { toast } from "react-toastify";
+import Loader from "../components/Loader";
 import "../styles/UserProfile.css";
 
 const UserProfile: React.FC = () => {
@@ -92,7 +93,7 @@ const UserProfile: React.FC = () => {
     navigate("/");
   };
 
-  if (!user) return <div style={{ padding: "2rem" }}>Loading...</div>;
+  if (!user) return <Loader />;
 
   return (
     <div className="profile-container">

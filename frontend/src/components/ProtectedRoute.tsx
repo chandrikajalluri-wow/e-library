@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import Loader from './Loader';
 
 interface Props {
   allowedRoles: string[];
@@ -25,7 +26,7 @@ const ProtectedRoute: React.FC<Props> = ({ allowedRoles }) => {
     setLoading(false);
   }, [token]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Loader />;
 
   if (!token) return <Navigate to="/" replace />;
 
