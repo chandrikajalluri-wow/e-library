@@ -12,10 +12,13 @@ import BookList from './pages/BookList';
 import BookDetail from './pages/BookDetail';
 import UserDashboard from './pages/UserDashboard';
 import UserProfile from './pages/UserProfile';
+import WishlistPage from './pages/WishlistPage';
+import BookRequestPage from './pages/BookRequestPage';
 import Home from './pages/Home';
 import Contact from './pages/Contact';
 
 import ProtectedRoute from './components/ProtectedRoute';
+import UserLayout from './components/UserLayout';
 
 import { ThemeProvider } from './context/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
@@ -33,13 +36,16 @@ const App: React.FC = () => {
           <Route path="/reset/:token" element={<ResetPassword />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
 
-          {/* Protected Routes */}
+          {/* Protected User Routes with Sidebar Layout */}
           <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
-            <Route path="/home" element={<Home />} />
+            <Route element={<UserLayout />}>
+              <Route path="/dashboard" element={<UserDashboard />} />
+              <Route path="/profile" element={<UserProfile />} />
+              <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/request-book" element={<BookRequestPage />} />
+            </Route>
             <Route path="/books" element={<BookList />} />
             <Route path="/books/:id" element={<BookDetail />} />
-            <Route path="/dashboard" element={<UserDashboard />} />
-            <Route path="/profile" element={<UserProfile />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
