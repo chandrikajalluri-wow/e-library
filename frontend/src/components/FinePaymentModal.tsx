@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { payFine } from '../services/borrowService';
 import { toast } from 'react-toastify';
+import Loader from './Loader';
 import '../styles/FinePaymentModal.css';
 
 interface FinePaymentModalProps {
@@ -99,7 +100,7 @@ const FinePaymentModal: React.FC<FinePaymentModalProps> = ({ borrow, onClose, on
 
                 {step === 'processing' && (
                     <div className="processing-container">
-                        <div className="loading-spinner"></div>
+                        <Loader />
                         <h3>Processing Payment...</h3>
                         <p className="modal-description">Please do not close this window</p>
                     </div>

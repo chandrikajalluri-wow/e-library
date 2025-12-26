@@ -9,6 +9,7 @@ import {
 } from '../services/wishlistService';
 import { getBookReviews, addReview } from '../services/reviewService';
 import { toast } from 'react-toastify';
+import Loader from '../components/Loader';
 import '../styles/BookDetail.css';
 
 const BookDetail: React.FC = () => {
@@ -138,7 +139,7 @@ const BookDetail: React.FC = () => {
     }
   };
 
-  if (!book) return <div>Loading...</div>;
+  if (!book) return <Loader />;
 
   return (
     <div className="dashboard-container">
@@ -297,7 +298,7 @@ const BookDetail: React.FC = () => {
                     disabled={isSubmitting}
                     className="btn-primary submit-review-btn"
                   >
-                    {isSubmitting ? 'Submitting...' : 'Post Review'}
+                    {isSubmitting ? <Loader small /> : 'Post Review'}
                   </button>
                 </form>
               </div>
