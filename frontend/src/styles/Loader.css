@@ -32,4 +32,5 @@
     display: inline-block;
     vertical-align: middle;
     margin-right: 8px;
+    border-left-color: var(--primary-color, #eaeef1);
 }

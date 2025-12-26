@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getBooks } from "../services/bookService";
 import {
   getProfile,
   updateProfile,
@@ -78,6 +79,19 @@ const UserProfile: React.FC = () => {
   const handleBookRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Check if book already exists
+      const data = await getBooks(`search=${bookRequest.title}&limit=1`);
+      if (data.books && data.books.length > 0) {
+        const existingBook = data.books.find((b: any) =>
+          b.title.toLowerCase() === bookRequest.title.toLowerCase()
+        );
+        if (existingBook) {
+          toast.info(`This book is already available in the library! Redirecting...`);
+          navigate(`/books/${existingBook._id}`);
+          return;
+        }
+      }
+
       await requestBook(bookRequest);
       toast.success("Book request submitted");
       setBookRequest({ title: "", author: "", reason: "" });

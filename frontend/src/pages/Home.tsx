@@ -1,10 +1,27 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getProfile } from '../services/userService';
 import '../styles/Home.css';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const [user, setUser] = React.useState<any>(null);
   const isAuthenticated = !!localStorage.getItem('token');
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      loadProfile();
+    }
+  }, [isAuthenticated]);
+
+  const loadProfile = async () => {
+    try {
+      const data = await getProfile();
+      setUser(data);
+    } catch (err) {
+      console.error('Failed to load profile', err);
+    }
+  };
 
   const handleExplore = () => {
     if (isAuthenticated) {
@@ -49,7 +66,16 @@ const Home: React.FC = () => {
         </div>
         <div className="home-nav-links">
           <Link to="/contact" className="home-contact-link">Contact Us</Link>
-          <Link to="/login" className="home-login-btn">Login</Link>
+          {isAuthenticated ? (
+            <Link to="/profile" className="home-profile-link">
+              <div className="home-profile-icon">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <span className="home-user-name">{user?.name || 'Profile'}</span>
+            </Link>
+          ) : (
+            <Link to="/login" className="home-login-btn">Login</Link>
+          )}
         </div>
       </nav>
 
