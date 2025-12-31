@@ -117,14 +117,14 @@ const UserDashboard: React.FC = () => {
           <tbody>
             {borrows.map((b) => (
               <tr key={b._id}>
-                <td className="book-title">
+                <td data-label="Book" className="book-title">
                   {b.book_id?.title || 'Unknown Book (Deleted)'}
                 </td>
-                <td>{new Date(b.issued_date).toLocaleDateString()}</td>
-                <td className={new Date() > new Date(b.return_date) ? 'overdue-date' : ''}>
+                <td data-label="Issued Date">{new Date(b.issued_date).toLocaleDateString()}</td>
+                <td data-label="Due Date" className={new Date() > new Date(b.return_date) ? 'overdue-date' : ''}>
                   {new Date(b.return_date).toLocaleDateString()}
                 </td>
-                <td>
+                <td data-label="Fine">
                   <span className={`fine-amount ${(b.fine_amount > 0 || new Date() > new Date(b.return_date)) ? 'fine-danger' : ''}`}>
                     ₹{(() => {
                       let fine = b.fine_amount || 0;
@@ -137,12 +137,12 @@ const UserDashboard: React.FC = () => {
                     })()}
                   </span>
                 </td>
-                <td>
+                <td data-label="Status">
                   <span className={`status-badge status-${b.status}`}>
                     {b.status}
                   </span>
                 </td>
-                <td>
+                <td data-label="Action">
                   {(b.status === 'borrowed' || b.status === 'overdue') && (
                     <div className="actions-cell">
                       {(() => {
