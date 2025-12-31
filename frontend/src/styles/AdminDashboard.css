@@ -410,3 +410,21 @@
         text-align: center;
     }
 }
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.page-info {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.pagination-controls button {
+    min-width: 100px;
+}

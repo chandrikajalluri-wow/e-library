@@ -3,11 +3,26 @@ import { Link } from 'react-router-dom';
 import { getWishlist, removeFromWishlist } from '../services/wishlistService';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
+import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/UserDashboard.css'; // Reusing dashboard or common styles
 
 const WishlistPage: React.FC = () => {
     const [wishlist, setWishlist] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        isLoading: boolean;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        isLoading: false
+    });
 
     useEffect(() => {
         fetchWishlist();
@@ -25,14 +40,25 @@ const WishlistPage: React.FC = () => {
         }
     };
 
-    const handleRemove = async (id: string) => {
-        try {
-            await removeFromWishlist(id);
-            toast.success('Removed from wishlist');
-            fetchWishlist();
-        } catch (err) {
-            toast.error('Failed to remove');
-        }
+    const handleRemove = (id: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Remove from Wishlist',
+            message: 'Are you sure you want to remove this book from your wishlist?',
+            isLoading: false,
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isLoading: true }));
+                try {
+                    await removeFromWishlist(id);
+                    toast.success('Removed from wishlist');
+                    fetchWishlist();
+                    setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+                } catch (err) {
+                    toast.error('Failed to remove');
+                    setConfirmModal(prev => ({ ...prev, isLoading: false }));
+                }
+            }
+        });
     };
 
     if (loading) return <Loader />;
@@ -52,7 +78,7 @@ const WishlistPage: React.FC = () => {
                         <div key={item._id} className="card book-card">
                             <div className="book-cover-container">
                                 {book.cover_image_url ? (
-                                    <img src={book.cover_image_url} alt={book.title} className="book-cover-img" />
+                                    <img src={book.cover_image_url} alt={book.title} className="book-cover-img" loading="lazy" />
                                 ) : (
                                     <div className="no-image-placeholder">No Image</div>
                                 )}
@@ -95,6 +121,16 @@ const WishlistPage: React.FC = () => {
                     </Link>
                 </div>
             )}
+
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type="danger"
+                isLoading={confirmModal.isLoading}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+            />
         </div>
     );
 };

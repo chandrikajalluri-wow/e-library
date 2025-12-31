@@ -4,6 +4,7 @@ import { getMyBorrows, returnBook } from '../services/borrowService';
 import { getDashboardStats } from '../services/userService';
 import { toast } from 'react-toastify';
 import FinePaymentModal from '../components/FinePaymentModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/UserDashboard.css';
 
 const UserDashboard: React.FC = () => {
@@ -11,6 +12,20 @@ const UserDashboard: React.FC = () => {
   const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0 });
   const [selectedBorrow, setSelectedBorrow] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => { },
+    isLoading: false
+  });
 
   useEffect(() => {
     loadData();
@@ -43,14 +58,25 @@ const UserDashboard: React.FC = () => {
       return;
     }
 
-    try {
-      await returnBook(borrow._id);
-      toast.success('Return requested successfully. Admin will process it.');
-      loadData();
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.error || 'Failed to return book');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Request Return',
+      message: `Are you sure you want to request a return for "${borrow.book_id?.title}"?`,
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await returnBook(borrow._id);
+          toast.success('Return requested successfully. Admin will process it.');
+          loadData();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err: any) {
+          console.error(err);
+          toast.error(err.response?.data?.error || 'Failed to return book');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
   };
 
   return (
@@ -175,6 +201,16 @@ const UserDashboard: React.FC = () => {
           onSuccess={loadData}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type="info"
+        isLoading={confirmModal.isLoading}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
