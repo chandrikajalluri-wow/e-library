@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
 import { createCategory, getCategories } from '../services/categoryService';
@@ -118,56 +118,82 @@ const AdminDashboard: React.FC = () => {
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await createCategory(newCategory);
-      toast.success('Category created');
-      setNewCategory({ name: '', description: '' });
-      fetchCommonData();
-    } catch (err: unknown) {
-      toast.error('Failed to create category');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Confirm New Category',
+      message: `Are you sure you want to create the category "${newCategory.name}"?`,
+      type: 'info',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await createCategory(newCategory);
+          toast.success('Category created');
+          setNewCategory({ name: '', description: '' });
+          fetchCommonData();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err: unknown) {
+          toast.error('Failed to create category');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
   };
 
   const handleCreateBook = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const payload: Partial<Book> = {
-        ...newBook,
-        price: parseFloat(newBook.price) || 0,
-        pages: parseInt(newBook.pages) || 0,
-        publishedYear: parseInt(newBook.publishedYear) || 0,
-        noOfCopies: parseInt(newBook.noOfCopies) || 1,
-      };
+    setConfirmModal({
+      isOpen: true,
+      title: editingBookId ? 'Confirm Update' : 'Confirm Add Book',
+      message: editingBookId
+        ? `Are you sure you want to update the details for "${newBook.title}"?`
+        : `Are you sure you want to add "${newBook.title}" to the library?`,
+      type: 'info',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          const payload: Partial<Book> = {
+            ...newBook,
+            price: parseFloat(newBook.price) || 0,
+            pages: parseInt(newBook.pages) || 0,
+            publishedYear: parseInt(newBook.publishedYear) || 0,
+            noOfCopies: parseInt(newBook.noOfCopies) || 1,
+          };
 
-      if (editingBookId) {
-        await updateBook(editingBookId, payload);
-        toast.success('Book updated successfully');
-        setEditingBookId(null);
-      } else {
-        await createBook(payload);
-        toast.success('Book created successfully');
+          if (editingBookId) {
+            await updateBook(editingBookId, payload);
+            toast.success('Book updated successfully');
+            setEditingBookId(null);
+          } else {
+            await createBook(payload);
+            toast.success('Book created successfully');
+          }
+
+          setNewBook({
+            title: '',
+            author: '',
+            category_id: '',
+            price: '',
+            status: 'available',
+            isbn: '',
+            description: '',
+            pages: '',
+            publishedYear: '',
+            cover_image_url: '',
+            pdf_url: '',
+            genre: '',
+            language: '',
+            noOfCopies: '1',
+          });
+          fetchBooks();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err: unknown) {
+          toast.error(editingBookId ? 'Failed to update book' : 'Failed to create book');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
       }
-
-      setNewBook({
-        title: '',
-        author: '',
-        category_id: '',
-        price: '',
-        status: 'available',
-        isbn: '',
-        description: '',
-        pages: '',
-        publishedYear: '',
-        cover_image_url: '',
-        pdf_url: '',
-        genre: '',
-        language: '',
-        noOfCopies: '1',
-      });
-      fetchBooks();
-    } catch (err: unknown) {
-      toast.error(editingBookId ? 'Failed to update book' : 'Failed to create book');
-    }
+    });
   };
 
   const handleEditBook = (book: Book) => {
@@ -289,10 +315,19 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    toast.info('Logged out');
-    navigate('/');
+    setConfirmModal({
+      isOpen: true,
+      title: 'Confirm Logout',
+      message: 'Are you sure you want to log out from the admin panel?',
+      type: 'warning',
+      isLoading: false,
+      onConfirm: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        toast.info('Logged out');
+        navigate('/');
+      }
+    });
   };
 
   const NavItem = ({ id, label, icon }: { id: string; label: string; icon: React.ReactNode }) => (
@@ -309,12 +344,12 @@ const AdminDashboard: React.FC = () => {
     <div className="admin-layout">
       {/* Sidebar */}
       <aside className="admin-sidebar">
-        <div className="admin-logo-section">
+        <Link to="/" className="admin-logo-section">
           <div className="admin-logo-box">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path></svg>
           </div>
           <span className="admin-logo-text">E-Library Admin</span>
-        </div>
+        </Link>
 
         <nav className="admin-nav">
           <NavItem id="books" label="Manage Books" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>} />

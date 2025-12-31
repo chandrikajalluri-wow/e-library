@@ -87,6 +87,14 @@ router.put('/change-password', auth, async (req: AuthRequest, res: Response) => 
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) return res.status(400).json({ error: 'Incorrect current password' });
 
+        // Password complexity check
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            return res.status(400).json({
+                error: 'Password must be at least 8 characters long and include an uppercase letter, a number, and a special character.'
+            });
+        }
+
         // Hashing new password
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);

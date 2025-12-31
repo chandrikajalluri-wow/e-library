@@ -49,6 +49,15 @@ const UserProfile: React.FC = () => {
     if (passwords.newPassword !== passwords.confirmPassword) {
       return toast.error("Passwords do not match");
     }
+
+    // Password rules validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(passwords.newPassword)) {
+      return toast.error(
+        "Password must be at least 8 characters long and include an uppercase letter, a number, and a special character."
+      );
+    }
+
     try {
       await changePassword({
         currentPassword: passwords.currentPassword,
@@ -146,6 +155,9 @@ const UserProfile: React.FC = () => {
               }
               required
             />
+            <small className="password-hint" style={{ display: 'block', marginTop: '0.25rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+              Minimum 8 characters, at least one uppercase letter, one number, and one special character.
+            </small>
           </div>
           <div className="form-group">
             <label>Confirm New Password</label>

@@ -25,6 +25,7 @@ const BookDetail: React.FC = () => {
   const [hasBorrowed, setHasBorrowed] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeBorrowCount, setActiveBorrowCount] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -32,8 +33,21 @@ const BookDetail: React.FC = () => {
       checkWishlist(id);
       fetchReviews(id);
       checkBorrowStatus(id);
+      fetchActiveBorrowCount();
     }
   }, [id]);
+
+  const fetchActiveBorrowCount = async () => {
+    try {
+      const myBorrows = await getMyBorrows();
+      const count = myBorrows.filter((b: any) =>
+        ['borrowed', 'overdue', 'return_requested'].includes(b.status)
+      ).length;
+      setActiveBorrowCount(count);
+    } catch (err) {
+      console.error('Error fetching borrow count:', err);
+    }
+  };
 
   const fetchBook = async (bookId: string) => {
     try {
@@ -186,12 +200,21 @@ const BookDetail: React.FC = () => {
           <div>
             <div className="action-buttons">
               {book.noOfCopies > 0 ? (
-                <button
-                  onClick={handleBorrow}
-                  className="btn-primary borrow-btn"
-                >
-                  Borrow This Book
-                </button>
+                <div>
+                  <button
+                    onClick={handleBorrow}
+                    disabled={activeBorrowCount >= 5}
+                    className={`btn-primary borrow-btn ${activeBorrowCount >= 5 ? 'disabled-btn' : ''}`}
+                    title={activeBorrowCount >= 5 ? 'Borrow limit (5) reached' : ''}
+                  >
+                    {activeBorrowCount >= 5 ? 'Borrow Limit Reached' : 'Borrow This Book'}
+                  </button>
+                  {activeBorrowCount >= 5 && (
+                    <p className="limit-warning" style={{ color: 'var(--danger-color)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                      You have reached the maximum limit of 5 borrowed books.
+                    </p>
+                  )}
+                </div>
               ) : (
                 <div className="unavailable-container">
                   <button

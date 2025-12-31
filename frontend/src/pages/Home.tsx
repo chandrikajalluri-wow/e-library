@@ -58,12 +58,12 @@ const Home: React.FC = () => {
     <div className="home-page">
       {/* Navbar */}
       <nav className="home-nav">
-        <div className="home-logo-container">
+        <Link to="/" className="home-logo-container">
           <div className="home-logo-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path></svg>
           </div>
           <h1 className="home-logo-text">E-Library</h1>
-        </div>
+        </Link>
         <div className="home-nav-links">
           <Link to="/contact" className="home-contact-link">Contact Us</Link>
           {isAuthenticated ? (
@@ -144,8 +144,8 @@ const Home: React.FC = () => {
         <p className="home-footer-copy">© 2025 E-Library Global System</p>
         <div className="home-footer-links">
           <Link to="/contact" className="home-footer-link">Contact</Link>
-          <a href="#" className="home-footer-link">Privacy Policy</a>
-          <a href="#" className="home-footer-link">Terms of Service</a>
+          <Link to="/privacy" className="home-footer-link">Privacy Policy</Link>
+          <Link to="/terms" className="home-footer-link">Terms of Service</Link>
         </div>
         <p className="home-footer-tagline">Making the world's knowledge accessible to everyone, everywhere.</p>
       </footer>
