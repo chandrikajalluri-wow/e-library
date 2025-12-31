@@ -15,6 +15,18 @@ router.post('/issue', auth, async (req: AuthRequest, res: Response) => {
     if (book.noOfCopies <= 0)
       return res.status(400).json({ error: 'No copies available' });
 
+    // Check 5-book limit
+    const activeBorrowsCount = await Borrow.countDocuments({
+      user_id: req.user!._id,
+      status: { $in: ['borrowed', 'overdue', 'return_requested'] },
+    });
+
+    if (activeBorrowsCount >= 5) {
+      return res.status(400).json({
+        error: 'You have reached the maximum limit of 5 borrowed books. Please return a book before borrowing another.',
+      });
+    }
+
     // Check if user already has an active borrow for this book
     const activeBorrow = await Borrow.findOne({
       user_id: req.user!._id,

@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { sendContactMessage } from '../services/contactService';
 import '../styles/Contact.css';
 
 const Contact: React.FC = () => {
     const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Contact form submitted:', formData);
-        toast.success('Message sent! We will get back to you soon.');
-        setFormData({ name: '', email: '', message: '' });
+        setIsSubmitting(true);
+        try {
+            const res = await sendContactMessage(formData);
+            toast.success(res.message || 'Message sent! We will get back to you soon.');
+            setFormData({ name: '', email: '', message: '' });
+        } catch (err: any) {
+            toast.error(err.response?.data?.error || 'Failed to send message');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -94,8 +103,8 @@ const Contact: React.FC = () => {
                                 className="contact-textarea"
                             ></textarea>
                         </div>
-                        <button type="submit" className="btn-primary contact-submit-btn">
-                            Send Message
+                        <button type="submit" className="btn-primary contact-submit-btn" disabled={isSubmitting}>
+                            {isSubmitting ? 'Sending...' : 'Send Message'}
                         </button>
                     </form>
                 </div>

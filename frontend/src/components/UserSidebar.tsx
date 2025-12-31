@@ -1,12 +1,19 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import ConfirmationModal from './ConfirmationModal';
 import '../styles/UserSidebar.css';
 
 const UserSidebar: React.FC = () => {
     const navigate = useNavigate();
 
+    const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+
     const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         toast.info('Logged out successfully');
@@ -27,12 +34,12 @@ const UserSidebar: React.FC = () => {
 
     return (
         <aside className="user-sidebar">
-            <div className="user-logo-section">
+            <Link to="/" className="user-logo-section">
                 <div className="user-logo-box">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path></svg>
                 </div>
                 <span className="user-logo-text">E-Library</span>
-            </div>
+            </Link>
 
             <nav className="user-nav">
                 <NavItem
@@ -66,6 +73,15 @@ const UserSidebar: React.FC = () => {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 Logout
             </button>
+
+            <ConfirmationModal
+                isOpen={showLogoutConfirm}
+                title="Confirm Logout"
+                message="Are you sure you want to log out?"
+                onConfirm={confirmLogout}
+                onCancel={() => setShowLogoutConfirm(false)}
+                type="warning"
+            />
         </aside>
     );
 };

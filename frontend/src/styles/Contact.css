@@ -1,15 +1,16 @@
 .contact-page {
     min-height: 100vh;
-    background-color: #f8fafc;
+    background-color: var(--bg-color);
     color: var(--text-primary);
 }
 
 .contact-nav {
     padding: 1.25rem 5%;
-    background-color: white;
+    background-color: var(--card-bg);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .contact-logo-link {
@@ -77,9 +78,10 @@
 
 .contact-info-icon {
     padding: 0.75rem;
-    background-color: #fff;
+    background-color: var(--card-bg);
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
 }
 
 .contact-info-title {
@@ -108,10 +110,12 @@
 .contact-textarea {
     min-height: 150px;
     padding: 1rem;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     width: 100%;
     font-family: inherit;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
 }
 
 .contact-submit-btn {

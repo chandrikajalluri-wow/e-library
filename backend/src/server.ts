@@ -31,6 +31,7 @@ import wishlistRoutes from './routes/wishlists';
 import reviewRoutes from './routes/reviews';
 import activityLogRoutes from './routes/activityLogs';
 import userRoutes from './routes/users';
+import contactRoutes from './routes/contact';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -40,6 +41,7 @@ app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/logs', activityLogRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/contact', contactRoutes);
 
 
 const PORT = process.env.PORT || 5000;
