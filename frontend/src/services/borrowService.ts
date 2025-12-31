@@ -54,7 +54,7 @@ export const getMyBorrows = async (): Promise<Borrow[]> => {
   return res.data;
 };
 
-export const getAllBorrows = async (): Promise<Borrow[]> => {
-  const res = await axios.get(API_URL, getConfig()); // Admin only
+export const getAllBorrows = async (query = ''): Promise<any> => {
+  const res = await axios.get(`${API_URL}?${query}`, getConfig()); // Admin only
   return res.data;
 };

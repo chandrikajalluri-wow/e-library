@@ -101,6 +101,7 @@ const BookList: React.FC = () => {
                   src={book.cover_image_url}
                   alt={book.title}
                   className="book-cover-img"
+                  loading="lazy"
                 />
               ) : (
                 <div className="no-image-placeholder">No Image</div>

@@ -6,6 +6,7 @@ import { createCategory, getCategories } from '../services/categoryService';
 import { getAllBorrows, acceptReturn } from '../services/borrowService';
 import { getAllBookRequests, updateBookRequestStatus, sendFineReminder } from '../services/userService';
 import type { Book, Category, Borrow } from '../types';
+import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/AdminDashboard.css';
 
 const AdminDashboard: React.FC = () => {
@@ -36,6 +37,29 @@ const AdminDashboard: React.FC = () => {
   });
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
 
+  // Pagination state
+  const [bookPage, setBookPage] = useState(1);
+  const [bookTotalPages, setBookTotalPages] = useState(1);
+  const [borrowPage, setBorrowPage] = useState(1);
+  const [borrowTotalPages, setBorrowTotalPages] = useState(1);
+
+  // Confirmation Modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type: 'danger' | 'warning' | 'info';
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => { },
+    type: 'info',
+    isLoading: false
+  });
+
   const fetchCommonData = async () => {
     try {
       const cats = await getCategories();
@@ -47,8 +71,9 @@ const AdminDashboard: React.FC = () => {
 
   const fetchBorrows = async () => {
     try {
-      const data = await getAllBorrows();
-      setBorrows(data);
+      const data = await getAllBorrows(`page=${borrowPage}&limit=10`);
+      setBorrows(data.borrows);
+      setBorrowTotalPages(data.pages);
     } catch (err: unknown) {
       console.error(err);
     }
@@ -66,8 +91,9 @@ const AdminDashboard: React.FC = () => {
 
   const fetchBooks = async () => {
     try {
-      const data = await getBooks('limit=10000');
+      const data = await getBooks(`page=${bookPage}&limit=10&showArchived=true`);
       setAllBooks(data.books);
+      setBookTotalPages(data.pages);
     } catch (err) {
       console.error(err);
       toast.error('Failed to fetch books');
@@ -80,7 +106,13 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'books') fetchBooks();
+  }, [activeTab, bookPage]);
+
+  useEffect(() => {
     if (activeTab === 'borrows') fetchBorrows();
+  }, [activeTab, borrowPage]);
+
+  useEffect(() => {
     if (activeTab === 'user-requests') fetchUserRequests();
   }, [activeTab]);
 
@@ -180,26 +212,48 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-  const handleDeleteBook = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this book?')) return;
-    try {
-      await deleteBook(id);
-      toast.success('Book deleted');
-      fetchBooks();
-    } catch (err) {
-      toast.error('Failed to delete book');
-    }
+  const handleDeleteBook = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Book',
+      message: 'Are you sure you want to delete this book? This action cannot be undone.',
+      type: 'danger',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await deleteBook(id);
+          toast.success('Book deleted');
+          fetchBooks();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err) {
+          toast.error('Failed to delete book');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
   };
 
-  const handleAcceptReturn = async (borrowId: string) => {
-    try {
-      await acceptReturn(borrowId);
-      toast.success('Return request accepted');
-      fetchBorrows();
-    } catch (err) {
-      console.log(err);
-      toast.error('Failed to accept return');
-    }
+  const handleAcceptReturn = (borrowId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Accept Return',
+      message: 'Are you sure you want to accept this return request?',
+      type: 'info',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await acceptReturn(borrowId);
+          toast.success('Return request accepted');
+          fetchBorrows();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err) {
+          toast.error('Failed to accept return');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
   };
 
   const handleSendReminder = async (borrowId: string) => {
@@ -212,15 +266,26 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleBookRequestStatus = async (id: string, status: string) => {
-    try {
-      await updateBookRequestStatus(id, status);
-      toast.success(`Request ${status}`);
-      fetchUserRequests();
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to update request status');
-    }
+  const handleBookRequestStatus = (id: string, status: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: `${status.charAt(0).toUpperCase() + status.slice(1)} Request`,
+      message: `Are you sure you want to ${status} this book request?`,
+      type: status === 'rejected' ? 'danger' : 'info',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await updateBookRequestStatus(id, status);
+          toast.success(`Request ${status}`);
+          fetchUserRequests();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err) {
+          toast.error('Failed to update request status');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
   };
 
   const handleLogout = () => {
@@ -396,6 +461,25 @@ const AdminDashboard: React.FC = () => {
               </div>
               {allBooks.length === 0 && (
                 <div className="admin-empty-state">No books in the collection yet.</div>
+              )}
+              {bookTotalPages > 1 && (
+                <div className="pagination-controls">
+                  <button
+                    disabled={bookPage === 1}
+                    onClick={() => setBookPage(prev => prev - 1)}
+                    className="btn-secondary"
+                  >
+                    Previous
+                  </button>
+                  <span className="page-info">Page {bookPage} of {bookTotalPages}</span>
+                  <button
+                    disabled={bookPage === bookTotalPages}
+                    onClick={() => setBookPage(prev => prev + 1)}
+                    className="btn-primary"
+                  >
+                    Next
+                  </button>
+                </div>
               )}
             </section>
           </div>
@@ -588,9 +672,38 @@ const AdminDashboard: React.FC = () => {
                 No borrow records found matching this status.
               </div>
             )}
+            {borrowTotalPages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  disabled={borrowPage === 1}
+                  onClick={() => setBorrowPage(prev => prev - 1)}
+                  className="btn-secondary"
+                >
+                  Previous
+                </button>
+                <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
+                <button
+                  disabled={borrowPage === borrowTotalPages}
+                  onClick={() => setBorrowPage(prev => prev + 1)}
+                  className="btn-primary"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </section>
         )}
       </main>
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        isLoading={confirmModal.isLoading}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

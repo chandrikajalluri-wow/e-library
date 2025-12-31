@@ -198,10 +198,25 @@ router.get(
   checkRole(['admin']),
   async (req: Request, res: Response) => {
     try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const skip = (page - 1) * limit;
+
       const borrows = await Borrow.find()
         .populate('user_id', 'name email')
-        .populate('book_id', 'title');
-      res.json(borrows);
+        .populate('book_id', 'title')
+        .sort({ issued_date: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const total = await Borrow.countDocuments();
+
+      res.json({
+        borrows,
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+      });
     } catch (err) {
       console.log(err);
       res.status(500).json({ error: 'Server error' });

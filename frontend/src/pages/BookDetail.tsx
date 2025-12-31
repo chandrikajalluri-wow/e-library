@@ -156,6 +156,7 @@ const BookDetail: React.FC = () => {
               src={book.cover_image_url}
               alt={book.title}
               className="book-detail-cover"
+              loading="lazy"
             />
           ) : (
             <div className="book-image-placeholder">
