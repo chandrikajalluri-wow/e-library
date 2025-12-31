@@ -160,15 +160,46 @@
         padding: 1rem;
     }
 
-    .dashboard-table {
-        display: block;
-        overflow-x: auto;
+    .dashboard-table thead {
+        display: none;
     }
 
-    .dashboard-table th,
+    .dashboard-table tr {
+        display: block;
+        margin-bottom: 1.5rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 0.5rem;
+    }
+
     .dashboard-table td {
-        padding: 0.75rem;
-        font-size: 0.875rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        gap: 0.25rem;
+        text-align: left;
+    }
+
+    .dashboard-table td:last-child {
+        border-bottom: none;
+    }
+
+    .dashboard-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        color: var(--primary-color);
+        display: block;
+    }
+
+    .actions-cell {
+        margin-top: 0.5rem;
+        width: 100%;
+        justify-content: flex-start;
     }
 }
 

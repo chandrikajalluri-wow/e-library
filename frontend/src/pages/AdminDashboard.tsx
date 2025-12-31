@@ -429,16 +429,16 @@ const AdminDashboard: React.FC = () => {
                   <tbody>
                     {allBooks.map((book) => (
                       <tr key={book._id}>
-                        <td>
+                        <td data-label="Book Details">
                           <div className="admin-book-title">{book.title}</div>
                           <div className="admin-book-meta">by {book.author} | {book.genre}</div>
                         </td>
-                        <td style={{ fontSize: '0.9rem' }}>{typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}</td>
-                        <td style={{ fontSize: '0.9rem' }}>{book.pages || '-'}</td>
-                        <td style={{ fontSize: '0.9rem' }}>₹{book.price}</td>
-                        <td style={{ fontSize: '0.9rem' }}>{book.noOfCopies}</td>
-                        <td><span className={`status-badge status-${book.status}`}>{book.status}</span></td>
-                        <td className="admin-actions-cell">
+                        <td data-label="Category" style={{ fontSize: '0.9rem' }}>{typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}</td>
+                        <td data-label="Pages" style={{ fontSize: '0.9rem' }}>{book.pages || '-'}</td>
+                        <td data-label="Price" style={{ fontSize: '0.9rem' }}>₹{book.price}</td>
+                        <td data-label="Copies" style={{ fontSize: '0.9rem' }}>{book.noOfCopies}</td>
+                        <td data-label="Status"><span className={`status-badge status-${book.status}`}>{book.status}</span></td>
+                        <td data-label="Actions" className="admin-actions-cell">
                           <div className="admin-actions-flex">
                             <button
                               onClick={() => handleEditBook(book)}
@@ -522,10 +522,10 @@ const AdminDashboard: React.FC = () => {
               <tbody>
                 {borrows.filter((b) => b.status === 'return_requested').map((b) => (
                   <tr key={b._id}>
-                    <td style={{ fontWeight: '500' }}>{b.user_id?.name || 'Unknown'}</td>
-                    <td>{b.book_id?.title || 'Unknown'}</td>
-                    <td><span className={`status-badge status-${b.status}`}>{b.status}</span></td>
-                    <td className="admin-actions-cell">
+                    <td data-label="User" style={{ fontWeight: '500' }}>{b.user_id?.name || 'Unknown'}</td>
+                    <td data-label="Book">{b.book_id?.title || 'Unknown'}</td>
+                    <td data-label="Status"><span className={`status-badge status-${b.status}`}>{b.status}</span></td>
+                    <td data-label="Action" className="admin-actions-cell">
                       <button onClick={() => handleAcceptReturn(b._id)} className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Accept Return</button>
                     </td>
                   </tr>
@@ -553,14 +553,14 @@ const AdminDashboard: React.FC = () => {
               <tbody>
                 {userRequests.map((req: any) => (
                   <tr key={req._id}>
-                    <td>
+                    <td data-label="User">
                       <div style={{ fontWeight: '500' }}>{req.user_id?.name || 'Unknown'}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{req.user_id?.email}</div>
                     </td>
-                    <td>{req.title}</td>
-                    <td>{req.author}</td>
-                    <td><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
-                    <td className="admin-actions-cell">
+                    <td data-label="Book Title">{req.title}</td>
+                    <td data-label="Author">{req.author}</td>
+                    <td data-label="Status"><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
+                    <td data-label="Action" className="admin-actions-cell">
                       {req.status === 'pending' ? (
                         <div className="admin-actions-flex">
                           <button onClick={() => handleBookRequestStatus(req._id, 'approved')} style={{ padding: '0.4rem 0.8rem', backgroundColor: '#10b981', color: 'white', borderRadius: '6px', fontSize: '0.875rem' }}>Approve</button>
@@ -580,7 +580,7 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'borrows' && (
           <section className="card admin-table-section">
-            <div className="admin-table-header-box" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="admin-table-header-box admin-header-with-filter">
               <h3 className="admin-table-title">Borrow Records</h3>
               <div className="admin-filter-section">
                 <span className="admin-filter-label">Filter by Status:</span>
@@ -613,13 +613,13 @@ const AdminDashboard: React.FC = () => {
                   .filter(b => borrowStatusFilter === 'all' || b.status === borrowStatusFilter)
                   .map((b) => (
                     <tr key={b._id}>
-                      <td style={{ fontWeight: '500' }}>
+                      <td data-label="User" style={{ fontWeight: '500' }}>
                         <div>{b.user_id?.name || 'Unknown'}</div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{b.user_id?.email}</div>
                       </td>
-                      <td>{b.book_id?.title || 'Unknown'}</td>
-                      <td>{new Date(b.return_date).toLocaleDateString()}</td>
-                      <td>
+                      <td data-label="Book">{b.book_id?.title || 'Unknown'}</td>
+                      <td data-label="Due Date">{new Date(b.return_date).toLocaleDateString()}</td>
+                      <td data-label="Fine">
                         <span className={`admin-fine-amount ${(b.fine_amount || 0) > 0 || new Date() > new Date(b.return_date) ? 'admin-fine-danger' : ''}`}>
                           ₹{(() => {
                             let fine = b.fine_amount || 0;
@@ -632,8 +632,8 @@ const AdminDashboard: React.FC = () => {
                           })()}
                         </span>
                       </td>
-                      <td><span className={`status-badge status-${b.status}`}>{b.status}</span></td>
-                      <td className="admin-actions-cell">
+                      <td data-label="Status"><span className={`status-badge status-${b.status}`}>{b.status}</span></td>
+                      <td data-label="Action" className="admin-actions-cell">
                         <div className="admin-actions-flex">
                           {b.status === 'return_requested' && (
                             <button
