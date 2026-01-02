@@ -469,3 +469,8 @@
 .pagination-controls button {
     min-width: 100px;
 }
+
+.pagination-controls button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
