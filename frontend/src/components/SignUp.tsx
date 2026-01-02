@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import '../styles/Auth.css';
 
 const Signup: React.FC = () => {
-  const [name, setName] = useState(''); // 👈 new state
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,7 +39,7 @@ const Signup: React.FC = () => {
     }
 
     try {
-      await signup(name, email, password); // 👈 pass name to service
+      await signup(name, email, password);
       setError('');
       toast.success(
         'Signup successful! Please check your email to verify your account.'

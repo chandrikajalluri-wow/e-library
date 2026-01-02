@@ -5,6 +5,7 @@ import { createBook, getBooks, updateBook, deleteBook } from '../services/bookSe
 import { createCategory, getCategories } from '../services/categoryService';
 import { getAllBorrows, acceptReturn } from '../services/borrowService';
 import { getAllBookRequests, updateBookRequestStatus, sendFineReminder } from '../services/userService';
+import { getActivityLogs } from '../services/logService';
 import type { Book, Category, Borrow } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/AdminDashboard.css';
@@ -35,6 +36,8 @@ const AdminDashboard: React.FC = () => {
     language: '',
     noOfCopies: '1',
   });
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [logs, setLogs] = useState<any[]>([]);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
 
   // Pagination state
@@ -100,6 +103,16 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const fetchLogs = async () => {
+    try {
+      const data = await getActivityLogs();
+      setLogs(data);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to fetch activity logs');
+    }
+  };
+
   useEffect(() => {
     fetchCommonData();
   }, []);
@@ -114,6 +127,10 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'user-requests') fetchUserRequests();
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'logs') fetchLogs();
   }, [activeTab]);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -153,20 +170,32 @@ const AdminDashboard: React.FC = () => {
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
-          const payload: Partial<Book> = {
-            ...newBook,
-            price: parseFloat(newBook.price) || 0,
-            pages: parseInt(newBook.pages) || 0,
-            publishedYear: parseInt(newBook.publishedYear) || 0,
-            noOfCopies: parseInt(newBook.noOfCopies) || 1,
-          };
+          const formData = new FormData();
+          formData.append('title', newBook.title);
+          formData.append('author', newBook.author);
+          formData.append('category_id', newBook.category_id);
+          formData.append('price', newBook.price || '0');
+          formData.append('pages', newBook.pages || '0');
+          formData.append('publishedYear', newBook.publishedYear || '0');
+          formData.append('noOfCopies', newBook.noOfCopies || '1');
+          formData.append('status', newBook.status);
+          formData.append('isbn', newBook.isbn);
+          formData.append('description', newBook.description);
+          formData.append('genre', newBook.genre);
+          formData.append('language', newBook.language);
+
+          if (coverImageFile) {
+            formData.append('cover_image', coverImageFile);
+          } else {
+            formData.append('cover_image_url', newBook.cover_image_url);
+          }
 
           if (editingBookId) {
-            await updateBook(editingBookId, payload);
+            await updateBook(editingBookId, formData);
             toast.success('Book updated successfully');
             setEditingBookId(null);
           } else {
-            await createBook(payload);
+            await createBook(formData);
             toast.success('Book created successfully');
           }
 
@@ -186,6 +215,7 @@ const AdminDashboard: React.FC = () => {
             language: '',
             noOfCopies: '1',
           });
+          setCoverImageFile(null);
           fetchBooks();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         } catch (err: unknown) {
@@ -236,6 +266,7 @@ const AdminDashboard: React.FC = () => {
       language: '',
       noOfCopies: '1',
     });
+    setCoverImageFile(null);
   };
 
   const handleDeleteBook = (id: string) => {
@@ -357,6 +388,7 @@ const AdminDashboard: React.FC = () => {
           <NavItem id="requests" label="Return Requests" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>} />
           <NavItem id="user-requests" label="Book Suggestions" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>} />
           <NavItem id="borrows" label="Borrow History" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>} />
+          <NavItem id="logs" label="Activity Logs" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>} />
         </nav>
 
         <button
@@ -377,6 +409,7 @@ const AdminDashboard: React.FC = () => {
             {activeTab === 'requests' && 'Return Requests'}
             {activeTab === 'user-requests' && 'Book Suggestions'}
             {activeTab === 'borrows' && 'Borrow History'}
+            {activeTab === 'logs' && 'Activity Logs'}
           </h2>
           <p className="admin-header-subtitle">Welcome back, Administrator</p>
         </header>
@@ -422,13 +455,17 @@ const AdminDashboard: React.FC = () => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Cover Image URL</label>
+                  <label>Cover Image</label>
                   <input
-                    type="text"
-                    value={newBook.cover_image_url}
-                    onChange={(e) => setNewBook({ ...newBook, cover_image_url: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setCoverImageFile(e.target.files ? e.target.files[0] : null)}
                   />
+                  {newBook.cover_image_url && !coverImageFile && (
+                    <div style={{ fontSize: '0.8rem', marginTop: '5px' }}>
+                      Current: <a href={newBook.cover_image_url} target="_blank" rel="noreferrer">View Image</a>
+                    </div>
+                  )}
                 </div>
                 <div style={{ gridColumn: 'span 3' }}>
                   <label>Description</label>
@@ -446,7 +483,7 @@ const AdminDashboard: React.FC = () => {
 
             <section className="card admin-table-section">
               <div className="admin-table-header-box">
-                <h3 className="admin-table-title">Library Inventory ({allBooks.length} Books)</h3>
+                <h3 className="admin-table-title">Library Inventory</h3>
               </div>
               <div className="admin-table-wrapper">
                 <table className="admin-table">
@@ -725,6 +762,40 @@ const AdminDashboard: React.FC = () => {
                   Next
                 </button>
               </div>
+            )}
+          </section>
+        )}
+
+        {activeTab === 'logs' && (
+          <section className="card admin-table-section">
+            <div className="admin-table-header-box">
+              <h3 className="admin-table-title">Recent Activities</h3>
+            </div>
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr key={log._id}>
+                      <td data-label="User">
+                        <div style={{ fontWeight: '500' }}>{log.user_id?.name || 'Unknown'}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{log.user_id?.email}</div>
+                      </td>
+                      <td data-label="Action">{log.action}</td>
+                      <td data-label="Timestamp">{new Date(log.timestamp).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {logs.length === 0 && (
+              <div className="admin-empty-state">No activity logs found.</div>
             )}
           </section>
         )}

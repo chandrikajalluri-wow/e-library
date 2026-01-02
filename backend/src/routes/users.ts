@@ -58,7 +58,7 @@ router.get('/dashboard-stats', auth, async (req: AuthRequest, res: Response) => 
     }
 });
 
-// Update Profile (Name only as per request)
+// Update Profile
 router.put('/profile', auth, async (req: AuthRequest, res: Response) => {
     const { name } = req.body;
     try {

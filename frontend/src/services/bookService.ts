@@ -21,14 +21,20 @@ export const getBook = async (id: string): Promise<Book> => {
   return res.data;
 };
 
-export const createBook = async (bookData: Partial<Book>): Promise<Book> => {
-  const res = await axios.post(API_URL, bookData, getConfig());
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const createBook = async (bookData: any): Promise<Book> => {
+  const isFormData = bookData instanceof FormData;
+  const config = getConfig();
+  if (isFormData) {
+    // Axios will automatically set the correct Content-Type for FormData
+  }
+  const res = await axios.post(API_URL, bookData, config);
   return res.data;
 };
 
 export const updateBook = async (
   id: string,
-  bookData: Partial<Book>
+  bookData: any
 ): Promise<Book> => {
   const res = await axios.put(`${API_URL}/${id}`, bookData, getConfig());
   return res.data;

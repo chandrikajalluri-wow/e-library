@@ -128,8 +128,6 @@ const BookDetail: React.FC = () => {
         await addToWishlist(book._id);
         toast.success('Added to wishlist');
         setIsWishlisted(true);
-        // Assuming res is the newItem, or valid response.
-        // To be safe, re-fetch to get the correct ID.
         checkWishlist(book._id);
       } catch (err: any) {
         toast.error(err.response?.data?.error || 'Failed to add to wishlist');
