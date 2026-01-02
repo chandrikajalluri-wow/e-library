@@ -12,7 +12,6 @@ const TermsAndConditions: React.FC = () => {
                     </div>
                     <span className="contact-logo-text">E-Library</span>
                 </Link>
-                <Link to="/login" className="contact-login-link">Login</Link>
             </nav>
 
             <div className="contact-content" style={{ display: 'block', maxWidth: '800px' }}>

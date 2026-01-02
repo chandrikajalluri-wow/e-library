@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import Book from '../models/Book';
 import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
+import { upload } from '../middleware/uploadMiddleware';
+import ActivityLog from '../models/ActivityLog';
 
 const router = express.Router();
 
@@ -67,13 +69,28 @@ router.post(
   '/',
   auth,
   checkRole(['admin']),
+  upload.single('cover_image'),
   async (req: AuthRequest, res: Response) => {
     try {
+      const bookData = { ...req.body };
+
+      if (req.file) {
+        bookData.cover_image_url = (req.file as any).path;
+      }
+
       const book = new Book({
-        ...req.body,
+        ...bookData,
         addedBy: req.user!._id,
       });
       await book.save();
+
+      // Log activity
+      await new ActivityLog({
+        user_id: req.user!._id,
+        action: `Added new book: ${book.title}`,
+        book_id: book._id,
+      }).save();
+
       res.status(201).json(book);
     } catch (err) {
       console.log(err);
@@ -87,12 +104,27 @@ router.put(
   '/:id',
   auth,
   checkRole(['admin']),
-  async (req: Request, res: Response) => {
+  upload.single('cover_image'),
+  async (req: AuthRequest, res: Response) => {
     try {
-      const book = await Book.findByIdAndUpdate(req.params.id, req.body, {
+      const bookData = { ...req.body };
+
+      if (req.file) {
+        bookData.cover_image_url = (req.file as any).path;
+      }
+
+      const book = await Book.findByIdAndUpdate(req.params.id, bookData, {
         new: true,
       });
       if (!book) return res.status(404).json({ error: 'Book not found' });
+
+      // Log activity
+      await new ActivityLog({
+        user_id: req.user!._id,
+        action: `Updated book: ${book.title}`,
+        book_id: book._id,
+      }).save();
+
       res.json(book);
     } catch (err) {
       console.log(err);
@@ -106,10 +138,18 @@ router.delete(
   '/:id',
   auth,
   checkRole(['admin']),
-  async (req: Request, res: Response) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const book = await Book.findByIdAndDelete(req.params.id);
       if (!book) return res.status(404).json({ error: 'Book not found' });
+
+      // Log activity
+      await new ActivityLog({
+        user_id: req.user!._id,
+        action: `Deleted book: ${book.title}`,
+        book_id: book._id,
+      }).save();
+
       res.json({ message: 'Book deleted' });
     } catch (err) {
       console.log(err);
