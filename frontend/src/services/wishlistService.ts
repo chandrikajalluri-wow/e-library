@@ -1,30 +1,23 @@
-import axios from 'axios';
+import api from '../api';
 
-const API_URL = 'https://e-library-7k5l.onrender.com/api/wishlists';
-
-const getConfig = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: { Authorization: `Bearer ${token}` },
-  };
-};
+const BASE_URL = '/wishlists';
 
 export const getWishlist = async () => {
-  const res = await axios.get(API_URL, getConfig());
+  const res = await api.get(BASE_URL);
   return res.data;
 };
 
 export const addToWishlist = async (book_id: string) => {
-  const res = await axios.post(API_URL, { book_id }, getConfig());
+  const res = await api.post(BASE_URL, { book_id });
   return res.data;
 };
 
 export const removeFromWishlist = async (id: string) => {
-  const res = await axios.delete(`${API_URL}/${id}`, getConfig());
+  const res = await api.delete(`${BASE_URL}/${id}`);
   return res.data;
 };
 
 export const getAllWishlists = async () => {
-  const res = await axios.get(`${API_URL}/all`, getConfig());
+  const res = await api.get(`${BASE_URL}/all`);
   return res.data;
 };

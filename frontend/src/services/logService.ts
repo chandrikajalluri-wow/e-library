@@ -1,17 +1,10 @@
-import axios from 'axios';
+import api from '../api';
 
-const API_URL = 'https://e-library-7k5l.onrender.com/api/logs';
-
-const getConfig = () => {
-    const token = localStorage.getItem('token');
-    return {
-        headers: { Authorization: `Bearer ${token}` },
-    };
-};
+const BASE_URL = '/logs';
 
 export const getActivityLogs = async (): Promise<any[]> => {
     try {
-        const res = await axios.get(API_URL, getConfig());
+        const res = await api.get(BASE_URL);
         return res.data;
     } catch (err) {
         console.error('Error fetching activity logs:', err);

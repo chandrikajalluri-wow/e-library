@@ -1,16 +1,9 @@
-import axios from 'axios';
+import api from '../api';
 
-const API_URL = 'https://e-library-7k5l.onrender.com/api/reviews';
-
-const getConfig = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: { Authorization: `Bearer ${token}` },
-  };
-};
+const BASE_URL = '/reviews';
 
 export const getBookReviews = async (bookId: string) => {
-  const res = await axios.get(`${API_URL}/book/${bookId}`);
+  const res = await api.get(`${BASE_URL}/book/${bookId}`);
   return res.data;
 };
 
@@ -19,7 +12,7 @@ export const addReview = async (reviewData: {
   rating: number;
   comment: string;
 }) => {
-  const res = await axios.post(API_URL, reviewData, getConfig());
+  const res = await api.post(BASE_URL, reviewData);
   return res.data;
 };
 
@@ -27,6 +20,6 @@ export const updateReview = async (
   id: string,
   reviewData: { rating: number; comment: string }
 ) => {
-  const res = await axios.put(`${API_URL}/${id}`, reviewData, getConfig());
+  const res = await api.put(`${BASE_URL}/${id}`, reviewData);
   return res.data;
 };
