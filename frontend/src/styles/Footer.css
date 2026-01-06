@@ -1,0 +1,115 @@
+.footer {
+    background: var(--bg-secondary, #fafafa);
+    padding: 4rem 2rem 2rem;
+    border-top: 1px solid var(--border-color, #eee);
+    color: var(--text-primary, #333);
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 3rem;
+}
+
+.footer-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--accent-color, #2563eb);
+}
+
+.footer-description {
+    line-height: 1.6;
+    opacity: 0.8;
+}
+
+.footer-subtitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.75rem;
+}
+
+.footer-links a {
+    text-decoration: none;
+    color: inherit;
+    opacity: 0.7;
+    transition: opacity 0.2s, color 0.2s;
+}
+
+.footer-links a:hover {
+    opacity: 1;
+    color: var(--accent-color, #2563eb);
+}
+
+.footer-socials {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.social-link {
+    text-decoration: none;
+    color: inherit;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.social-link:hover {
+    opacity: 1;
+}
+
+.footer-bottom {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color, #eee);
+    text-align: center;
+    opacity: 0.6;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .footer-container {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .footer-section:first-child {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-container {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-section:first-child {
+        grid-column: span 1;
+    }
+}
+
+/* Dark mode support */
+[data-theme='dark'] .footer {
+    background: #111;
+    border-top-color: #333;
+}
+
+[data-theme='dark'] .footer-bottom {
+    border-top-color: #333;
+}

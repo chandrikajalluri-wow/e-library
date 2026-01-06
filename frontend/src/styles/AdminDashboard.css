@@ -289,7 +289,7 @@
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     font-size: 0.875rem;
-    background-color: white;
+    background-color: var(--card-bg);
     margin-bottom: 0;
     width: auto;
 }
@@ -470,7 +470,232 @@
     min-width: 100px;
 }
 
-.pagination-controls button:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
+/* Extracted Styles */
+.admin-header-actions-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.admin-refresh-stats-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-right: 1rem;
+    color: var(--primary-color);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.admin-notification-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    color: var(--text-primary);
+}
+
+.notification-badge-icon {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+}
+
+.admin-notification-panel {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 320px;
+    background: var(--bg-color);
+    /* Corrected from bg-primary */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    z-index: 1100;
+    border: 1px solid var(--border-color);
+}
+
+.notification-panel-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-panel-header h4 {
+    margin: 0;
+}
+
+.mark-read-btn {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.notification-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-item-container {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.notification-item-message {
+    font-size: 13px;
+}
+
+.notification-item-time {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+.admin-stats-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stats-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    opacity: 0.7;
+}
+
+.stats-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.stats-value-accent {
+    color: var(--accent-color);
+}
+
+.stats-value-danger {
+    color: #ef4444;
+}
+
+.stats-value-warning {
+    color: #f59e0b;
+}
+
+.stats-value-info {
+    color: #3b82f6;
+}
+
+.stats-value-text {
+    font-size: 1.2rem;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-search-input {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    min-width: 250px;
+    margin-bottom: 0;
+    /* Override generic input margin */
+}
+
+/* Category Styles */
+.admin-category-card {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    position: relative;
+}
+
+.category-name {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.category-desc {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    height: 3rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.category-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.btn-icon-edit {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    background: none;
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-icon-delete {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    background: none;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Table User Cell */
+.user-cell-name {
+    font-weight: 500;
+}
+
+.user-cell-email {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+
+/* Dark Mode Overrides for these specific elements */
+[data-theme='dark'] .admin-notification-panel {
+    background-color: var(--card-bg);
+}
+
+[data-theme='dark'] .admin-search-input {
+    background-color: var(--bg-color);
+    /* Ensure contrast */
+}
+
+.admin-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.admin-categories-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
 }

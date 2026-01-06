@@ -22,3 +22,11 @@ export const addReview = async (reviewData: {
   const res = await axios.post(API_URL, reviewData, getConfig());
   return res.data;
 };
+
+export const updateReview = async (
+  id: string,
+  reviewData: { rating: number; comment: string }
+) => {
+  const res = await axios.put(`${API_URL}/${id}`, reviewData, getConfig());
+  return res.data;
+};

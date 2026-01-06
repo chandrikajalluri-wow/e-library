@@ -20,9 +20,10 @@ const Login: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { token, role } = await login(email, password);
+      const { token, role, userId } = await login(email, password);
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
+      localStorage.setItem('userId', userId);
       setError('');
 
       toast.success(`Welcome, ${email}!`);

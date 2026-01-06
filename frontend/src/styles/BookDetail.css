@@ -2,6 +2,10 @@
     margin-bottom: 1rem;
 }
 
+.book-detail-back-nav {
+    padding: 2rem 2rem 0;
+}
+
 .book-detail-card {
     display: flex;
     gap: 2rem;
@@ -170,7 +174,7 @@
 
 .review-date {
     color: #9ca3af;
-    margin-top: 1rem;
+    /* margin-top: 1rem; removed */
     display: block;
 }
 
@@ -224,6 +228,7 @@
 .submit-review-btn {
     width: 100%;
     padding: 1rem;
+    flex: 1;
 }
 
 /* Responsive Design */
@@ -314,4 +319,79 @@
     .review-form-container {
         padding: 1rem;
     }
+}
+
+/* New Extracted Classes */
+.review-item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.review-date {
+    color: #9ca3af;
+    /* margin-top removed as handled by footer flex */
+    font-size: 0.85rem;
+}
+
+.btn-link-edit {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0;
+    font-weight: 500;
+}
+
+.review-form-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.review-cancel-btn {
+    flex: 1;
+}
+
+.limit-warning {
+    color: var(--danger-color);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] .book-image-placeholder {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme='dark'] .wishlist-toggle-btn {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme='dark'] .wishlist-toggle-btn:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+[data-theme='dark'] .review-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme='dark'] .review-form-container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme='dark'] .form-input-field,
+[data-theme='dark'] .form-textarea-field {
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme='dark'] .reviews-title {
+    border-bottom-color: var(--border-color);
 }

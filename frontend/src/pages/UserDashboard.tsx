@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getMyBorrows, returnBook } from '../services/borrowService';
 import { getDashboardStats } from '../services/userService';
 import { toast } from 'react-toastify';
@@ -79,8 +80,18 @@ const UserDashboard: React.FC = () => {
     });
   };
 
+  const navigate = useNavigate();
+
   return (
     <div className="dashboard-wrapper">
+      <div className="back-to-catalog-container">
+        <button
+          onClick={() => navigate('/books')}
+          className="btn-secondary back-to-catalog-link"
+        >
+          &larr; Back to Catalog
+        </button>
+      </div>
       <header className="admin-header">
         <h1 className="admin-header-title">My Dashboard</h1>
         <p className="admin-header-subtitle">Overview of your activity and fines</p>
@@ -106,7 +117,7 @@ const UserDashboard: React.FC = () => {
         <table className="dashboard-table">
           <thead>
             <tr>
-              <th style={{ padding: '1rem' }}>Book</th>
+              <th>Book</th>
               <th>Issued Date</th>
               <th>Due Date</th>
               <th>Fine</th>
@@ -159,8 +170,7 @@ const UserDashboard: React.FC = () => {
                               setSelectedBorrow(b);
                               setIsModalOpen(true);
                             }}
-                            className="btn-primary"
-                            style={{ backgroundColor: 'var(--danger-color)' }}
+                            className="btn-primary btn-danger"
                           >
                             Pay Fine
                           </button>

@@ -7,6 +7,7 @@ import ResetPassword from './components/ResetPassword';
 import VerifyEmail from './components/VerifyEmail';
 
 import AdminDashboard from './pages/AdminDashboard';
+import AxiosInterceptor from './components/AxiosInterceptor';
 
 import BookList from './pages/BookList';
 import BookDetail from './pages/BookDetail';
@@ -15,6 +16,8 @@ import UserProfile from './pages/UserProfile';
 import WishlistPage from './pages/WishlistPage';
 import BookRequestPage from './pages/BookRequestPage';
 import Home from './pages/Home';
+import About from './pages/About';
+import OurMission from './pages/OurMission';
 import Contact from './pages/Contact';
 import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -29,8 +32,11 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <Router>
+        <AxiosInterceptor />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/mission" element={<OurMission />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -41,13 +47,16 @@ const App: React.FC = () => {
           <Route path="/verify/:token" element={<VerifyEmail />} />
 
           {/* Protected User Routes with Sidebar Layout */}
-          <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
             <Route element={<UserLayout />}>
               <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
             </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
             <Route path="/books" element={<BookList />} />
             <Route path="/books/:id" element={<BookDetail />} />
           </Route>
@@ -56,7 +65,7 @@ const App: React.FC = () => {
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
           </Route>
         </Routes>
-        <ThemeToggle />
+        <ThemeToggle className="theme-toggle-fixed" />
       </Router>
     </ThemeProvider>
   );

@@ -55,4 +55,28 @@ router.post('/', auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Update Review
+router.put('/:id', auth, async (req: AuthRequest, res: Response) => {
+  const { rating, comment } = req.body;
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) return res.status(404).json({ error: 'Review not found' });
+
+    // Check if the review belongs to the user
+    if (review.user_id.toString() !== req.user!._id.toString()) {
+      return res.status(403).json({ error: 'Unauthorized to edit this review' });
+    }
+
+    review.rating = rating;
+    review.comment = comment;
+    review.reviewed_at = new Date();
+    await review.save();
+
+    res.json(review);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;

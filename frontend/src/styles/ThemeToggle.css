@@ -1,7 +1,4 @@
 .theme-toggle {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
     width: 3rem;
     height: 3rem;
     border-radius: 50%;
@@ -15,6 +12,12 @@
     cursor: pointer;
     z-index: 1000;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-fixed {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
 }
 
 .theme-toggle:hover {

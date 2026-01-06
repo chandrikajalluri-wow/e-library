@@ -1,24 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
-import { createCategory, getCategories } from '../services/categoryService';
+import { getCategories, updateCategory, deleteCategory as removeCategory, createCategory } from '../services/categoryService';
 import { getAllBorrows, acceptReturn } from '../services/borrowService';
 import { getAllBookRequests, updateBookRequestStatus, sendFineReminder } from '../services/userService';
+import { getAllWishlists } from '../services/wishlistService';
 import { getActivityLogs } from '../services/logService';
+import { getNotifications, markAsRead, markAllAsRead } from '../services/notificationService';
 import type { Book, Category, Borrow } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/AdminDashboard.css';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('books');
+  const [activeTab, setActiveTab] = useState('stats');
   const [categories, setCategories] = useState<Category[]>([]);
   const [borrows, setBorrows] = useState<Borrow[]>([]);
   const [userRequests, setUserRequests] = useState<any[]>([]);
   const [borrowStatusFilter, setBorrowStatusFilter] = useState('all');
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [stats, setStats] = useState({
+    totalBooks: 0,
+    totalUsers: 0,
+    totalBorrows: 0,
+    activeBorrows: 0,
+    overdueBooks: 0,
+    pendingReturns: 0,
+    pendingSuggestions: 0,
+    mostBorrowedBook: 'N/A',
+    mostWishlistedBook: 'N/A',
+    favoriteAuthor: 'N/A',
+    mostActiveUser: 'N/A',
+    mostFinedUser: 'N/A'
+  });
 
   const [newBook, setNewBook] = useState({
     title: '',
@@ -36,6 +55,7 @@ const AdminDashboard: React.FC = () => {
     language: '',
     noOfCopies: '1',
   });
+  const [searchTerm, setSearchTerm] = useState('');
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
@@ -113,50 +133,190 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      console.log('Fetching stats...');
+      const booksData = await getBooks('limit=1000&showArchived=true');
+      console.log('Books Data:', booksData);
+
+      const borrowsData = await getAllBorrows('limit=1000');
+      console.log('Borrows Data:', borrowsData);
+
+      const requestsData = await getAllBookRequests();
+      console.log('Requests Data:', requestsData);
+
+      const wishlistData = await getAllWishlists();
+      console.log('Wishlist Data:', wishlistData);
+
+      const getMostFrequent = (arr: any[], keyExtractor: (item: any) => string | undefined): string => {
+        const counts: Record<string, number> = {};
+        arr.forEach((item) => {
+          const key = keyExtractor(item);
+          if (key) counts[key] = (counts[key] || 0) + 1;
+        });
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        return sorted.length > 0 ? `${sorted[0][0]} (${sorted[0][1]})` : 'N/A';
+      };
+
+      const getMaxSum = (
+        arr: any[],
+        keyExtractor: (item: any) => string | undefined,
+        valExtractor: (item: any) => number
+      ): string => {
+        const sums: Record<string, number> = {};
+        arr.forEach((item) => {
+          const key = keyExtractor(item);
+          const val = valExtractor(item);
+          if (key && val) sums[key] = (sums[key] || 0) + val;
+        });
+        const sorted = Object.entries(sums).sort((a, b) => b[1] - a[1]);
+        return sorted.length > 0 ? `${sorted[0][0]} (₹${sorted[0][1].toFixed(2)})` : 'N/A';
+      };
+
+      const newStats = {
+        totalBooks: booksData.total || 0,
+        totalUsers: new Set(borrowsData.borrows.map((b: any) => b.user_id?._id)).size,
+        totalBorrows: borrowsData.total || 0,
+        activeBorrows: borrowsData.borrows.filter((b: any) =>
+          ['borrowed', 'overdue', 'return_requested'].includes(b.status)
+        ).length,
+        overdueBooks: borrowsData.borrows.filter((b: any) => b.status === 'overdue').length,
+        pendingReturns: borrowsData.borrows.filter((b: any) => b.status === 'return_requested').length,
+        pendingSuggestions: requestsData.filter((r: any) => r.status === 'pending').length,
+        mostBorrowedBook: getMostFrequent(borrowsData.borrows, (b) => b.book_id?.title),
+        mostWishlistedBook: getMostFrequent(wishlistData, (w) => w.book_id?.title),
+        favoriteAuthor: getMostFrequent(borrowsData.borrows, (b) => b.book_id?.author),
+        mostActiveUser: getMostFrequent(borrowsData.borrows, (b) => b.user_id?.name),
+        mostFinedUser: getMaxSum(borrowsData.borrows, (b) => b.user_id?.name, (b) => b.fine_amount || 0),
+      };
+
+      console.log('Calculated Stats:', newStats);
+      setStats(newStats);
+    } catch (err) {
+      console.error('Failed to fetch stats', err);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await getNotifications();
+      setNotifications(data);
+    } catch (err) {
+      console.error('Failed to fetch notifications', err);
+    }
+  };
+
   useEffect(() => {
     fetchCommonData();
   }, []);
 
   useEffect(() => {
+    if (activeTab === 'stats') fetchStats();
     if (activeTab === 'books') fetchBooks();
-  }, [activeTab, bookPage]);
-
-  useEffect(() => {
     if (activeTab === 'borrows') fetchBorrows();
-  }, [activeTab, borrowPage]);
-
-  useEffect(() => {
     if (activeTab === 'user-requests') fetchUserRequests();
-  }, [activeTab]);
+    if (activeTab === 'logs') fetchLogs();
+  }, [activeTab, bookPage, borrowPage]);
 
   useEffect(() => {
-    if (activeTab === 'logs') fetchLogs();
-  }, [activeTab]);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // Polling every 30s
+    return () => clearInterval(interval);
+  }, []);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     setConfirmModal({
       isOpen: true,
-      title: 'Confirm New Category',
-      message: `Are you sure you want to create the category "${newCategory.name}"?`,
+      title: editingCategoryId ? 'Confirm Update' : 'Confirm New Category',
+      message: editingCategoryId
+        ? `Are you sure you want to update the category "${newCategory.name}"?`
+        : `Are you sure you want to create the category "${newCategory.name}"?`,
       type: 'info',
       isLoading: false,
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
-          await createCategory(newCategory);
-          toast.success('Category created');
+          if (editingCategoryId) {
+            await updateCategory(editingCategoryId, newCategory);
+            toast.success('Category updated');
+          } else {
+            await createCategory(newCategory);
+            toast.success('Category created');
+          }
           setNewCategory({ name: '', description: '' });
+          setEditingCategoryId(null);
           fetchCommonData();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
-        } catch (err: unknown) {
-          toast.error('Failed to create category');
+        } catch (err: any) {
+          toast.error(err.response?.data?.error || 'Failed to process category');
           setConfirmModal(prev => ({ ...prev, isLoading: false }));
         }
       }
     });
   };
 
+  const handleEditCategory = (cat: Category) => {
+    setEditingCategoryId(cat._id);
+    setNewCategory({ name: cat.name, description: cat.description || '' });
+    // Scroll to categories section if needed, or just let users scroll
+  };
+
+  const handleCancelCategoryEdit = () => {
+    setEditingCategoryId(null);
+    setNewCategory({ name: '', description: '' });
+  };
+
+  const handleDeleteCategory = (cat: Category) => {
+    // Check if any book is using this category
+    const hasBooks = allBooks.some(b => {
+      const catId = typeof b.category_id === 'string' ? b.category_id : b.category_id?._id;
+      return catId === cat._id;
+    });
+
+    if (hasBooks) {
+      toast.error(`Cannot delete category "${cat.name}" because it contains books.`);
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Category',
+      message: `Are you sure you want to delete the category "${cat.name}"?`,
+      type: 'danger',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await removeCategory(cat._id);
+          toast.success('Category deleted');
+          fetchCommonData();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err: any) {
+          toast.error(err.response?.data?.error || 'Failed to delete category');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
+  };
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      await markAsRead(id);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllAsRead();
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
   const handleCreateBook = async (e: React.FormEvent) => {
     e.preventDefault();
     setConfirmModal({
@@ -270,6 +430,12 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleDeleteBook = (id: string) => {
+    const book = allBooks.find(b => b._id === id);
+    if (book && book.status === 'issued') {
+      toast.error('Cannot delete a book that is currently issued/borrowed.');
+      return;
+    }
+
     setConfirmModal({
       isOpen: true,
       title: 'Delete Book',
@@ -375,14 +541,15 @@ const AdminDashboard: React.FC = () => {
     <div className="admin-layout">
       {/* Sidebar */}
       <aside className="admin-sidebar">
-        <Link to="/" className="admin-logo-section">
+        <div className="admin-logo-section">
           <div className="admin-logo-box">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path></svg>
           </div>
           <span className="admin-logo-text">E-Library Admin</span>
-        </Link>
+        </div>
 
         <nav className="admin-nav">
+          <NavItem id="stats" label="Statistics" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>} />
           <NavItem id="books" label="Manage Books" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>} />
           <NavItem id="categories" label="Categories" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>} />
           <NavItem id="requests" label="Return Requests" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>} />
@@ -403,16 +570,120 @@ const AdminDashboard: React.FC = () => {
       {/* Main Content */}
       <main className="admin-main-content">
         <header className="admin-header">
-          <h2 className="admin-header-title">
-            {activeTab === 'books' && 'Manage Books'}
-            {activeTab === 'categories' && 'Manage Categories'}
-            {activeTab === 'requests' && 'Return Requests'}
-            {activeTab === 'user-requests' && 'Book Suggestions'}
-            {activeTab === 'borrows' && 'Borrow History'}
-            {activeTab === 'logs' && 'Activity Logs'}
-          </h2>
-          <p className="admin-header-subtitle">Welcome back, Administrator</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 className="admin-header-title">
+                {activeTab === 'stats' && 'Dashboard Overview'}
+                {activeTab === 'books' && 'Manage Books'}
+                {activeTab === 'categories' && 'Manage Categories'}
+                {activeTab === 'requests' && 'Return Requests'}
+                {activeTab === 'user-requests' && 'Book Suggestions'}
+                {activeTab === 'borrows' && 'Borrow History'}
+                {activeTab === 'logs' && 'Activity Logs'}
+              </h2>
+              <p className="admin-header-subtitle">Welcome back, Administrator</p>
+            </div>
+            <div className="admin-header-actions-container">
+              {activeTab === 'stats' && (
+                <button
+                  onClick={fetchStats}
+                  className="admin-refresh-stats-btn"
+                >
+                  Refresh Stats
+                </button>
+              )}
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="admin-notification-toggle"
+              >
+                {showNotifications ? (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                )}
+                {notifications.filter(n => !n.is_read).length > 0 && (
+                  <span className="notification-badge-icon">
+                    {notifications.filter(n => !n.is_read).length}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div className="admin-notification-panel">
+                  <div className="notification-panel-header">
+                    <h4>Notifications</h4>
+                    <button onClick={handleMarkAllRead} className="mark-read-btn">Mark all as read</button>
+                  </div>
+                  <div className="notification-list">
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.6 }}>No notifications</div>
+                    ) : (
+                      notifications.map(n => (
+                        <div key={n._id} onClick={() => handleMarkRead(n._id)} className="notification-item-container" style={{ opacity: n.is_read ? 0.6 : 1 }}>
+                          <div className="notification-item-message" style={{ fontWeight: n.is_read ? 400 : 600 }}>{n.message}</div>
+                          <div className="notification-item-time">{new Date(n.timestamp).toLocaleString()}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </header>
+
+        {activeTab === 'stats' && (
+          <div className="admin-stats-grid-container">
+            <div className="card stats-card-content">
+              <span className="stats-label">Total Books</span>
+              <span className="stats-value">{stats.totalBooks}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Active Borrowers</span>
+              <span className="stats-value">{stats.totalUsers}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Currently Borrowed</span>
+              <span className="stats-value stats-value-accent">{stats.activeBorrows}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Overdue Books</span>
+              <span className="stats-value stats-value-danger">{stats.overdueBooks}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Total Categories</span>
+              <span className="stats-value">{categories.length}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Pending Returns</span>
+              <span className="stats-value stats-value-warning">{stats.pendingReturns}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Pending Suggestions</span>
+              <span className="stats-value stats-value-info">{stats.pendingSuggestions}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Most Borrowed Book</span>
+              <span className="stats-value-text">{stats.mostBorrowedBook}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Most Wishlisted Book</span>
+              <span className="stats-value-text">{stats.mostWishlistedBook}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Favorite Author</span>
+              <span className="stats-value-text">{stats.favoriteAuthor}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Most Active User</span>
+              <span className="stats-value-text">{stats.mostActiveUser}</span>
+            </div>
+            <div className="card stats-card-content">
+              <span className="stats-label">Most Fined User</span>
+              <span className="stats-value-text">{stats.mostFinedUser}</span>
+            </div>
+          </div>
+        )}
 
         {activeTab === 'books' && (
           <div className="admin-section-grid">
@@ -482,8 +753,15 @@ const AdminDashboard: React.FC = () => {
             </section>
 
             <section className="card admin-table-section">
-              <div className="admin-table-header-box">
+              <div className="admin-table-header-box admin-header-flex">
                 <h3 className="admin-table-title">Library Inventory</h3>
+                <input
+                  type="text"
+                  placeholder="Search by title or author..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="admin-search-input"
+                />
               </div>
               <div className="admin-table-wrapper">
                 <table className="admin-table">
@@ -499,7 +777,10 @@ const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {allBooks.map((book) => (
+                    {allBooks.filter(b =>
+                      b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      b.author.toLowerCase().includes(searchTerm.toLowerCase())
+                    ).map((book) => (
                       <tr key={book._id}>
                         <td data-label="Book Details">
                           <div className="admin-book-title">{book.title}</div>
@@ -560,19 +841,33 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'categories' && (
           <div className="admin-categories-grid">
             <section className="card admin-form-section">
-              <h3 style={{ marginBottom: '1.5rem' }}>Create New Category</h3>
+              <h3 style={{ marginBottom: '1.5rem' }}>
+                {editingCategoryId ? 'Edit Category' : 'Create New Category'}
+              </h3>
               <form onSubmit={handleCreateCategory}>
                 <div className="form-group"><label>Name</label><input type="text" value={newCategory.name} onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })} required /></div>
                 <div className="form-group"><label>Description</label><textarea value={newCategory.description} onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })} className="admin-form-textarea" /></div>
-                <button type="submit" className="btn-primary" style={{ width: '100%', padding: '0.75rem' }}>Create Category</button>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button type="submit" className="btn-primary" style={{ flex: 1, padding: '0.75rem' }}>
+                    {editingCategoryId ? 'Update Category' : 'Create Category'}
+                  </button>
+                  {editingCategoryId && (
+                    <button type="button" onClick={handleCancelCategoryEdit} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                  )}
+                </div>
               </form>
             </section>
             <section className="card admin-form-section">
               <h3 style={{ marginBottom: '1.5rem' }}>Existing Categories</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div className="admin-categories-list">
                 {categories.map((c) => (
-                  <div key={c._id} className="admin-category-badge">
-                    {c.name}
+                  <div key={c._id} className="admin-category-card" title={c.description}>
+                    <div className="category-name">{c.name}</div>
+                    <div className="category-desc">{c.description || 'No description'}</div>
+                    <div className="category-actions">
+                      <button onClick={() => handleEditCategory(c)} className="btn-icon-edit">Edit</button>
+                      <button onClick={() => handleDeleteCategory(c)} className="btn-icon-delete">Delete</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -672,9 +967,9 @@ const AdminDashboard: React.FC = () => {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>User</th>
+                  <th>Borrower Details</th>
                   <th>Book</th>
-                  <th>Due Date</th>
+                  <th>Dates</th>
                   <th>Fine</th>
                   <th>Status</th>
                   <th className="admin-actions-cell">Action</th>
@@ -685,12 +980,20 @@ const AdminDashboard: React.FC = () => {
                   .filter(b => borrowStatusFilter === 'all' || b.status === borrowStatusFilter)
                   .map((b) => (
                     <tr key={b._id}>
-                      <td data-label="User" style={{ fontWeight: '500' }}>
-                        <div>{b.user_id?.name || 'Unknown'}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{b.user_id?.email}</div>
+                      <td data-label="Borrower Details" className="user-cell-name">
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span>{b.user_id?.name || 'Unknown'}</span>
+                          <span className="user-cell-email">{b.user_id?.email}</span>
+                          {/* We could potentially fetch more user details or just show this */}
+                        </div>
                       </td>
                       <td data-label="Book">{b.book_id?.title || 'Unknown'}</td>
-                      <td data-label="Due Date">{new Date(b.return_date).toLocaleDateString()}</td>
+                      <td data-label="Dates">
+                        <div style={{ fontSize: '0.85rem' }}>
+                          <div>Issued: {b.issued_date ? new Date(b.issued_date as string).toLocaleDateString() : 'N/A'}</div>
+                          <div>Due: {new Date(b.return_date).toLocaleDateString()}</div>
+                        </div>
+                      </td>
                       <td data-label="Fine">
                         <span className={`admin-fine-amount ${(b.fine_amount || 0) > 0 || new Date() > new Date(b.return_date) ? 'admin-fine-danger' : ''}`}>
                           ₹{(() => {

@@ -3,6 +3,9 @@ import express, { Response } from 'express';
 import Wishlist from '../models/Wishlist';
 import Borrow from '../models/Borrow';
 import { auth, AuthRequest } from '../middleware/authMiddleware';
+import { sendNotification } from '../utils/notification';
+import User from '../models/User';
+import Book from '../models/Book';
 
 const router = express.Router();
 
@@ -40,6 +43,21 @@ router.get('/', auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Get All Wishlists (Admin - for Stats)
+router.get('/all', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    // Check if admin (inline check or use middleware if imported)
+    if ((req.user as any)?.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const items = await Wishlist.find().populate('book_id', 'title author');
+    res.json(items);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Add to Wishlist
 router.post('/', auth, async (req: AuthRequest, res: Response) => {
   const { book_id } = req.body;
@@ -52,6 +70,17 @@ router.post('/', auth, async (req: AuthRequest, res: Response) => {
 
     const item = new Wishlist({ user_id: req.user!._id, book_id });
     await item.save();
+
+    // Send Notification
+    const user = await User.findById(req.user!._id);
+    const book = await Book.findById(book_id);
+    await sendNotification(
+      'wishlist',
+      `${user?.name || 'A user'} wishlisted "${book?.title}"`,
+      req.user!._id as any,
+      book_id as any
+    );
+
     res.status(201).json(item);
   } catch (err) {
     console.log(err);

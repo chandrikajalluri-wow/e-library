@@ -5,6 +5,8 @@ import { getBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 import type { Book } from '../types';
 import Loader from '../components/Loader';
+import ScrollToTop from '../components/ScrollToTop';
+import UserNavbar from '../components/UserNavbar';
 import '../styles/BookList.css';
 
 const BookList: React.FC = () => {
@@ -61,15 +63,7 @@ const BookList: React.FC = () => {
 
   return (
     <div className="dashboard-container">
-      <header className="navbar catalog-header">
-        <h1 className="catalog-title">Library Catalog</h1>
-        <div>
-          <Link to="/dashboard" className="btn-secondary dashboard-btn-link">
-            My Dashboard
-          </Link>
-        </div>
-      </header>
-
+      <UserNavbar />
       <div className="filter-container">
         <input
           type="text"
@@ -144,7 +138,7 @@ const BookList: React.FC = () => {
         </p>
       )}
       {books.length < total && (
-        <div style={{ textAlign: 'center', margin: '20px' }}>
+        <div className="load-more-btn-container">
           <button
             onClick={() => setPage((p) => p + 1)}
             disabled={loading}
@@ -154,6 +148,7 @@ const BookList: React.FC = () => {
           </button>
         </div>
       )}
+      <ScrollToTop />
     </div>
   );
 };

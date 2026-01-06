@@ -23,3 +23,8 @@ export const removeFromWishlist = async (id: string) => {
   const res = await axios.delete(`${API_URL}/${id}`, getConfig());
   return res.data;
 };
+
+export const getAllWishlists = async () => {
+  const res = await axios.get(`${API_URL}/all`, getConfig());
+  return res.data;
+};
