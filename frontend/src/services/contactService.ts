@@ -1,8 +1,8 @@
-import axios from 'axios';
+import api from '../api';
 
-const API_URL = 'https://e-library-7k5l.onrender.com/api/contact';
+const BASE_URL = '/contact';
 
 export const sendContactMessage = async (formData: { name: string; email: string; message: string }) => {
-    const res = await axios.post(API_URL, formData);
+    const res = await api.post(BASE_URL, formData);
     return res.data;
 };

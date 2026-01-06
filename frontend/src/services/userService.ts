@@ -1,49 +1,44 @@
-import axios from 'axios';
+import api from '../api';
 
-const API_URL = 'https://e-library-7k5l.onrender.com/api/users';
-
-const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Bearer ${token}` } };
-};
+api.defaults.baseURL = `${api.defaults.baseURL}/users`;
 
 export const getDashboardStats = async () => {
-    const res = await axios.get(`${API_URL}/dashboard-stats`, getAuthHeaders());
+    const res = await api.get('/dashboard-stats');
     return res.data;
 };
 
 export const getProfile = async () => {
-    const res = await axios.get(`${API_URL}/me`, getAuthHeaders());
+    const res = await api.get('/me');
     return res.data;
 };
 
 export const updateProfile = async (name: string) => {
-    const res = await axios.put(`${API_URL}/profile`, { name }, getAuthHeaders());
+    const res = await api.put('/profile', { name });
     return res.data;
 };
 
 export const changePassword = async (passwordData: any) => {
-    const res = await axios.put(`${API_URL}/change-password`, passwordData, getAuthHeaders());
+    const res = await api.put('/change-password', passwordData);
     return res.data;
 };
 
 export const requestBook = async (requestData: any) => {
-    const res = await axios.post(`${API_URL}/book-requests`, requestData, getAuthHeaders());
+    const res = await api.post('/book-requests', requestData);
     return res.data;
 };
 
 // Admin Methods
 export const getAllBookRequests = async () => {
-    const res = await axios.get(`${API_URL}/admin/book-requests`, getAuthHeaders());
+    const res = await api.get('/admin/book-requests');
     return res.data;
 };
 
 export const updateBookRequestStatus = async (id: string, status: string) => {
-    const res = await axios.put(`${API_URL}/admin/book-requests/${id}`, { status }, getAuthHeaders());
+    const res = await api.put(`/admin/book-requests/${id}`, { status });
     return res.data;
 };
 
 export const sendFineReminder = async (borrowId: string) => {
-    const res = await axios.post(`${API_URL}/admin/send-fine-reminder/${borrowId}`, {}, getAuthHeaders());
+    const res = await api.post(`/admin/send-fine-reminder/${borrowId}`, {});
     return res.data;
 };

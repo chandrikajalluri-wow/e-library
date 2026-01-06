@@ -1,25 +1,18 @@
-import axios from 'axios';
+import api from '../api';
 
-const API_URL = 'https://e-library-7k5l.onrender.com/api/notifications';
-
-const getConfig = () => {
-    const token = localStorage.getItem('token');
-    return {
-        headers: { Authorization: `Bearer ${token}` },
-    };
-};
+const BASE_URL = '/notifications';
 
 export const getNotifications = async () => {
-    const res = await axios.get(API_URL, getConfig());
+    const res = await api.get(BASE_URL);
     return res.data;
 };
 
 export const markAsRead = async (id: string) => {
-    const res = await axios.put(`${API_URL}/${id}/read`, {}, getConfig());
+    const res = await api.put(`${BASE_URL}/${id}/read`);
     return res.data;
 };
 
 export const markAllAsRead = async () => {
-    const res = await axios.put(`${API_URL}/read-all`, {}, getConfig());
+    const res = await api.put(`${BASE_URL}/read-all`);
     return res.data;
 };

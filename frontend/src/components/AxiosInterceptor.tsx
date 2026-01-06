@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -7,7 +7,7 @@ const AxiosInterceptor: React.FC = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const interceptor = axios.interceptors.response.use(
+        const interceptor = api.interceptors.response.use(
             (response) => response,
             (error) => {
                 if (error.response && (error.response.status === 401)) {
@@ -24,7 +24,7 @@ const AxiosInterceptor: React.FC = () => {
         );
 
         return () => {
-            axios.interceptors.response.eject(interceptor);
+            api.interceptors.response.eject(interceptor);
         };
     }, [navigate]);
 
