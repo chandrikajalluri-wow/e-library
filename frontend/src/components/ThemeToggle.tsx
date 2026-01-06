@@ -2,11 +2,15 @@ import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import '../styles/ThemeToggle.css';
 
-const ThemeToggle: React.FC = () => {
+interface ThemeToggleProps {
+    className?: string;
+}
+
+const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
     const { theme, toggleTheme } = useTheme();
 
     return (
-        <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+        <button className={`theme-toggle ${className}`} onClick={toggleTheme} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
             {theme === 'light' ? (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>

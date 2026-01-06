@@ -26,3 +26,11 @@ export const deleteCategory = async (id: string): Promise<unknown> => {
   const res = await axios.delete(`${API_URL}/${id}`, getConfig());
   return res.data;
 };
+
+export const updateCategory = async (
+  id: string,
+  data: Partial<Category>
+): Promise<Category> => {
+  const res = await axios.put(`${API_URL}/${id}`, data, getConfig());
+  return res.data;
+};

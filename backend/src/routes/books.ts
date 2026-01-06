@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import Book from '../models/Book';
+import Borrow from '../models/Borrow';
 import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
 import ActivityLog from '../models/ActivityLog';
@@ -140,6 +141,18 @@ router.delete(
   checkRole(['admin']),
   async (req: AuthRequest, res: Response) => {
     try {
+      // Check if book is currently borrowed
+      const activeBorrow = await Borrow.findOne({
+        book_id: req.params.id,
+        status: { $in: ['borrowed', 'overdue', 'return_requested'] }
+      });
+
+      if (activeBorrow) {
+        return res.status(400).json({
+          error: 'Cannot delete book because it is currently borrowed by a user.'
+        });
+      }
+
       const book = await Book.findByIdAndDelete(req.params.id);
       if (!book) return res.status(404).json({ error: 'Book not found' });
 

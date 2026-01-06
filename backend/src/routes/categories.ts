@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import Category from '../models/Category';
+import Book from '../models/Book';
 import { auth, checkRole } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -67,6 +68,14 @@ router.delete(
   checkRole(['admin']),
   async (req: Request, res: Response) => {
     try {
+      // Check if any books are associated with this category
+      const bookCount = await Book.countDocuments({ category: req.params.id });
+      if (bookCount > 0) {
+        return res.status(400).json({
+          error: 'Cannot delete category because there are books assigned to it.'
+        });
+      }
+
       const category = await Category.findByIdAndDelete(req.params.id);
       if (!category)
         return res.status(404).json({ error: 'Category not found' });

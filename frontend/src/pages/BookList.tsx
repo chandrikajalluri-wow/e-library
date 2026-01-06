@@ -5,6 +5,8 @@ import { getBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 import type { Book } from '../types';
 import Loader from '../components/Loader';
+import ScrollToTop from '../components/ScrollToTop';
+import UserNavbar from '../components/UserNavbar';
 import '../styles/BookList.css';
 
 const BookList: React.FC = () => {
@@ -61,16 +63,8 @@ const BookList: React.FC = () => {
 
   return (
     <div className="dashboard-container">
-      <header className="navbar catalog-header">
-        <h1 className="catalog-title">Library Catalog</h1>
-        <div>
-          <Link to="/dashboard" className="btn-secondary dashboard-btn-link">
-            My Dashboard
-          </Link>
-        </div>
-      </header>
-
-      <div className="filter-container">
+      <UserNavbar />
+      <div className="filter-container" style={{ marginTop: '2rem' }}>
         <input
           type="text"
           placeholder="Search books, authors..."
@@ -154,6 +148,7 @@ const BookList: React.FC = () => {
           </button>
         </div>
       )}
+      <ScrollToTop />
     </div>
   );
 };

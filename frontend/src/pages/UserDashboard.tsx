@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getMyBorrows, returnBook } from '../services/borrowService';
 import { getDashboardStats } from '../services/userService';
 import { toast } from 'react-toastify';
@@ -79,8 +80,19 @@ const UserDashboard: React.FC = () => {
     });
   };
 
+  const navigate = useNavigate();
+
   return (
     <div className="dashboard-wrapper">
+      <div style={{ marginBottom: '1rem' }}>
+        <button
+          onClick={() => navigate('/books')}
+          className="btn-secondary back-to-catalog"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', background: 'transparent', padding: 0, color: 'var(--primary-color)', fontWeight: 600, cursor: 'pointer' }}
+        >
+          &larr; Back to Catalog
+        </button>
+      </div>
       <header className="admin-header">
         <h1 className="admin-header-title">My Dashboard</h1>
         <p className="admin-header-subtitle">Overview of your activity and fines</p>

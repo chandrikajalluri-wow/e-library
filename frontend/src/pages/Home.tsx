@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getProfile } from '../services/userService';
+import Footer from '../components/Footer';
 import '../styles/Home.css';
 
 const Home: React.FC = () => {
@@ -18,6 +19,10 @@ const Home: React.FC = () => {
     try {
       const data = await getProfile();
       setUser(data);
+      // Redirect admin if they try to access home page
+      if (data.role === 'admin') {
+        navigate('/admin-dashboard');
+      }
     } catch (err) {
       console.error('Failed to load profile', err);
     }
@@ -140,15 +145,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="home-footer">
-        <p className="home-footer-copy">© 2025 E-Library Global System</p>
-        <div className="home-footer-links">
-          <Link to="/contact" className="home-footer-link">Contact</Link>
-          <Link to="/privacy" className="home-footer-link">Privacy Policy</Link>
-          <Link to="/terms" className="home-footer-link">Terms of Service</Link>
-        </div>
-        <p className="home-footer-tagline">Making the world's knowledge accessible to everyone, everywhere.</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

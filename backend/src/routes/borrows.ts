@@ -3,6 +3,8 @@ import express, { Request, Response } from 'express';
 import Borrow from '../models/Borrow';
 import Book from '../models/Book';
 import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
+import { sendNotification } from '../utils/notification';
+import User from '../models/User';
 
 const router = express.Router();
 
@@ -68,6 +70,16 @@ router.post('/issue', auth, async (req: AuthRequest, res: Response) => {
         });
     }
 
+
+    // Send Notification
+    const user = await User.findById(req.user!._id);
+    await sendNotification(
+      'borrow',
+      `${user?.name || 'A user'} borrowed "${book.title}"`,
+      req.user!._id as any,
+      book._id as any
+    );
+
     res.status(201).json(borrow);
   } catch (err: any) {
     console.error('Borrow error:', err);
@@ -105,6 +117,16 @@ router.post('/return/:id', auth, async (req: AuthRequest, res: Response) => {
 
     borrow.status = 'return_requested';
     await borrow.save();
+
+    // Send Notification
+    const user = await User.findById(req.user!._id);
+    const book = await Book.findById(borrow.book_id);
+    await sendNotification(
+      'return',
+      `${user?.name || 'A user'} requested to return "${book?.title}"`,
+      req.user!._id as any,
+      borrow.book_id as any
+    );
 
     res.json(borrow);
   } catch (err) {

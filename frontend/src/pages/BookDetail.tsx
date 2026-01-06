@@ -7,9 +7,11 @@ import {
   getWishlist,
   removeFromWishlist,
 } from '../services/wishlistService';
-import { getBookReviews, addReview } from '../services/reviewService';
+import { getBookReviews, addReview, updateReview } from '../services/reviewService';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
+import UserNavbar from '../components/UserNavbar';
+import Footer from '../components/Footer';
 import '../styles/BookDetail.css';
 
 const BookDetail: React.FC = () => {
@@ -26,6 +28,8 @@ const BookDetail: React.FC = () => {
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeBorrowCount, setActiveBorrowCount] = useState(0);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const currentUserId = localStorage.getItem('userId'); // I should ensure userId is stored
 
   useEffect(() => {
     if (id) {
@@ -140,9 +144,15 @@ const BookDetail: React.FC = () => {
     if (!id) return;
     setIsSubmitting(true);
     try {
-      await addReview({ book_id: id, ...newReview });
-      toast.success('Review submitted!');
+      if (editingReviewId) {
+        await updateReview(editingReviewId, newReview);
+        toast.success('Review updated!');
+      } else {
+        await addReview({ book_id: id, ...newReview });
+        toast.success('Review submitted!');
+      }
       setNewReview({ rating: 5, comment: '' });
+      setEditingReviewId(null);
       fetchReviews(id);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to submit review');
@@ -151,16 +161,30 @@ const BookDetail: React.FC = () => {
     }
   };
 
+  const handleEditReview = (review: any) => {
+    setEditingReviewId(review._id);
+    setNewReview({ rating: review.rating, comment: review.comment });
+    window.scrollTo({ top: document.querySelector('.reviews-section-container')?.getBoundingClientRect().top! + window.scrollY, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReviewId(null);
+    setNewReview({ rating: 5, comment: '' });
+  };
+
   if (!book) return <Loader />;
 
   return (
     <div className="dashboard-container">
-      <button
-        onClick={() => navigate(-1)}
-        className="btn-secondary back-to-catalog"
-      >
-        &larr; Back to Catalog
-      </button>
+      <UserNavbar />
+      <div style={{ padding: '2rem 2rem 0' }}>
+        <button
+          onClick={() => navigate(-1)}
+          className="btn-secondary back-to-catalog"
+        >
+          &larr; Back to Catalog
+        </button>
+      </div>
       <div className="card book-detail-card">
         <div className="book-cover-wrapper">
           {book.cover_image_url ? (
@@ -264,9 +288,20 @@ const BookDetail: React.FC = () => {
                       </div>
                     </div>
                     <p className="review-comment">{r.comment}</p>
-                    <small className="review-date">
-                      {new Date(r.reviewed_at).toLocaleDateString()}
-                    </small>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <small className="review-date">
+                        {new Date(r.reviewed_at).toLocaleDateString()}
+                      </small>
+                      {r.user_id?._id === currentUserId && (
+                        <button
+                          onClick={() => handleEditReview(r)}
+                          className="btn-link-edit"
+                          style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.85rem' }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -281,7 +316,9 @@ const BookDetail: React.FC = () => {
           {hasBorrowed && (
             <div>
               <div className="review-form-container">
-                <h3 className="review-form-title">Write a Review</h3>
+                <h3 className="review-form-title">
+                  {editingReviewId ? 'Edit Your Review' : 'Write a Review'}
+                </h3>
                 <form onSubmit={handleSubmitReview}>
                   <div className="form-group">
                     <label className="form-label">Rating</label>
@@ -315,19 +352,33 @@ const BookDetail: React.FC = () => {
                       required
                     />
                   </div>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="btn-primary submit-review-btn"
-                  >
-                    {isSubmitting ? <Loader small /> : 'Post Review'}
-                  </button>
+                  <div className="review-form-actions" style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="btn-primary submit-review-btn"
+                      style={{ flex: 1 }}
+                    >
+                      {isSubmitting ? <Loader small /> : (editingReviewId ? 'Update Review' : 'Post Review')}
+                    </button>
+                    {editingReviewId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="btn-secondary"
+                        style={{ flex: 1 }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </form>
               </div>
             </div>
           )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
