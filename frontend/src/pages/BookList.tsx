@@ -64,7 +64,7 @@ const BookList: React.FC = () => {
   return (
     <div className="dashboard-container">
       <UserNavbar />
-      <div className="filter-container" style={{ marginTop: '2rem' }}>
+      <div className="filter-container">
         <input
           type="text"
           placeholder="Search books, authors..."
@@ -138,7 +138,7 @@ const BookList: React.FC = () => {
         </p>
       )}
       {books.length < total && (
-        <div style={{ textAlign: 'center', margin: '20px' }}>
+        <div className="load-more-btn-container">
           <button
             onClick={() => setPage((p) => p + 1)}
             disabled={loading}

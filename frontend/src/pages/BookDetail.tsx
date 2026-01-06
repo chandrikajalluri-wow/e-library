@@ -177,7 +177,7 @@ const BookDetail: React.FC = () => {
   return (
     <div className="dashboard-container">
       <UserNavbar />
-      <div style={{ padding: '2rem 2rem 0' }}>
+      <div className="book-detail-back-nav">
         <button
           onClick={() => navigate(-1)}
           className="btn-secondary back-to-catalog"
@@ -232,7 +232,7 @@ const BookDetail: React.FC = () => {
                     {activeBorrowCount >= 5 ? 'Borrow Limit Reached' : 'Borrow This Book'}
                   </button>
                   {activeBorrowCount >= 5 && (
-                    <p className="limit-warning" style={{ color: 'var(--danger-color)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    <p className="limit-warning">
                       You have reached the maximum limit of 5 borrowed books.
                     </p>
                   )}
@@ -288,7 +288,7 @@ const BookDetail: React.FC = () => {
                       </div>
                     </div>
                     <p className="review-comment">{r.comment}</p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="review-item-footer">
                       <small className="review-date">
                         {new Date(r.reviewed_at).toLocaleDateString()}
                       </small>
@@ -296,7 +296,6 @@ const BookDetail: React.FC = () => {
                         <button
                           onClick={() => handleEditReview(r)}
                           className="btn-link-edit"
-                          style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.85rem' }}
                         >
                           Edit
                         </button>
@@ -352,12 +351,11 @@ const BookDetail: React.FC = () => {
                       required
                     />
                   </div>
-                  <div className="review-form-actions" style={{ display: 'flex', gap: '1rem' }}>
+                  <div className="review-form-actions">
                     <button
                       type="submit"
                       disabled={isSubmitting}
                       className="btn-primary submit-review-btn"
-                      style={{ flex: 1 }}
                     >
                       {isSubmitting ? <Loader small /> : (editingReviewId ? 'Update Review' : 'Post Review')}
                     </button>
@@ -365,8 +363,7 @@ const BookDetail: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleCancelEdit}
-                        className="btn-secondary"
-                        style={{ flex: 1 }}
+                        className="btn-secondary review-cancel-btn"
                       >
                         Cancel
                       </button>

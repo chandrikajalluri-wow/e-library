@@ -84,11 +84,10 @@ const UserDashboard: React.FC = () => {
 
   return (
     <div className="dashboard-wrapper">
-      <div style={{ marginBottom: '1rem' }}>
+      <div className="back-to-catalog-container">
         <button
           onClick={() => navigate('/books')}
-          className="btn-secondary back-to-catalog"
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', background: 'transparent', padding: 0, color: 'var(--primary-color)', fontWeight: 600, cursor: 'pointer' }}
+          className="btn-secondary back-to-catalog-link"
         >
           &larr; Back to Catalog
         </button>
@@ -118,7 +117,7 @@ const UserDashboard: React.FC = () => {
         <table className="dashboard-table">
           <thead>
             <tr>
-              <th style={{ padding: '1rem' }}>Book</th>
+              <th>Book</th>
               <th>Issued Date</th>
               <th>Due Date</th>
               <th>Fine</th>
@@ -171,8 +170,7 @@ const UserDashboard: React.FC = () => {
                               setSelectedBorrow(b);
                               setIsModalOpen(true);
                             }}
-                            className="btn-primary"
-                            style={{ backgroundColor: 'var(--danger-color)' }}
+                            className="btn-primary btn-danger"
                           >
                             Pay Fine
                           </button>

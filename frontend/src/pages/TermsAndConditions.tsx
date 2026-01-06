@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/Contact.css'; // Reusing some base styles
 
+import '../styles/StaticPages.css';
+
 const TermsAndConditions: React.FC = () => {
     return (
         <div className="contact-page">
@@ -14,33 +16,33 @@ const TermsAndConditions: React.FC = () => {
                 </Link>
             </nav>
 
-            <div className="contact-content" style={{ display: 'block', maxWidth: '800px' }}>
+            <div className="contact-content policy-content">
                 <h1 className="contact-heading">Terms & Conditions</h1>
                 <p className="contact-description">Last updated: December 31, 2025</p>
 
-                <div className="card" style={{ padding: '2rem', lineHeight: '1.6' }}>
-                    <section style={{ marginBottom: '2rem' }}>
-                        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>1. Acceptance of Terms</h2>
+                <div className="card policy-card">
+                    <section className="policy-section">
+                        <h2 className="policy-subtitle-h2">1. Acceptance of Terms</h2>
                         <p>By accessing and using the E-Library Global System, you agree to be bound by these Terms & Conditions. If you do not agree, please do not use our services.</p>
                     </section>
 
-                    <section style={{ marginBottom: '2rem' }}>
-                        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>2. User Responsibilities</h2>
+                    <section className="policy-section">
+                        <h2 className="policy-subtitle-h2">2. User Responsibilities</h2>
                         <p>Users are responsible for maintaining the confidentiality of their account credentials. You agree to use the library resources for personal, non-commercial educational purposes only.</p>
                     </section>
 
-                    <section style={{ marginBottom: '2rem' }}>
-                        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>3. Borrowing Rules</h2>
+                    <section className="policy-section">
+                        <h2 className="policy-subtitle-h2">3. Borrowing Rules</h2>
                         <p>Users may borrow up to 5 books at a time. Books must be returned or renewed by the due date. Fines apply for overdue books at a rate of ₹10 per day.</p>
                     </section>
 
-                    <section style={{ marginBottom: '2rem' }}>
-                        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>4. Content Ownership</h2>
+                    <section className="policy-section">
+                        <h2 className="policy-subtitle-h2">4. Content Ownership</h2>
                         <p>All digital content available through E-Library is protected by copyright laws. Unauthorized distribution or copying of digital books is strictly prohibited.</p>
                     </section>
 
                     <section>
-                        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>5. Termination</h2>
+                        <h2 className="policy-subtitle-h2">5. Termination</h2>
                         <p>E-Library reserves the right to suspend or terminate accounts that violate these terms or engage in fraudulent activities.</p>
                     </section>
                 </div>

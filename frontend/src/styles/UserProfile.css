@@ -76,6 +76,13 @@
     resize: vertical;
 }
 
+.password-hint {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .profile-container {

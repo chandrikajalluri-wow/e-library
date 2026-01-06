@@ -75,6 +75,27 @@
     display: inline-block;
 }
 
+.back-to-catalog-container {
+    margin-bottom: 1rem;
+}
+
+.back-to-catalog-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    background: transparent;
+    padding: 0;
+    color: var(--primary-color);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
 .dashboard-section {
     margin-top: 2rem;
 }

@@ -16,6 +16,12 @@
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
+    margin-top: 2rem;
+}
+
+.load-more-btn-container {
+    text-align: center;
+    margin: 20px;
 }
 
 .search-input {
