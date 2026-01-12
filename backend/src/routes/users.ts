@@ -133,6 +133,24 @@ router.post('/book-requests', auth, async (req: AuthRequest, res: Response) => {
         if (!title || !author)
             return res.status(400).json({ error: 'Title and author are required' });
 
+        // Get user with membership
+        const user = await User.findById(req.user!._id).populate('membership_id');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const membership = user.membership_id as any;
+        if (!membership) {
+            return res.status(400).json({
+                error: 'No membership plan assigned'
+            });
+        }
+
+        // Check if user can request books (Standard+ feature)
+        if (!membership.canRequestBooks) {
+            return res.status(403).json({
+                error: 'Book requests are available for Standard and Premium members. Upgrade your membership to request new books.'
+            });
+        }
+
         const newRequest = new BookRequest({
             user_id: req.user!._id,
             title,

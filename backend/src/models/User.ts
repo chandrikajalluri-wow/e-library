@@ -1,11 +1,13 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import { IRole } from './Role'; // your Role interface
+import { IMembership } from './Membership';
 
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
   role_id: Types.ObjectId | IRole; // allow populated Role
+  membership_id: Types.ObjectId | IMembership; // allow populated Membership
   isVerified: boolean;
   verificationToken?: string;
   profileImage?: string;
@@ -22,6 +24,7 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role_id: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
+    membership_id: { type: Schema.Types.ObjectId, ref: 'Membership' },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
     profileImage: { type: String },

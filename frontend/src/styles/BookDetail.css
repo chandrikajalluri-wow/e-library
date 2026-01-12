@@ -395,3 +395,48 @@
 [data-theme='dark'] .reviews-title {
     border-bottom-color: var(--border-color);
 }
+
+/* Premium Styles */
+.premium-badge {
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    margin-left: 0.5rem;
+    display: inline-block;
+}
+
+.premium-lock-container {
+    margin-top: 1rem;
+    padding: 1.5rem;
+    background-color: rgba(251, 191, 36, 0.05);
+    border: 1px dashed #fbbf24;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.premium-upgrade-btn {
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    border: none;
+    margin-bottom: 0.75rem;
+    width: 100%;
+}
+
+.premium-upgrade-btn:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-2px);
+}
+
+.premium-info-text {
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .premium-badge {
+        margin-left: 0;
+        margin-top: 0.5rem;
+    }
+}

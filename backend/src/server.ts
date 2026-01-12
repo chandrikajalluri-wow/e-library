@@ -33,6 +33,8 @@ import activityLogRoutes from './routes/activityLogs';
 import userRoutes from './routes/users';
 import contactRoutes from './routes/contact';
 import notificationRoutes from './routes/notifications';
+import membershipRoutes from './routes/memberships';
+import borrowRenewalRoutes from './routes/borrows_renewal';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -44,6 +46,8 @@ app.use('/api/logs', activityLogRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/memberships', membershipRoutes);
+app.use('/api/borrows', borrowRenewalRoutes);
 
 
 const PORT = process.env.PORT || 5000;

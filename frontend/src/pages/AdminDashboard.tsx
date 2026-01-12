@@ -53,6 +53,7 @@ const AdminDashboard: React.FC = () => {
     genre: '',
     language: '',
     noOfCopies: '1',
+    isPremium: false,
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
@@ -336,6 +337,7 @@ const AdminDashboard: React.FC = () => {
           formData.append('description', newBook.description);
           formData.append('genre', newBook.genre);
           formData.append('language', newBook.language);
+          formData.append('isPremium', String(newBook.isPremium));
 
           if (coverImageFile) {
             formData.append('cover_image', coverImageFile);
@@ -367,6 +369,7 @@ const AdminDashboard: React.FC = () => {
             genre: '',
             language: '',
             noOfCopies: '1',
+            isPremium: false,
           });
           setCoverImageFile(null);
           fetchBooks();
@@ -396,6 +399,7 @@ const AdminDashboard: React.FC = () => {
       genre: book.genre || '',
       language: book.language || '',
       noOfCopies: book.noOfCopies.toString(),
+      isPremium: book.isPremium || false,
     });
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -418,6 +422,7 @@ const AdminDashboard: React.FC = () => {
       genre: '',
       language: '',
       noOfCopies: '1',
+      isPremium: false,
     });
     setCoverImageFile(null);
   };
@@ -710,9 +715,19 @@ const AdminDashboard: React.FC = () => {
                   <select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value })} required>
                     <option value="available">Available</option>
                     <option value="issued">Issued</option>
-                    <option value="archived">Archived</option>
                     <option value="damaged">Damaged</option>
                   </select>
+                </div>
+                <div className="form-group checkbox-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={newBook.isPremium}
+                      onChange={(e) => setNewBook({ ...newBook, isPremium: e.target.checked })}
+                      style={{ width: 'auto', marginBottom: '0' }}
+                    />
+                    Mark as Premium Book
+                  </label>
                 </div>
                 <div className="form-group">
                   <label>Cover Image</label>
@@ -773,7 +788,10 @@ const AdminDashboard: React.FC = () => {
                       <tr key={book._id}>
                         <td data-label="Book Details">
                           <div className="admin-book-title">{book.title}</div>
-                          <div className="admin-book-meta">by {book.author} | {book.genre}</div>
+                          <div className="admin-book-meta">
+                            by {book.author} | {book.genre}
+                            {book.isPremium && <span className="admin-premium-label">PREMIUM</span>}
+                          </div>
                         </td>
                         <td data-label="Category" style={{ fontSize: '0.9rem' }}>{typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}</td>
                         <td data-label="Pages" style={{ fontSize: '0.9rem' }}>{book.pages || '-'}</td>
@@ -973,7 +991,9 @@ const AdminDashboard: React.FC = () => {
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <span>{b.user_id?.name || 'Unknown'}</span>
                           <span className="user-cell-email">{b.user_id?.email}</span>
-                          {/* We could potentially fetch more user details or just show this */}
+                          <span className="user-cell-membership">
+                            {(b.user_id as any)?.membership_id?.displayName || (b.user_id as any)?.membership_id?.name || 'Basic'}
+                          </span>
                         </div>
                       </td>
                       <td data-label="Book">{b.book_id?.title || 'Unknown'}</td>

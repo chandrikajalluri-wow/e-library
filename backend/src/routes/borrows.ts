@@ -10,22 +10,40 @@ const router = express.Router();
 
 // Issue a book (User)
 router.post('/issue', auth, async (req: AuthRequest, res: Response) => {
-  const { book_id, days = 14 } = req.body;
+  const { book_id, days } = req.body;
   try {
     const book = await Book.findById(book_id);
     if (!book) return res.status(404).json({ error: 'Book not found' });
     if (book.noOfCopies <= 0)
       return res.status(400).json({ error: 'No copies available' });
 
-    // Check 5-book limit
+    // Get user with membership
+    const user = await User.findById(req.user!._id).populate('membership_id');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const membership = user.membership_id as any;
+    if (!membership) {
+      return res.status(400).json({
+        error: 'No membership plan assigned. Please contact admin.'
+      });
+    }
+
+    // Check if book is premium and user has access
+    if (book.isPremium && !membership.canAccessPremiumBooks) {
+      return res.status(403).json({
+        error: 'This is a premium book. Upgrade to Premium membership to access premium collection.'
+      });
+    }
+
+    // Check membership-based borrow limit
     const activeBorrowsCount = await Borrow.countDocuments({
       user_id: req.user!._id,
       status: { $in: ['borrowed', 'overdue', 'return_requested'] },
     });
 
-    if (activeBorrowsCount >= 5) {
+    if (activeBorrowsCount >= membership.borrowLimit) {
       return res.status(400).json({
-        error: 'You have reached the maximum limit of 5 borrowed books. Please return a book before borrowing another.',
+        error: `You have reached your membership limit of ${membership.borrowLimit} borrowed books. Please return a book before borrowing another.`,
       });
     }
 
@@ -42,8 +60,10 @@ router.post('/issue', auth, async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Use membership-based duration or custom days
+    const borrowDays = days || membership.borrowDuration;
     const returnDate = new Date();
-    returnDate.setDate(returnDate.getDate() + days);
+    returnDate.setDate(returnDate.getDate() + borrowDays);
 
     const borrow = new Borrow({
       user_id: req.user!._id,
@@ -72,7 +92,6 @@ router.post('/issue', auth, async (req: AuthRequest, res: Response) => {
 
 
     // Send Notification
-    const user = await User.findById(req.user!._id);
     await sendNotification(
       'borrow',
       `${user?.name || 'A user'} borrowed "${book.title}"`,

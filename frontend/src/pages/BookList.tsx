@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 import type { Book } from '../types';
@@ -8,14 +8,22 @@ import ScrollToTop from '../components/ScrollToTop';
 import '../styles/BookList.css';
 
 const BookList: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryParam = searchParams.get('category') || '';
+
   const [books, setBooks] = useState<Book[]>([]);
   const [recommendations, setRecommendations] = useState<Book[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(categoryParam);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Sync state with URL parameter
+  useEffect(() => {
+    setSelectedCategory(categoryParam);
+  }, [categoryParam]);
 
   useEffect(() => {
     if (search === '') {
@@ -28,9 +36,18 @@ const BookList: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [search, selectedCategory, page]);
 
-  // Reset page when filters change
+  // Reset page and update URL when filters change
   useEffect(() => {
     setPage(1);
+
+    // Update URL if category changed from dropdown
+    if (selectedCategory !== categoryParam) {
+      if (selectedCategory) {
+        setSearchParams({ category: selectedCategory });
+      } else {
+        setSearchParams({});
+      }
+    }
   }, [search, selectedCategory]);
 
   useEffect(() => {

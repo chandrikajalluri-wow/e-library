@@ -8,6 +8,7 @@ import {
   removeFromWishlist,
 } from '../services/wishlistService';
 import { getBookReviews, addReview, updateReview } from '../services/reviewService';
+import { getMyMembership, type Membership } from '../services/membershipService';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import Footer from '../components/Footer';
@@ -27,6 +28,7 @@ const BookDetail: React.FC = () => {
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeBorrowCount, setActiveBorrowCount] = useState(0);
+  const [userMembership, setUserMembership] = useState<Membership | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const currentUserId = localStorage.getItem('userId'); // I should ensure userId is stored
 
@@ -37,8 +39,18 @@ const BookDetail: React.FC = () => {
       fetchReviews(id);
       checkBorrowStatus(id);
       fetchActiveBorrowCount();
+      fetchUserMembership();
     }
   }, [id]);
+
+  const fetchUserMembership = async () => {
+    try {
+      const data = await getMyMembership();
+      setUserMembership(data);
+    } catch (err) {
+      console.error('Error fetching membership:', err);
+    }
+  };
 
   const fetchActiveBorrowCount = async () => {
     try {
@@ -203,6 +215,11 @@ const BookDetail: React.FC = () => {
             <span className={`status-badge status-${book.status}`}>
               {book.status.toUpperCase()}
             </span>
+            {book.isPremium && (
+              <span className="premium-badge">
+                PREMIUM
+              </span>
+            )}
           </div>
           <h1 className="book-detail-title">{book.title}</h1>
           <h2 className="book-detail-author">by {book.author}</h2>
@@ -221,18 +238,34 @@ const BookDetail: React.FC = () => {
             <div className="action-buttons">
               {book.noOfCopies > 0 ? (
                 <div>
-                  <button
-                    onClick={handleBorrow}
-                    disabled={activeBorrowCount >= 5}
-                    className={`btn-primary borrow-btn ${activeBorrowCount >= 5 ? 'disabled-btn' : ''}`}
-                    title={activeBorrowCount >= 5 ? 'Borrow limit (5) reached' : ''}
-                  >
-                    {activeBorrowCount >= 5 ? 'Borrow Limit Reached' : 'Borrow This Book'}
-                  </button>
-                  {activeBorrowCount >= 5 && (
-                    <p className="limit-warning">
-                      You have reached the maximum limit of 5 borrowed books.
-                    </p>
+                  {book.isPremium && !userMembership?.canAccessPremiumBooks ? (
+                    <div className="premium-lock-container">
+                      <button
+                        onClick={() => navigate('/')}
+                        className="btn-primary premium-upgrade-btn"
+                      >
+                        Upgrade to Premium to Access
+                      </button>
+                      <p className="premium-info-text text-muted">
+                        This book is part of our Premium collection.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleBorrow}
+                        disabled={activeBorrowCount >= (userMembership?.borrowLimit || 3)}
+                        className={`btn-primary borrow-btn ${activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'disabled-btn' : ''}`}
+                        title={activeBorrowCount >= (userMembership?.borrowLimit || 3) ? `Borrow limit (${userMembership?.borrowLimit || 3}) reached` : ''}
+                      >
+                        {activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'Borrow Limit Reached' : 'Borrow This Book'}
+                      </button>
+                      {activeBorrowCount >= (userMembership?.borrowLimit || 3) && (
+                        <p className="limit-warning">
+                          You have reached your membership limit of {userMembership?.borrowLimit || 3} borrowed books.
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               ) : (

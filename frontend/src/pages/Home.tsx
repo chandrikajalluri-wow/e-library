@@ -2,23 +2,35 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getProfile } from '../services/userService';
 import { getBooks } from '../services/bookService';
-import type { Book } from '../types';
+import { getMembershipPlans, getMyMembership, type Membership } from '../services/membershipService';
+import { getCategories } from '../services/categoryService';
+import type { Book, Category } from '../types';
 import Footer from '../components/Footer';
 import ConfirmationModal from '../components/ConfirmationModal';
+import MembershipCard from '../components/MembershipCard';
+import PaymentModal from '../components/PaymentModal';
 import '../styles/Home.css';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = React.useState<any>(null);
   const [books, setBooks] = React.useState<Book[]>([]);
+  const [memberships, setMemberships] = React.useState<Membership[]>([]);
+  const [currentMembership, setCurrentMembership] = React.useState<Membership | null>(null);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [selectedMembership, setSelectedMembership] = React.useState<Membership | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
   const isAuthenticated = !!localStorage.getItem('token');
 
   React.useEffect(() => {
     if (isAuthenticated) {
       loadProfile();
+      loadCurrentMembership();
     }
     loadBooks();
+    loadMemberships();
+    loadCategories();
   }, [isAuthenticated]);
 
   const loadBooks = async () => {
@@ -27,6 +39,33 @@ const Home: React.FC = () => {
       setBooks(data.books || data);
     } catch (err) {
       console.error('Failed to load books for carousel', err);
+    }
+  };
+
+  const loadMemberships = async () => {
+    try {
+      const data = await getMembershipPlans();
+      setMemberships(data);
+    } catch (err) {
+      console.error('Failed to load memberships', err);
+    }
+  };
+
+  const loadCurrentMembership = async () => {
+    try {
+      const data = await getMyMembership();
+      setCurrentMembership(data);
+    } catch (err) {
+      console.error('Failed to load current membership', err);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const data = await getCategories();
+      setCategories(data);
+    } catch (err) {
+      console.error('Failed to load categories', err);
     }
   };
 
@@ -48,6 +87,26 @@ const Home: React.FC = () => {
     } else {
       navigate('/login');
     }
+  };
+
+  const handleUpgrade = (membership: Membership) => {
+    if (!isAuthenticated) {
+      navigate('/signup');
+      return;
+    }
+
+    if (membership.price === 0) {
+      return; // Don't allow downgrade
+    }
+
+    setSelectedMembership(membership);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    loadCurrentMembership();
+    setIsPaymentModalOpen(false);
+    setSelectedMembership(null);
   };
 
   return (
@@ -224,6 +283,57 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Membership Plans Section */}
+      <section className="saas-section">
+        <div className="saas-container">
+          <div className="section-head text-center saas-reveal">
+            <h2 className="section-title">Choose Your Plan</h2>
+            <p className="section-sub">Flexible membership options for every reader</p>
+          </div>
+
+          <div className="membership-plans-grid">
+            {memberships.map((membership) => (
+              <div key={membership._id} className="saas-reveal">
+                <MembershipCard
+                  membership={membership}
+                  currentMembership={currentMembership}
+                  isAuthenticated={isAuthenticated}
+                  onUpgrade={handleUpgrade}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Categories Section */}
+      <section className="saas-section purple-bg">
+        <div className="saas-container">
+          <div className="section-head text-center saas-reveal">
+            <h2 className="section-title">Explore by Category</h2>
+            <p className="section-sub">Discover books across diverse genres</p>
+          </div>
+
+          <div className="categories-grid">
+            {categories.slice(0, 8).map((category) => (
+              <Link
+                key={category._id}
+                to={`/books?category=${category._id}`}
+                className="category-card saas-reveal"
+              >
+                <div className="category-icon">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                  </svg>
+                </div>
+                <h3>{category.name}</h3>
+                <p>{category.description || 'Explore this collection'}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="saas-cta-section">
         <div className="saas-container saas-reveal">
@@ -236,6 +346,14 @@ const Home: React.FC = () => {
       </section>
 
       <Footer />
+
+      {isPaymentModalOpen && selectedMembership && (
+        <PaymentModal
+          membership={selectedMembership}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isLogoutModalOpen}

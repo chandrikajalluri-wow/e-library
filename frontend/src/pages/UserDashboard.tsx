@@ -1,8 +1,9 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyBorrows, returnBook } from '../services/borrowService';
+import { getMyBorrows, returnBook, renewBorrow } from '../services/borrowService';
 import { getDashboardStats } from '../services/userService';
+import { getMyMembership, type Membership } from '../services/membershipService';
 import { toast } from 'react-toastify';
 import FinePaymentModal from '../components/FinePaymentModal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -11,6 +12,7 @@ import '../styles/UserDashboard.css';
 const UserDashboard: React.FC = () => {
   const [borrows, setBorrows] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0 });
+  const [membership, setMembership] = useState<Membership | null>(null);
   const [selectedBorrow, setSelectedBorrow] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -38,6 +40,8 @@ const UserDashboard: React.FC = () => {
       setBorrows(bData);
       const sData = await getDashboardStats();
       setStats(sData);
+      const mData = await getMyMembership();
+      setMembership(mData);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load dashboard data');
@@ -80,6 +84,28 @@ const UserDashboard: React.FC = () => {
     });
   };
 
+  const handleRenew = async (borrow: any) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Renew Book',
+      message: `Do you want to extend the return date of "${borrow.book_id?.title}" by another ${membership?.borrowDuration || 7} days?`,
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await renewBorrow(borrow._id);
+          toast.success('Book renewed successfully!');
+          loadData();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err: any) {
+          console.error(err);
+          toast.error(err.response?.data?.error || 'Failed to renew book');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
+  };
+
   const navigate = useNavigate();
 
   return (
@@ -98,6 +124,18 @@ const UserDashboard: React.FC = () => {
       </header>
 
       <div className="stats-grid">
+        <div className="card stat-card membership-status-card">
+          <div className="membership-info-main">
+            <h3 className="stat-label">Membership</h3>
+            <p className="stat-value membership-name">{membership?.displayName || 'Basic'}</p>
+          </div>
+          <div className="membership-limits">
+            <span>Limit: {stats.borrowedCount} / {membership?.borrowLimit || 3} books</span>
+            <button onClick={() => navigate('/')} className="upgrade-link-btn">
+              {membership?.name === 'premium' ? 'View Plans' : 'Upgrade Plan'}
+            </button>
+          </div>
+        </div>
         <div className="card stat-card">
           <h3 className="stat-label">Total Fine</h3>
           <p className="stat-value stat-fine">₹{stats.totalFine.toFixed(2)}</p>
@@ -182,6 +220,14 @@ const UserDashboard: React.FC = () => {
                       >
                         Request Return
                       </button>
+                      {membership?.canRenewBooks && (b.renewed_count || 0) < 1 && (
+                        <button
+                          onClick={() => handleRenew(b)}
+                          className="btn-secondary btn-renew"
+                        >
+                          Renew
+                        </button>
+                      )}
                     </div>
                   )}
                   {b.status === 'return_requested' && (
