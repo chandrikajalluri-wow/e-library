@@ -1,7 +1,7 @@
 import api from '../api';
 import type { Category } from '../types';
 
-const BASE_URL = '/categories';
+const BASE_URL = 'categories';
 
 export const getCategories = async (): Promise<Category[]> => {
   const res = await api.get(BASE_URL);

@@ -38,13 +38,13 @@ const BookRequestPage: React.FC = () => {
     };
 
     return (
-        <div className="request-page">
-            <header className="admin-header">
-                <h2 className="admin-header-title">Request a New Book</h2>
-                <p className="admin-header-subtitle">Help us expand our collection by suggesting books you'd like to read</p>
-            </header>
+        <div className="request-page saas-reveal">
+            <div className="saas-page-header" style={{ textAlign: 'center' }}>
+                <h2 className="static-title-h1">Request a Book</h2>
+                <p className="static-subtitle">Help us expand our collection with your suggestions</p>
+            </div>
 
-            <div className="card profile-card" style={{ maxWidth: '600px' }}>
+            <div className="card profile-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label>Book Title</label>

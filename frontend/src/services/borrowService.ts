@@ -1,7 +1,7 @@
 import api from '../api';
 import type { Borrow } from '../types';
 
-const BASE_URL = '/borrows';
+const BASE_URL = 'borrows';
 
 export const issueBook = async (
   book_id: string,

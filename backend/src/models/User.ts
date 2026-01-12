@@ -8,6 +8,11 @@ export interface IUser extends Document {
   role_id: Types.ObjectId | IRole; // allow populated Role
   isVerified: boolean;
   verificationToken?: string;
+  profileImage?: string;
+  favoriteBook?: string;
+  favoriteAuthor?: string;
+  booksRead?: number;
+  readingTarget?: number;
   createdAt?: Date;
 }
 
@@ -19,6 +24,11 @@ const userSchema = new Schema<IUser>(
     role_id: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
+    profileImage: { type: String },
+    favoriteBook: { type: String },
+    favoriteAuthor: { type: String },
+    booksRead: { type: Number, default: 0 },
+    readingTarget: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

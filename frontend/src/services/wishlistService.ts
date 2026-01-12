@@ -1,6 +1,6 @@
 import api from '../api';
 
-const BASE_URL = '/wishlists';
+const BASE_URL = 'wishlists';
 
 export const getWishlist = async () => {
   const res = await api.get(BASE_URL);

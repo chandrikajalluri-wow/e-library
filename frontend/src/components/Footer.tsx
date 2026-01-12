@@ -7,7 +7,7 @@ const Footer: React.FC = () => {
         <footer className="footer">
             <div className="footer-container">
                 <div className="footer-section">
-                    <h4 className="footer-title">E-Library</h4>
+                    <h4 className="footer-title">Bookstack</h4>
                     <p className="footer-description">
                         Making the world's knowledge accessible to everyone, everywhere. Reliable, inclusive, and forward-looking.
                     </p>
@@ -42,7 +42,7 @@ const Footer: React.FC = () => {
                 </div>
             </div>
             <div className="footer-bottom">
-                <p>© {new Date().getFullYear()} E-Library Global System. All rights reserved.</p>
+                <p>© {new Date().getFullYear()} Bookstack Global System. All rights reserved.</p>
             </div>
         </footer>
     );

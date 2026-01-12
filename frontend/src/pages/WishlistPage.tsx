@@ -64,11 +64,11 @@ const WishlistPage: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="wishlist-page">
-            <header className="admin-header">
-                <h2 className="admin-header-title">My Wishlist</h2>
-                <p className="admin-header-subtitle">Your personally curated collection of must-reads</p>
-            </header>
+        <div className="wishlist-page saas-reveal">
+            <div className="saas-page-header">
+                <h2 className="static-title-h1">My Wishlist</h2>
+                <p className="static-subtitle">Your personally curated collection of must-reads</p>
+            </div>
 
             <div className="grid-books"> {/* Reusing grid-books styles */}
                 {wishlist.map((item) => {

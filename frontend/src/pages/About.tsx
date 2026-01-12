@@ -9,32 +9,32 @@ const About: React.FC = () => {
         <div className="static-page-container">
             <UserNavbar />
             <div className="static-content-wrapper">
-                <h1 className="static-title-h1">About E-Library</h1>
+                <div className="static-hero saas-reveal">
+                    <h1 className="static-title-h1">About Bookstack</h1>
+                    <p className="static-subtitle">The future of digital reading and library management.</p>
+                </div>
 
-                <div className="about-intro-card">
+                <div className="about-intro-card saas-reveal">
                     <p className="static-text-p">
-                        Welcome to the E-Library, a modern digital solution designed to streamline the management and accessibility of books for our community.
+                        Welcome to Bookstack, a modern digital sanctuary designed to empower readers and streamline the discovery of knowledge in our community.
                     </p>
                     <p className="static-text-p">
-                        Our mission is to provide an easy-to-use platform where users can discover new books, manage their reading lists, and easily borrow titles from our extensive collection.
-                    </p>
-                    <p className="static-text-p">
-                        Whether you are reading for leisure or research, E-Library is here to support your journey with a seamless, intuitive experience.
+                        We believe that access to books should be as seamless as it is inspiring. Our platform bridges the gap between traditional lending and modern digital convenience.
                     </p>
                 </div>
 
                 <div className="about-stats-grid">
-                    <div className="about-stat-item">
-                        <div className="stat-number">1000+</div>
-                        <div className="stat-label">Books Available</div>
+                    <div className="about-stat-item saas-reveal">
+                        <span className="stat-number">10k+</span>
+                        <span className="stat-label">Unique Titles</span>
                     </div>
-                    <div className="about-stat-item">
-                        <div className="stat-number">24/7</div>
-                        <div className="stat-label">Digital Access</div>
+                    <div className="about-stat-item saas-reveal" style={{ transitionDelay: '0.1s' }}>
+                        <span className="stat-number">24/7</span>
+                        <span className="stat-label">Cloud Access</span>
                     </div>
-                    <div className="about-stat-item">
-                        <div className="stat-number">Free</div>
-                        <div className="stat-label">For All Members</div>
+                    <div className="about-stat-item saas-reveal" style={{ transitionDelay: '0.2s' }}>
+                        <span className="stat-number">Free</span>
+                        <span className="stat-label">Membership</span>
                     </div>
                 </div>
             </div>

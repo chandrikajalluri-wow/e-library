@@ -10,7 +10,6 @@ import {
 import { getBookReviews, addReview, updateReview } from '../services/reviewService';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
-import UserNavbar from '../components/UserNavbar';
 import Footer from '../components/Footer';
 import '../styles/BookDetail.css';
 
@@ -175,8 +174,7 @@ const BookDetail: React.FC = () => {
   if (!book) return <Loader />;
 
   return (
-    <div className="dashboard-container">
-      <UserNavbar />
+    <div className="dashboard-container saas-reveal">
       <div className="book-detail-back-nav">
         <button
           onClick={() => navigate(-1)}

@@ -1,6 +1,6 @@
 import api from '../api';
 
-const BASE_URL = '/logs';
+const BASE_URL = 'logs';
 
 export const getActivityLogs = async (): Promise<any[]> => {
     try {

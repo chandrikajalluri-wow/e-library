@@ -2,7 +2,7 @@
 import express, { Response } from 'express';
 import Wishlist from '../models/Wishlist';
 import Borrow from '../models/Borrow';
-import { auth, AuthRequest } from '../middleware/authMiddleware';
+import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
 import { sendNotification } from '../utils/notification';
 import User from '../models/User';
 import Book from '../models/Book';
@@ -44,12 +44,8 @@ router.get('/', auth, async (req: AuthRequest, res: Response) => {
 });
 
 // Get All Wishlists (Admin - for Stats)
-router.get('/all', auth, async (req: AuthRequest, res: Response) => {
+router.get('/all', auth, checkRole(['admin']), async (req: AuthRequest, res: Response) => {
   try {
-    // Check if admin (inline check or use middleware if imported)
-    if ((req.user as any)?.role !== 'admin') {
-      return res.status(403).json({ error: 'Access denied' });
-    }
     const items = await Wishlist.find().populate('book_id', 'title author');
     res.json(items);
   } catch (err) {

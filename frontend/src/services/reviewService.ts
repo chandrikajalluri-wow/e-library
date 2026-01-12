@@ -1,6 +1,6 @@
 import api from '../api';
 
-const BASE_URL = '/reviews';
+const BASE_URL = 'reviews';
 
 export const getBookReviews = async (bookId: string) => {
   const res = await api.get(`${BASE_URL}/book/${bookId}`);
