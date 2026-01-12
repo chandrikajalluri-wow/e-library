@@ -310,6 +310,35 @@
     color: white;
 }
 
+/* Light mode for membership card */
+[data-theme='light'] .membership-status-card {
+    background: white;
+    border: 2px solid var(--primary-color);
+}
+
+[data-theme='light'] .membership-status-card .stat-label {
+    color: var(--text-secondary);
+}
+
+[data-theme='light'] .membership-name {
+    color: var(--primary-color);
+}
+
+[data-theme='light'] .membership-limits {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--text-primary);
+}
+
+[data-theme='light'] .upgrade-link-btn {
+    background: var(--primary-color);
+    color: white;
+}
+
+[data-theme='light'] .upgrade-link-btn:hover {
+    background: var(--primary-dark);
+    color: white;
+}
+
 @media (max-width: 768px) {
     .membership-limits {
         flex-direction: column;
@@ -321,4 +350,32 @@
         width: 100%;
         text-align: center;
     }
+}
+
+/* Dark mode for membership card */
+[data-theme='dark'] .membership-status-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+[data-theme='dark'] .membership-status-card .stat-label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme='dark'] .membership-name {
+    color: white;
+}
+
+[data-theme='dark'] .membership-limits {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+[data-theme='dark'] .upgrade-link-btn {
+    background: white;
+    color: #667eea;
+}
+
+[data-theme='dark'] .upgrade-link-btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+    color: #764ba2;
 }

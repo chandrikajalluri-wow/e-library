@@ -20,7 +20,7 @@
 
 /* Hero */
 .saas-hero {
-  padding: 10rem 5% 6rem;
+  padding: 6rem 5% 4rem;
   position: relative;
   background: transparent;
 }
@@ -306,7 +306,7 @@
 
 /* Sections */
 .saas-section {
-  padding: 8rem 5%;
+  padding: 4rem 5%;
 }
 
 .purple-bg {
@@ -338,13 +338,6 @@
   background: var(--saas-card);
   border-radius: 30px;
   border: 1px solid var(--saas-border);
-  transition: all 0.4s;
-}
-
-.work-card:hover {
-  transform: translateY(-8px);
-  border-color: var(--saas-primary);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.06);
 }
 
 .icon-circ {
@@ -394,7 +387,7 @@
 
 /* CTA */
 .saas-cta-section {
-  padding-bottom: 8rem;
+  padding-bottom: 4rem;
 }
 
 .cta-box {
@@ -553,42 +546,245 @@
 }
 
 .category-card {
-  padding: 2rem 1.5rem;
-  background: var(--saas-card);
+  position: relative;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
   border: 1px solid var(--saas-border);
-  border-radius: 20px;
+  border-radius: 24px;
   text-align: center;
   text-decoration: none;
-  transition: all 0.3s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
+  overflow: hidden;
+  min-height: 180px;
+}
+
+.category-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--saas-primary) 0%, #a855f7 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 0;
+}
+
+.category-card:hover::before {
+  opacity: 0.08;
 }
 
 .category-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-8px);
   border-color: var(--saas-primary);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.1);
 }
 
 .category-icon {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.4s ease;
+}
+
+.category-card:hover .category-icon {
+  transform: scale(1.1);
 }
 
 .category-card h3 {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--saas-text);
   margin: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .category-card p {
   font-size: 0.875rem;
   color: var(--saas-text-muted);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+}
+
+/* Category-specific background images */
+
+/* Category-specific background images */
+
+/* Business */
+.category-card[data-category="business"],
+.category-card[data-category*="business"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://images.pexels.com/photos/323705/pexels-photo-323705.jpeg?cs=srgb&dl=apartment-apartment-building-architecture-323705.jpg&fm=jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Fantasy */
+.category-card[data-category="fantasy"],
+.category-card[data-category*="fantasy"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://images3.alphacoders.com/267/thumb-1920-267729.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Finance */
+.category-card[data-category="finance"],
+.category-card[data-category*="finance"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://tse1.mm.bing.net/th/id/OIP.DHfAEOYUlR3MzcCHVA0THQHaEo?rs=1&pid=ImgDetMain&o=7&rm=3');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* History */
+.category-card[data-category="history"],
+.category-card[data-category*="history"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://tse1.explicit.bing.net/th/id/OIP.JSJ42L5XDYXP2jz-O8uZWwHaFH?rs=1&pid=ImgDetMain&o=7&rm=3');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Romance / Rom-Com */
+.category-card[data-category*="romance"],
+.category-card[data-category*="rom"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://tse4.mm.bing.net/th/id/OIP.Z0yV5CabwpsBU35Yn_hEswHaLf?rs=1&pid=ImgDetMain&o=7&rm=3');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Science Fiction */
+.category-card[data-category*="science"],
+.category-card[data-category*="fiction"],
+.category-card[data-category*="sci-fi"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://tse3.mm.bing.net/th/id/OIP.7Po85FSpjTPHO9eXOYYCGwHaFJ?rs=1&pid=ImgDetMain&o=7&rm=3');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Technology */
+.category-card[data-category*="technology"],
+.category-card[data-category*="tech"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://imageio.forbes.com/specials-images/imageserve/643016813686d8eafca00875/0x0.jpg?format=jpg&width=1200');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* White text for all categories with background images */
+.category-card[data-category*="business"] h3,
+.category-card[data-category*="fantasy"] h3,
+.category-card[data-category*="finance"] h3,
+.category-card[data-category*="history"] h3,
+.category-card[data-category*="romance"] h3,
+.category-card[data-category*="rom"] h3,
+.category-card[data-category*="science"] h3,
+.category-card[data-category*="fiction"] h3,
+.category-card[data-category*="technology"] h3,
+.category-card[data-category*="tech"] h3 {
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.category-card[data-category*="business"] p,
+.category-card[data-category*="fantasy"] p,
+.category-card[data-category*="finance"] p,
+.category-card[data-category*="history"] p,
+.category-card[data-category*="romance"] p,
+.category-card[data-category*="rom"] p,
+.category-card[data-category*="science"] p,
+.category-card[data-category*="fiction"] p,
+.category-card[data-category*="technology"] p,
+.category-card[data-category*="tech"] p {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.category-card[data-category*="business"] .category-icon,
+.category-card[data-category*="fantasy"] .category-icon,
+.category-card[data-category*="finance"] .category-icon,
+.category-card[data-category*="history"] .category-icon,
+.category-card[data-category*="romance"] .category-icon,
+.category-card[data-category*="rom"] .category-icon,
+.category-card[data-category*="science"] .category-icon,
+.category-card[data-category*="fiction"] .category-icon,
+.category-card[data-category*="technology"] .category-icon,
+.category-card[data-category*="tech"] .category-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Hover effects for categories with backgrounds */
+.category-card[data-category*="business"]::before,
+.category-card[data-category*="fantasy"]::before,
+.category-card[data-category*="finance"]::before,
+.category-card[data-category*="history"]::before,
+.category-card[data-category*="romance"]::before,
+.category-card[data-category*="rom"]::before,
+.category-card[data-category*="science"]::before,
+.category-card[data-category*="fiction"]::before,
+.category-card[data-category*="technology"]::before,
+.category-card[data-category*="tech"]::before {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(168, 85, 247, 0.3) 100%);
+}
+
+.category-card[data-category*="business"]:hover::before,
+.category-card[data-category*="fantasy"]:hover::before,
+.category-card[data-category*="finance"]:hover::before,
+.category-card[data-category*="history"]:hover::before,
+.category-card[data-category*="romance"]:hover::before,
+.category-card[data-category*="rom"]:hover::before,
+.category-card[data-category*="science"]:hover::before,
+.category-card[data-category*="fiction"]:hover::before,
+.category-card[data-category*="technology"]:hover::before,
+.category-card[data-category*="tech"]:hover::before {
+  opacity: 1;
+}
+
+.category-card[data-category*="business"]:hover,
+.category-card[data-category*="fantasy"]:hover,
+.category-card[data-category*="finance"]:hover,
+.category-card[data-category*="history"]:hover,
+.category-card[data-category*="romance"]:hover,
+.category-card[data-category*="rom"]:hover,
+.category-card[data-category*="science"]:hover,
+.category-card[data-category*="fiction"]:hover,
+.category-card[data-category*="technology"]:hover,
+.category-card[data-category*="tech"]:hover {
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(99, 102, 241, 0.2);
 }
 
 @media (max-width: 992px) {
@@ -600,5 +796,10 @@
 @media (max-width: 576px) {
   .categories-grid {
     grid-template-columns: 1fr;
+  }
+
+  .category-card {
+    padding: 2.5rem 1.5rem;
+    min-height: 160px;
   }
 }

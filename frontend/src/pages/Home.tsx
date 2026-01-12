@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getProfile } from '../services/userService';
 import { getBooks } from '../services/bookService';
-import { getMembershipPlans, getMyMembership, type Membership } from '../services/membershipService';
+import { getMembershipPlans, getMyMembership, upgradeMembership, type Membership } from '../services/membershipService';
 import { getCategories } from '../services/categoryService';
 import type { Book, Category } from '../types';
 import Footer from '../components/Footer';
@@ -21,6 +21,7 @@ const Home: React.FC = () => {
   const [selectedMembership, setSelectedMembership] = React.useState<Membership | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
+  const [isDowngradeModalOpen, setIsDowngradeModalOpen] = React.useState(false);
   const isAuthenticated = !!localStorage.getItem('token');
 
   React.useEffect(() => {
@@ -96,11 +97,28 @@ const Home: React.FC = () => {
     }
 
     if (membership.price === 0) {
-      return; // Don't allow downgrade
+      setSelectedMembership(membership);
+      setIsDowngradeModalOpen(true);
+      return;
     }
 
     setSelectedMembership(membership);
     setIsPaymentModalOpen(true);
+  };
+
+  const handleDowngrade = async () => {
+    if (!selectedMembership) return;
+
+    try {
+      const response = await upgradeMembership(selectedMembership._id);
+      setCurrentMembership(response.membership);
+      setIsDowngradeModalOpen(false);
+      setSelectedMembership(null);
+      alert(response.message || 'Membership downgraded successfully');
+    } catch (err) {
+      console.error('Failed to downgrade membership:', err);
+      alert('Failed to downgrade membership. Please try again.');
+    }
   };
 
   const handlePaymentSuccess = () => {
@@ -256,33 +274,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Features Showcase: Bento Style but Vibrant */}
-      <section className="saas-section">
-        <div className="saas-container">
-          <div className="bento-saas">
-            <div className="bento-big saas-reveal">
-              <div className="bento-inner">
-                <span className="badge-tag">Secure & Private</span>
-                <h3>Your reading, your data.</h3>
-                <p>We use enterprise-grade security to ensure your library dashboard remains private and secure.</p>
-              </div>
-            </div>
-            <div className="bento-side saas-reveal">
-              <div className="bento-inner">
-                <h3>Global Access</h3>
-                <p>Knowledge has no borders. Access Bookstack from anywhere in the world.</p>
-              </div>
-            </div>
-            <div className="bento-side saas-reveal">
-              <div className="bento-inner">
-                <h3>Wishlist Books</h3>
-                <p>Save books for later. Create your ultimate reading list with a single click.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Membership Plans Section */}
       <section className="saas-section">
         <div className="saas-container">
@@ -320,6 +311,7 @@ const Home: React.FC = () => {
                 key={category._id}
                 to={`/books?category=${category._id}`}
                 className="category-card saas-reveal"
+                data-category={category.name.toLowerCase().replace(/\s+/g, '-')}
               >
                 <div className="category-icon">
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -366,6 +358,16 @@ const Home: React.FC = () => {
         onCancel={() => setIsLogoutModalOpen(false)}
         type="warning"
         confirmText="Sign Out"
+      />
+
+      <ConfirmationModal
+        isOpen={isDowngradeModalOpen}
+        title="Downgrade Membership"
+        message={`Are you sure you want to downgrade to the ${selectedMembership?.displayName} plan? This will take effect immediately.`}
+        onConfirm={handleDowngrade}
+        onCancel={() => setIsDowngradeModalOpen(false)}
+        type="warning"
+        confirmText="Confirm Downgrade"
       />
     </div>
   );
