@@ -1,6 +1,6 @@
 import api from '../api';
 
-const BASE_URL = '/auth';
+const BASE_URL = 'auth';
 
 // Signup
 export const signup = async (name: string, email: string, password: string) => {

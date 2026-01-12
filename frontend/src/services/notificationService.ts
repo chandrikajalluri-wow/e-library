@@ -1,6 +1,6 @@
 import api from '../api';
 
-const BASE_URL = '/notifications';
+const BASE_URL = 'notifications';
 
 export const getNotifications = async () => {
     const res = await api.get(BASE_URL);

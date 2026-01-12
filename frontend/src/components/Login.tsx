@@ -45,30 +45,60 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="auth-container">
-      <h2>Login</h2>
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+    <div className="auth-page-wrapper">
+      <div className="auth-bg-glow">
+        <div className="auth-glow-1"></div>
+        <div className="auth-glow-2"></div>
+      </div>
 
-      {error && <p className="error-text">{error}</p>}
+      <div className="auth-container">
+        <div className="auth-logo-header">
+          <div className="auth-logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path>
+              <path d="M8 7h8"></path>
+              <path d="M8 11h8"></path>
+            </svg>
+          </div>
+          <h2>Welcome Back</h2>
+          <p className="auth-subtitle">Log in to your Bookstack library</p>
+        </div>
 
-      <button onClick={handleLogin} disabled={isLoading}>
-        {isLoading ? <Loader small /> : 'Login'}
-      </button>
+        {error && <p className="error-text">{error}</p>}
 
-      <div className="auth-links">
-        <button onClick={() => navigate('/signup')}>Go to Signup</button>
-        <button onClick={() => navigate('/forgot')}>Forgot Password?</button>
+        <div className="auth-form-group">
+          <label>Email Address</label>
+          <input
+            type="email"
+            placeholder="name@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="auth-form-group">
+          <label>Password</label>
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <button className="auth-submit-btn" onClick={handleLogin} disabled={isLoading}>
+          {isLoading ? <Loader small /> : 'Sign In'}
+        </button>
+
+        <div className="auth-footer">
+          <p>Don't have an account?
+            <button className="auth-link-btn" onClick={() => navigate('/signup')}>Create Account</button>
+          </p>
+          <div className="auth-secondary-links">
+            <button className="auth-link-btn" onClick={() => navigate('/forgot')}>Forgot Password?</button>
+            <button className="auth-link-btn" onClick={() => navigate('/')}>Back to Home</button>
+          </div>
+        </div>
       </div>
     </div>
   );

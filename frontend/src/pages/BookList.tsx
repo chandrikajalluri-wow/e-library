@@ -4,13 +4,12 @@ import { Link } from 'react-router-dom';
 import { getBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 import type { Book } from '../types';
-import Loader from '../components/Loader';
 import ScrollToTop from '../components/ScrollToTop';
-import UserNavbar from '../components/UserNavbar';
 import '../styles/BookList.css';
 
 const BookList: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
+  const [recommendations, setRecommendations] = useState<Book[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -34,6 +33,19 @@ const BookList: React.FC = () => {
     setPage(1);
   }, [search, selectedCategory]);
 
+  useEffect(() => {
+    loadRecommendations();
+  }, []);
+
+  const loadRecommendations = async () => {
+    try {
+      const data = await getBooks('limit=4&sort=-rating');
+      setRecommendations(data.books || data);
+    } catch (err) {
+      console.error('Failed to load recommendations', err);
+    }
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -43,11 +55,7 @@ const BookList: React.FC = () => {
 
       const data = await getBooks(query);
 
-      if (page === 1) {
-        setBooks(data.books);
-      } else {
-        setBooks((prev) => [...prev, ...data.books]);
-      }
+      setBooks(data.books);
       setTotal(data.total);
 
       if (categories.length === 0) {
@@ -62,8 +70,7 @@ const BookList: React.FC = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <UserNavbar />
+    <div className="dashboard-container saas-reveal">
       <div className="filter-container">
         <input
           type="text"
@@ -85,6 +92,29 @@ const BookList: React.FC = () => {
           ))}
         </select>
       </div>
+
+      {/* Top Recommendations Section */}
+      {!search && !selectedCategory && recommendations.length > 0 && (
+        <section className="recommendations-section">
+          <h2 className="section-title-h2">Top Recommendations</h2>
+          <div className="recommendations-grid">
+            {recommendations.map((book) => (
+              <Link to={`/books/${book._id}`} key={`rec-${book._id}`} className="rec-card">
+                <div className="rec-cover">
+                  <img src={book.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={book.title} />
+                  <div className="rec-badge">⭐ {book.rating}</div>
+                </div>
+                <div className="rec-info">
+                  <h4>{book.title}</h4>
+                  <p>{book.author}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <h2 className="section-title-h2">{search || selectedCategory ? 'Search Results' : 'All Books'}</h2>
 
       <div className="grid-books">
         {books.map((book) => (
@@ -137,15 +167,21 @@ const BookList: React.FC = () => {
           No books found matching your criteria.
         </p>
       )}
-      {books.length < total && (
-        <div className="load-more-btn-container">
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            disabled={loading}
-            className="btn-primary"
-          >
-            {loading ? <Loader small /> : 'Load More'}
-          </button>
+      {books.length > 0 && total > 10 && (
+        <div className="pagination-container">
+          {Array.from({ length: Math.ceil(total / 10) }, (_, i) => i + 1).map((pageNum) => (
+            <button
+              key={pageNum}
+              onClick={() => {
+                setPage(pageNum);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
+              disabled={loading}
+            >
+              {pageNum}
+            </button>
+          ))}
         </div>
       )}
       <ScrollToTop />

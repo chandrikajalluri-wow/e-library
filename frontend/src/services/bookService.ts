@@ -1,7 +1,7 @@
 import api from '../api';
 import type { Book } from '../types';
 
-const BASE_URL = '/books';
+const BASE_URL = 'books';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getBooks = async (query = ''): Promise<any> => {

@@ -1,52 +1,51 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import '../styles/Contact.css'; // Reusing some base styles
-
+import UserNavbar from '../components/UserNavbar';
+import Footer from '../components/Footer';
 import '../styles/StaticPages.css';
 
 const PrivacyPolicy: React.FC = () => {
     return (
-        <div className="contact-page">
-            <nav className="contact-nav">
-                <Link to="/" className="contact-logo-link">
-                    <div className="contact-logo-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path></svg>
+        <div className="static-page-container">
+            <UserNavbar />
+            <div className="static-content-wrapper">
+                <div className="static-hero saas-reveal">
+                    <h1 className="static-title-h1">Privacy Policy</h1>
+                    <p className="static-subtitle">Your security and data protection are our top priorities.</p>
+                </div>
+
+                <div className="policy-container saas-reveal">
+                    <div className="policy-card">
+                        <section className="policy-section">
+                            <h2 className="policy-subtitle-h2">1. Data Collection</h2>
+                            <p className="static-text-p">
+                                We collect minimal information required to provide you with a personalized library experience, including your name, email, and reading preferences.
+                            </p>
+                        </section>
+
+                        <section className="policy-section">
+                            <h2 className="policy-subtitle-h2">2. How We Use Information</h2>
+                            <p className="static-text-p">
+                                Your information is solely used to manage your borrows, maintain your wishlist, and communicate important library updates. We never sell your data.
+                            </p>
+                        </section>
+
+                        <section className="policy-section">
+                            <h2 className="policy-subtitle-h2">3. Security</h2>
+                            <p className="static-text-p">
+                                We implement industry-standard encryption and security protocols to protect your personal data and account integrity.
+                            </p>
+                        </section>
+
+                        <section className="policy-section">
+                            <h2 className="policy-subtitle-h2">4. Your Rights</h2>
+                            <p className="static-text-p">
+                                You have the right to access, update, or request deletion of your personal data at any time. Bookstack is committed to your digital privacy.
+                            </p>
+                        </section>
                     </div>
-                    <span className="contact-logo-text">E-Library</span>
-                </Link>
-            </nav>
-
-            <div className="contact-content policy-content">
-                <h1 className="contact-heading">Privacy Policy</h1>
-                <p className="contact-description">Last updated: December 31, 2025</p>
-
-                <div className="card policy-card">
-                    <section className="policy-section">
-                        <h2 className="policy-subtitle-h2">1. Data Collection</h2>
-                        <p>We collect personal information such as your name, email address, and borrowing history to provide and improve our library services.</p>
-                    </section>
-
-                    <section className="policy-section">
-                        <h2 className="policy-subtitle-h2">2. Use of Information</h2>
-                        <p>Your data is used to manage your account, track book loans, calculate fines, and send essential notifications about your account status.</p>
-                    </section>
-
-                    <section className="policy-section">
-                        <h2 className="policy-subtitle-h2">3. Data Security</h2>
-                        <p>We implement industry-standard security measures to protect your personal information from unauthorized access, alteration, or disclosure.</p>
-                    </section>
-
-                    <section className="policy-section">
-                        <h2 className="policy-subtitle-h2">4. Third-Party Services</h2>
-                        <p>We may use third-party transactional email services (like Brevo) to send account-related information. We do not sell your personal data to third parties.</p>
-                    </section>
-
-                    <section>
-                        <h2 className="policy-subtitle-h2">5. Your Rights</h2>
-                        <p>You have the right to access, update, or request deletion of your personal data. Contact us if you have any questions regarding your privacy.</p>
-                    </section>
                 </div>
             </div>
+            <Footer />
         </div>
     );
 };

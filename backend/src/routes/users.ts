@@ -6,6 +6,7 @@ import Wishlist from '../models/Wishlist';
 import BookRequest from '../models/BookRequest';
 import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
 import { sendEmail } from '../utils/mailer';
+import { upload } from '../middleware/uploadMiddleware';
 
 const router = express.Router();
 
@@ -59,18 +60,36 @@ router.get('/dashboard-stats', auth, async (req: AuthRequest, res: Response) => 
 });
 
 // Update Profile
-router.put('/profile', auth, async (req: AuthRequest, res: Response) => {
-    const { name } = req.body;
+router.put('/profile', auth, upload.single('profileImage'), async (req: AuthRequest, res: Response) => {
+    const { name, favoriteBook, favoriteAuthor, booksRead, readingTarget } = req.body;
     try {
-        if (!name) return res.status(400).json({ error: 'Name is required' });
-
         const user = await User.findById(req.user!._id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        user.name = name;
+        if (name) user.name = name;
+        if (favoriteBook !== undefined) user.favoriteBook = favoriteBook;
+        if (favoriteAuthor !== undefined) user.favoriteAuthor = favoriteAuthor;
+        if (booksRead !== undefined) user.booksRead = Number(booksRead);
+        if (readingTarget !== undefined) user.readingTarget = Number(readingTarget);
+
+        if (req.file) {
+            user.profileImage = (req.file as any).path;
+        }
+
         await user.save();
 
-        res.json({ message: 'Profile updated successfully', user: { name: user.name, email: user.email } });
+        res.json({
+            message: 'Profile updated successfully',
+            user: {
+                name: user.name,
+                email: user.email,
+                profileImage: user.profileImage,
+                favoriteBook: user.favoriteBook,
+                favoriteAuthor: user.favoriteAuthor,
+                booksRead: user.booksRead,
+                readingTarget: user.readingTarget
+            }
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });

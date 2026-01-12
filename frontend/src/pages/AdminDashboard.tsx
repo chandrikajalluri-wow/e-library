@@ -34,7 +34,6 @@ const AdminDashboard: React.FC = () => {
     pendingSuggestions: 0,
     mostBorrowedBook: 'N/A',
     mostWishlistedBook: 'N/A',
-    favoriteAuthor: 'N/A',
     mostActiveUser: 'N/A',
     mostFinedUser: 'N/A'
   });
@@ -135,18 +134,13 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      console.log('Fetching stats...');
       const booksData = await getBooks('limit=1000&showArchived=true');
-      console.log('Books Data:', booksData);
 
       const borrowsData = await getAllBorrows('limit=1000');
-      console.log('Borrows Data:', borrowsData);
 
       const requestsData = await getAllBookRequests();
-      console.log('Requests Data:', requestsData);
 
       const wishlistData = await getAllWishlists();
-      console.log('Wishlist Data:', wishlistData);
 
       const getMostFrequent = (arr: any[], keyExtractor: (item: any) => string | undefined): string => {
         const counts: Record<string, number> = {};
@@ -185,7 +179,6 @@ const AdminDashboard: React.FC = () => {
         pendingSuggestions: requestsData.filter((r: any) => r.status === 'pending').length,
         mostBorrowedBook: getMostFrequent(borrowsData.borrows, (b) => b.book_id?.title),
         mostWishlistedBook: getMostFrequent(wishlistData, (w) => w.book_id?.title),
-        favoriteAuthor: getMostFrequent(borrowsData.borrows, (b) => b.book_id?.author),
         mostActiveUser: getMostFrequent(borrowsData.borrows, (b) => b.user_id?.name),
         mostFinedUser: getMaxSum(borrowsData.borrows, (b) => b.user_id?.name, (b) => b.fine_amount || 0),
       };
@@ -669,10 +662,6 @@ const AdminDashboard: React.FC = () => {
             <div className="card stats-card-content">
               <span className="stats-label">Most Wishlisted Book</span>
               <span className="stats-value-text">{stats.mostWishlistedBook}</span>
-            </div>
-            <div className="card stats-card-content">
-              <span className="stats-label">Favorite Author</span>
-              <span className="stats-value-text">{stats.favoriteAuthor}</span>
             </div>
             <div className="card stats-card-content">
               <span className="stats-label">Most Active User</span>

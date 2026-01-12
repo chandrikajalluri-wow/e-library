@@ -24,6 +24,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './components/UserLayout';
+import ScrollRevealHandler from './components/ScrollRevealHandler';
 
 import { ThemeProvider } from './context/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
@@ -32,6 +33,7 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <Router>
+        <ScrollRevealHandler />
         <AxiosInterceptor />
         <Routes>
           <Route path="/" element={<Home />} />
@@ -53,12 +55,9 @@ const App: React.FC = () => {
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
+              <Route path="/books" element={<BookList />} />
+              <Route path="/books/:id" element={<BookDetail />} />
             </Route>
-          </Route>
-
-          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
-            <Route path="/books" element={<BookList />} />
-            <Route path="/books/:id" element={<BookDetail />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
