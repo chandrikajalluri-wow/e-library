@@ -131,7 +131,19 @@ const UserDashboard: React.FC = () => {
           </div>
           <div className="membership-limits">
             <span>Limit: {stats.borrowedCount} / {membership?.borrowLimit || 3} books</span>
-            <button onClick={() => navigate('/')} className="upgrade-link-btn">
+            <button
+              onClick={() => {
+                navigate('/');
+                // Scroll to membership section after navigation
+                setTimeout(() => {
+                  const membershipSection = document.querySelector('.membership-plans-grid');
+                  if (membershipSection) {
+                    membershipSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }, 100);
+              }}
+              className="upgrade-link-btn"
+            >
               {membership?.name === 'premium' ? 'View Plans' : 'Upgrade Plan'}
             </button>
           </div>
