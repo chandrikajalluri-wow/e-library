@@ -526,3 +526,79 @@
   background: #fee2e2;
   color: #ef4444;
 }
+
+/* Membership Plans Grid */
+.membership-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+@media (max-width: 992px) {
+  .membership-plans-grid {
+    grid-template-columns: 1fr;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Categories Grid */
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.category-card {
+  padding: 2rem 1.5rem;
+  background: var(--saas-card);
+  border: 1px solid var(--saas-border);
+  border-radius: 20px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--saas-primary);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+}
+
+.category-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.category-card h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--saas-text);
+  margin: 0;
+}
+
+.category-card p {
+  font-size: 0.875rem;
+  color: var(--saas-text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+@media (max-width: 992px) {
+  .categories-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+}

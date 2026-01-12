@@ -1,0 +1,185 @@
+.membership-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.membership-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.membership-card-premium {
+    border-color: #667eea;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.membership-card-current {
+    border-color: #10b981;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
+}
+
+.membership-card-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.membership-card-current-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #10b981;
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.membership-card-header {
+    margin-bottom: 1.5rem;
+}
+
+.membership-card-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.75rem;
+}
+
+.membership-card-price {
+    margin-bottom: 0.75rem;
+}
+
+.price-free {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.price-amount {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.price-period {
+    font-size: 1rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.membership-card-description {
+    color: #6b7280;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
+.membership-card-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem 0;
+    flex: 1;
+}
+
+.membership-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.875rem;
+    color: #374151;
+    font-size: 0.9375rem;
+}
+
+.membership-feature-item svg {
+    flex-shrink: 0;
+    color: #10b981;
+    margin-top: 0.125rem;
+}
+
+.membership-card-button {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.membership-card-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.membership-card-button-current {
+    background: #10b981;
+    cursor: default;
+}
+
+.membership-card-button-current:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.membership-card-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    .membership-card {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .membership-card-title {
+        color: #f9fafb;
+    }
+
+    .membership-card-description {
+        color: #9ca3af;
+    }
+
+    .membership-feature-item {
+        color: #d1d5db;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .membership-card {
+        padding: 1.5rem;
+    }
+
+    .membership-card-title {
+        font-size: 1.25rem;
+    }
+
+    .price-amount {
+        font-size: 2rem;
+    }
+}

@@ -248,3 +248,77 @@
         font-size: 1rem;
     }
 }
+
+/* Membership Card Styles */
+.membership-status-card {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
+    border: none;
+}
+
+.membership-status-card .stat-label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.membership-name {
+    margin-top: 0.25rem;
+    font-size: 1.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.membership-limits {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+}
+
+.upgrade-link-btn {
+    background: white;
+    color: var(--primary-color);
+    border: none;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.upgrade-link-btn:hover {
+    background: var(--secondary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-renew {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-renew:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .membership-limits {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start;
+    }
+
+    .upgrade-link-btn {
+        width: 100%;
+        text-align: center;
+    }
+}

@@ -23,6 +23,7 @@ export interface Book {
   language?: string;
   rating?: number;
   noOfCopies: number;
+  isPremium?: boolean;
   addedBy?: string; // User ID
   createdAt?: string;
   updatedAt?: string;
