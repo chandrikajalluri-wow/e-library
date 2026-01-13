@@ -10,7 +10,7 @@ const router = express.Router();
 // Get all books (Public, with filters)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { search, category, genre, showArchived } = req.query;
+    const { search, category, genre, showArchived, isPremium } = req.query;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: any = {};
 
@@ -26,6 +26,7 @@ router.get('/', async (req: Request, res: Response) => {
     }
     if (category) query.category_id = category;
     if (genre) query.genre = genre;
+    if (isPremium === 'true') query.isPremium = true;
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
