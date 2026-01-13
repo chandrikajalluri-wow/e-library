@@ -2,7 +2,7 @@ import Notification from '../models/Notification';
 import { Types } from 'mongoose';
 
 export const sendNotification = async (
-    type: 'borrow' | 'return' | 'wishlist',
+    type: 'borrow' | 'return' | 'wishlist' | 'fine' | 'system',
     message: string,
     user_id: string | Types.ObjectId,
     book_id?: string | Types.ObjectId

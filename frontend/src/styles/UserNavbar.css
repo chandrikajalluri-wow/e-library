@@ -58,6 +58,15 @@
 .user-profile-dropdown-container {
     position: relative;
     margin-left: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-action-center-wrapper {
+    display: flex;
+    align-items: center;
+    height: 100%;
 }
 
 .user-avatar-trigger {

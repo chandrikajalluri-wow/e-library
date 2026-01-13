@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { getProfile } from '../services/userService';
 import ConfirmationModal from './ConfirmationModal';
+import NotificationCenter from './NotificationCenter';
 import '../styles/UserNavbar.css';
 
 const UserNavbar: React.FC = () => {
@@ -77,6 +78,8 @@ const UserNavbar: React.FC = () => {
         );
     };
 
+    const location = useLocation();
+
     return (
         <nav className="saas-nav user-saas-nav">
             <div className="nav-wrapper">
@@ -121,8 +124,11 @@ const UserNavbar: React.FC = () => {
 
                     {localStorage.getItem('token') ? (
                         /* Hide profile icon for admins on dashboard */
-                        (!(role === 'admin' && useLocation().pathname.startsWith('/admin-dashboard'))) && (
+                        (!(role === 'admin' && location.pathname.startsWith('/admin-dashboard'))) && (
                             <div className="user-profile-dropdown-container">
+                                <div className="nav-action-center-wrapper">
+                                    <NotificationCenter />
+                                </div>
                                 <button
                                     className={`user-avatar-trigger ${isDropdownOpen ? 'active' : ''}`}
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}

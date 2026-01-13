@@ -179,6 +179,14 @@ router.post('/pay-fine/:id', auth, async (req: AuthRequest, res: Response) => {
     borrow.isFinePaid = true;
     await borrow.save();
 
+    // Send Notification
+    await sendNotification(
+      'fine',
+      `Payment successful for fine on "${(await Book.findById(borrow.book_id))?.title}". Amount: ₹${fine}`,
+      req.user!._id as any,
+      borrow.book_id as any
+    );
+
     res.json({ message: 'Fine paid successfully', borrow });
   } catch (err) {
     console.error(err);
