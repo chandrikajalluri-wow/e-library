@@ -74,13 +74,22 @@ router.post(
   '/',
   auth,
   checkRole(['admin']),
-  upload.single('cover_image'),
+  upload.fields([
+    { name: 'cover_image', maxCount: 1 },
+    { name: 'author_image', maxCount: 1 },
+  ]),
   async (req: AuthRequest, res: Response) => {
     try {
       const bookData = { ...req.body };
 
-      if (req.file) {
-        bookData.cover_image_url = (req.file as any).path;
+      // Multer adds 'files' object for multiple fields
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+      if (files?.['cover_image']?.[0]) {
+        bookData.cover_image_url = files['cover_image'][0].path;
+      }
+      if (files?.['author_image']?.[0]) {
+        bookData.author_image_url = files['author_image'][0].path;
       }
 
       const book = new Book({
@@ -99,7 +108,7 @@ router.post(
       res.status(201).json(book);
     } catch (err) {
       console.log(err);
-      res.status(500).json({ error: 'Server error' });
+      res.status(500).json({ error: (err as any).message || 'Server error' });
     }
   }
 );
@@ -109,13 +118,21 @@ router.put(
   '/:id',
   auth,
   checkRole(['admin']),
-  upload.single('cover_image'),
+  upload.fields([
+    { name: 'cover_image', maxCount: 1 },
+    { name: 'author_image', maxCount: 1 },
+  ]),
   async (req: AuthRequest, res: Response) => {
     try {
       const bookData = { ...req.body };
 
-      if (req.file) {
-        bookData.cover_image_url = (req.file as any).path;
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+      if (files?.['cover_image']?.[0]) {
+        bookData.cover_image_url = files['cover_image'][0].path;
+      }
+      if (files?.['author_image']?.[0]) {
+        bookData.author_image_url = files['author_image'][0].path;
       }
 
       const book = await Book.findByIdAndUpdate(req.params.id, bookData, {
@@ -133,7 +150,7 @@ router.put(
       res.json(book);
     } catch (err) {
       console.log(err);
-      res.status(500).json({ error: 'Server error' });
+      res.status(500).json({ error: (err as any).message || 'Server error' });
     }
   }
 );
@@ -170,7 +187,7 @@ router.delete(
       res.json({ message: 'Book deleted' });
     } catch (err) {
       console.log(err);
-      res.status(500).json({ error: 'Server error' });
+      res.status(500).json({ error: (err as any).message || 'Server error' });
     }
   }
 );

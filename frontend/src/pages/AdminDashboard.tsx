@@ -45,10 +45,12 @@ const AdminDashboard: React.FC = () => {
   const [newBook, setNewBook] = useState({
     title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
     description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
-    genre: '', language: '', noOfCopies: '1', isPremium: false,
+    genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
+    author_image_url: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [authorImageFile, setAuthorImageFile] = useState<File | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
 
@@ -349,9 +351,13 @@ const AdminDashboard: React.FC = () => {
           formData.append('genre', newBook.genre);
           formData.append('language', newBook.language);
           formData.append('isPremium', String(newBook.isPremium));
+          formData.append('author_description', newBook.author_description);
 
           if (coverImageFile) formData.append('cover_image', coverImageFile);
           else formData.append('cover_image_url', newBook.cover_image_url);
+
+          if (authorImageFile) formData.append('author_image', authorImageFile);
+          else formData.append('author_image_url', newBook.author_image_url);
 
           if (editingBookId) {
             await updateBook(editingBookId, formData);
@@ -365,13 +371,19 @@ const AdminDashboard: React.FC = () => {
           setNewBook({
             title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
             description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
-            genre: '', language: '', noOfCopies: '1', isPremium: false,
+            genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
+            author_image_url: ''
           });
           setCoverImageFile(null);
+          setAuthorImageFile(null);
           fetchBooks();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         } catch (err: any) {
-          const errMsg = err.response?.data?.error || (editingBookId ? 'Failed to update book' : 'Failed to create book');
+          console.error('Update Error:', err);
+          let errMsg = err.response?.data?.error || (editingBookId ? 'Failed to update book' : 'Failed to create book');
+          if (typeof errMsg === 'object') {
+            errMsg = JSON.stringify(errMsg);
+          }
           toast.error(errMsg);
           setConfirmModal(prev => ({ ...prev, isLoading: false }));
         }
@@ -384,11 +396,12 @@ const AdminDashboard: React.FC = () => {
     setNewBook({
       title: book.title, author: book.author,
       category_id: typeof book.category_id === 'string' ? book.category_id : book.category_id?._id || '',
-      price: book.price.toString(), status: book.status, isbn: book.isbn || '',
-      description: book.description || '', pages: book.pages?.toString() || '',
+      price: book.price?.toString() || '0', status: book.status || 'available', isbn: book.isbn || '',
+      description: book.description || '', pages: book.pages?.toString() || '0',
       publishedYear: book.publishedYear?.toString() || '', cover_image_url: book.cover_image_url || '',
       pdf_url: book.pdf_url || '', genre: book.genre || '', language: book.language || '',
-      noOfCopies: book.noOfCopies.toString(), isPremium: book.isPremium || false,
+      noOfCopies: book.noOfCopies?.toString() || '1', isPremium: book.isPremium || false,
+      author_description: book.author_description || '', author_image_url: book.author_image_url || '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -398,9 +411,11 @@ const AdminDashboard: React.FC = () => {
     setNewBook({
       title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
       description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
-      genre: '', language: '', noOfCopies: '1', isPremium: false,
+      genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
+      author_image_url: ''
     });
     setCoverImageFile(null);
+    setAuthorImageFile(null);
   };
 
   const handleDeleteBook = (id: string) => {
@@ -622,7 +637,12 @@ const AdminDashboard: React.FC = () => {
                   <label>Cover Image</label>
                   <input type="file" accept="image/*" onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)} className="admin-file-input" />
                 </div>
+                <div className="form-group">
+                  <label>Author's Photo</label>
+                  <input type="file" accept="image/*" onChange={(e) => setAuthorImageFile(e.target.files?.[0] || null)} className="admin-file-input" />
+                </div>
                 <div className="form-group" style={{ gridColumn: 'span 3' }}><label>Description</label><textarea value={newBook.description} onChange={(e) => setNewBook({ ...newBook, description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
+                <div className="form-group" style={{ gridColumn: 'span 3' }}><label>About the Author</label><textarea value={newBook.author_description} onChange={(e) => setNewBook({ ...newBook, author_description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
                 <div className="form-group checkbox-group" style={{ gridColumn: 'span 3' }}><label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}><input type="checkbox" checked={newBook.isPremium} onChange={(e) => setNewBook({ ...newBook, isPremium: e.target.checked })} style={{ width: 'auto' }} />Mark as Premium Book</label></div>
                 <div style={{ gridColumn: 'span 3', display: 'flex', justifyContent: 'flex-start' }}>
                   <button type="submit" className="admin-btn-edit" style={{ padding: '0.75rem 2rem', minWidth: '200px' }}>{editingBookId ? 'Update Record' : 'Add to Collection'}</button>

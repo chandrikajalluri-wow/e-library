@@ -9,7 +9,7 @@ const storage = new CloudinaryStorage({
         // @ts-ignore
         folder: 'book-covers',
         id: (req: Request, file: Express.Multer.File) => `book_${Date.now()}`,
-        allowed_formats: ['jpg', 'png', 'jpeg'],
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
     },
 });
 
