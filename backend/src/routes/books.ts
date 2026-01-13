@@ -18,6 +18,9 @@ router.get('/', async (req: Request, res: Response) => {
       query.status = { $ne: 'archived' };
     }
 
+    if (isPremium === 'true') query.isPremium = true;
+    if (isPremium === 'false') query.isPremium = { $ne: true };
+
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
