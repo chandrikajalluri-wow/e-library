@@ -96,7 +96,6 @@ const Login: React.FC = () => {
           </p>
           <div className="auth-secondary-links">
             <button className="auth-link-btn" onClick={() => navigate('/forgot')}>Forgot Password?</button>
-            <button className="auth-link-btn" onClick={() => navigate('/')}>Back to Home</button>
           </div>
         </div>
       </div>

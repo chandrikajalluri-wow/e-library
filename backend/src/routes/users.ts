@@ -1,9 +1,11 @@
 import express, { Response } from 'express';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import User from '../models/User';
 import Borrow from '../models/Borrow';
 import Wishlist from '../models/Wishlist';
 import BookRequest from '../models/BookRequest';
+import AuthToken from '../models/AuthToken';
 import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
 import { sendEmail } from '../utils/mailer';
 import { upload } from '../middleware/uploadMiddleware';
@@ -281,5 +283,98 @@ router.post(
         }
     }
 );
+
+// Get Active Sessions
+router.get('/sessions', auth, async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json({
+            sessions: user.activeSessions || [],
+            lastLogin: user.lastLogin
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Logout from all devices
+router.post('/logout-all', auth, async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        user.activeSessions = [];
+        await user.save();
+
+        res.json({ message: 'Logged out from all devices successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Delete Account
+router.delete('/me', auth, async (req: AuthRequest, res: Response) => {
+    const { password } = req.body;
+    try {
+        if (!password) {
+            return res.status(400).json({ error: 'Password is required to confirm deletion' });
+        }
+
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // 1. Password Validation
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Invalid password. Account deletion aborted.' });
+        }
+
+        // 2. Business Rules Validation
+        // Check for active borrowed books or overdue
+        const activeBorrows = await mongoose.model('Borrow').findOne({
+            user_id: user._id,
+            status: { $in: ['borrowed', 'overdue'] }
+        });
+
+        if (activeBorrows) {
+            return res.status(400).json({
+                error: 'You cannot delete your account while you have borrowed books. Please return all books first.'
+            });
+        }
+
+        // Check for unpaid fines
+        const unpaidFines = await mongoose.model('Borrow').findOne({
+            user_id: user._id,
+            isFinePaid: false,
+            fine_amount: { $gt: 0 }
+        });
+
+        if (unpaidFines) {
+            return res.status(400).json({
+                error: 'You cannot delete your account while you have pending fines. Please clear all fines first.'
+            });
+        }
+
+        // 3. Sequential Data Deletion
+        await mongoose.model('Wishlist').deleteMany({ user_id: user._id });
+        await mongoose.model('Borrow').deleteMany({ user_id: user._id });
+        await mongoose.model('Review').deleteMany({ user_id: user._id });
+        await mongoose.model('Notification').deleteMany({ user_id: user._id });
+        await mongoose.model('ActivityLog').deleteMany({ user_id: user._id });
+        await mongoose.model('BookRequest').deleteMany({ user_id: user._id });
+        await AuthToken.deleteMany({ user_id: user._id });
+
+        // 4. Final User Deletion
+        await User.findByIdAndDelete(user._id);
+
+        res.json({ message: 'Account permanently deleted. We are sorry to see you go.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error during account deletion' });
+    }
+});
 
 export default router;

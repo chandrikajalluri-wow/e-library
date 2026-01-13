@@ -29,6 +29,7 @@ router.get('/', async (req: Request, res: Response) => {
     }
     if (category) query.category_id = category;
     if (genre) query.genre = genre;
+    if (isPremium === 'true') query.isPremium = true;
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;

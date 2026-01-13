@@ -22,6 +22,7 @@ import Contact from './pages/Contact';
 import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import MembershipPlans from './pages/MembershipPlans';
+import UserSettings from './pages/UserSettings';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './components/UserLayout';
@@ -55,6 +56,7 @@ const App: React.FC = () => {
               {/* User Routes */}
               <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/profile" element={<UserProfile />} />
+              <Route path="/settings" element={<UserSettings />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
               <Route path="/books" element={<BookList />} />

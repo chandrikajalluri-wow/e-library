@@ -15,6 +15,13 @@ export interface IUser extends Document {
   favoriteAuthor?: string;
   booksRead?: number;
   readingTarget?: number;
+  lastLogin?: Date;
+  activeSessions?: {
+    device: string;
+    location: string;
+    lastActive: Date;
+    token: string;
+  }[];
   createdAt?: Date;
 }
 
@@ -32,6 +39,15 @@ const userSchema = new Schema<IUser>(
     favoriteAuthor: { type: String },
     booksRead: { type: Number, default: 0 },
     readingTarget: { type: Number, default: 0 },
+    lastLogin: { type: Date },
+    activeSessions: [
+      {
+        device: { type: String },
+        location: { type: String },
+        lastActive: { type: Date, default: Date.now },
+        token: { type: String },
+      },
+    ],
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

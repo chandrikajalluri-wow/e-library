@@ -19,6 +19,7 @@ const BookList: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isPremiumFilter, setIsPremiumFilter] = useState(false);
 
   // Sync state with URL parameter
   useEffect(() => {
@@ -34,7 +35,7 @@ const BookList: React.FC = () => {
       loadData();
     }, 500); // Debounce search
     return () => clearTimeout(timeoutId);
-  }, [search, selectedCategory, page]);
+  }, [search, selectedCategory, page, isPremiumFilter]);
 
   // Reset page and update URL when filters change
   useEffect(() => {
@@ -48,7 +49,7 @@ const BookList: React.FC = () => {
         setSearchParams({});
       }
     }
-  }, [search, selectedCategory]);
+  }, [search, selectedCategory, isPremiumFilter]);
 
   useEffect(() => {
     loadRecommendations();
@@ -69,6 +70,7 @@ const BookList: React.FC = () => {
       // Build query string
       let query = `search=${search}&page=${page}&limit=10`;
       if (selectedCategory) query += `&category=${selectedCategory}`;
+      if (isPremiumFilter) query += `&isPremium=true`;
 
       const data = await getBooks(query);
 
@@ -108,6 +110,17 @@ const BookList: React.FC = () => {
             </option>
           ))}
         </select>
+
+        <div className="premium-filter-wrapper">
+          <label className="premium-toggle">
+            <input
+              type="checkbox"
+              checked={isPremiumFilter}
+              onChange={(e) => setIsPremiumFilter(e.target.checked)}
+            />
+            <span className="premium-toggle-label">Premium Only</span>
+          </label>
+        </div>
       </div>
 
       {/* Top Recommendations Section */}
@@ -155,6 +168,9 @@ const BookList: React.FC = () => {
                   ? (book.category_id as any).name
                   : 'Uncategorized'}
               </div>
+              {book.isPremium && (
+                <div className="premium-badge-tag">Premium</div>
+              )}
               <h3 className="book-title-h3">{book.title}</h3>
               <p className="book-author-p">{book.author}</p>
 
@@ -179,30 +195,34 @@ const BookList: React.FC = () => {
           </div>
         ))}
       </div>
-      {books.length === 0 && (
-        <p className="no-books-msg">
-          No books found matching your criteria.
-        </p>
-      )}
-      {books.length > 0 && total > 10 && (
-        <div className="pagination-container">
-          {Array.from({ length: Math.ceil(total / 10) }, (_, i) => i + 1).map((pageNum) => (
-            <button
-              key={pageNum}
-              onClick={() => {
-                setPage(pageNum);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
-              disabled={loading}
-            >
-              {pageNum}
-            </button>
-          ))}
-        </div>
-      )}
+      {
+        books.length === 0 && (
+          <p className="no-books-msg">
+            No books found matching your criteria.
+          </p>
+        )
+      }
+      {
+        books.length > 0 && total > 10 && (
+          <div className="pagination-container">
+            {Array.from({ length: Math.ceil(total / 10) }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => {
+                  setPage(pageNum);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
+                disabled={loading}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+        )
+      }
       <ScrollToTop />
-    </div>
+    </div >
   );
 };
 
