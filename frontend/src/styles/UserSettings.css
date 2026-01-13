@@ -1,0 +1,208 @@
+.settings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.settings-layout {
+    display: flex;
+    gap: 2.5rem;
+    margin-top: 2rem;
+    min-height: 600px;
+}
+
+/* Sidebar Styling */
+.settings-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.sidebar-item:hover {
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--primary-color);
+}
+
+.sidebar-item.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.sidebar-item svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 1rem 0;
+}
+
+/* Content Area */
+.settings-content-area {
+    flex: 1;
+    max-width: 800px;
+}
+
+.settings-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.settings-card-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.settings-card-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.settings-card-header p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+/* Specific Section Styles */
+.session-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.03);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.session-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary-color);
+    border-radius: 10px;
+}
+
+.session-details {
+    flex: 1;
+}
+
+.session-device {
+    font-weight: 600;
+    display: block;
+    font-size: 1rem;
+}
+
+.session-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.danger-zone {
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.danger-title {
+    color: #ef4444;
+}
+
+.danger-action-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.danger-action-item:last-child {
+    border-bottom: none;
+}
+
+.danger-action-info h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.danger-action-info p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.btn-danger-outline {
+    border: 1.5px solid #ef4444;
+    color: #ef4444;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    background: transparent;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-danger-outline:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .settings-layout {
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .settings-sidebar {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+
+    .sidebar-nav {
+        flex-direction: row;
+        white-space: nowrap;
+    }
+
+    .sidebar-item {
+        width: auto;
+    }
+
+    .sidebar-divider {
+        display: none;
+    }
+}

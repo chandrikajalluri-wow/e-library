@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   getProfile,
   updateProfile,
-  changePassword,
 } from "../services/userService";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
@@ -20,11 +19,6 @@ const UserProfile: React.FC = () => {
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [passwords, setPasswords] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
 
   useEffect(() => {
     loadProfile();
@@ -77,29 +71,6 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwords.newPassword !== passwords.confirmPassword) {
-      return toast.error("Passwords do not match");
-    }
-
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(passwords.newPassword)) {
-      return toast.error("Password must be at least 8 characters long and include an uppercase letter, a number, and a special character.");
-    }
-
-    try {
-      await changePassword({
-        currentPassword: passwords.currentPassword,
-        newPassword: passwords.newPassword,
-      });
-      toast.success("Password changed");
-      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err) {
-      const errorMsg = (err as any).response?.data?.error || "Failed to change password";
-      toast.error(errorMsg);
-    }
-  };
 
   if (!user) return <Loader />;
 
@@ -184,42 +155,6 @@ const UserProfile: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="card profile-card">
-                <h2 className="profile-section-title">Change Password</h2>
-                <form onSubmit={handleChangePassword}>
-                  <div className="form-group">
-                    <label>Current Password</label>
-                    <input
-                      type="password"
-                      value={passwords.currentPassword}
-                      onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="form-group-row">
-                    <div className="form-group">
-                      <label>New Password</label>
-                      <input
-                        type="password"
-                        value={passwords.newPassword}
-                        onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Confirm Password</label>
-                      <input
-                        type="password"
-                        value={passwords.confirmPassword}
-                        onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <button type="submit" className="btn-primary">Update Password</button>
-                </form>
-              </div>
             </>
           ) : (
             <form onSubmit={handleUpdateProfile} className="profile-form-main">
@@ -286,7 +221,7 @@ const UserProfile: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

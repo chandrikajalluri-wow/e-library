@@ -44,3 +44,18 @@ export const sendFineReminder = async (borrowId: string) => {
     const res = await api.post(`${BASE_URL}/admin/send-fine-reminder/${borrowId}`, {});
     return res.data;
 };
+
+export const getSessions = async () => {
+    const res = await api.get(`${BASE_URL}/sessions`);
+    return res.data;
+};
+
+export const logoutAll = async () => {
+    const res = await api.post(`${BASE_URL}/logout-all`, {});
+    return res.data;
+};
+
+export const deleteAccount = async (password: string) => {
+    const res = await api.delete(`${BASE_URL}/me`, { data: { password } });
+    return res.data;
+};

@@ -124,9 +124,6 @@ const Signup: React.FC = () => {
           <p>Already have an account?
             <button className="auth-link-btn" onClick={() => navigate('/login')}>Sign In</button>
           </p>
-          <div className="auth-secondary-links">
-            <button className="auth-link-btn" onClick={() => navigate('/')}>Back to Home</button>
-          </div>
         </div>
       </div>
     </div>

@@ -109,6 +109,25 @@ router.post('/login', async (req: Request, res: Response) => {
       { expiresIn: '1h' }
     );
 
+    // Update last login and sessions
+    user.lastLogin = new Date();
+    const device = req.headers['user-agent'] || 'Unknown Device';
+
+    // Limit to last 5 sessions for simplicity
+    if (!user.activeSessions) user.activeSessions = [];
+    user.activeSessions.push({
+      device,
+      location: 'Unknown', // In a real app, use geo-ip
+      lastActive: new Date(),
+      token
+    });
+
+    if (user.activeSessions.length > 5) {
+      user.activeSessions = user.activeSessions.slice(-5);
+    }
+
+    await user.save();
+
     res.json({ token, role: roleDoc.name, userId: user._id });
   } catch (err) {
     console.log(err);
