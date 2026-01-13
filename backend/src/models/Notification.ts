@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface INotification extends Document {
-    type: 'borrow' | 'return' | 'wishlist';
+    type: 'borrow' | 'return' | 'wishlist' | 'fine' | 'system';
     message: string;
     user_id: Types.ObjectId;
     book_id?: Types.ObjectId;
@@ -10,7 +10,7 @@ export interface INotification extends Document {
 }
 
 const notificationSchema = new Schema<INotification>({
-    type: { type: String, enum: ['borrow', 'return', 'wishlist'], required: true },
+    type: { type: String, enum: ['borrow', 'return', 'wishlist', 'fine', 'system'], required: true },
     message: { type: String, required: true },
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     book_id: { type: Schema.Types.ObjectId, ref: 'Book' },

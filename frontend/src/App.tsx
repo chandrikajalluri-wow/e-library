@@ -23,6 +23,7 @@ import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import MembershipPlans from './pages/MembershipPlans';
 import UserSettings from './pages/UserSettings';
+import NotificationsPage from './pages/NotificationsPage';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './components/UserLayout';
@@ -57,6 +58,7 @@ const App: React.FC = () => {
               <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/settings" element={<UserSettings />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
               <Route path="/books" element={<BookList />} />
