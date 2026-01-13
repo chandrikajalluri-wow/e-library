@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
 import { getCategories, updateCategory, deleteCategory as removeCategory, createCategory } from '../services/categoryService';
@@ -14,7 +14,9 @@ import '../styles/AdminDashboard.css';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('stats');
+  const [searchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'stats';
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [borrows, setBorrows] = useState<Borrow[]>([]);
   const [userRequests, setUserRequests] = useState<any[]>([]);
@@ -39,48 +41,25 @@ const AdminDashboard: React.FC = () => {
   });
 
   const [newBook, setNewBook] = useState({
-    title: '',
-    author: '',
-    category_id: '',
-    price: '',
-    status: 'available',
-    isbn: '',
-    description: '',
-    pages: '',
-    publishedYear: '',
-    cover_image_url: '',
-    pdf_url: '',
-    genre: '',
-    language: '',
-    noOfCopies: '1',
-    isPremium: false,
+    title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
+    description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
+    genre: '', language: '', noOfCopies: '1', isPremium: false,
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
 
-  // Pagination state
   const [bookPage, setBookPage] = useState(1);
   const [bookTotalPages, setBookTotalPages] = useState(1);
   const [borrowPage, setBorrowPage] = useState(1);
   const [borrowTotalPages, setBorrowTotalPages] = useState(1);
 
-  // Confirmation Modal state
   const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    type: 'danger' | 'warning' | 'info';
-    isLoading: boolean;
+    isOpen: boolean; title: string; message: string; onConfirm: () => void;
+    type: 'danger' | 'warning' | 'info'; isLoading: boolean;
   }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: () => { },
-    type: 'info',
-    isLoading: false
+    isOpen: false, title: '', message: '', onConfirm: () => { }, type: 'info', isLoading: false
   });
 
   const fetchCommonData = async () => {
@@ -136,11 +115,8 @@ const AdminDashboard: React.FC = () => {
   const fetchStats = async () => {
     try {
       const booksData = await getBooks('limit=1000&showArchived=true');
-
       const borrowsData = await getAllBorrows('limit=1000');
-
       const requestsData = await getAllBookRequests();
-
       const wishlistData = await getAllWishlists();
 
       const getMostFrequent = (arr: any[], keyExtractor: (item: any) => string | undefined): string => {
@@ -154,9 +130,7 @@ const AdminDashboard: React.FC = () => {
       };
 
       const getMaxSum = (
-        arr: any[],
-        keyExtractor: (item: any) => string | undefined,
-        valExtractor: (item: any) => number
+        arr: any[], keyExtractor: (item: any) => string | undefined, valExtractor: (item: any) => number
       ): string => {
         const sums: Record<string, number> = {};
         arr.forEach((item) => {
@@ -184,7 +158,6 @@ const AdminDashboard: React.FC = () => {
         mostFinedUser: getMaxSum(borrowsData.borrows, (b) => b.user_id?.name, (b) => b.fine_amount || 0),
       };
 
-      console.log('Calculated Stats:', newStats);
       setStats(newStats);
     } catch (err) {
       console.error('Failed to fetch stats', err);
@@ -202,6 +175,9 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchCommonData();
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -210,13 +186,8 @@ const AdminDashboard: React.FC = () => {
     if (activeTab === 'borrows') fetchBorrows();
     if (activeTab === 'user-requests') fetchUserRequests();
     if (activeTab === 'logs') fetchLogs();
+    if (activeTab === 'requests') fetchBorrows();
   }, [activeTab, bookPage, borrowPage]);
-
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Polling every 30s
-    return () => clearInterval(interval);
-  }, []);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,7 +224,6 @@ const AdminDashboard: React.FC = () => {
   const handleEditCategory = (cat: Category) => {
     setEditingCategoryId(cat._id);
     setNewCategory({ name: cat.name, description: cat.description || '' });
-    // Scroll to categories section if needed, or just let users scroll
   };
 
   const handleCancelCategoryEdit = () => {
@@ -262,7 +232,6 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleDeleteCategory = (cat: Category) => {
-    // Check if any book is using this category
     const hasBooks = allBooks.some(b => {
       const catId = typeof b.category_id === 'string' ? b.category_id : b.category_id?._id;
       return catId === cat._id;
@@ -311,6 +280,7 @@ const AdminDashboard: React.FC = () => {
       console.error(err);
     }
   };
+
   const handleCreateBook = async (e: React.FormEvent) => {
     e.preventDefault();
     setConfirmModal({
@@ -339,11 +309,8 @@ const AdminDashboard: React.FC = () => {
           formData.append('language', newBook.language);
           formData.append('isPremium', String(newBook.isPremium));
 
-          if (coverImageFile) {
-            formData.append('cover_image', coverImageFile);
-          } else {
-            formData.append('cover_image_url', newBook.cover_image_url);
-          }
+          if (coverImageFile) formData.append('cover_image', coverImageFile);
+          else formData.append('cover_image_url', newBook.cover_image_url);
 
           if (editingBookId) {
             await updateBook(editingBookId, formData);
@@ -355,21 +322,9 @@ const AdminDashboard: React.FC = () => {
           }
 
           setNewBook({
-            title: '',
-            author: '',
-            category_id: '',
-            price: '',
-            status: 'available',
-            isbn: '',
-            description: '',
-            pages: '',
-            publishedYear: '',
-            cover_image_url: '',
-            pdf_url: '',
-            genre: '',
-            language: '',
-            noOfCopies: '1',
-            isPremium: false,
+            title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
+            description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
+            genre: '', language: '', noOfCopies: '1', isPremium: false,
           });
           setCoverImageFile(null);
           fetchBooks();
@@ -385,61 +340,31 @@ const AdminDashboard: React.FC = () => {
   const handleEditBook = (book: Book) => {
     setEditingBookId(book._id);
     setNewBook({
-      title: book.title,
-      author: book.author,
+      title: book.title, author: book.author,
       category_id: typeof book.category_id === 'string' ? book.category_id : book.category_id?._id || '',
-      price: book.price.toString(),
-      status: book.status,
-      isbn: book.isbn || '',
-      description: book.description || '',
-      pages: book.pages?.toString() || '',
-      publishedYear: book.publishedYear?.toString() || '',
-      cover_image_url: book.cover_image_url || '',
-      pdf_url: book.pdf_url || '',
-      genre: book.genre || '',
-      language: book.language || '',
-      noOfCopies: book.noOfCopies.toString(),
-      isPremium: book.isPremium || false,
+      price: book.price.toString(), status: book.status, isbn: book.isbn || '',
+      description: book.description || '', pages: book.pages?.toString() || '',
+      publishedYear: book.publishedYear?.toString() || '', cover_image_url: book.cover_image_url || '',
+      pdf_url: book.pdf_url || '', genre: book.genre || '', language: book.language || '',
+      noOfCopies: book.noOfCopies.toString(), isPremium: book.isPremium || false,
     });
-    // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingBookId(null);
     setNewBook({
-      title: '',
-      author: '',
-      category_id: '',
-      price: '',
-      status: 'available',
-      isbn: '',
-      description: '',
-      pages: '',
-      publishedYear: '',
-      cover_image_url: '',
-      pdf_url: '',
-      genre: '',
-      language: '',
-      noOfCopies: '1',
-      isPremium: false,
+      title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
+      description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
+      genre: '', language: '', noOfCopies: '1', isPremium: false,
     });
     setCoverImageFile(null);
   };
 
   const handleDeleteBook = (id: string) => {
-    const book = allBooks.find(b => b._id === id);
-    if (book && book.status === 'issued') {
-      toast.error('Cannot delete a book that is currently issued/borrowed.');
-      return;
-    }
-
     setConfirmModal({
-      isOpen: true,
-      title: 'Delete Book',
-      message: 'Are you sure you want to delete this book? This action cannot be undone.',
-      type: 'danger',
-      isLoading: false,
+      isOpen: true, title: 'Delete Book', message: 'Are you sure you want to delete this book? This action cannot be undone.',
+      type: 'danger', isLoading: false,
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
@@ -457,11 +382,8 @@ const AdminDashboard: React.FC = () => {
 
   const handleAcceptReturn = (borrowId: string) => {
     setConfirmModal({
-      isOpen: true,
-      title: 'Accept Return',
-      message: 'Are you sure you want to accept this return request?',
-      type: 'info',
-      isLoading: false,
+      isOpen: true, title: 'Accept Return', message: 'Are you sure you want to accept this return request?',
+      type: 'info', isLoading: false,
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
@@ -482,18 +404,15 @@ const AdminDashboard: React.FC = () => {
       await sendFineReminder(borrowId);
       toast.success('Reminder email sent successfully');
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Failed to send reminder';
-      toast.error(msg);
+      toast.error(err.response?.data?.error || 'Failed to send reminder');
     }
   };
 
   const handleBookRequestStatus = (id: string, status: string) => {
     setConfirmModal({
-      isOpen: true,
-      title: `${status.charAt(0).toUpperCase() + status.slice(1)} Request`,
+      isOpen: true, title: `${status.charAt(0).toUpperCase() + status.slice(1)} Request`,
       message: `Are you sure you want to ${status} this book request?`,
-      type: status === 'rejected' ? 'danger' : 'info',
-      isLoading: false,
+      type: status === 'rejected' ? 'danger' : 'info', isLoading: false,
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
@@ -511,11 +430,8 @@ const AdminDashboard: React.FC = () => {
 
   const handleLogout = () => {
     setConfirmModal({
-      isOpen: true,
-      title: 'Confirm Logout',
-      message: 'Are you sure you want to log out from the admin panel?',
-      type: 'warning',
-      isLoading: false,
+      isOpen: true, title: 'Confirm Logout', message: 'Are you sure you want to log out from the admin panel?',
+      type: 'warning', isLoading: false,
       onConfirm: () => {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
@@ -525,51 +441,12 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-  const NavItem = ({ id, label, icon }: { id: string; label: string; icon: React.ReactNode }) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`admin-nav-item ${activeTab === id ? 'admin-nav-item-active' : 'admin-nav-item-inactive'}`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-
   return (
     <div className="admin-layout">
-      {/* Sidebar */}
-      <aside className="admin-sidebar">
-        <div className="admin-logo-section">
-          <div className="admin-logo-box">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path></svg>
-          </div>
-          <span className="admin-logo-text">E-Library Admin</span>
-        </div>
-
-        <nav className="admin-nav">
-          <NavItem id="stats" label="Statistics" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>} />
-          <NavItem id="books" label="Manage Books" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>} />
-          <NavItem id="categories" label="Categories" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>} />
-          <NavItem id="requests" label="Return Requests" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>} />
-          <NavItem id="user-requests" label="Book Suggestions" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>} />
-          <NavItem id="borrows" label="Borrow History" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>} />
-          <NavItem id="logs" label="Activity Logs" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>} />
-        </nav>
-
-        <button
-          onClick={handleLogout}
-          className="admin-logout-btn"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="9" y2="12"></line></svg>
-          Logout
-        </button>
-      </aside>
-
-      {/* Main Content */}
       <main className="admin-main-content">
         <header className="admin-header">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
+          <div className="admin-header-flex">
+            <div className="admin-header-titles">
               <h2 className="admin-header-title">
                 {activeTab === 'stats' && 'Dashboard Overview'}
                 {activeTab === 'books' && 'Manage Books'}
@@ -581,29 +458,22 @@ const AdminDashboard: React.FC = () => {
               </h2>
               <p className="admin-header-subtitle">Welcome back, Administrator</p>
             </div>
-            <div className="admin-header-actions-container">
+            <div className="admin-header-actions">
               {activeTab === 'stats' && (
-                <button
-                  onClick={fetchStats}
-                  className="admin-refresh-stats-btn"
-                >
-                  Refresh Stats
-                </button>
+                <button onClick={fetchStats} className="admin-refresh-stats-btn">Refresh Stats</button>
               )}
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="admin-notification-toggle"
-              >
+              <button onClick={() => setShowNotifications(!showNotifications)} className="admin-notification-toggle">
                 {showNotifications ? (
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 ) : (
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                 )}
                 {notifications.filter(n => !n.is_read).length > 0 && (
-                  <span className="notification-badge-icon">
-                    {notifications.filter(n => !n.is_read).length}
-                  </span>
+                  <span className="notification-badge-icon">{notifications.filter(n => !n.is_read).length}</span>
                 )}
+              </button>
+              <button onClick={handleLogout} className="admin-notification-toggle" title="Logout">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               </button>
 
               {showNotifications && (
@@ -614,11 +484,11 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="notification-list">
                     {notifications.length === 0 ? (
-                      <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.6 }}>No notifications</div>
+                      <div className="notification-empty-state">No notifications yet</div>
                     ) : (
                       notifications.map(n => (
-                        <div key={n._id} onClick={() => handleMarkRead(n._id)} className="notification-item-container" style={{ opacity: n.is_read ? 0.6 : 1 }}>
-                          <div className="notification-item-message" style={{ fontWeight: n.is_read ? 400 : 600 }}>{n.message}</div>
+                        <div key={n._id} onClick={() => handleMarkRead(n._id)} className={`notification-item-container ${!n.is_read ? 'unread' : ''}`}>
+                          <div className="notification-item-message">{n.message}</div>
                           <div className="notification-item-time">{new Date(n.timestamp).toLocaleString()}</div>
                         </div>
                       ))
@@ -633,48 +503,34 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'stats' && (
           <div className="admin-stats-grid-container">
             <div className="card stats-card-content">
-              <span className="stats-label">Total Books</span>
+              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div>
+              <span className="stats-label">Total Volume</span>
               <span className="stats-value">{stats.totalBooks}</span>
             </div>
             <div className="card stats-card-content">
-              <span className="stats-label">Active Borrowers</span>
-              <span className="stats-value">{stats.totalUsers}</span>
+              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+              <span className="stats-label">Total Users</span>
+              <span className="stats-value stats-value-accent">{stats.totalUsers}</span>
             </div>
             <div className="card stats-card-content">
-              <span className="stats-label">Currently Borrowed</span>
+              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></div>
+              <span className="stats-label">Active Borrows</span>
               <span className="stats-value stats-value-accent">{stats.activeBorrows}</span>
             </div>
             <div className="card stats-card-content">
-              <span className="stats-label">Overdue Books</span>
+              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
+              <span className="stats-label">Overdue</span>
               <span className="stats-value stats-value-danger">{stats.overdueBooks}</span>
             </div>
             <div className="card stats-card-content">
-              <span className="stats-label">Total Categories</span>
-              <span className="stats-value">{categories.length}</span>
-            </div>
-            <div className="card stats-card-content">
+              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>
               <span className="stats-label">Pending Returns</span>
               <span className="stats-value stats-value-warning">{stats.pendingReturns}</span>
             </div>
             <div className="card stats-card-content">
-              <span className="stats-label">Pending Suggestions</span>
-              <span className="stats-value stats-value-info">{stats.pendingSuggestions}</span>
-            </div>
-            <div className="card stats-card-content">
-              <span className="stats-label">Most Borrowed Book</span>
-              <span className="stats-value-text">{stats.mostBorrowedBook}</span>
-            </div>
-            <div className="card stats-card-content">
-              <span className="stats-label">Most Wishlisted Book</span>
-              <span className="stats-value-text">{stats.mostWishlistedBook}</span>
-            </div>
-            <div className="card stats-card-content">
+              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg></div>
               <span className="stats-label">Most Active User</span>
-              <span className="stats-value-text">{stats.mostActiveUser}</span>
-            </div>
-            <div className="card stats-card-content">
-              <span className="stats-label">Most Fined User</span>
-              <span className="stats-value-text">{stats.mostFinedUser}</span>
+              <div className="user-main-name" style={{ marginTop: '0.5rem' }}>{stats.mostActiveUser}</div>
             </div>
           </div>
         )}
@@ -683,162 +539,42 @@ const AdminDashboard: React.FC = () => {
           <div className="admin-section-grid">
             <section className="card admin-form-section">
               <div className="admin-form-header">
-                <h3 className="admin-form-title">
-                  {editingBookId ? 'Edit Book Details' : 'Add New Book to Collection'}
-                </h3>
-                {editingBookId && (
-                  <button
-                    onClick={handleCancelEdit}
-                    className="admin-cancel-btn"
-                  >
-                    Cancel Editing
-                  </button>
-                )}
+                <h3 className="admin-table-title" style={{ marginBottom: '2rem' }}>{editingBookId ? 'Edit Book Record' : 'Add New Book'}</h3>
+                {editingBookId && <button onClick={handleCancelEdit} className="admin-reminder-btn" style={{ marginBottom: '1.5rem' }}>Cancel Editing</button>}
               </div>
               <form onSubmit={handleCreateBook} className="admin-book-form">
                 <div className="form-group"><label>Title</label><input type="text" value={newBook.title} onChange={(e) => setNewBook({ ...newBook, title: e.target.value })} required /></div>
                 <div className="form-group"><label>Author</label><input type="text" value={newBook.author} onChange={(e) => setNewBook({ ...newBook, author: e.target.value })} required /></div>
-                <div className="form-group">
-                  <label>Category</label>
-                  <select value={newBook.category_id} onChange={(e) => setNewBook({ ...newBook, category_id: e.target.value })} required>
-                    <option value="">Select Category</option>
-                    {categories.map((c) => (<option key={c._id} value={c._id}>{c.name}</option>))}
-                  </select>
-                </div>
-                <div className="form-group"><label>Genre</label><input type="text" value={newBook.genre} onChange={(e) => setNewBook({ ...newBook, genre: e.target.value })} /></div>
+                <div className="form-group"><label>Category</label><select value={newBook.category_id} onChange={(e) => setNewBook({ ...newBook, category_id: e.target.value })} required><option value="">Select Category</option>{categories.map((c) => (<option key={c._id} value={c._id}>{c.name}</option>))}</select></div>
                 <div className="form-group"><label>Price (₹)</label><input type="number" value={newBook.price} onChange={(e) => setNewBook({ ...newBook, price: e.target.value })} /></div>
-                <div className="form-group"><label>Pages</label><input type="number" value={newBook.pages} onChange={(e) => setNewBook({ ...newBook, pages: e.target.value })} /></div>
-                <div className="form-group"><label>ISBN</label><input type="text" value={newBook.isbn} onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })} /></div>
-                <div className="form-group"><label>No. of Copies</label><input type="number" value={newBook.noOfCopies} onChange={(e) => setNewBook({ ...newBook, noOfCopies: e.target.value })} required /></div>
-                <div className="form-group">
-                  <label>Status</label>
-                  <select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value })} required>
-                    <option value="available">Available</option>
-                    <option value="issued">Issued</option>
-                    <option value="damaged">Damaged</option>
-                  </select>
-                </div>
-                <div className="form-group checkbox-group">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={newBook.isPremium}
-                      onChange={(e) => setNewBook({ ...newBook, isPremium: e.target.checked })}
-                      style={{ width: 'auto', marginBottom: '0' }}
-                    />
-                    Mark as Premium Book
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>Cover Image</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setCoverImageFile(e.target.files ? e.target.files[0] : null)}
-                  />
-                  {newBook.cover_image_url && !coverImageFile && (
-                    <div style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-                      Current: <a href={newBook.cover_image_url} target="_blank" rel="noreferrer">View Image</a>
-                    </div>
-                  )}
-                </div>
-                <div style={{ gridColumn: 'span 3' }}>
-                  <label>Description</label>
-                  <textarea
-                    value={newBook.description}
-                    onChange={(e) => setNewBook({ ...newBook, description: e.target.value })}
-                    className="admin-form-textarea"
-                  />
-                </div>
-                <button type="submit" className="btn-primary admin-submit-btn">
-                  {editingBookId ? 'Update Book Record' : 'Add Book to Inventory'}
-                </button>
+                <div className="form-group"><label>Copies</label><input type="number" value={newBook.noOfCopies} onChange={(e) => setNewBook({ ...newBook, noOfCopies: e.target.value })} required /></div>
+                <div className="form-group"><label>Status</label><select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value })} required><option value="available">Available</option><option value="issued">Issued</option><option value="damaged">Damaged</option></select></div>
+                <div className="form-group checkbox-group" style={{ gridColumn: 'span 3' }}><label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}><input type="checkbox" checked={newBook.isPremium} onChange={(e) => setNewBook({ ...newBook, isPremium: e.target.checked })} style={{ width: 'auto' }} />Mark as Premium Book</label></div>
+                <button type="submit" className="admin-btn-edit" style={{ gridColumn: 'span 3', padding: '1rem' }}>{editingBookId ? 'Update Record' : 'Add to Collection'}</button>
               </form>
             </section>
-
             <section className="card admin-table-section">
-              <div className="admin-table-header-box admin-header-flex">
-                <h3 className="admin-table-title">Library Inventory</h3>
-                <input
-                  type="text"
-                  placeholder="Search by title or author..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="admin-search-input"
-                />
-              </div>
+              <div className="admin-table-header-box"><h3 className="admin-table-title">Inventory</h3><input type="text" placeholder="Search collection..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="admin-search-input" /></div>
               <div className="admin-table-wrapper">
                 <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th style={{ minWidth: '200px' }}>Book Details</th>
-                      <th>Category</th>
-                      <th>Pages</th>
-                      <th>Price</th>
-                      <th>Copies</th>
-                      <th>Status</th>
-                      <th className="admin-actions-cell">Actions</th>
+                  <thead><tr><th>Book Details</th><th>Category</th><th>Copies</th><th>Status</th><th className="admin-actions-cell">Actions</th></tr></thead>
+                  <tbody>{allBooks.filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase()) || b.author.toLowerCase().includes(searchTerm.toLowerCase())).map((book) => (
+                    <tr key={book._id}>
+                      <td><div className="book-info-box"><span className="book-main-title">{book.title}</span><span className="book-sub-meta">by {book.author} {book.isPremium && <span className="admin-premium-label">PREMIUM</span>}</span></div></td>
+                      <td>{typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}</td>
+                      <td style={{ fontWeight: 700 }}>{book.noOfCopies}</td>
+                      <td><span className={`status-badge status-${book.status}`}>{book.status}</span></td>
+                      <td className="admin-actions-cell"><div className="admin-actions-flex"><button onClick={() => handleEditBook(book)} className="admin-btn-edit">Edit</button><button onClick={() => handleDeleteBook(book._id)} className="admin-btn-delete">Delete</button></div></td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {allBooks.filter(b =>
-                      b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      b.author.toLowerCase().includes(searchTerm.toLowerCase())
-                    ).map((book) => (
-                      <tr key={book._id}>
-                        <td data-label="Book Details">
-                          <div className="admin-book-title">{book.title}</div>
-                          <div className="admin-book-meta">
-                            by {book.author} | {book.genre}
-                            {book.isPremium && <span className="admin-premium-label">PREMIUM</span>}
-                          </div>
-                        </td>
-                        <td data-label="Category" style={{ fontSize: '0.9rem' }}>{typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}</td>
-                        <td data-label="Pages" style={{ fontSize: '0.9rem' }}>{book.pages || '-'}</td>
-                        <td data-label="Price" style={{ fontSize: '0.9rem' }}>₹{book.price}</td>
-                        <td data-label="Copies" style={{ fontSize: '0.9rem' }}>{book.noOfCopies}</td>
-                        <td data-label="Status"><span className={`status-badge status-${book.status}`}>{book.status}</span></td>
-                        <td data-label="Actions" className="admin-actions-cell">
-                          <div className="admin-actions-flex">
-                            <button
-                              onClick={() => handleEditBook(book)}
-                              className="admin-btn-edit"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBook(book._id)}
-                              className="admin-btn-delete"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+                  ))}</tbody>
                 </table>
               </div>
-              {allBooks.length === 0 && (
-                <div className="admin-empty-state">No books in the collection yet.</div>
-              )}
+              {allBooks.length === 0 && <div className="admin-empty-state">No books found.</div>}
               {bookTotalPages > 1 && (
-                <div className="pagination-controls">
-                  <button
-                    disabled={bookPage === 1}
-                    onClick={() => setBookPage(prev => prev - 1)}
-                    className="btn-secondary"
-                  >
-                    Previous
-                  </button>
-                  <span className="page-info">Page {bookPage} of {bookTotalPages}</span>
-                  <button
-                    disabled={bookPage === bookTotalPages}
-                    onClick={() => setBookPage(prev => prev + 1)}
-                    className="btn-primary"
-                  >
-                    Next
-                  </button>
+                <div className="pagination-controls" style={{ padding: '2rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+                  <button disabled={bookPage === 1} onClick={() => setBookPage(prev => prev - 1)} className="admin-reminder-btn">Previous</button>
+                  <span className="page-info" style={{ fontWeight: 800, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Page {bookPage} of {bookTotalPages}</span>
+                  <button disabled={bookPage === bookTotalPages} onClick={() => setBookPage(prev => prev + 1)} className="admin-btn-edit" style={{ padding: '0.45rem 1.5rem' }}>Next</button>
                 </div>
               )}
             </section>
@@ -846,35 +582,25 @@ const AdminDashboard: React.FC = () => {
         )}
 
         {activeTab === 'categories' && (
-          <div className="admin-categories-grid">
+          <div className="admin-categories-layout">
             <section className="card admin-form-section">
-              <h3 style={{ marginBottom: '1.5rem' }}>
-                {editingCategoryId ? 'Edit Category' : 'Create New Category'}
-              </h3>
+              <h3 className="admin-table-title" style={{ marginBottom: '2rem' }}>{editingCategoryId ? 'Edit Category' : 'Create Category'}</h3>
               <form onSubmit={handleCreateCategory}>
                 <div className="form-group"><label>Name</label><input type="text" value={newCategory.name} onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })} required /></div>
-                <div className="form-group"><label>Description</label><textarea value={newCategory.description} onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })} className="admin-form-textarea" /></div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <button type="submit" className="btn-primary" style={{ flex: 1, padding: '0.75rem' }}>
-                    {editingCategoryId ? 'Update Category' : 'Create Category'}
-                  </button>
-                  {editingCategoryId && (
-                    <button type="button" onClick={handleCancelCategoryEdit} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
-                  )}
-                </div>
+                <div className="form-group"><label>Description</label><textarea value={newCategory.description} onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })} rows={4} /></div>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}><button type="submit" className="admin-btn-edit" style={{ flex: 1 }}>{editingCategoryId ? 'Save' : 'Create'}</button>{editingCategoryId && <button type="button" onClick={handleCancelCategoryEdit} className="admin-reminder-btn">Cancel</button>}</div>
               </form>
             </section>
-            <section className="card admin-form-section">
-              <h3 style={{ marginBottom: '1.5rem' }}>Existing Categories</h3>
-              <div className="admin-categories-list">
+            <section className="admin-categories-list-section">
+              <div className="admin-table-header-box" style={{ borderRadius: '24px 24px 0 0', borderBottom: 'none' }}><h3 className="admin-table-title">Existing Categories</h3></div>
+              <div className="admin-categories-grid" style={{
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem',
+                padding: '1.5rem', background: 'rgba(99, 102, 241, 0.02)', border: '1px solid var(--border-color)', borderRadius: '0 0 24px 24px'
+              }}>
                 {categories.map((c) => (
-                  <div key={c._id} className="admin-category-card" title={c.description}>
-                    <div className="category-name">{c.name}</div>
-                    <div className="category-desc">{c.description || 'No description'}</div>
-                    <div className="category-actions">
-                      <button onClick={() => handleEditCategory(c)} className="btn-icon-edit">Edit</button>
-                      <button onClick={() => handleDeleteCategory(c)} className="btn-icon-delete">Delete</button>
-                    </div>
+                  <div key={c._id} className="admin-category-card">
+                    <div className="category-header"><span className="category-name">{c.name}</span><div className="admin-actions-flex"><button onClick={() => handleEditCategory(c)} className="admin-btn-edit" style={{ padding: '0.4rem 0.8rem' }}>Edit</button><button onClick={() => handleDeleteCategory(c)} className="admin-btn-delete" style={{ padding: '0.4rem 0.8rem' }}>Delete</button></div></div>
+                    <p className="category-desc">{c.description || 'No description provided.'}</p>
                   </div>
                 ))}
               </div>
@@ -884,195 +610,67 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'requests' && (
           <section className="card admin-table-section">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Book</th>
-                  <th>Status</th>
-                  <th className="admin-actions-cell">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {borrows.filter((b) => b.status === 'return_requested').map((b) => (
+            <div className="admin-table-header-box"><h3 className="admin-table-title">Return Requests</h3></div>
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead><tr><th>Borrower</th><th>Book</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
+                <tbody>{borrows.filter(b => b.status === 'return_requested').map(b => (
                   <tr key={b._id}>
-                    <td data-label="User" style={{ fontWeight: '500' }}>{b.user_id?.name || 'Unknown'}</td>
-                    <td data-label="Book">{b.book_id?.title || 'Unknown'}</td>
-                    <td data-label="Status"><span className={`status-badge status-${b.status}`}>{b.status}</span></td>
-                    <td data-label="Action" className="admin-actions-cell">
-                      <button onClick={() => handleAcceptReturn(b._id)} className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Accept Return</button>
-                    </td>
+                    <td><div className="user-info-box"><span className="user-main-name">{b.user_id?.name || 'Unknown'}</span></div></td>
+                    <td><div className="book-info-box"><span className="book-main-title">{b.book_id?.title || 'Unknown'}</span></div></td>
+                    <td><span className="status-badge status-return_requested">Return Requested</span></td>
+                    <td className="admin-actions-cell"><button onClick={() => handleAcceptReturn(b._id)} className="admin-btn-edit">Accept Return</button></td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {borrows.filter((b) => b.status === 'return_requested').length === 0 && (
-              <div className="admin-empty-state">No pending return requests.</div>
-            )}
+                ))}</tbody>
+              </table>
+            </div>
+            {borrows.filter(b => b.status === 'return_requested').length === 0 && <div className="admin-empty-state">No pending returns.</div>}
           </section>
         )}
 
         {activeTab === 'user-requests' && (
           <section className="card admin-table-section">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Book Title</th>
-                  <th>Author</th>
-                  <th>Status</th>
-                  <th className="admin-actions-cell">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {userRequests.map((req: any) => (
+            <div className="admin-table-header-box"><h3 className="admin-table-title">Book Suggestions</h3></div>
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead><tr><th>User</th><th>Book Details</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
+                <tbody>{userRequests.map(req => (
                   <tr key={req._id}>
-                    <td data-label="User">
-                      <div style={{ fontWeight: '500' }}>{req.user_id?.name || 'Unknown'}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{req.user_id?.email}</div>
-                    </td>
-                    <td data-label="Book Title">{req.title}</td>
-                    <td data-label="Author">{req.author}</td>
-                    <td data-label="Status"><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
-                    <td data-label="Action" className="admin-actions-cell">
-                      {req.status === 'pending' ? (
-                        <div className="admin-actions-flex">
-                          <button onClick={() => handleBookRequestStatus(req._id, 'approved')} style={{ padding: '0.4rem 0.8rem', backgroundColor: '#10b981', color: 'white', borderRadius: '6px', fontSize: '0.875rem' }}>Approve</button>
-                          <button onClick={() => handleBookRequestStatus(req._id, 'rejected')} style={{ padding: '0.4rem 0.8rem', color: '#ef4444', border: '1px solid #ef4444', backgroundColor: 'transparent', borderRadius: '6px', fontSize: '0.875rem' }}>Reject</button>
-                        </div>
-                      ) : <span className="admin-processed-text">Processed</span>}
-                    </td>
+                    <td><div className="user-info-box"><span className="user-main-name">{req.user_id?.name || 'Unknown'}</span><span className="user-sub-email">{req.user_id?.email}</span></div></td>
+                    <td><div className="book-info-box"><span className="book-main-title">{req.title}</span><span className="book-sub-meta">by {req.author}</span></div></td>
+                    <td><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
+                    <td className="admin-actions-cell">{req.status === 'pending' ? (<div className="admin-actions-flex"><button onClick={() => handleBookRequestStatus(req._id, 'approved')} className="admin-btn-edit">Approve</button><button onClick={() => handleBookRequestStatus(req._id, 'rejected')} className="admin-btn-delete">Reject</button></div>) : <span className="admin-processed-text">Processed</span>}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {userRequests.length === 0 && (
-              <div className="admin-empty-state">No book suggestions yet.</div>
-            )}
+                ))}</tbody>
+              </table>
+            </div>
+            {userRequests.length === 0 && <div className="admin-empty-state">No suggestions yet.</div>}
           </section>
         )}
 
         {activeTab === 'borrows' && (
           <section className="card admin-table-section">
-            <div className="admin-table-header-box admin-header-with-filter">
-              <h3 className="admin-table-title">Borrow Records</h3>
-              <div className="admin-filter-section">
-                <span className="admin-filter-label">Filter by Status:</span>
-                <select
-                  value={borrowStatusFilter}
-                  onChange={(e) => setBorrowStatusFilter(e.target.value)}
-                  className="admin-filter-select"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="borrowed">Borrowed</option>
-                  <option value="returned">Returned</option>
-                  <option value="return_requested">Return Requested</option>
-                  <option value="overdue">Overdue</option>
-                </select>
-              </div>
+            <div className="admin-table-header-box"><h3 className="admin-table-title">Borrow History</h3><div className="admin-filter-group"><span className="admin-filter-label">Filter</span><select value={borrowStatusFilter} onChange={(e) => setBorrowStatusFilter(e.target.value)} className="admin-filter-select"><option value="all">All Records</option><option value="borrowed">Borrowed</option><option value="returned">Returned</option><option value="overdue">Overdue</option></select></div></div>
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead><tr><th>Borrower</th><th>Book</th><th>Dates</th><th>Fine</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
+                <tbody>{borrows.filter(b => borrowStatusFilter === 'all' || b.status === borrowStatusFilter).map(b => (
+                  <tr key={b._id}>
+                    <td><div className="user-info-box"><span className="user-main-name">{b.user_id?.name}</span><span className="membership-pill">{(b.user_id as any)?.membership_id?.name || 'Basic'}</span></div></td>
+                    <td><div className="book-info-box"><span className="book-main-title">{b.book_id?.title}</span></div></td>
+                    <td><div className="book-sub-meta"><div>Issued: {b.issued_date ? new Date(b.issued_date).toLocaleDateString() : 'N/A'}</div><div>Due: {new Date(b.return_date).toLocaleDateString()}</div></div></td>
+                    <td><span className={`admin-fine-amount ${(b.fine_amount || 0) > 0 ? 'admin-fine-danger' : ''}`}>₹{(b.fine_amount || 0).toFixed(2)}</span></td>
+                    <td><span className={`status-badge status-${b.status}`}>{b.status.replace(/_/g, ' ')}</span></td>
+                    <td className="admin-actions-cell">{(b.fine_amount || 0) > 50 && <button onClick={() => handleSendReminder(b._id)} className="admin-reminder-btn">Remind</button>}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
             </div>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Borrower Details</th>
-                  <th>Book</th>
-                  <th>Dates</th>
-                  <th>Fine</th>
-                  <th>Status</th>
-                  <th className="admin-actions-cell">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {borrows
-                  .filter(b => borrowStatusFilter === 'all' || b.status === borrowStatusFilter)
-                  .map((b) => (
-                    <tr key={b._id}>
-                      <td data-label="Borrower Details" className="user-cell-name">
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span>{b.user_id?.name || 'Unknown'}</span>
-                          <span className="user-cell-email">{b.user_id?.email}</span>
-                          <span className="user-cell-membership">
-                            {(b.user_id as any)?.membership_id?.displayName || (b.user_id as any)?.membership_id?.name || 'Basic'}
-                          </span>
-                        </div>
-                      </td>
-                      <td data-label="Book">{b.book_id?.title || 'Unknown'}</td>
-                      <td data-label="Dates">
-                        <div style={{ fontSize: '0.85rem' }}>
-                          <div>Issued: {b.issued_date ? new Date(b.issued_date as string).toLocaleDateString() : 'N/A'}</div>
-                          <div>Due: {new Date(b.return_date).toLocaleDateString()}</div>
-                        </div>
-                      </td>
-                      <td data-label="Fine">
-                        <span className={`admin-fine-amount ${(b.fine_amount || 0) > 0 || new Date() > new Date(b.return_date) ? 'admin-fine-danger' : ''}`}>
-                          ₹{(() => {
-                            let fine = b.fine_amount || 0;
-                            if (b.status !== 'returned' && b.status !== 'archived' && new Date() > new Date(b.return_date)) {
-                              const diffTime = Math.abs(new Date().getTime() - new Date(b.return_date).getTime());
-                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                              fine += diffDays * 10;
-                            }
-                            return fine.toFixed(2);
-                          })()}
-                        </span>
-                      </td>
-                      <td data-label="Status"><span className={`status-badge status-${b.status}`}>{b.status}</span></td>
-                      <td data-label="Action" className="admin-actions-cell">
-                        <div className="admin-actions-flex">
-                          {b.status === 'return_requested' && (
-                            <button
-                              onClick={() => handleAcceptReturn(b._id)}
-                              className="btn-primary"
-                              style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
-                            >
-                              Accept Return
-                            </button>
-                          )}
-                          {(() => {
-                            let fine = b.fine_amount || 0;
-                            if (b.status !== 'returned' && b.status !== 'archived' && new Date() > new Date(b.return_date)) {
-                              const diffTime = Math.abs(new Date().getTime() - new Date(b.return_date).getTime());
-                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                              fine += diffDays * 10;
-                            }
-                            return fine > 50;
-                          })() && (
-                              <button
-                                onClick={() => handleSendReminder(b._id)}
-                                className="btn-secondary admin-reminder-btn"
-                                title="Fine exceeds ₹50"
-                              >
-                                Send Reminder
-                              </button>
-                            )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-            {borrows.filter(b => borrowStatusFilter === 'all' || b.status === borrowStatusFilter).length === 0 && (
-              <div className="admin-empty-state">
-                No borrow records found matching this status.
-              </div>
-            )}
             {borrowTotalPages > 1 && (
-              <div className="pagination-controls">
-                <button
-                  disabled={borrowPage === 1}
-                  onClick={() => setBorrowPage(prev => prev - 1)}
-                  className="btn-secondary"
-                >
-                  Previous
-                </button>
-                <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
-                <button
-                  disabled={borrowPage === borrowTotalPages}
-                  onClick={() => setBorrowPage(prev => prev + 1)}
-                  className="btn-primary"
-                >
-                  Next
-                </button>
+              <div className="pagination-controls" style={{ padding: '2rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+                <button disabled={borrowPage === 1} onClick={() => setBorrowPage(prev => prev - 1)} className="admin-reminder-btn">Previous</button>
+                <span className="page-info" style={{ fontWeight: 800, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Page {borrowPage} of {borrowTotalPages}</span>
+                <button disabled={borrowPage === borrowTotalPages} onClick={() => setBorrowPage(prev => prev + 1)} className="admin-btn-edit" style={{ padding: '0.45rem 1.5rem' }}>Next</button>
               </div>
             )}
           </section>
@@ -1080,46 +678,27 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'logs' && (
           <section className="card admin-table-section">
-            <div className="admin-table-header-box">
-              <h3 className="admin-table-title">Recent Activities</h3>
-            </div>
+            <div className="admin-table-header-box"><h3 className="admin-table-title">Activity Logs</h3></div>
             <div className="admin-table-wrapper">
               <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Timestamp</th>
+                <thead><tr><th>User</th><th>Action</th><th>Timestamp</th></tr></thead>
+                <tbody>{logs.map(log => (
+                  <tr key={log._id}>
+                    <td><div className="user-info-box"><span className="user-main-name">{log.user_id?.name}</span><span className="user-sub-email">{log.user_id?.email}</span></div></td>
+                    <td><span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{log.action}</span></td>
+                    <td><span className="book-sub-meta">{new Date(log.timestamp).toLocaleString()}</span></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {logs.map((log) => (
-                    <tr key={log._id}>
-                      <td data-label="User">
-                        <div style={{ fontWeight: '500' }}>{log.user_id?.name || 'Unknown'}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{log.user_id?.email}</div>
-                      </td>
-                      <td data-label="Action">{log.action}</td>
-                      <td data-label="Timestamp">{new Date(log.timestamp).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
+                ))}</tbody>
               </table>
             </div>
-            {logs.length === 0 && (
-              <div className="admin-empty-state">No activity logs found.</div>
-            )}
+            {logs.length === 0 && <div className="admin-empty-state">No logs found.</div>}
           </section>
         )}
       </main>
 
       <ConfirmationModal
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        type={confirmModal.type}
-        isLoading={confirmModal.isLoading}
-        onConfirm={confirmModal.onConfirm}
+        isOpen={confirmModal.isOpen} title={confirmModal.title} message={confirmModal.message}
+        type={confirmModal.type} isLoading={confirmModal.isLoading} onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
