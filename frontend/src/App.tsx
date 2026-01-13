@@ -50,20 +50,19 @@ const App: React.FC = () => {
           <Route path="/reset/:token" element={<ResetPassword />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
 
-          {/* Protected User Routes with Sidebar Layout */}
-          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
             <Route element={<UserLayout />}>
+              {/* User Routes */}
               <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
               <Route path="/books" element={<BookList />} />
               <Route path="/books/:id" element={<BookDetail />} />
-            </Route>
-          </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              {/* Admin Routes */}
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            </Route>
           </Route>
         </Routes>
         <ThemeToggle className="theme-toggle-fixed" />
