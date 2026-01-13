@@ -227,12 +227,14 @@ const BookDetail: React.FC = () => {
           <div className="book-specs-grid">
             <strong>Genre:</strong> <span>{book.genre}</span>
             <strong>Pages:</strong> <span>{book.pages}</span>
-            <strong>Price:</strong> <span>${book.price}</span>
+            <strong>Price:</strong> <span>₹{book.price}</span>
+            <strong>Published:</strong> <span>{book.publishedYear}</span>
             <strong>ISBN:</strong> <span>{book.isbn}</span>
             <strong>Copies:</strong> <span>{book.noOfCopies} available</span>
           </div>
 
           <p className="book-description-p">{book.description}</p>
+
 
           <div>
             <div className="action-buttons">
@@ -297,6 +299,24 @@ const BookDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Author Section - Separate Card */}
+      {(book.author_image_url || book.author_description) && (
+        <div className="card author-card-wrapper" style={{ marginTop: '2rem' }}>
+          <div className="author-section">
+            <h3 className="author-section-title">About the Author</h3>
+            <div className="author-content">
+              {book.author_image_url && (
+                <img src={book.author_image_url} alt={book.author} className="author-image" />
+              )}
+              <div className="author-text">
+                <h4>{book.author}</h4>
+                <p>{book.author_description}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reviews Section */}
       <div className="reviews-section-container">

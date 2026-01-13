@@ -27,6 +27,8 @@ export interface Book {
   addedBy?: string; // User ID
   createdAt?: string;
   updatedAt?: string;
+  author_image_url?: string;
+  author_description?: string;
 }
 
 export interface User {

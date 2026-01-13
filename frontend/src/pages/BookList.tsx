@@ -172,7 +172,12 @@ const BookList: React.FC = () => {
                 <div className="premium-badge-tag">Premium</div>
               )}
               <h3 className="book-title-h3">{book.title}</h3>
-              <p className="book-author-p">{book.author}</p>
+              <p className="book-author-p">by {book.author}</p>
+
+              <div className="book-meta-info">
+                <span className="book-price-tag">₹{book.price}</span>
+                <span className="book-year-tag">• {book.publishedYear}</span>
+              </div>
 
               <div className="book-footer">
                 <div className="book-status-info">

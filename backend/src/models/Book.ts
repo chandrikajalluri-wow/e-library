@@ -20,6 +20,8 @@ export interface IBook extends Document {
   createdAt: Date;
   updatedAt: Date;
   cover_image_url?: string;
+  author_image_url?: string;
+  author_description?: string;
   noOfCopies: number;
   isPremium: boolean; // Premium collection flag
 }
@@ -46,6 +48,8 @@ const bookSchema = new Schema<IBook>(
     addedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     updatedAt: { type: Date, default: Date.now },
     cover_image_url: { type: String },
+    author_image_url: { type: String },
+    author_description: { type: String },
     noOfCopies: { type: Number, required: true, default: 1 },
     isPremium: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
