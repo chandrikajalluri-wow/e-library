@@ -177,7 +177,14 @@ router.get(
     async (req: AuthRequest, res: Response) => {
         try {
             const requests = await BookRequest.find()
-                .populate('user_id', 'name email')
+                .populate({
+                    path: 'user_id',
+                    select: 'name email membership_id',
+                    populate: {
+                        path: 'membership_id',
+                        select: 'name displayName'
+                    }
+                })
                 .sort({ createdAt: -1 });
             res.json(requests);
         } catch (err) {

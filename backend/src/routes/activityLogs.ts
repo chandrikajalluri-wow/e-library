@@ -12,7 +12,14 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const logs = await ActivityLog.find()
-        .populate('user_id', 'name email')
+        .populate({
+          path: 'user_id',
+          select: 'name email membership_id',
+          populate: {
+            path: 'membership_id',
+            select: 'name displayName'
+          }
+        })
         .sort({ timestamp: -1 })
         .limit(100);
       res.json(logs);

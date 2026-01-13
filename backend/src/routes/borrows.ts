@@ -255,14 +255,39 @@ router.get(
       const limit = parseInt(req.query.limit as string) || 10;
       const skip = (page - 1) * limit;
 
-      const borrows = await Borrow.find()
-        .populate('user_id', 'name email')
+      const { status, membership } = req.query;
+      const query: any = {};
+      if (status && status !== 'all') query.status = status;
+
+      if (membership && membership !== 'all') {
+        const User = require('../models/User').default;
+        const Membership = require('../models/Membership').default;
+        const targetMembership = await Membership.findOne({ name: new RegExp(membership as string, 'i') });
+        if (targetMembership) {
+          const users = await User.find({ membership_id: targetMembership._id }).select('_id');
+          query.user_id = { $in: users.map((u: any) => u._id) };
+        } else if (membership === 'basic') {
+          // Handle cases where users might not have a membership_id yet (treated as basic)
+          const users = await User.find({ membership_id: { $exists: false } }).select('_id');
+          query.user_id = { $in: users.map((u: any) => u._id) };
+        }
+      }
+
+      const borrows = await Borrow.find(query)
+        .populate({
+          path: 'user_id',
+          select: 'name email membership_id',
+          populate: {
+            path: 'membership_id',
+            select: 'name displayName'
+          }
+        })
         .populate('book_id', 'title')
         .sort({ issued_date: -1 })
         .skip(skip)
         .limit(limit);
 
-      const total = await Borrow.countDocuments();
+      const total = await Borrow.countDocuments(query);
 
       res.json({
         borrows,
