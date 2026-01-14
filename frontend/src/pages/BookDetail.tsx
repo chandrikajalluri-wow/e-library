@@ -113,6 +113,11 @@ const BookDetail: React.FC = () => {
   };
 
   const handleBorrow = async () => {
+    if (!localStorage.getItem('token')) {
+      toast.info('Please sign in to borrow books');
+      navigate('/login');
+      return;
+    }
     if (!book) return;
     try {
       await issueBook(book._id);
@@ -124,6 +129,11 @@ const BookDetail: React.FC = () => {
   };
 
   const handleToggleWishlist = async () => {
+    if (!localStorage.getItem('token')) {
+      toast.info('Please sign in to add books to your wishlist');
+      navigate('/login');
+      return;
+    }
     if (!book) return;
 
     if (isWishlisted && wishlistItemId) {
@@ -256,13 +266,13 @@ const BookDetail: React.FC = () => {
                     <>
                       <button
                         onClick={handleBorrow}
-                        disabled={activeBorrowCount >= (userMembership?.borrowLimit || 3)}
-                        className={`btn-primary borrow-btn ${activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'disabled-btn' : ''}`}
-                        title={activeBorrowCount >= (userMembership?.borrowLimit || 3) ? `Borrow limit (${userMembership?.borrowLimit || 3}) reached` : ''}
+                        disabled={localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? true : false}
+                        className={`btn-primary borrow-btn ${localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'disabled-btn' : ''}`}
+                        title={localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? `Borrow limit (${userMembership?.borrowLimit || 3}) reached` : ''}
                       >
-                        {activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'Borrow Limit Reached' : 'Borrow This Book'}
+                        {localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'Borrow Limit Reached' : 'Borrow This Book'}
                       </button>
-                      {activeBorrowCount >= (userMembership?.borrowLimit || 3) && (
+                      {localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) && (
                         <p className="limit-warning">
                           You have reached your membership limit of {userMembership?.borrowLimit || 3} borrowed books.
                         </p>

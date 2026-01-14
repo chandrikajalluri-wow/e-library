@@ -8,7 +8,10 @@ const storage = new CloudinaryStorage({
     params: {
         // @ts-ignore
         folder: 'book-covers',
-        id: (req: Request, file: Express.Multer.File) => `book_${Date.now()}`,
+        public_id: (req: Request, file: Express.Multer.File) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+            return `book_${file.fieldname}_${uniqueSuffix}`;
+        },
         allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
     },
 });
