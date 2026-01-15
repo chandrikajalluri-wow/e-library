@@ -25,7 +25,6 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import MembershipPlans from './pages/MembershipPlans';
 import UserSettings from './pages/UserSettings';
 import NotificationsPage from './pages/NotificationsPage';
-import OfflineBooks from './pages/OfflineBooks';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './components/UserLayout';
@@ -33,60 +32,53 @@ import ScrollRevealHandler from './components/ScrollRevealHandler';
 
 import { ThemeProvider } from './context/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
-import OfflineDetector from './components/OfflineDetector';
 
 const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <OfflineDetector>
-        <Router>
-          <ScrollRevealHandler />
-          <AxiosInterceptor />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/mission" element={<OurMission />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/terms" element={<TermsAndConditions />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/memberships" element={<MembershipPlans />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot" element={<ForgotPassword />} />
-            <Route path="/reset/:token" element={<ResetPassword />} />
-            <Route path="/verify/:token" element={<VerifyEmail />} />
+      <Router>
+        <ScrollRevealHandler />
+        <AxiosInterceptor />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/mission" element={<OurMission />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/memberships" element={<MembershipPlans />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot" element={<ForgotPassword />} />
+          <Route path="/reset/:token" element={<ResetPassword />} />
+          <Route path="/verify/:token" element={<VerifyEmail />} />
 
           <Route element={<ProtectedRoute allowedRoles={['user', 'admin', 'super_admin']} />}>
             <Route element={<UserLayout />}>
+              {/* User Routes */}
+              <Route path="/dashboard" element={<UserDashboard />} />
+              <Route path="/profile" element={<UserProfile />} />
+              <Route path="/settings" element={<UserSettings />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/request-book" element={<BookRequestPage />} />
               <Route path="/books" element={<BookList />} />
               <Route path="/books/:id" element={<BookDetail />} />
-            </Route>
-
-            <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
-              <Route element={<UserLayout />}>
-                {/* User Routes */}
-                <Route path="/dashboard" element={<UserDashboard />} />
-                <Route path="/profile" element={<UserProfile />} />
-                <Route path="/settings" element={<UserSettings />} />
-                <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/wishlist" element={<WishlistPage />} />
-                <Route path="/request-book" element={<BookRequestPage />} />
-                <Route path="/offline" element={<OfflineBooks />} />
 
               {/* Admin Routes */}
               <Route element={<ProtectedRoute allowedRoles={['admin', 'super_admin']} />}>
                 <Route path="/admin-dashboard" element={<AdminDashboard />} />
               </Route>
 
-              {/* Super Admin Routes */}
+              {/* Super Admin Routes*/}
               <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
                 <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
               </Route>
             </Route>
-          </Routes>
-          <ThemeToggle className="theme-toggle-fixed" />
-        </Router>
-      </OfflineDetector>
+          </Route>
+        </Routes>
+        <ThemeToggle className="theme-toggle-fixed" />
+      </Router>
     </ThemeProvider>
   );
 };
