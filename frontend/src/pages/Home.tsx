@@ -143,6 +143,7 @@ const Home: React.FC = () => {
             <span>Bookstack</span>
           </Link>
           <div className="nav-actions">
+            <Link to="/books">Books</Link>
             <Link to="/about">About</Link>
             <Link to="/contact">Support</Link>
             {isAuthenticated ? (

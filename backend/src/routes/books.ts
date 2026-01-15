@@ -1,14 +1,15 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import Book from '../models/Book';
 import Borrow from '../models/Borrow';
 import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
+import { uploadToS3 } from '../utils/s3Service';
 import ActivityLog from '../models/ActivityLog';
 
 const router = express.Router();
 
 // Get all books (Public, with filters)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search, category, genre, showArchived, isPremium } = req.query;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,13 +50,12 @@ router.get('/', async (req: Request, res: Response) => {
       pages: Math.ceil(total / limit),
     });
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: 'Server error' });
+    next(err);
   }
 });
 
 // Get single book
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const book = await Book.findById(req.params.id).populate(
       'category_id',
@@ -64,8 +64,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     if (!book) return res.status(404).json({ error: 'Book not found' });
     res.json(book);
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: 'Server error' });
+    next(err);
   }
 });
 
@@ -77,8 +76,9 @@ router.post(
   upload.fields([
     { name: 'cover_image', maxCount: 1 },
     { name: 'author_image', maxCount: 1 },
+    { name: 'pdf', maxCount: 1 },
   ]),
-  async (req: AuthRequest, res: Response) => {
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const bookData = { ...req.body };
 
@@ -90,6 +90,12 @@ router.post(
       }
       if (files?.['author_image']?.[0]) {
         bookData.author_image_url = files['author_image'][0].path;
+      }
+      if (files?.['pdf']?.[0]) {
+        const pdfFile = files['pdf'][0];
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const fileName = `${uniqueSuffix}_${pdfFile.originalname.replace(/\s+/g, '_')}`;
+        bookData.pdf_url = await uploadToS3(pdfFile.buffer, fileName, pdfFile.mimetype);
       }
 
       const book = new Book({
@@ -107,8 +113,7 @@ router.post(
 
       res.status(201).json(book);
     } catch (err) {
-      console.log(err);
-      res.status(500).json({ error: (err as any).message || 'Server error' });
+      next(err);
     }
   }
 );
@@ -121,8 +126,9 @@ router.put(
   upload.fields([
     { name: 'cover_image', maxCount: 1 },
     { name: 'author_image', maxCount: 1 },
+    { name: 'pdf', maxCount: 1 },
   ]),
-  async (req: AuthRequest, res: Response) => {
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const bookData = { ...req.body };
 
@@ -134,23 +140,34 @@ router.put(
       if (files?.['author_image']?.[0]) {
         bookData.author_image_url = files['author_image'][0].path;
       }
+      if (files?.['pdf']?.[0]) {
+        const pdfFile = files['pdf'][0];
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const fileName = `${uniqueSuffix}_${pdfFile.originalname.replace(/\s+/g, '_')}`;
+        bookData.pdf_url = await uploadToS3(pdfFile.buffer, fileName, pdfFile.mimetype);
+      }
 
       const book = await Book.findByIdAndUpdate(req.params.id, bookData, {
         new: true,
+        runValidators: true,
       });
       if (!book) return res.status(404).json({ error: 'Book not found' });
 
       // Log activity
-      await new ActivityLog({
-        user_id: req.user!._id,
-        action: `Updated book: ${book.title}`,
-        book_id: book._id,
-      }).save();
+      try {
+        await new ActivityLog({
+          user_id: req.user!._id,
+          action: `Updated book: ${book.title}`,
+          book_id: book._id,
+        }).save();
+      } catch (logErr) {
+        console.error('Failed to log activity:', logErr);
+        // Don't fail the request if logging fails
+      }
 
       res.json(book);
     } catch (err) {
-      console.log(err);
-      res.status(500).json({ error: (err as any).message || 'Server error' });
+      next(err);
     }
   }
 );
@@ -160,7 +177,7 @@ router.delete(
   '/:id',
   auth,
   checkRole(['admin']),
-  async (req: AuthRequest, res: Response) => {
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       // Check if book is currently borrowed
       const activeBorrow = await Borrow.findOne({
@@ -186,8 +203,7 @@ router.delete(
 
       res.json({ message: 'Book deleted' });
     } catch (err) {
-      console.log(err);
-      res.status(500).json({ error: (err as any).message || 'Server error' });
+      next(err);
     }
   }
 );

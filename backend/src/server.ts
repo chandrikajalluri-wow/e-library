@@ -49,6 +49,14 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/memberships', membershipRoutes);
 app.use('/api/borrows', borrowRenewalRoutes);
 
+// Global Error Handler
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("GLOBAL ERROR:", err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

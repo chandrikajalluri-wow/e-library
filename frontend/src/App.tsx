@@ -52,6 +52,11 @@ const App: React.FC = () => {
           <Route path="/reset/:token" element={<ResetPassword />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
 
+          <Route element={<UserLayout />}>
+            <Route path="/books" element={<BookList />} />
+            <Route path="/books/:id" element={<BookDetail />} />
+          </Route>
+
           <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
             <Route element={<UserLayout />}>
               {/* User Routes */}
@@ -61,8 +66,6 @@ const App: React.FC = () => {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
-              <Route path="/books" element={<BookList />} />
-              <Route path="/books/:id" element={<BookDetail />} />
 
               {/* Admin Routes */}
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
