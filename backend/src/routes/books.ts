@@ -1,9 +1,11 @@
 import express, { Request, Response, NextFunction } from 'express';
+import { Readable } from 'stream';
 import Book from '../models/Book';
+import User from '../models/User';
 import Borrow from '../models/Borrow';
 import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
-import { uploadToS3 } from '../utils/s3Service';
+import { uploadToS3, getS3FileStream } from '../utils/s3Service';
 import ActivityLog from '../models/ActivityLog';
 
 const router = express.Router();
@@ -202,6 +204,63 @@ router.delete(
       }).save();
 
       res.json({ message: 'Book deleted' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Download Book PDF (Standard and Premium members only)
+router.get(
+  '/:id/download',
+  auth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const book = await Book.findById(req.params.id);
+      if (!book) return res.status(404).json({ error: 'Book not found' });
+      if (!book.pdf_url) return res.status(404).json({ error: 'PDF not available for this book' });
+
+      // Populating membership to check name
+      const user = await User.findById(req.user!._id).populate('membership_id');
+      if (!user) return res.status(404).json({ error: 'User not found' });
+
+      const membership = user.membership_id as any;
+      const userRole = (req.user!.role_id as any).name;
+
+      // Allow if user is admin OR has standard/premium membership
+      const hasAccess = userRole === 'admin' || (membership && ['standard', 'premium'].includes(membership.name));
+
+      if (!hasAccess) {
+        return res.status(403).json({
+          error: 'Download is only available for Standard and Premium members. Please upgrade your plan.'
+        });
+      }
+
+      // Proxy the request to S3 and stream it to the client with attachment header
+      try {
+        const urlObject = new URL(book.pdf_url);
+        const key = decodeURIComponent(urlObject.pathname.substring(1));
+
+        const s3Response = await getS3FileStream(key);
+
+        const fileName = `${book.title.replace(/\s+/g, '_')}.pdf`;
+
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Type', s3Response.ContentType || 'application/pdf');
+
+        if (s3Response.ContentLength) {
+          res.setHeader('Content-Length', s3Response.ContentLength);
+        }
+
+        if (s3Response.Body) {
+          (s3Response.Body as Readable).pipe(res);
+        } else {
+          res.status(404).json({ error: 'PDF content not found in storage' });
+        }
+      } catch (s3Err) {
+        console.error('S3 Stream Error:', s3Err);
+        res.status(500).json({ error: 'Failed to fetch PDF from storage' });
+      }
     } catch (err) {
       next(err);
     }

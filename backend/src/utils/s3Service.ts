@@ -1,10 +1,10 @@
-import { S3Client } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const s3Client = new S3Client({
+export const s3Client = new S3Client({
     region: process.env.AWS_REGION || "ap-south-1",
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -54,4 +54,23 @@ export const uploadToS3 = async (
         console.error("S3 Upload Error:", error);
         throw new Error("Failed to upload file to S3");
     }
+};
+
+/**
+ * Gets a file stream from AWS S3
+ * @param key The S3 key of the file
+ * @returns Promise with the S3 GetObjectCommand output
+ */
+export const getS3FileStream = async (key: string) => {
+    const bucketName = process.env.AWS_S3_BUCKET_NAME;
+    if (!bucketName) {
+        throw new Error("AWS_S3_BUCKET_NAME is not defined");
+    }
+
+    const command = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+    });
+
+    return await s3Client.send(command);
 };
