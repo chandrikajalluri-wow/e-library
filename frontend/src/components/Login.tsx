@@ -31,7 +31,9 @@ const Login: React.FC = () => {
       toast.success(`Welcome, ${email}!`);
 
       // Role-based redirect
-      if (role === 'admin') {
+      if (role === 'super_admin') {
+        navigate('/super-admin-dashboard');
+      } else if (role === 'admin') {
         navigate('/admin-dashboard'); //  admins go here
       } else {
         navigate('/books'); //  normal users go here
