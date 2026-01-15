@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getBook } from '../services/bookService';
+import { getBook, downloadBookPdf } from '../services/bookService';
 import { issueBook, getMyBorrows } from '../services/borrowService';
 import {
   addToWishlist,
@@ -12,6 +12,11 @@ import { getMyMembership, type Membership } from '../services/membershipService'
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import Footer from '../components/Footer';
+import {
+  saveBookOffline,
+  isBookOffline,
+  removeOfflineBook,
+} from '../utils/db';
 import '../styles/BookDetail.css';
 
 const BookDetail: React.FC = () => {
@@ -30,6 +35,8 @@ const BookDetail: React.FC = () => {
   const [activeBorrowCount, setActiveBorrowCount] = useState(0);
   const [userMembership, setUserMembership] = useState<Membership | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [isAvailableOffline, setIsAvailableOffline] = useState(false);
+  const [isSavingOffline, setIsSavingOffline] = useState(false);
   const currentUserId = localStorage.getItem('userId'); // I should ensure userId is stored
 
   useEffect(() => {
@@ -40,8 +47,14 @@ const BookDetail: React.FC = () => {
       checkBorrowStatus(id);
       fetchActiveBorrowCount();
       fetchUserMembership();
+      checkOfflineStatus(id);
     }
   }, [id]);
+
+  const checkOfflineStatus = async (bookId: string) => {
+    const offline = await isBookOffline(bookId);
+    setIsAvailableOffline(offline);
+  };
 
   const fetchUserMembership = async () => {
     try {
@@ -113,6 +126,11 @@ const BookDetail: React.FC = () => {
   };
 
   const handleBorrow = async () => {
+    if (!localStorage.getItem('token')) {
+      toast.info('Please sign in to borrow books');
+      navigate('/login');
+      return;
+    }
     if (!book) return;
     try {
       await issueBook(book._id);
@@ -124,6 +142,11 @@ const BookDetail: React.FC = () => {
   };
 
   const handleToggleWishlist = async () => {
+    if (!localStorage.getItem('token')) {
+      toast.info('Please sign in to add books to your wishlist');
+      navigate('/login');
+      return;
+    }
     if (!book) return;
 
     if (isWishlisted && wishlistItemId) {
@@ -181,6 +204,95 @@ const BookDetail: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingReviewId(null);
     setNewReview({ rating: 5, comment: '' });
+  };
+
+  const handleDownload = async () => {
+    if (!id) return;
+    try {
+      const blob = await downloadBookPdf(id);
+
+      // Check if the received blob is actually a PDF and not an error JSON
+      if (blob.size < 100) { // Tiny files are likely error messages or empty
+        const text = await blob.text();
+        try {
+          const json = JSON.parse(text);
+          if (json.error) throw new Error(json.error);
+        } catch (e) {
+          // Not JSON, continue with normal error
+        }
+      }
+
+      // Create local URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${book.title.replace(/\s+/g, '_')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Download started!');
+    } catch (err: any) {
+      console.error('Download error:', err);
+      let errorMsg = 'Failed to download PDF. Please try again.';
+
+      // Try to extract error message from axios error
+      if (err.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        try {
+          const json = JSON.parse(text);
+          if (json.error) errorMsg = json.error;
+        } catch (e) { }
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+
+      toast.error(errorMsg);
+    }
+  };
+
+  const handleToggleOffline = async () => {
+    if (!book || !id) return;
+    if (userMembership?.name !== 'premium') {
+      toast.error('Offline reading is a Premium feature. Please upgrade your plan.');
+      return;
+    }
+
+    if (isAvailableOffline) {
+      // Remove
+      try {
+        await removeOfflineBook(id);
+        setIsAvailableOffline(false);
+        toast.info('Removed from offline library');
+      } catch (err) {
+        toast.error('Failed to remove offline copy');
+      }
+    } else {
+      // Save
+      setIsSavingOffline(true);
+      try {
+        const blob = await downloadBookPdf(id);
+        if (blob.size < 100) throw new Error('Invalid PDF file');
+
+        await saveBookOffline({
+          id,
+          title: book.title,
+          author: book.author,
+          cover_image_url: book.cover_image_url,
+          blob,
+          storedAt: Date.now(),
+        });
+        setIsAvailableOffline(true);
+        toast.success('Saved for offline reading!');
+      } catch (err: any) {
+        toast.error('Failed to save for offline reading');
+      } finally {
+        setIsSavingOffline(false);
+      }
+    }
   };
 
   if (!book) return <Loader />;
@@ -256,13 +368,13 @@ const BookDetail: React.FC = () => {
                     <>
                       <button
                         onClick={handleBorrow}
-                        disabled={activeBorrowCount >= (userMembership?.borrowLimit || 3)}
-                        className={`btn-primary borrow-btn ${activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'disabled-btn' : ''}`}
-                        title={activeBorrowCount >= (userMembership?.borrowLimit || 3) ? `Borrow limit (${userMembership?.borrowLimit || 3}) reached` : ''}
+                        disabled={localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? true : false}
+                        className={`btn-primary borrow-btn ${localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'disabled-btn' : ''}`}
+                        title={localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? `Borrow limit (${userMembership?.borrowLimit || 3}) reached` : ''}
                       >
-                        {activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'Borrow Limit Reached' : 'Borrow This Book'}
+                        {localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'Borrow Limit Reached' : 'Borrow This Book'}
                       </button>
-                      {activeBorrowCount >= (userMembership?.borrowLimit || 3) && (
+                      {localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) && (
                         <p className="limit-warning">
                           You have reached your membership limit of {userMembership?.borrowLimit || 3} borrowed books.
                         </p>
@@ -295,6 +407,40 @@ const BookDetail: React.FC = () => {
               >
                 {isWishlisted ? '♥' : '♡'}
               </button>
+              {book.pdf_url && (
+                <button
+                  onClick={() => window.open(book.pdf_url, '_blank')}
+                  className="btn-primary read-pdf-btn"
+                  style={{ background: 'var(--accent-color)' }}
+                >
+                  📖 Read PDF
+                </button>
+              )}
+              {book.pdf_url && (userMembership?.name === 'standard' || userMembership?.name === 'premium') && (
+                <button
+                  onClick={handleDownload}
+                  className="btn-primary download-pdf-btn"
+                  style={{ background: '#27ae60' }}
+                >
+                  📥 Download PDF
+                </button>
+              )}
+              {book.pdf_url && userMembership?.name === 'premium' && (
+                <button
+                  onClick={handleToggleOffline}
+                  disabled={isSavingOffline}
+                  className={`btn-primary read-offline-btn ${isAvailableOffline ? 'secondary-offline' : ''}`}
+                  style={{ background: isAvailableOffline ? '#e67e22' : '#3498db' }}
+                >
+                  {isSavingOffline ? (
+                    <Loader small />
+                  ) : isAvailableOffline ? (
+                    '📶 Remove Offline'
+                  ) : (
+                    '🌐 Save Offline'
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

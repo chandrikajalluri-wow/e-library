@@ -51,6 +51,7 @@ const AdminDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [authorImageFile, setAuthorImageFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
 
@@ -359,6 +360,9 @@ const AdminDashboard: React.FC = () => {
           if (authorImageFile) formData.append('author_image', authorImageFile);
           else formData.append('author_image_url', newBook.author_image_url);
 
+          if (pdfFile) formData.append('pdf', pdfFile);
+          else formData.append('pdf_url', newBook.pdf_url);
+
           if (editingBookId) {
             await updateBook(editingBookId, formData);
             toast.success('Book updated successfully');
@@ -376,6 +380,7 @@ const AdminDashboard: React.FC = () => {
           });
           setCoverImageFile(null);
           setAuthorImageFile(null);
+          setPdfFile(null);
           fetchBooks();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         } catch (err: any) {
@@ -416,6 +421,7 @@ const AdminDashboard: React.FC = () => {
     });
     setCoverImageFile(null);
     setAuthorImageFile(null);
+    setPdfFile(null);
   };
 
   const handleDeleteBook = (id: string) => {
@@ -640,6 +646,10 @@ const AdminDashboard: React.FC = () => {
                 <div className="form-group">
                   <label>Author's Photo</label>
                   <input type="file" accept="image/*" onChange={(e) => setAuthorImageFile(e.target.files?.[0] || null)} className="admin-file-input" />
+                </div>
+                <div className="form-group">
+                  <label>Book PDF Content</label>
+                  <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} className="admin-file-input" />
                 </div>
                 <div className="form-group" style={{ gridColumn: 'span 3' }}><label>Description</label><textarea value={newBook.description} onChange={(e) => setNewBook({ ...newBook, description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
                 <div className="form-group" style={{ gridColumn: 'span 3' }}><label>About the Author</label><textarea value={newBook.author_description} onChange={(e) => setNewBook({ ...newBook, author_description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
