@@ -305,6 +305,15 @@ const BookDetail: React.FC = () => {
               >
                 {isWishlisted ? '♥' : '♡'}
               </button>
+              {book.pdf_url && (
+                <button
+                  onClick={() => window.open(book.pdf_url, '_blank')}
+                  className="btn-primary read-pdf-btn"
+                  style={{ background: 'var(--accent-color)' }}
+                >
+                  📖 Read PDF
+                </button>
+              )}
             </div>
           </div>
         </div>

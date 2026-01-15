@@ -3,6 +3,7 @@ import Book from '../models/Book';
 import Borrow from '../models/Borrow';
 import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
+import { uploadToS3 } from '../utils/s3Service';
 import ActivityLog from '../models/ActivityLog';
 
 const router = express.Router();
@@ -75,6 +76,7 @@ router.post(
   upload.fields([
     { name: 'cover_image', maxCount: 1 },
     { name: 'author_image', maxCount: 1 },
+    { name: 'pdf', maxCount: 1 },
   ]),
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -88,6 +90,12 @@ router.post(
       }
       if (files?.['author_image']?.[0]) {
         bookData.author_image_url = files['author_image'][0].path;
+      }
+      if (files?.['pdf']?.[0]) {
+        const pdfFile = files['pdf'][0];
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const fileName = `${uniqueSuffix}_${pdfFile.originalname.replace(/\s+/g, '_')}`;
+        bookData.pdf_url = await uploadToS3(pdfFile.buffer, fileName, pdfFile.mimetype);
       }
 
       const book = new Book({
@@ -118,6 +126,7 @@ router.put(
   upload.fields([
     { name: 'cover_image', maxCount: 1 },
     { name: 'author_image', maxCount: 1 },
+    { name: 'pdf', maxCount: 1 },
   ]),
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -130,6 +139,12 @@ router.put(
       }
       if (files?.['author_image']?.[0]) {
         bookData.author_image_url = files['author_image'][0].path;
+      }
+      if (files?.['pdf']?.[0]) {
+        const pdfFile = files['pdf'][0];
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const fileName = `${uniqueSuffix}_${pdfFile.originalname.replace(/\s+/g, '_')}`;
+        bookData.pdf_url = await uploadToS3(pdfFile.buffer, fileName, pdfFile.mimetype);
       }
 
       const book = await Book.findByIdAndUpdate(req.params.id, bookData, {
