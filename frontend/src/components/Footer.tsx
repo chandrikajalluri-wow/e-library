@@ -18,6 +18,7 @@ const Footer: React.FC = () => {
                     <ul className="footer-links">
                         <li><Link to="/">Home</Link></li>
                         <li><Link to="/books">Borrow Books</Link></li>
+                        <li><Link to="/help">Help & FAQ</Link></li>
                         <li><Link to="/contact">Contact Us</Link></li>
                     </ul>
                 </div>

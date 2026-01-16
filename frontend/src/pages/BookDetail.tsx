@@ -12,11 +12,6 @@ import { getMyMembership, type Membership } from '../services/membershipService'
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import Footer from '../components/Footer';
-import {
-  saveBookOffline,
-  isBookOffline,
-  removeOfflineBook,
-} from '../utils/db';
 import '../styles/BookDetail.css';
 
 const BookDetail: React.FC = () => {
@@ -35,8 +30,6 @@ const BookDetail: React.FC = () => {
   const [activeBorrowCount, setActiveBorrowCount] = useState(0);
   const [userMembership, setUserMembership] = useState<Membership | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
-  const [isAvailableOffline, setIsAvailableOffline] = useState(false);
-  const [isSavingOffline, setIsSavingOffline] = useState(false);
   const currentUserId = localStorage.getItem('userId'); // I should ensure userId is stored
 
   useEffect(() => {
@@ -47,14 +40,10 @@ const BookDetail: React.FC = () => {
       checkBorrowStatus(id);
       fetchActiveBorrowCount();
       fetchUserMembership();
-      checkOfflineStatus(id);
     }
   }, [id]);
 
-  const checkOfflineStatus = async (bookId: string) => {
-    const offline = await isBookOffline(bookId);
-    setIsAvailableOffline(offline);
-  };
+
 
   const fetchUserMembership = async () => {
     try {
@@ -254,46 +243,7 @@ const BookDetail: React.FC = () => {
     }
   };
 
-  const handleToggleOffline = async () => {
-    if (!book || !id) return;
-    if (userMembership?.name !== 'premium') {
-      toast.error('Offline reading is a Premium feature. Please upgrade your plan.');
-      return;
-    }
 
-    if (isAvailableOffline) {
-      // Remove
-      try {
-        await removeOfflineBook(id);
-        setIsAvailableOffline(false);
-        toast.info('Removed from offline library');
-      } catch (err) {
-        toast.error('Failed to remove offline copy');
-      }
-    } else {
-      // Save
-      setIsSavingOffline(true);
-      try {
-        const blob = await downloadBookPdf(id);
-        if (blob.size < 100) throw new Error('Invalid PDF file');
-
-        await saveBookOffline({
-          id,
-          title: book.title,
-          author: book.author,
-          cover_image_url: book.cover_image_url,
-          blob,
-          storedAt: Date.now(),
-        });
-        setIsAvailableOffline(true);
-        toast.success('Saved for offline reading!');
-      } catch (err: any) {
-        toast.error('Failed to save for offline reading');
-      } finally {
-        setIsSavingOffline(false);
-      }
-    }
-  };
 
   if (!book) return <Loader />;
 
@@ -425,22 +375,7 @@ const BookDetail: React.FC = () => {
                   📥 Download PDF
                 </button>
               )}
-              {book.pdf_url && userMembership?.name === 'premium' && (
-                <button
-                  onClick={handleToggleOffline}
-                  disabled={isSavingOffline}
-                  className={`btn-primary read-offline-btn ${isAvailableOffline ? 'secondary-offline' : ''}`}
-                  style={{ background: isAvailableOffline ? '#e67e22' : '#3498db' }}
-                >
-                  {isSavingOffline ? (
-                    <Loader small />
-                  ) : isAvailableOffline ? (
-                    '📶 Remove Offline'
-                  ) : (
-                    '🌐 Save Offline'
-                  )}
-                </button>
-              )}
+
             </div>
           </div>
         </div>

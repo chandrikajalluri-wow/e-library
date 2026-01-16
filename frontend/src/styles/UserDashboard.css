@@ -96,6 +96,28 @@
     color: white;
 }
 
+.stat-card.streak-card {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 159, 67, 0.1) 100%);
+    border-left: 4px solid #ff6b6b;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card.streak-card::after {
+    content: '🔥';
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    font-size: 4rem;
+    opacity: 0.1;
+    transform: rotate(-15deg);
+}
+
+.stat-card.streak-card .stat-value {
+    color: #ff6b6b;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.2);
+}
+
 .dashboard-section {
     margin-top: 2rem;
 }

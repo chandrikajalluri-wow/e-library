@@ -11,7 +11,7 @@ import '../styles/UserDashboard.css';
 
 const UserDashboard: React.FC = () => {
   const [borrows, setBorrows] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0 });
+  const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0, streakCount: 0 });
   const [membership, setMembership] = useState<Membership | null>(null);
   const [selectedBorrow, setSelectedBorrow] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -159,6 +159,10 @@ const UserDashboard: React.FC = () => {
         <div className="card stat-card">
           <h3 className="stat-label">Wishlisted</h3>
           <p className="stat-value">{stats.wishlistCount}</p>
+        </div>
+        <div className="card stat-card streak-card">
+          <h3 className="stat-label">Login Streak</h3>
+          <p className="stat-value">🔥 {stats.streakCount} Days</p>
         </div>
       </div>
 
