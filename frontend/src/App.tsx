@@ -7,6 +7,7 @@ import ResetPassword from './components/ResetPassword';
 import VerifyEmail from './components/VerifyEmail';
 
 import AdminDashboard from './pages/AdminDashboard';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import AxiosInterceptor from './components/AxiosInterceptor';
 
 import BookList from './pages/BookList';
@@ -72,6 +73,18 @@ const App: React.FC = () => {
 
               {/* Admin Routes */}
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/books" element={<BookList />} />
+              <Route path="/books/:id" element={<BookDetail />} />
+
+              {/* Admin Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'super_admin']} />}>
+                <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              </Route>
+
+              {/* Super Admin Routes*/}
+              <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
+                <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
+              </Route>
             </Route>
           </Route>
         </Routes>

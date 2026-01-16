@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
-import { getCategories, updateCategory, deleteCategory as removeCategory, createCategory } from '../services/categoryService';
+import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllBorrows, acceptReturn } from '../services/borrowService';
-import { getAllBookRequests, updateBookRequestStatus, sendFineReminder } from '../services/userService';
+import { getAllBookRequests, updateBookRequestStatus, sendFineReminder, getProfile } from '../services/userService';
 import { getAllWishlists } from '../services/wishlistService';
 import { getActivityLogs } from '../services/logService';
 import { getNotifications, markAsRead, markAllAsRead } from '../services/notificationService';
-import type { Book, Category, Borrow } from '../types';
+import { getAdmins } from '../services/superAdminService';
+import type { Book, Category, Borrow, User } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/AdminDashboard.css';
 
@@ -28,6 +29,8 @@ const AdminDashboard: React.FC = () => {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [admins, setAdmins] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [stats, setStats] = useState({
     totalBooks: 0,
     totalUsers: 0,
@@ -46,7 +49,7 @@ const AdminDashboard: React.FC = () => {
     title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
     description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
     genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
-    author_image_url: ''
+    author_image_url: '', addedBy: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
@@ -75,6 +78,14 @@ const AdminDashboard: React.FC = () => {
     try {
       const cats = await getCategories();
       setCategories(cats);
+
+      const profile = await getProfile();
+      setCurrentUser(profile);
+
+      if (profile.role === 'super_admin') {
+        const adminList = await getAdmins();
+        setAdmins(adminList);
+      }
     } catch (err: unknown) {
       console.error(err);
     }
@@ -109,8 +120,11 @@ const AdminDashboard: React.FC = () => {
   const fetchBooks = async () => {
     setIsDataLoading(true);
     try {
+      const profile = await getProfile();
+      const isSuperAdmin = profile.role === 'super_admin';
+      const addedByParam = isSuperAdmin ? '' : `&addedBy=${profile._id}`;
       const isPremiumParam = bookTypeFilter === 'all' ? '' : (bookTypeFilter === 'premium' ? '&isPremium=true' : '&isPremium=false');
-      const data = await getBooks(`page=${bookPage}&limit=10&showArchived=true&search=${searchTerm}${isPremiumParam}`);
+      const data = await getBooks(`page=${bookPage}&limit=10&showArchived=true&search=${searchTerm}${isPremiumParam}${addedByParam}`);
       setAllBooks(data.books);
       setBookTotalPages(data.pages);
     } catch (err) {
@@ -137,8 +151,12 @@ const AdminDashboard: React.FC = () => {
   const fetchStats = async () => {
     setIsStatsLoading(true);
     try {
-      const booksData = await getBooks('limit=1000&showArchived=true');
-      const borrowsData = await getAllBorrows('limit=1000');
+      const profile = await getProfile();
+      const isSuperAdmin = profile.role === 'super_admin';
+      const addedByParam = isSuperAdmin ? '' : `&addedBy=${profile._id}`;
+
+      const booksData = await getBooks(`limit=1000&showArchived=true${addedByParam}`);
+      const borrowsData = await getAllBorrows(`limit=1000${addedByParam}`);
       const requestsData = await getAllBookRequests();
       const wishlistData = await getAllWishlists();
 
@@ -307,6 +325,7 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
+
   const handleMarkRead = async (id: string) => {
     try {
       await markAsRead(id);
@@ -354,6 +373,10 @@ const AdminDashboard: React.FC = () => {
           formData.append('isPremium', String(newBook.isPremium));
           formData.append('author_description', newBook.author_description);
 
+          if ((newBook as any).addedBy) {
+            formData.append('addedBy', (newBook as any).addedBy);
+          }
+
           if (coverImageFile) formData.append('cover_image', coverImageFile);
           else formData.append('cover_image_url', newBook.cover_image_url);
 
@@ -376,7 +399,7 @@ const AdminDashboard: React.FC = () => {
             title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
             description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
             genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
-            author_image_url: ''
+            author_image_url: '', addedBy: ''
           });
           setCoverImageFile(null);
           setAuthorImageFile(null);
@@ -407,7 +430,8 @@ const AdminDashboard: React.FC = () => {
       pdf_url: book.pdf_url || '', genre: book.genre || '', language: book.language || '',
       noOfCopies: book.noOfCopies?.toString() || '1', isPremium: book.isPremium || false,
       author_description: book.author_description || '', author_image_url: book.author_image_url || '',
-    });
+      addedBy: typeof book.addedBy === 'string' ? book.addedBy : (book.addedBy as any)?._id || '',
+    } as any);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -417,7 +441,7 @@ const AdminDashboard: React.FC = () => {
       title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
       description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
       genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
-      author_image_url: ''
+      author_image_url: '', addedBy: ''
     });
     setCoverImageFile(null);
     setAuthorImageFile(null);
@@ -622,6 +646,12 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'books' && (
           <div className="admin-section-grid">
+            {currentUser?.role === 'super_admin' && (
+              <div style={{ gridColumn: '1 / -1', padding: '1rem', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span><strong>Super Admin View:</strong> You are viewing the global book collection. Use the form below to add books on behalf of other admins.</span>
+              </div>
+            )}
             <section className="card admin-form-section">
               <div className="admin-form-header">
                 <h3 className="admin-table-title" style={{ marginBottom: '2rem' }}>{editingBookId ? 'Edit Book Record' : 'Add New Book'}</h3>
@@ -654,6 +684,23 @@ const AdminDashboard: React.FC = () => {
                 <div className="form-group" style={{ gridColumn: 'span 3' }}><label>Description</label><textarea value={newBook.description} onChange={(e) => setNewBook({ ...newBook, description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
                 <div className="form-group" style={{ gridColumn: 'span 3' }}><label>About the Author</label><textarea value={newBook.author_description} onChange={(e) => setNewBook({ ...newBook, author_description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
                 <div className="form-group checkbox-group" style={{ gridColumn: 'span 3' }}><label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}><input type="checkbox" checked={newBook.isPremium} onChange={(e) => setNewBook({ ...newBook, isPremium: e.target.checked })} style={{ width: 'auto' }} />Mark as Premium Book</label></div>
+
+                {currentUser?.role === 'super_admin' && (
+                  <div className="form-group" style={{ gridColumn: 'span 3' }}>
+                    <label>Added By (On behalf of Admin)</label>
+                    <select
+                      value={(newBook as any).addedBy || ''}
+                      onChange={(e) => setNewBook({ ...newBook, addedBy: e.target.value } as any)}
+                      className="admin-filter-select"
+                    >
+                      <option value="">Myself (Super Admin)</option>
+                      {admins.map(admin => (
+                        <option key={admin._id} value={admin._id}>{admin.name} ({admin.email})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div style={{ gridColumn: 'span 3', display: 'flex', justifyContent: 'flex-start' }}>
                   <button type="submit" className="admin-btn-edit" style={{ padding: '0.75rem 2rem', minWidth: '200px' }}>{editingBookId ? 'Update Record' : 'Add to Collection'}</button>
                 </div>
@@ -685,12 +732,13 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <table className="admin-table">
-                    <thead><tr><th>Book Details</th><th>Category</th><th>Copies</th><th>Status</th><th className="admin-actions-cell">Actions</th></tr></thead>
+                    <thead><tr><th>Book Details</th><th>Category</th><th>Added By</th><th>Copies</th><th>Status</th><th className="admin-actions-cell">Actions</th></tr></thead>
                     <tbody>
                       {allBooks.map((book) => (
                         <tr key={book._id}>
                           <td><div className="book-info-box"><span className="book-main-title">{book.title}</span><span className="book-sub-meta">by {book.author} {book.isPremium && <span className="admin-premium-label">PREMIUM</span>}</span></div></td>
                           <td>{typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}</td>
+                          <td><span className="admin-added-by">{(book.addedBy as any)?.name || 'N/A'}</span></td>
                           <td style={{ fontWeight: 700 }}>{book.noOfCopies}</td>
                           <td><span className={`status-badge status-${book.status}`}>{book.status}</span></td>
                           <td className="admin-actions-cell"><div className="admin-actions-flex"><button onClick={() => handleEditBook(book)} className="admin-btn-edit">Edit</button><button onClick={() => handleDeleteBook(book._id)} className="admin-btn-delete">Delete</button></div></td>
@@ -732,7 +780,15 @@ const AdminDashboard: React.FC = () => {
               }}>
                 {categories.map((c) => (
                   <div key={c._id} className="admin-category-card">
-                    <div className="category-header"><span className="category-name">{c.name}</span><div className="admin-actions-flex"><button onClick={() => handleEditCategory(c)} className="admin-btn-edit" style={{ padding: '0.4rem 0.8rem' }}>Edit</button><button onClick={() => handleDeleteCategory(c)} className="admin-btn-delete" style={{ padding: '0.4rem 0.8rem' }}>Delete</button></div></div>
+                    <div className="category-header">
+                      <span className="category-name">{c.name}</span>
+                      <div className="admin-actions-flex">
+                        <button onClick={() => handleEditCategory(c)} className="admin-btn-edit" style={{ padding: '0.4rem 0.8rem' }}>Edit</button>
+                        {currentUser?.role === 'super_admin' && (
+                          <button onClick={() => handleDeleteCategory(c)} className="admin-btn-delete" style={{ padding: '0.4rem 0.8rem' }}>Delete</button>
+                        )}
+                      </div>
+                    </div>
                     <p className="category-desc">{c.description || 'No description provided.'}</p>
                   </div>
                 ))}

@@ -35,6 +35,7 @@ import contactRoutes from './routes/contact';
 import notificationRoutes from './routes/notifications';
 import membershipRoutes from './routes/memberships';
 import borrowRenewalRoutes from './routes/borrows_renewal';
+import superAdminRoutes from './routes/superAdmin';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -48,6 +49,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/memberships', membershipRoutes);
 app.use('/api/borrows', borrowRenewalRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
