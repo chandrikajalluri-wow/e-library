@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
+import { getProfile } from '../services/userService';
 import type { Book } from '../types';
 import ScrollToTop from '../components/ScrollToTop';
 import '../styles/BookList.css';
@@ -13,6 +14,7 @@ const BookList: React.FC = () => {
 
   const [books, setBooks] = useState<Book[]>([]);
   const [recommendations, setRecommendations] = useState<Book[]>([]);
+  const [personalizedRecs, setPersonalizedRecs] = useState<Book[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
@@ -53,7 +55,21 @@ const BookList: React.FC = () => {
 
   useEffect(() => {
     loadRecommendations();
+    loadPersonalizedRecs();
   }, []);
+
+  const loadPersonalizedRecs = async () => {
+    try {
+      const userData = await getProfile();
+      if (userData.favoriteGenres && userData.favoriteGenres.length > 0) {
+        const query = `category=${userData.favoriteGenres.join(',')}&limit=4`;
+        const data = await getBooks(query);
+        setPersonalizedRecs(data.books || data);
+      }
+    } catch (err) {
+      console.error('Failed to load personalized recommendations', err);
+    }
+  };
 
   const loadRecommendations = async () => {
     try {
@@ -130,6 +146,27 @@ const BookList: React.FC = () => {
           <div className="recommendations-grid">
             {recommendations.map((book) => (
               <Link to={`/books/${book._id}`} key={`rec-${book._id}`} className="rec-card">
+                <div className="rec-cover">
+                  <img src={book.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={book.title} />
+                  <div className="rec-badge">⭐ {book.rating}</div>
+                </div>
+                <div className="rec-info">
+                  <h4>{book.title}</h4>
+                  <p>{book.author}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Personalized Recommendations Section */}
+      {!search && !selectedCategory && personalizedRecs.length > 0 && (
+        <section className="recommendations-section personalized-section">
+          <h2 className="section-title-h2">Recommended for You</h2>
+          <div className="recommendations-grid">
+            {personalizedRecs.map((book) => (
+              <Link to={`/books/${book._id}`} key={`pers-rec-${book._id}`} className="rec-card">
                 <div className="rec-cover">
                   <img src={book.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={book.title} />
                   <div className="rec-badge">⭐ {book.rating}</div>

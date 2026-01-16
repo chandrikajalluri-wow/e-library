@@ -2,6 +2,7 @@ export interface Category {
   _id: string;
   name: string;
   description?: string;
+  addedBy?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -36,6 +37,10 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  profileImage?: string;
+  favoriteGenres?: string[];
+  booksRead?: number;
+  readingTarget?: number;
 }
 
 export interface Borrow {

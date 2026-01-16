@@ -259,13 +259,20 @@ router.get(
   checkRole(['admin']),
   async (req: Request, res: Response) => {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const skip = (page - 1) * limit;
+      const { status, membership, page = 1, limit = 10, addedBy } = req.query;
+      const parsedPage = parseInt(page as string) || 1;
+      const parsedLimit = parseInt(limit as string) || 10;
+      const skip = (parsedPage - 1) * parsedLimit;
 
-      const { status, membership } = req.query;
       const query: any = {};
       if (status && status !== 'all') query.status = status;
+
+      // Isolation: find books added by this admin
+      if (addedBy) {
+        const Book = require('../models/Book').default; // Import Book model here
+        const adminBooks = await Book.find({ addedBy }).select('_id');
+        query.book_id = { $in: adminBooks.map((b: any) => b._id) };
+      }
 
       if (membership && membership !== 'all') {
         const User = require('../models/User').default;
@@ -293,15 +300,15 @@ router.get(
         .populate('book_id', 'title')
         .sort({ issued_date: -1 })
         .skip(skip)
-        .limit(limit);
+        .limit(parsedLimit);
 
       const total = await Borrow.countDocuments(query);
 
       res.json({
         borrows,
         total,
-        page,
-        pages: Math.ceil(total / limit),
+        page: parsedPage,
+        pages: Math.ceil(total / parsedLimit),
       });
     } catch (err) {
       console.log(err);

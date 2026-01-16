@@ -49,3 +49,8 @@ export const deleteReview = async (id: string) => {
     const response = await api.delete(`/super-admin/review/${id}`);
     return response.data;
 };
+
+export const getAdmins = async () => {
+    const response = await api.get('/super-admin/admins');
+    return response.data;
+};

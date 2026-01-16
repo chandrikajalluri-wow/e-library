@@ -13,16 +13,13 @@ const router = express.Router();
 // Get all books (Public, with filters)
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, category, genre, showArchived, isPremium } = req.query;
+    const { search, category, genre, showArchived, isPremium, addedBy } = req.query;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: any = {};
 
-    if (showArchived !== 'true') {
-      query.status = { $ne: 'archived' };
+    if (addedBy) {
+      query.addedBy = addedBy;
     }
-
-    if (isPremium === 'true') query.isPremium = true;
-    if (isPremium === 'false') query.isPremium = { $ne: true };
 
     if (search) {
       query.$or = [
@@ -30,9 +27,17 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         { author: { $regex: search, $options: 'i' } },
       ];
     }
-    if (category) query.category_id = category;
+    if (category) {
+      const categoryIds = (category as string).split(',');
+      query.category_id = { $in: categoryIds };
+    }
     if (genre) query.genre = genre;
     if (isPremium === 'true') query.isPremium = true;
+    if (isPremium === 'false') query.isPremium = { $ne: true };
+
+    if (showArchived !== 'true') {
+      query.status = { $ne: 'archived' };
+    }
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -40,6 +45,8 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const books = await Book.find(query)
       .populate('category_id', 'name')
+      .populate('addedBy', 'name email')
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -70,11 +77,11 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// Create Book (Admin only)
+// Create Book (Admin/Super Admin only)
 router.post(
   '/',
   auth,
-  checkRole(['admin']),
+  checkRole(['admin', 'super_admin']),
   upload.fields([
     { name: 'cover_image', maxCount: 1 },
     { name: 'author_image', maxCount: 1 },
@@ -83,6 +90,17 @@ router.post(
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const bookData = { ...req.body };
+
+      // Handle addedBy: Super admin can override, Admin is fixed to themselves
+      const userRole = (req.user!.role_id as any).name; // Assuming role_id is populated or has a 'name' property
+      if (userRole === 'admin') {
+        bookData.addedBy = req.user!._id;
+      } else if (userRole === 'super_admin') {
+        bookData.addedBy = req.body.addedBy || req.user!._id;
+      } else {
+        // Fallback or error if role is not admin/super_admin (should be caught by checkRole)
+        bookData.addedBy = req.user!._id;
+      }
 
       // Multer adds 'files' object for multiple fields
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -100,10 +118,7 @@ router.post(
         bookData.pdf_url = await uploadToS3(pdfFile.buffer, fileName, pdfFile.mimetype);
       }
 
-      const book = new Book({
-        ...bookData,
-        addedBy: req.user!._id,
-      });
+      const book = new Book(bookData);
       await book.save();
 
       // Log activity
@@ -120,11 +135,11 @@ router.post(
   }
 );
 
-// Update Book (Admin only)
+// Update Book (Admin/Super Admin only)
 router.put(
   '/:id',
   auth,
-  checkRole(['admin']),
+  checkRole(['admin', 'super_admin']),
   upload.fields([
     { name: 'cover_image', maxCount: 1 },
     { name: 'author_image', maxCount: 1 },
@@ -133,6 +148,13 @@ router.put(
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const bookData = { ...req.body };
+
+      // Security: Admin cannot change addedBy. Super admin can.
+      const userRole = (req.user!.role_id as any).name;
+      if (userRole === 'admin') {
+        delete bookData.addedBy; // Ensure admin cannot modify addedBy
+      }
+      // If super_admin, bookData.addedBy from req.body will be used if present.
 
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
@@ -174,11 +196,11 @@ router.put(
   }
 );
 
-// Delete Book (Admin only)
+// Delete Book (Admin/Super Admin only)
 router.delete(
   '/:id',
   auth,
-  checkRole(['admin']),
+  checkRole(['admin', 'super_admin']),
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       // Check if book is currently borrowed

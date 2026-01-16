@@ -11,8 +11,7 @@ export interface IUser extends Document {
   isVerified: boolean;
   verificationToken?: string;
   profileImage?: string;
-  favoriteBook?: string;
-  favoriteAuthor?: string;
+  favoriteGenres?: Types.ObjectId[];
   booksRead?: number;
   readingTarget?: number;
   lastLogin?: Date;
@@ -35,8 +34,7 @@ const userSchema = new Schema<IUser>(
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
     profileImage: { type: String },
-    favoriteBook: { type: String },
-    favoriteAuthor: { type: String },
+    favoriteGenres: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
     booksRead: { type: Number, default: 0 },
     readingTarget: { type: Number, default: 0 },
     lastLogin: { type: Date },
