@@ -25,6 +25,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import MembershipPlans from './pages/MembershipPlans';
 import UserSettings from './pages/UserSettings';
 import NotificationsPage from './pages/NotificationsPage';
+import HelpCenter from './pages/HelpCenter';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './components/UserLayout';
@@ -44,6 +45,7 @@ const App: React.FC = () => {
           <Route path="/about" element={<About />} />
           <Route path="/mission" element={<OurMission />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/help" element={<HelpCenter />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/memberships" element={<MembershipPlans />} />
@@ -53,7 +55,12 @@ const App: React.FC = () => {
           <Route path="/reset/:token" element={<ResetPassword />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
 
-          <Route element={<ProtectedRoute allowedRoles={['user', 'admin', 'super_admin']} />}>
+          <Route element={<UserLayout />}>
+            <Route path="/books" element={<BookList />} />
+            <Route path="/books/:id" element={<BookDetail />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
             <Route element={<UserLayout />}>
               {/* User Routes */}
               <Route path="/dashboard" element={<UserDashboard />} />
@@ -62,6 +69,10 @@ const App: React.FC = () => {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
+
+
+              {/* Admin Routes */}
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
               <Route path="/books" element={<BookList />} />
               <Route path="/books/:id" element={<BookDetail />} />
 

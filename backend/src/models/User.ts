@@ -14,6 +14,7 @@ export interface IUser extends Document {
   favoriteGenres?: Types.ObjectId[];
   booksRead?: number;
   readingTarget?: number;
+  streakCount?: number;
   lastLogin?: Date;
   activeSessions?: {
     device: string;
@@ -37,6 +38,7 @@ const userSchema = new Schema<IUser>(
     favoriteGenres: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
     booksRead: { type: Number, default: 0 },
     readingTarget: { type: Number, default: 0 },
+    streakCount: { type: Number, default: 0 },
     lastLogin: { type: Date },
     activeSessions: [
       {

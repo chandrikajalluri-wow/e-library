@@ -44,6 +44,7 @@ const ScrollRevealHandler: React.FC = () => {
         };
 
         // Initial setup
+        window.scrollTo(0, 0);
         setupObservers();
 
         // Multiple triggers to catch various loading stages

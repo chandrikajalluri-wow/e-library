@@ -106,11 +106,33 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = jwt.sign(
       { id: user._id, role: roleDoc.name },
       process.env.JWT_SECRET!,
-      { expiresIn: '1h' }
+      { expiresIn: '7d' }
     );
 
-    // Update last login and sessions
-    user.lastLogin = new Date();
+    // Update last login, sessions and streak
+    const now = new Date();
+    const lastLogin = user.lastLogin;
+
+    if (!lastLogin || !user.streakCount || user.streakCount === 0) {
+      // First time login or streak hasn't started
+      user.streakCount = 1;
+    } else {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const lastLoginDate = new Date(lastLogin.getFullYear(), lastLogin.getMonth(), lastLogin.getDate());
+      const diffTime = today.getTime() - lastLoginDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        // Logged in yesterday
+        user.streakCount = user.streakCount + 1;
+      } else if (diffDays > 1) {
+        // Missed a day
+        user.streakCount = 1;
+      }
+      // If diffDays === 0 (same day), no change to streak (already at least 1)
+    }
+
+    user.lastLogin = now;
     const device = req.headers['user-agent'] || 'Unknown Device';
 
     // Limit to last 5 sessions for simplicity
@@ -118,7 +140,7 @@ router.post('/login', async (req: Request, res: Response) => {
     user.activeSessions.push({
       device,
       location: 'Unknown', // In a real app, use geo-ip
-      lastActive: new Date(),
+      lastActive: now,
       token
     });
 

@@ -62,6 +62,7 @@ router.get('/dashboard-stats', auth, async (req: AuthRequest, res: Response) => 
             totalFine,
             borrowedCount,
             wishlistCount,
+            streakCount: (req.user as any).streakCount || 0
         });
     } catch (err) {
         console.error(err);
