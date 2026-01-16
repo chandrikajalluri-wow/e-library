@@ -3,16 +3,18 @@ import {
   getProfile,
   updateProfile,
 } from "../services/userService";
+import { getCategories } from "../services/categoryService";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
 import "../styles/UserProfile.css";
+import type { Category } from "../types";
 
 const UserProfile: React.FC = () => {
   const [user, setUser] = useState<any>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState({
     name: "",
-    favoriteBook: "",
-    favoriteAuthor: "",
+    favoriteGenres: [] as string[],
     booksRead: 0,
     readingTarget: 0
   });
@@ -22,6 +24,7 @@ const UserProfile: React.FC = () => {
 
   useEffect(() => {
     loadProfile();
+    loadCategories();
   }, []);
 
   const loadProfile = async () => {
@@ -30,8 +33,7 @@ const UserProfile: React.FC = () => {
       setUser(data);
       setFormData({
         name: data.name,
-        favoriteBook: data.favoriteBook || "",
-        favoriteAuthor: data.favoriteAuthor || "",
+        favoriteGenres: data.favoriteGenres || [],
         booksRead: data.booksRead || 0,
         readingTarget: data.readingTarget || 0
       });
@@ -39,6 +41,36 @@ const UserProfile: React.FC = () => {
     } catch (err) {
       toast.error("Failed to load profile");
     }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const cats = await getCategories();
+      setCategories(cats);
+    } catch (err) {
+      console.error("Failed to load categories");
+    }
+  };
+
+  const handleGenreToggle = (genreId: string) => {
+    setFormData(prev => {
+      const isSelected = prev.favoriteGenres.includes(genreId);
+      if (isSelected) {
+        return {
+          ...prev,
+          favoriteGenres: prev.favoriteGenres.filter(id => id !== genreId)
+        };
+      } else {
+        if (prev.favoriteGenres.length >= 3) {
+          toast.warning("You can only select up to 3 favorite genres");
+          return prev;
+        }
+        return {
+          ...prev,
+          favoriteGenres: [...prev.favoriteGenres, genreId]
+        };
+      }
+    });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,8 +86,7 @@ const UserProfile: React.FC = () => {
     try {
       const data = new FormData();
       data.append("name", formData.name);
-      data.append("favoriteBook", formData.favoriteBook);
-      data.append("favoriteAuthor", formData.favoriteAuthor);
+      data.append("favoriteGenres", JSON.stringify(formData.favoriteGenres));
       data.append("booksRead", formData.booksRead.toString());
       data.append("readingTarget", formData.readingTarget.toString());
       if (profileImage) {
@@ -146,12 +177,17 @@ const UserProfile: React.FC = () => {
                 <h2 className="profile-section-title">Reading Preferences</h2>
                 <div className="profile-info-grid">
                   <div className="info-item">
-                    <label>Favorite Book</label>
-                    <p>{user.favoriteBook || "Not set"}</p>
-                  </div>
-                  <div className="info-item">
-                    <label>Favorite Author</label>
-                    <p>{user.favoriteAuthor || "Not set"}</p>
+                    <label>Favorite Genres</label>
+                    <div className="genre-tags-display">
+                      {user.favoriteGenres && user.favoriteGenres.length > 0 ? (
+                        user.favoriteGenres.map((gId: string) => {
+                          const cat = categories.find(c => c._id === gId);
+                          return cat ? <span key={gId} className="genre-tag">{cat.name}</span> : null;
+                        })
+                      ) : (
+                        <p>Not set</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -172,28 +208,61 @@ const UserProfile: React.FC = () => {
               </div>
 
               <div className="card profile-card">
-                <h2 className="profile-section-title">Favorites & Stats</h2>
-                <div className="form-group-row">
-                  <div className="form-group">
-                    <label>Favorite Book</label>
-                    <input
-                      type="text"
-                      value={formData.favoriteBook}
-                      onChange={(e) => setFormData({ ...formData, favoriteBook: e.target.value })}
-                      placeholder="e.g. The Great Gatsby"
-                    />
+                <h2 className="profile-section-title">Favorite Genres (Max 3)</h2>
+                {user.membership_id?.name === 'premium' ? (
+                  <div className="genre-selection-wrapper">
+                    <div className="genre-dropdown-container">
+                      <select
+                        className="genre-select-dropdown"
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleGenreToggle(e.target.value);
+                            e.target.value = ""; // Reset dropdown
+                          }
+                        }}
+                        disabled={formData.favoriteGenres.length >= 3}
+                      >
+                        <option value="">Select a genre...</option>
+                        {categories
+                          .filter(cat => !formData.favoriteGenres.includes(cat._id))
+                          .map(cat => (
+                            <option key={cat._id} value={cat._id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                      </select>
+                      {formData.favoriteGenres.length >= 3 && (
+                        <p className="limit-msg text-muted">Limit reached (3 max)</p>
+                      )}
+                    </div>
+
+                    <div className="selected-genres-tags">
+                      {formData.favoriteGenres.map(gId => {
+                        const cat = categories.find(c => c._id === gId);
+                        if (!cat) return null;
+                        return (
+                          <div key={gId} className="genre-tag-removable">
+                            <span>{cat.name}</span>
+                            <button
+                              type="button"
+                              className="remove-genre-btn"
+                              onClick={() => handleGenreToggle(gId)}
+                              aria-label={`Remove ${cat.name}`}
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label>Favorite Author</label>
-                    <input
-                      type="text"
-                      value={formData.favoriteAuthor}
-                      onChange={(e) => setFormData({ ...formData, favoriteAuthor: e.target.value })}
-                      placeholder="e.g. F. Scott Fitzgerald"
-                    />
+                ) : (
+                  <div className="membership-upgrade-prompt">
+                    <p>Upgrade to <strong>Premium</strong> to select your favorite genres and get personalized recommendations!</p>
                   </div>
-                </div>
-                <div className="form-group-row">
+                )}
+
+                <div className="form-group-row" style={{ marginTop: '2rem' }}>
                   <div className="form-group">
                     <label>Books Read</label>
                     <input

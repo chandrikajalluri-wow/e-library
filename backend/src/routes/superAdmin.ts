@@ -169,4 +169,17 @@ router.get('/metrics', auth, checkRole(['super_admin']), async (req: Request, re
     }
 });
 
+// Get all admins (simple list for dropdown)
+router.get('/admins', auth, checkRole(['super_admin']), async (req: Request, res: Response) => {
+    try {
+        const adminRole = await Role.findOne({ name: 'admin' });
+        if (!adminRole) return res.status(404).json({ error: 'Admin role not found' });
+
+        const admins = await User.find({ role_id: adminRole._id }).select('name email');
+        res.json(admins);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 export default router;

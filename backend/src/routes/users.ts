@@ -15,9 +15,17 @@ const router = express.Router();
 // Get Current User Profile
 router.get('/me', auth, async (req: AuthRequest, res: Response) => {
     try {
-        const user = await User.findById(req.user!._id).select('-password');
+        const user = await User.findById(req.user!._id)
+            .select('-password')
+            .populate('membership_id')
+            .populate('role_id');
+
         if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json(user);
+
+        const userObj: any = user.toObject();
+        userObj.role = (user.role_id as any)?.name || 'user';
+
+        res.json(userObj);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -61,16 +69,26 @@ router.get('/dashboard-stats', auth, async (req: AuthRequest, res: Response) => 
     }
 });
 
-// Update Profile
 router.put('/profile', auth, upload.single('profileImage'), async (req: AuthRequest, res: Response) => {
-    const { name, favoriteBook, favoriteAuthor, booksRead, readingTarget } = req.body;
+    const { name, favoriteGenres, booksRead, readingTarget } = req.body;
     try {
         const user = await User.findById(req.user!._id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         if (name) user.name = name;
-        if (favoriteBook !== undefined) user.favoriteBook = favoriteBook;
-        if (favoriteAuthor !== undefined) user.favoriteAuthor = favoriteAuthor;
+        if (favoriteGenres !== undefined) {
+            // Ensure favoriteGenres is an array and has at most 3 items
+            const genresArray = Array.isArray(favoriteGenres)
+                ? favoriteGenres
+                : typeof favoriteGenres === 'string'
+                    ? JSON.parse(favoriteGenres)
+                    : [];
+
+            if (genresArray.length > 3) {
+                return res.status(400).json({ error: 'You can select at most 3 favorite genres' });
+            }
+            user.favoriteGenres = genresArray;
+        }
         if (booksRead !== undefined) user.booksRead = Number(booksRead);
         if (readingTarget !== undefined) user.readingTarget = Number(readingTarget);
 
@@ -86,8 +104,7 @@ router.put('/profile', auth, upload.single('profileImage'), async (req: AuthRequ
                 name: user.name,
                 email: user.email,
                 profileImage: user.profileImage,
-                favoriteBook: user.favoriteBook,
-                favoriteAuthor: user.favoriteAuthor,
+                favoriteGenres: user.favoriteGenres,
                 booksRead: user.booksRead,
                 readingTarget: user.readingTarget
             }

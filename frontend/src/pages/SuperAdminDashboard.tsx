@@ -4,6 +4,7 @@ import UserAdminManagement from '../components/superAdmin/UserAdminManagement';
 import SystemLogs from '../components/superAdmin/SystemLogs';
 import Announcements from '../components/superAdmin/Announcements';
 import ContentModeration from '../components/superAdmin/ContentModeration';
+import AdminDashboard from './AdminDashboard';
 import { getSystemMetrics } from '../services/superAdminService';
 import '../styles/AdminDashboard.css';
 
@@ -28,9 +29,11 @@ const SuperAdminDashboard: React.FC = () => {
         <div className="admin-layout" style={{ marginTop: '20px' }}>
             <main className="admin-main-content">
                 {/* Dashboard Title */}
-                <div style={{ marginBottom: '2rem' }}>
-                    <h2 className="admin-header-title">Super Admin Dashboard</h2>
-                    <p className="admin-header-subtitle">System Overview & Management</p>
+                <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h2 className="admin-header-title">Super Admin Dashboard</h2>
+                        <p className="admin-header-subtitle">System Overview & Management</p>
+                    </div>
                 </div>
 
                 {activeTab === 'overview' && metrics && (
@@ -51,6 +54,7 @@ const SuperAdminDashboard: React.FC = () => {
                 )}
 
                 {activeTab === 'users' && <UserAdminManagement />}
+                {(activeTab === 'books' || activeTab === 'categories') && <AdminDashboard />}
                 {activeTab === 'announcements' && <Announcements />}
                 {activeTab === 'moderation' && <ContentModeration />}
                 {activeTab === 'logs' && <SystemLogs />}
