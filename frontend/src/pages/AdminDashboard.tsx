@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { CircleSlash } from 'lucide-react';
 import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllBorrows, acceptReturn } from '../services/borrowService';
@@ -49,7 +50,7 @@ const AdminDashboard: React.FC = () => {
     title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
     description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
     genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
-    author_image_url: '', addedBy: ''
+    author_image_url: '', addedBy: '', rating: '0'
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
@@ -74,6 +75,9 @@ const AdminDashboard: React.FC = () => {
   const [isStatsLoading, setIsStatsLoading] = useState(false);
   const [isNotifLoading, setIsNotifLoading] = useState(false);
 
+  const inventoryRef = useRef<HTMLDivElement>(null);
+  const borrowsRef = useRef<HTMLDivElement>(null);
+
   const fetchCommonData = async () => {
     try {
       const cats = await getCategories();
@@ -90,6 +94,16 @@ const AdminDashboard: React.FC = () => {
       console.error(err);
     }
   };
+
+  useEffect(() => {
+    if (activeTab === 'books' && bookPage > 1) {
+      inventoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (activeTab === 'borrows' && borrowPage > 1) {
+      borrowsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [bookPage, borrowPage, activeTab]);
 
   const fetchBorrows = async () => {
     setIsDataLoading(true);
@@ -371,6 +385,7 @@ const AdminDashboard: React.FC = () => {
           formData.append('genre', newBook.genre);
           formData.append('language', newBook.language);
           formData.append('isPremium', String(newBook.isPremium));
+          formData.append('rating', (newBook as any).rating || '0');
           formData.append('author_description', newBook.author_description);
 
           if ((newBook as any).addedBy) {
@@ -399,7 +414,7 @@ const AdminDashboard: React.FC = () => {
             title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
             description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
             genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
-            author_image_url: '', addedBy: ''
+            author_image_url: '', addedBy: '', rating: '0'
           });
           setCoverImageFile(null);
           setAuthorImageFile(null);
@@ -431,6 +446,7 @@ const AdminDashboard: React.FC = () => {
       noOfCopies: book.noOfCopies?.toString() || '1', isPremium: book.isPremium || false,
       author_description: book.author_description || '', author_image_url: book.author_image_url || '',
       addedBy: typeof book.addedBy === 'string' ? book.addedBy : (book.addedBy as any)?._id || '',
+      rating: book.rating?.toString() || '0'
     } as any);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -441,7 +457,7 @@ const AdminDashboard: React.FC = () => {
       title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
       description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
       genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
-      author_image_url: '', addedBy: ''
+      author_image_url: '', addedBy: '', rating: '0'
     });
     setCoverImageFile(null);
     setAuthorImageFile(null);
@@ -669,6 +685,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="form-group"><label>Published Year</label><input type="number" value={newBook.publishedYear} onChange={(e) => setNewBook({ ...newBook, publishedYear: e.target.value })} /></div>
                 <div className="form-group"><label>Copies</label><input type="number" value={newBook.noOfCopies} onChange={(e) => setNewBook({ ...newBook, noOfCopies: e.target.value })} required /></div>
                 <div className="form-group"><label>Status</label><select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value })} required><option value="available">Available</option><option value="issued">Issued</option><option value="damaged">Damaged</option></select></div>
+                <div className="form-group"><label>Rating (0-5)</label><input type="number" step="0.1" min="0" max="5" value={(newBook as any).rating} onChange={(e) => setNewBook({ ...newBook, rating: e.target.value } as any)} /></div>
                 <div className="form-group">
                   <label>Cover Image</label>
                   <input type="file" accept="image/*" onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)} className="admin-file-input" />
@@ -681,7 +698,7 @@ const AdminDashboard: React.FC = () => {
                   <label>Book PDF Content</label>
                   <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} className="admin-file-input" />
                 </div>
-                <div className="form-group" style={{ gridColumn: 'span 3' }}><label>Description</label><textarea value={newBook.description} onChange={(e) => setNewBook({ ...newBook, description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
+                <div className="form-group" style={{ gridColumn: 'span 3' }}><label>Book Description</label><textarea value={newBook.description} onChange={(e) => setNewBook({ ...newBook, description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
                 <div className="form-group" style={{ gridColumn: 'span 3' }}><label>About the Author</label><textarea value={newBook.author_description} onChange={(e) => setNewBook({ ...newBook, author_description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
                 <div className="form-group checkbox-group" style={{ gridColumn: 'span 3' }}><label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}><input type="checkbox" checked={newBook.isPremium} onChange={(e) => setNewBook({ ...newBook, isPremium: e.target.checked })} style={{ width: 'auto' }} />Mark as Premium Book</label></div>
 
@@ -706,7 +723,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </form>
             </section>
-            <section className="card admin-table-section">
+            <section className="card admin-table-section" ref={inventoryRef}>
               <div className="admin-table-header-box">
                 <h3 className="admin-table-title">Inventory</h3>
                 <div className="admin-filter-group">
@@ -718,8 +735,8 @@ const AdminDashboard: React.FC = () => {
                     <span className="admin-filter-label">Type</span>
                     <select value={bookTypeFilter} onChange={(e) => setBookTypeFilter(e.target.value)} className="admin-filter-select">
                       <option value="all">All Books</option>
-                      <option value="premium">Premium Only</option>
-                      <option value="normal">Basic Only</option>
+                      <option value="premium">Premium</option>
+                      <option value="normal">Free</option>
                     </select>
                   </div>
                 </div>
@@ -732,13 +749,14 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <table className="admin-table">
-                    <thead><tr><th>Book Details</th><th>Category</th><th>Added By</th><th>Copies</th><th>Status</th><th className="admin-actions-cell">Actions</th></tr></thead>
+                    <thead><tr><th>Book Details</th><th>Category</th><th>Added By</th><th>Rating</th><th>Copies</th><th>Status</th><th className="admin-actions-cell">Actions</th></tr></thead>
                     <tbody>
                       {allBooks.map((book) => (
                         <tr key={book._id}>
                           <td><div className="book-info-box"><span className="book-main-title">{book.title}</span><span className="book-sub-meta">by {book.author} {book.isPremium && <span className="admin-premium-label">PREMIUM</span>}</span></div></td>
                           <td>{typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}</td>
                           <td><span className="admin-added-by">{(book.addedBy as any)?.name || 'N/A'}</span></td>
+                          <td><span className="rating-badge" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '4px 8px', borderRadius: '8px', width: 'fit-content', fontWeight: 600 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>{book.rating || 0}</span></td>
                           <td style={{ fontWeight: 700 }}>{book.noOfCopies}</td>
                           <td><span className={`status-badge status-${book.status}`}>{book.status}</span></td>
                           <td className="admin-actions-cell"><div className="admin-actions-flex"><button onClick={() => handleEditBook(book)} className="admin-btn-edit">Edit</button><button onClick={() => handleDeleteBook(book._id)} className="admin-btn-delete">Delete</button></div></td>
@@ -753,9 +771,24 @@ const AdminDashboard: React.FC = () => {
               )}
               {bookTotalPages > 1 && (
                 <div className="pagination-controls">
-                  <button disabled={bookPage === 1} onClick={() => setBookPage(prev => prev - 1)} className="admin-reminder-btn">Previous</button>
+                  <button
+                    disabled={bookPage === 1}
+                    onClick={() => setBookPage(prev => prev - 1)}
+                    className={`admin-reminder-btn ${bookPage === 1 ? 'disabled-with-stop' : ''}`}
+                  >
+                    <span className="btn-text">Previous</span>
+                    <CircleSlash size={16} className="stop-icon" />
+                  </button>
                   <span className="page-info">Page {bookPage} of {bookTotalPages}</span>
-                  <button disabled={bookPage === bookTotalPages} onClick={() => setBookPage(prev => prev + 1)} className="admin-btn-edit" style={{ padding: '0.45rem 1.5rem' }}>Next</button>
+                  <button
+                    disabled={bookPage === bookTotalPages}
+                    onClick={() => setBookPage(prev => prev + 1)}
+                    className={`admin-btn-edit ${bookPage === bookTotalPages ? 'disabled-with-stop' : ''}`}
+                    style={{ padding: '0.45rem 1.5rem' }}
+                  >
+                    <span className="btn-text">Next</span>
+                    <CircleSlash size={16} className="stop-icon" />
+                  </button>
                 </div>
               )}
             </section>
@@ -867,7 +900,7 @@ const AdminDashboard: React.FC = () => {
         )}
 
         {activeTab === 'borrows' && (
-          <section className="card admin-table-section">
+          <section className="card admin-table-section" ref={borrowsRef}>
             <div className="admin-table-header-box">
               <h3 className="admin-table-title">Borrow History</h3>
               <div className="admin-filter-group">
@@ -925,11 +958,29 @@ const AdminDashboard: React.FC = () => {
                 </table>
               )}
             </div>
+            {!isDataLoading && borrows.length === 0 && (
+              <div className="admin-empty-state">No borrow history records found.</div>
+            )}
             {borrowTotalPages > 1 && (
               <div className="pagination-controls">
-                <button disabled={borrowPage === 1} onClick={() => setBorrowPage(prev => prev - 1)} className="admin-reminder-btn">Previous</button>
+                <button
+                  disabled={borrowPage === 1}
+                  onClick={() => setBorrowPage(prev => prev - 1)}
+                  className={`admin-reminder-btn ${borrowPage === 1 ? 'disabled-with-stop' : ''}`}
+                >
+                  <span className="btn-text">Previous</span>
+                  <CircleSlash size={16} className="stop-icon" />
+                </button>
                 <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
-                <button disabled={borrowPage === borrowTotalPages} onClick={() => setBorrowPage(prev => prev + 1)} className="admin-btn-edit" style={{ padding: '0.45rem 1.5rem' }}>Next</button>
+                <button
+                  disabled={borrowPage === borrowTotalPages}
+                  onClick={() => setBorrowPage(prev => prev + 1)}
+                  className={`admin-btn-edit ${borrowPage === borrowTotalPages ? 'disabled-with-stop' : ''}`}
+                  style={{ padding: '0.45rem 1.5rem' }}
+                >
+                  <span className="btn-text">Next</span>
+                  <CircleSlash size={16} className="stop-icon" />
+                </button>
               </div>
             )}
           </section>

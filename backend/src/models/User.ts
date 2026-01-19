@@ -8,6 +8,8 @@ export interface IUser extends Document {
   password: string;
   role_id: Types.ObjectId | IRole; // allow populated Role
   membership_id: Types.ObjectId | IMembership; // allow populated Membership
+  membershipStartDate?: Date;
+  membershipExpiryDate?: Date;
   isVerified: boolean;
   verificationToken?: string;
   profileImage?: string;
@@ -22,6 +24,7 @@ export interface IUser extends Document {
     lastActive: Date;
     token: string;
   }[];
+  theme?: 'light' | 'dark';
   createdAt?: Date;
 }
 
@@ -32,6 +35,8 @@ const userSchema = new Schema<IUser>(
     password: { type: String, required: true },
     role_id: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
     membership_id: { type: Schema.Types.ObjectId, ref: 'Membership' },
+    membershipStartDate: { type: Date },
+    membershipExpiryDate: { type: Date },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
     profileImage: { type: String },
@@ -48,6 +53,7 @@ const userSchema = new Schema<IUser>(
         token: { type: String },
       },
     ],
+    theme: { type: String, enum: ['light', 'dark'], default: 'light' },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

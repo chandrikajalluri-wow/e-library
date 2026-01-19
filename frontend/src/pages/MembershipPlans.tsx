@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMembershipPlans, getMyMembership, type Membership } from '../services/membershipService';
+import { getMembershipPlans, getMyMembership, upgradeMembership, type Membership } from '../services/membershipService';
+import { toast } from 'react-toastify';
 import MembershipCard from '../components/MembershipCard';
 import PaymentModal from '../components/PaymentModal';
-import Footer from '../components/Footer';
+
 import '../styles/MembershipPlans.css';
 
 const MembershipPlans: React.FC = () => {
@@ -36,14 +37,21 @@ const MembershipPlans: React.FC = () => {
         }
     };
 
-    const handleUpgrade = (membership: Membership) => {
+    const handleUpgrade = async (membership: Membership) => {
         if (!isAuthenticated) {
             navigate('/signup');
             return;
         }
 
         if (membership.price === 0) {
-            return; // No downgrades for now
+            try {
+                await upgradeMembership(membership._id);
+                toast.success(`Successfully switched to ${membership.displayName} plan!`);
+                loadData();
+            } catch (err: any) {
+                toast.error(err.response?.data?.error || 'Failed to switch plan');
+            }
+            return;
         }
 
         setSelectedMembership(membership);
@@ -154,7 +162,7 @@ const MembershipPlans: React.FC = () => {
                 />
             )}
 
-            <Footer />
+
         </div>
     );
 };

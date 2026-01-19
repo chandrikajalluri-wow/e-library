@@ -12,7 +12,9 @@ const AxiosInterceptor: React.FC = () => {
             (error) => {
                 if (error.response && (error.response.status === 401)) {
                     // Check if we are already on login page to avoid loops or unnecessary actions
-                    if (window.location.pathname !== '/login') {
+                    // Whitelist public pages that might trigger 401 but shouldn't redirect
+                    const publicPaths = ['/login', '/', '/signup'];
+                    if (!publicPaths.includes(window.location.pathname)) {
                         localStorage.removeItem('token');
                         localStorage.removeItem('role');
                         toast.error('Session expired. Please login again.');

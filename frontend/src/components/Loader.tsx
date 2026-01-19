@@ -6,9 +6,12 @@ interface LoaderProps {
 }
 
 const Loader: React.FC<LoaderProps> = ({ small }) => {
+    if (small) {
+        return <div className="spinner spinner-small"></div>;
+    }
     return (
-        <div className={small ? 'spinner-small' : 'loader-container'}>
-            <div className={small ? 'spinner spinner-small' : 'spinner'}></div>
+        <div className="loader-container">
+            <div className="spinner"></div>
         </div>
     );
 };

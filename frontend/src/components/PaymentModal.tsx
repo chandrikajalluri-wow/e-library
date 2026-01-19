@@ -7,9 +7,10 @@ interface PaymentModalProps {
     membership: Membership;
     onClose: () => void;
     onSuccess: () => void;
+    onSubmit?: () => Promise<void>;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ membership, onClose, onSuccess }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ membership, onClose, onSuccess, onSubmit }) => {
     const [cardNumber, setCardNumber] = useState('');
     const [expiry, setExpiry] = useState('');
     const [cvv, setCvv] = useState('');
@@ -39,8 +40,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ membership, onClose, onSucc
         // Simulate payment processing
         setTimeout(async () => {
             try {
-                await upgradeMembership(membership._id);
-                toast.success(`Successfully upgraded to ${membership.displayName} membership!`);
+                if (onSubmit) {
+                    await onSubmit();
+                    toast.success('Membership renewed successfully!');
+                } else {
+                    await upgradeMembership(membership._id);
+                    toast.success(`Successfully upgraded to ${membership.displayName} membership!`);
+                }
                 onSuccess();
                 onClose();
             } catch (err: any) {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Heart, BookOpen, Download } from 'lucide-react';
 import { getBook, downloadBookPdf } from '../services/bookService';
 import { issueBook, getMyBorrows } from '../services/borrowService';
 import {
@@ -11,7 +12,6 @@ import { getBookReviews, addReview, updateReview } from '../services/reviewServi
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
-import Footer from '../components/Footer';
 import '../styles/BookDetail.css';
 
 const BookDetail: React.FC = () => {
@@ -195,8 +195,25 @@ const BookDetail: React.FC = () => {
     setNewReview({ rating: 5, comment: '' });
   };
 
+  const handleRead = () => {
+    if (!hasBorrowed) {
+      toast.error('You must borrow this book to read it.');
+      return;
+    }
+    if (book.pdf_url) {
+      window.open(book.pdf_url, '_blank');
+    }
+  };
+
   const handleDownload = async () => {
     if (!id) return;
+
+    const isPremiumUser = userMembership?.name === 'premium';
+
+    if (!hasBorrowed && !isPremiumUser) {
+      toast.error('You must borrow this book to download it.');
+      return;
+    }
     try {
       const blob = await downloadBookPdf(id);
 
@@ -355,24 +372,22 @@ const BookDetail: React.FC = () => {
                   isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'
                 }
               >
-                {isWishlisted ? '♥' : '♡'}
+                {isWishlisted ? <Heart fill="currentColor" size={24} /> : <Heart size={24} />}
               </button>
               {book.pdf_url && (
                 <button
-                  onClick={() => window.open(book.pdf_url, '_blank')}
+                  onClick={handleRead}
                   className="btn-primary read-pdf-btn"
-                  style={{ background: 'var(--accent-color)' }}
                 >
-                  📖 Read PDF
+                  <BookOpen size={18} style={{ marginRight: '8px' }} /> Read PDF
                 </button>
               )}
               {book.pdf_url && (userMembership?.name === 'standard' || userMembership?.name === 'premium') && (
                 <button
                   onClick={handleDownload}
                   className="btn-primary download-pdf-btn"
-                  style={{ background: '#27ae60' }}
                 >
-                  📥 Download PDF
+                  <Download size={18} style={{ marginRight: '8px' }} /> Download PDF
                 </button>
               )}
 
@@ -507,7 +522,7 @@ const BookDetail: React.FC = () => {
           )}
         </div>
       </div>
-      <Footer />
+
     </div>
   );
 };

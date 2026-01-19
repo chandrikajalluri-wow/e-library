@@ -132,18 +132,18 @@
 /* Password Toggle Styling */
 .password-input-wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
 }
 
 .password-input-wrapper input {
-  padding-right: 3rem !important;
+  padding-right: 48px !important;
   /* Make room for the eye icon */
 }
 
 .password-toggle-btn {
   position: absolute;
-  right: 0.75rem;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -151,8 +151,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
   transition: all 0.2s;
   z-index: 2;
 }

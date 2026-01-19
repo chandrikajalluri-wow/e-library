@@ -65,10 +65,10 @@ const WishlistPage: React.FC = () => {
 
     return (
         <div className="wishlist-page saas-reveal">
-            <div className="saas-page-header">
-                <h2 className="static-title-h1">My Wishlist</h2>
-                <p className="static-subtitle">Your personally curated collection of must-reads</p>
-            </div>
+            <header className="admin-header">
+                <h1 className="admin-header-title">My Wishlist</h1>
+                <p className="admin-header-subtitle">Your personally curated collection of must-reads</p>
+            </header>
 
             <div className="grid-books"> {/* Reusing grid-books styles */}
                 {wishlist.map((item) => {

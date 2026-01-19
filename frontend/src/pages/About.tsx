@@ -1,13 +1,12 @@
 import React from 'react';
-import UserNavbar from '../components/UserNavbar';
-import Footer from '../components/Footer';
+import { Link } from 'react-router-dom';
+
 
 import '../styles/StaticPages.css';
 
 const About: React.FC = () => {
     return (
         <div className="static-page-container">
-            <UserNavbar />
             <div className="static-content-wrapper">
                 <div className="static-hero saas-reveal">
                     <h1 className="static-title-h1">About Bookstack</h1>
@@ -38,7 +37,6 @@ const About: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <Footer />
         </div>
     );
 };

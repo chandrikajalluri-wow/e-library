@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { sendContactMessage } from '../services/contactService';
 import '../styles/Contact.css';
@@ -7,7 +6,6 @@ import '../styles/Contact.css';
 const Contact: React.FC = () => {
     const [formData, setFormData] = useState({ name: '', email: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const isAuthenticated = !!localStorage.getItem('token');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,26 +24,7 @@ const Contact: React.FC = () => {
     return (
         <div className="contact-page">
             {/* SaaS Style Nav */}
-            <nav className="saas-nav">
-                <div className="nav-wrapper">
-                    <Link to="/" className="saas-logo">
-                        <div className="logo-box">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path>
-                                <path d="M8 7h8"></path>
-                                <path d="M8 11h8"></path>
-                            </svg>
-                        </div>
-                        <span>Bookstack</span>
-                    </Link>
-                    <div className="nav-actions">
-                        <Link to="/about">About</Link>
-                        {!isAuthenticated && (
-                            <Link to="/login" className="nav-cta">Sign In</Link>
-                        )}
-                    </div>
-                </div>
-            </nav>
+
 
             <div className="contact-content">
                 {/* Info */}

@@ -24,6 +24,11 @@ export const changePassword = async (passwordData: any) => {
     return res.data;
 };
 
+export const renewMembership = async () => {
+    const res = await api.post(`${BASE_URL}/renew-membership`, {});
+    return res.data;
+};
+
 export const requestBook = async (requestData: any) => {
     const res = await api.post(`${BASE_URL}/book-requests`, requestData);
     return res.data;

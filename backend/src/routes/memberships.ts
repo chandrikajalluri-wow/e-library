@@ -45,6 +45,15 @@ router.put('/upgrade', auth, async (req: AuthRequest, res: Response) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         user.membership_id = membership._id;
+
+        // precise date handling
+        const now = new Date();
+        const expiry = new Date(now);
+        expiry.setDate(expiry.getDate() + 30); // 30 days validity
+
+        user.membershipStartDate = now;
+        user.membershipExpiryDate = expiry;
+
         await user.save();
 
         const updatedUser = await User.findById(req.user!._id).populate('membership_id');

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import '../styles/Footer.css';
 
 const Footer: React.FC = () => {
+    const isAuthenticated = !!localStorage.getItem('token');
     return (
         <footer className="footer">
             <div className="footer-container">
@@ -11,6 +12,13 @@ const Footer: React.FC = () => {
                     <p className="footer-description">
                         Making the world's knowledge accessible to everyone, everywhere. Reliable, inclusive, and forward-looking.
                     </p>
+                    {!isAuthenticated && (
+                        <div style={{ marginTop: '1rem' }}>
+                            <Link to="/signup" className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
+                                Sign Up Now
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
                 <div className="footer-section">

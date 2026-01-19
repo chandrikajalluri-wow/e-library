@@ -5,12 +5,13 @@ import { getBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 import { getProfile } from '../services/userService';
 import type { Book } from '../types';
-import ScrollToTop from '../components/ScrollToTop';
+
 import '../styles/BookList.css';
 
 const BookList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') || '';
+  const searchSectionRef = React.useRef<HTMLHeadingElement>(null);
 
   const [books, setBooks] = useState<Book[]>([]);
   const [recommendations, setRecommendations] = useState<Book[]>([]);
@@ -21,7 +22,7 @@ const BookList: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [isPremiumFilter, setIsPremiumFilter] = useState(false);
+  const [filterType, setFilterType] = useState('all'); // 'all', 'premium', 'free'
 
   // Sync state with URL parameter
   useEffect(() => {
@@ -37,7 +38,7 @@ const BookList: React.FC = () => {
       loadData();
     }, 500); // Debounce search
     return () => clearTimeout(timeoutId);
-  }, [search, selectedCategory, page, isPremiumFilter]);
+  }, [search, selectedCategory, page, filterType]);
 
   // Reset page and update URL when filters change
   useEffect(() => {
@@ -51,7 +52,15 @@ const BookList: React.FC = () => {
         setSearchParams({});
       }
     }
-  }, [search, selectedCategory, isPremiumFilter]);
+
+    // Scroll to results when filter changes
+    if (searchSectionRef.current) {
+      const yOffset = -100; // Offset for fixed header
+      const element = searchSectionRef.current;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  }, [selectedCategory, filterType]);
 
   useEffect(() => {
     loadRecommendations();
@@ -86,8 +95,8 @@ const BookList: React.FC = () => {
       // Build query string
       let query = `search=${search}&page=${page}&limit=10`;
       if (selectedCategory) query += `&category=${selectedCategory}`;
-      if (isPremiumFilter) query += `&isPremium=true`;
-
+      if (filterType === 'premium') query += `&isPremium=true`;
+      if (filterType === 'free') query += `&isPremium=false`;
       const data = await getBooks(query);
 
       setBooks(data.books);
@@ -127,16 +136,15 @@ const BookList: React.FC = () => {
           ))}
         </select>
 
-        <div className="premium-filter-wrapper">
-          <label className="premium-toggle">
-            <input
-              type="checkbox"
-              checked={isPremiumFilter}
-              onChange={(e) => setIsPremiumFilter(e.target.checked)}
-            />
-            <span className="premium-toggle-label">Premium Only</span>
-          </label>
-        </div>
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="category-select"
+        >
+          <option value="all">All Books</option>
+          <option value="free">Free Only</option>
+          <option value="premium">Premium Only</option>
+        </select>
       </div>
 
       {/* Top Recommendations Section */}
@@ -181,7 +189,7 @@ const BookList: React.FC = () => {
         </section>
       )}
 
-      <h2 className="section-title-h2">{search || selectedCategory ? 'Search Results' : 'All Books'}</h2>
+      <h2 ref={searchSectionRef} className="section-title-h2">{search || selectedCategory || filterType !== 'all' ? 'Search Results' : 'All Books'}</h2>
 
       <div className="grid-books">
         {books.map((book) => (
@@ -252,7 +260,14 @@ const BookList: React.FC = () => {
                 key={pageNum}
                 onClick={() => {
                   setPage(pageNum);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  setTimeout(() => {
+                    if (searchSectionRef.current) {
+                      const yOffset = -120; // Slightly more offset for better visibility
+                      const element = searchSectionRef.current;
+                      const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+                      window.scrollTo({ top: y, behavior: 'smooth' });
+                    }
+                  }, 100);
                 }}
                 className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
                 disabled={loading}
@@ -263,7 +278,7 @@ const BookList: React.FC = () => {
           </div>
         )
       }
-      <ScrollToTop />
+
     </div >
   );
 };
