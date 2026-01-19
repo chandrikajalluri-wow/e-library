@@ -73,7 +73,7 @@ const Signup: React.FC = () => {
               <path d="M8 11h8"></path>
             </svg>
           </div>
-          <h2>Create Account</h2>
+          <h2>Sign In</h2>
           <p className="auth-subtitle">Join the Bookstack community</p>
         </div>
 
@@ -138,7 +138,7 @@ const Signup: React.FC = () => {
         </div>
 
         <button className="auth-submit-btn" onClick={handleSignup}>
-          Create Account
+          Sign In
         </button>
 
         <div className="auth-footer">

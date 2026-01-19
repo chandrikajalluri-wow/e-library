@@ -40,7 +40,7 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
     return (
         <div className={`membership-card ${isPremium ? 'membership-card-premium' : ''} ${isCurrent ? 'membership-card-current' : ''}`}>
             {isPremium && <div className="membership-card-badge">Most Popular</div>}
-            {isCurrent && <div className="membership-card-current-badge">Your Plan</div>}
+            {isCurrent && <div className="membership-card-current-badge" style={isPremium ? { top: '3rem' } : {}}>Your Plan</div>}
 
             <div className="membership-card-header">
                 <h3 className="membership-card-title">{membership.displayName}</h3>

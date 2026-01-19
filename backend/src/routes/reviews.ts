@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import Review from '../models/Review';
 import Borrow from '../models/Borrow';
+import Book from '../models/Book';
 import { auth, AuthRequest } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -48,6 +49,12 @@ router.post('/', auth, async (req: AuthRequest, res: Response) => {
       comment,
     });
     await review.save();
+
+    // Update book average rating
+    const allReviews = await Review.find({ book_id });
+    const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+    await Book.findByIdAndUpdate(book_id, { rating: Number(avgRating.toFixed(1)) });
+
     res.status(201).json(review);
   } catch (err) {
     console.log(err);
@@ -71,6 +78,11 @@ router.put('/:id', auth, async (req: AuthRequest, res: Response) => {
     review.comment = comment;
     review.reviewed_at = new Date();
     await review.save();
+
+    // Update book average rating
+    const allReviews = await Review.find({ book_id: review.book_id });
+    const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+    await Book.findByIdAndUpdate(review.book_id, { rating: Number(avgRating.toFixed(1)) });
 
     res.json(review);
   } catch (err) {

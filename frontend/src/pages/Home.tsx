@@ -6,14 +6,18 @@ import { getMembershipPlans, getMyMembership, upgradeMembership, type Membership
 import { getCategories } from '../services/categoryService';
 import type { Book, Category } from '../types';
 import Footer from '../components/Footer';
+import UserNavbar from '../components/UserNavbar';
 import ConfirmationModal from '../components/ConfirmationModal';
 import MembershipCard from '../components/MembershipCard';
 import PaymentModal from '../components/PaymentModal';
 import '../styles/Home.css';
 
+
+
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const [user, setUser] = React.useState<any>(null);
+
   const [books, setBooks] = React.useState<Book[]>([]);
   const [memberships, setMemberships] = React.useState<Membership[]>([]);
   const [currentMembership, setCurrentMembership] = React.useState<Membership | null>(null);
@@ -34,9 +38,31 @@ const Home: React.FC = () => {
     loadCategories();
   }, [isAuthenticated]);
 
+  // Scroll Reveal Observer
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    setTimeout(() => {
+      const elements = document.querySelectorAll('.saas-reveal');
+      elements.forEach((el) => observer.observe(el));
+    }, 100); // Small delay to ensure DOM is ready
+
+    return () => observer.disconnect();
+  }, [books, categories, memberships]);
+
   const loadBooks = async () => {
     try {
-      const data = await getBooks('limit=8');
+      const data = await getBooks('limit=8&sort=-rating');
       setBooks(data.books || data);
     } catch (err) {
       console.error('Failed to load books for carousel', err);
@@ -73,9 +99,11 @@ const Home: React.FC = () => {
   const loadProfile = async () => {
     try {
       const data = await getProfile();
-      setUser(data);
+
       if (data.role === 'admin') {
         navigate('/admin-dashboard');
+      } else if (data.role === 'super_admin') {
+        navigate('/super-admin-dashboard');
       }
     } catch (err) {
       console.error('Failed to load profile', err);
@@ -92,7 +120,7 @@ const Home: React.FC = () => {
 
   const handleUpgrade = (membership: Membership) => {
     if (!isAuthenticated) {
-      navigate('/signup');
+      navigate('/login');
       return;
     }
 
@@ -130,48 +158,7 @@ const Home: React.FC = () => {
   return (
     <div className="home-page saas-theme">
       {/* Dynamic Navbar */}
-      <nav className="saas-nav">
-        <div className="nav-wrapper">
-          <Link to="/" className="saas-logo">
-            <div className="logo-box">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path>
-                <path d="M8 7h8"></path>
-                <path d="M8 11h8"></path>
-              </svg>
-            </div>
-            <span>Bookstack</span>
-          </Link>
-          <div className="nav-actions">
-            <Link to="/books">Books</Link>
-            <Link to="/about">About</Link>
-            <Link to="/contact">Support</Link>
-            {isAuthenticated ? (
-              <div className="home-user-actions">
-                <Link to="/profile" className="nav-user-chip">
-                  <div className="chip-avatar">
-                    {user?.profileImage ? (
-                      <img src={user.profileImage} alt="Profile" />
-                    ) : (
-                      user?.name?.charAt(0) || 'U'
-                    )}
-                  </div>
-                  <span>{user?.name || 'Reader'}</span>
-                </Link>
-                <button
-                  onClick={() => setIsLogoutModalOpen(true)}
-                  className="home-logout-btn"
-                  title="Logout"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-                </button>
-              </div>
-            ) : (
-              <Link to="/login" className="nav-cta">Get Started</Link>
-            )}
-          </div>
-        </div>
-      </nav>
+      <UserNavbar />
 
       {/* Hero: Vibrant & Educational */}
       <header className="saas-hero">

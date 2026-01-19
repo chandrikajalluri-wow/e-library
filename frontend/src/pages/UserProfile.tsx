@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import {
   getProfile,
   updateProfile,
+  renewMembership,
 } from "../services/userService";
 import { getCategories } from "../services/categoryService";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
 import "../styles/UserProfile.css";
-import type { Category } from "../types";
+import type { Category, Membership } from "../types";
+import PaymentModal from "../components/PaymentModal";
 
 const UserProfile: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -21,6 +23,7 @@ const UserProfile: React.FC = () => {
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -140,6 +143,13 @@ const UserProfile: React.FC = () => {
             </div>
             <h3 className="profile-user-name">{user.name}</h3>
             <p className="profile-user-email">{user.email}</p>
+
+            <div className="membership-status-badge">
+              <span className={`badge-plan ${user.membership_id?.name || 'basic'}`}>
+                {user.membership_id?.displayName || 'Basic'} Plan
+              </span>
+            </div>
+
             {!isEditing && (
               <button className="btn-primary edit-profile-btn" onClick={() => setIsEditing(true)}>
                 Edit Profile
@@ -190,6 +200,63 @@ const UserProfile: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="card profile-card membership-details-card">
+                <h2 className="profile-section-title">Membership Details</h2>
+                <div className="profile-info-grid">
+                  <div className="info-item">
+                    <label>Current Plan</label>
+                    <p className="highlight-text">{user.membership_id?.displayName || 'Basic'}</p>
+                  </div>
+
+                  {user.membership_id?.name !== 'basic' && (
+                    <>
+                      <div className="info-item">
+                        <label>Member Since</label>
+                        <p>{user.membershipStartDate ? new Date(user.membershipStartDate).toLocaleDateString() : 'N/A'}</p>
+                      </div>
+                      <div className="info-item">
+                        <label>Expires On</label>
+                        <p className={user.membershipExpiryDate && new Date(user.membershipExpiryDate) < new Date() ? 'text-danger' : ''}>
+                          {user.membershipExpiryDate ? new Date(user.membershipExpiryDate).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {user.membership_id?.name !== 'basic' && (
+                  <div className="membership-actions">
+                    {(() => {
+                      const expiryDate = user.membershipExpiryDate ? new Date(user.membershipExpiryDate) : null;
+                      const daysUntilExpiry = expiryDate
+                        ? Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                        : null;
+
+                      const canRenew = daysUntilExpiry !== null && daysUntilExpiry <= 7;
+
+                      return canRenew ? (
+                        <button
+                          className="btn-secondary renew-btn"
+                          onClick={() => setIsRenewalModalOpen(true)}
+                        >
+                          Renew Membership
+                        </button>
+                      ) : (
+                        <p className="text-muted text-small" style={{ fontSize: '0.85rem', margin: 0 }}>
+                          Renewal available 7 days before expiry
+                        </p>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {user.membership_id?.name === 'basic' && (
+                  <div className="upgrade-prompt-mini">
+                    <p>Upgrade to Premium to unlock more features!</p>
+                  </div>
+                )}
               </div>
             </>
           ) : (
@@ -290,7 +357,21 @@ const UserProfile: React.FC = () => {
           )}
         </div>
       </div>
-    </div >
+
+      {
+        isRenewalModalOpen && user.membership_id && typeof user.membership_id !== 'string' && (
+          <PaymentModal
+            membership={user.membership_id as Membership}
+            onClose={() => setIsRenewalModalOpen(false)}
+            onSuccess={() => {
+              loadProfile();
+              setIsRenewalModalOpen(false);
+            }}
+            onSubmit={renewMembership}
+          />
+        )
+      }
+    </div>
   );
 };
 

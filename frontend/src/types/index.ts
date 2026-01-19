@@ -7,6 +7,21 @@ export interface Category {
   updatedAt?: string;
 }
 
+export interface Membership {
+  _id: string;
+  name: string;
+  displayName: string;
+  price: number;
+  borrowLimit: number;
+  borrowDuration: number;
+  canRequestBooks: boolean;
+  canAccessPremiumBooks: boolean;
+  canRenewBooks: boolean;
+  hasRecommendations: boolean;
+  description: string;
+  features: string[];
+}
+
 export interface Book {
   _id: string;
   title: string;
@@ -41,6 +56,9 @@ export interface User {
   favoriteGenres?: string[];
   booksRead?: number;
   readingTarget?: number;
+  membershipStartDate?: string;
+  membershipExpiryDate?: string;
+  membership_id?: Membership | string;
 }
 
 export interface Borrow {

@@ -4,6 +4,7 @@ import { login } from '../services/authService';
 import Loader from './Loader';
 import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import '../styles/Auth.css';
 
 const Login: React.FC = () => {
@@ -13,6 +14,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -22,10 +24,16 @@ const Login: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { token, role, userId } = await login(email, password);
+      const { token, role, userId, theme } = await login(email, password);
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
+
+      if (theme) {
+        setTheme(theme);
+        localStorage.setItem('theme', theme);
+      }
+
       setError('');
 
       toast.success(`Welcome, ${email}!`);

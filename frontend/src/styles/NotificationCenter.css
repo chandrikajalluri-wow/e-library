@@ -20,8 +20,8 @@
 
 .notification-trigger:hover,
 .notification-trigger.active {
-    background: var(--bg-secondary);
-    color: var(--accent-primary);
+    background: var(--bg-color);
+    color: var(--primary-color);
 }
 
 .unread-badge {
@@ -39,7 +39,7 @@
     align-items: center;
     justify-content: center;
     padding: 0 4px;
-    border: 2px solid var(--bg-primary);
+    border: 2px solid var(--card-bg);
 }
 
 .notification-dropdown {
@@ -47,7 +47,7 @@
     top: calc(100% + 12px);
     right: 0;
     width: 320px;
-    background: var(--bg-primary);
+    background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -72,7 +72,7 @@
 .mark-all-read {
     background: none;
     border: none;
-    color: var(--accent-primary);
+    color: var(--primary-color);
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
@@ -81,7 +81,7 @@
 }
 
 .mark-all-read:hover {
-    background: var(--accent-light);
+    background: rgba(99, 102, 241, 0.1);
 }
 
 .notification-list {
@@ -100,22 +100,22 @@
 }
 
 .notification-item:hover {
-    background: var(--bg-secondary);
+    background: var(--bg-color);
 }
 
 .notification-item.unread {
-    background: var(--accent-light);
+    background: rgba(99, 102, 241, 0.05);
 }
 
 .notification-item.unread:hover {
-    background: rgba(var(--accent-primary-rgb), 0.1);
+    background: rgba(99, 102, 241, 0.1);
 }
 
 .notif-icon {
     flex-shrink: 0;
     width: 32px;
     height: 32px;
-    background: var(--bg-primary);
+    background: var(--bg-color);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -142,7 +142,7 @@
 .unread-dot {
     width: 8px;
     height: 8px;
-    background: var(--accent-primary);
+    background: var(--primary-color);
     border-radius: 50%;
     position: absolute;
     right: 16px;
@@ -160,11 +160,11 @@
     padding: 12px;
     text-align: center;
     border-top: 1px solid var(--border-color);
-    background: var(--bg-secondary);
+    background: var(--bg-color);
 }
 
 .notification-footer a {
-    color: var(--accent-primary);
+    color: var(--primary-color);
     text-decoration: none;
     font-size: 0.875rem;
     font-weight: 500;

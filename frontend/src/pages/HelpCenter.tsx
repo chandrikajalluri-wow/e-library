@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import UserNavbar from '../components/UserNavbar';
-import Footer from '../components/Footer';
+
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import '../styles/StaticPages.css';
 import '../styles/HelpCenter.css';
@@ -84,7 +84,7 @@ const HelpCenter: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <Footer />
+
         </div>
     );
 };

@@ -29,10 +29,12 @@ import HelpCenter from './pages/HelpCenter';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './components/UserLayout';
+import PublicLayout from './components/PublicLayout';
 import ScrollRevealHandler from './components/ScrollRevealHandler';
 
 import { ThemeProvider } from './context/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
+import ScrollToTop from './components/ScrollToTop';
 
 const App: React.FC = () => {
   return (
@@ -42,25 +44,31 @@ const App: React.FC = () => {
         <AxiosInterceptor />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/mission" element={<OurMission />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/help" element={<HelpCenter />} />
-          <Route path="/terms" element={<TermsAndConditions />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/memberships" element={<MembershipPlans />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/reset/:token" element={<ResetPassword />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
 
-          <Route element={<UserLayout />}>
-            <Route path="/books" element={<BookList />} />
-            <Route path="/books/:id" element={<BookDetail />} />
+          {/* Public Pages with Navbar & Footer */}
+          <Route element={<PublicLayout />}>
+            <Route path="/about" element={<About />} />
+            <Route path="/mission" element={<OurMission />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/help" element={<HelpCenter />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/memberships" element={<MembershipPlans />} />
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
+            <Route element={<UserLayout />}>
+              <Route path="/books" element={<BookList />} />
+              <Route path="/books/:id" element={<BookDetail />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
             <Route element={<UserLayout />}>
               {/* User Routes */}
               <Route path="/dashboard" element={<UserDashboard />} />
@@ -69,28 +77,27 @@ const App: React.FC = () => {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
+            </Route>
+          </Route>
 
-
-              {/* Admin Routes */}
+          {/* Admin Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'super_admin']} />}>
+            <Route element={<UserLayout />}>
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              <Route path="/books" element={<BookList />} />
-              <Route path="/books/:id" element={<BookDetail />} />
+            </Route>
+          </Route>
 
-              {/* Admin Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['admin', 'super_admin']} />}>
-                <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              </Route>
-
-              {/* Super Admin Routes*/}
-              <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
-                <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
-              </Route>
+          {/* Super Admin Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
+            <Route element={<UserLayout />}>
+              <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
             </Route>
           </Route>
         </Routes>
+        <ScrollToTop />
         <ThemeToggle className="theme-toggle-fixed" />
       </Router>
-    </ThemeProvider>
+    </ThemeProvider >
   );
 };
 

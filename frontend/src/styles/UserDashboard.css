@@ -401,3 +401,103 @@
     background: rgba(255, 255, 255, 0.9);
     color: #764ba2;
 }
+
+/* Announcements Section Styles */
+.dashboard-announcements-section {
+    margin: 2.5rem 0;
+    padding: 2rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+.section-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header-flex h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.badge-new {
+    background: var(--primary-color);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.25rem 0.75rem;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.announcements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.announcement-card {
+    background: rgba(var(--primary-rgb), 0.02);
+    border: 1px solid rgba(var(--primary-rgb), 0.1);
+    border-radius: 16px;
+    padding: 1.25rem;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.announcement-card:hover {
+    transform: translateY(-4px);
+    background: rgba(var(--primary-rgb), 0.04);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+.announcement-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--primary-color);
+    opacity: 0.5;
+}
+
+.announcement-meta {
+    margin-bottom: 0.5rem;
+}
+
+.ann-date {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ann-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.ann-body {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+    .announcements-grid {
+        grid-template-columns: 1fr;
+    }
+}

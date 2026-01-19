@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getMyBorrows, returnBook, renewBorrow } from '../services/borrowService';
 import { getDashboardStats } from '../services/userService';
 import { getMyMembership, type Membership } from '../services/membershipService';
+import { getAnnouncements } from '../services/superAdminService';
 import { toast } from 'react-toastify';
 import FinePaymentModal from '../components/FinePaymentModal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -13,6 +14,7 @@ const UserDashboard: React.FC = () => {
   const [borrows, setBorrows] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0, streakCount: 0 });
   const [membership, setMembership] = useState<Membership | null>(null);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [selectedBorrow, setSelectedBorrow] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -42,6 +44,8 @@ const UserDashboard: React.FC = () => {
       setStats(sData);
       const mData = await getMyMembership();
       setMembership(mData);
+      const aData = await getAnnouncements();
+      setAnnouncements(aData.filter((a: any) => a.isActive));
     } catch (err) {
       console.error(err);
       toast.error('Failed to load dashboard data');
@@ -132,16 +136,7 @@ const UserDashboard: React.FC = () => {
           <div className="membership-limits">
             <span>Limit: {stats.borrowedCount} / {membership?.borrowLimit || 3} books</span>
             <button
-              onClick={() => {
-                navigate('/');
-                // Scroll to membership section after navigation
-                setTimeout(() => {
-                  const membershipSection = document.querySelector('.membership-plans-grid');
-                  if (membershipSection) {
-                    membershipSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }
-                }, 100);
-              }}
+              onClick={() => navigate('/memberships')}
               className="upgrade-link-btn"
             >
               {membership?.name === 'premium' ? 'View Plans' : 'Upgrade Plan'}
@@ -165,6 +160,28 @@ const UserDashboard: React.FC = () => {
           <p className="stat-value">🔥 {stats.streakCount} Days</p>
         </div>
       </div>
+
+      {announcements.length > 0 && (
+        <section className="dashboard-announcements-section">
+          <div className="section-header-flex">
+            <h2>Announcements</h2>
+            <span className="badge-new">Latest Updates</span>
+          </div>
+          <div className="announcements-grid">
+            {announcements.slice(0, 2).map((ann) => (
+              <div key={ann._id} className="announcement-card ripple-effect">
+                <div className="announcement-content-wrap">
+                  <div className="announcement-meta">
+                    <span className="ann-date">{new Date(ann.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
+                  <h3 className="ann-title">{ann.title}</h3>
+                  <p className="ann-body">{ann.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="card dashboard-section">
         <h2>My Borrows</h2>

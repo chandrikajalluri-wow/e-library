@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { requestBook } from '../services/userService';
 import { getBooks } from '../services/bookService';
+import { getMyMembership } from '../services/membershipService';
 import { toast } from 'react-toastify';
+import Loader from '../components/Loader';
 import '../styles/UserProfile.css';
 
 const BookRequestPage: React.FC = () => {
     const [request, setRequest] = useState({ title: '', author: '', reason: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [membership, setMembership] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchMembership = async () => {
+            try {
+                const data = await getMyMembership();
+                setMembership(data);
+            } catch (err) {
+                console.error(err);
+                toast.error('Failed to verify membership status');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchMembership();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,12 +49,37 @@ const BookRequestPage: React.FC = () => {
             await requestBook(request);
             toast.success('Book request submitted successfully');
             setRequest({ title: '', author: '', reason: '' });
-        } catch (err) {
-            toast.error('Failed to submit request');
+        } catch (err: any) {
+            toast.error(err.response?.data?.error || 'Failed to submit request');
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    if (loading) return <Loader />;
+
+    // Restrict access for Basic plan
+    if (membership?.name === 'basic') {
+        return (
+            <div className="request-page saas-reveal">
+                <div className="saas-page-header" style={{ textAlign: 'center' }}>
+                    <h2 className="static-title-h1">Request a Book</h2>
+                    <p className="static-subtitle">Upgrade your plan to unlock this feature</p>
+                </div>
+                <div className="card profile-card" style={{ maxWidth: '600px', margin: '2rem auto', textAlign: 'center', padding: '3rem 2rem' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
+                    <h3>Premium Feature Locked</h3>
+                    <p style={{ color: 'var(--text-secondary)', margin: '1rem 0 2rem' }}>
+                        Book requests are exclusively available for <strong>Standard</strong> and <strong>Premium</strong> members.
+                        Upgrade your plan to suggest new titles for our collection.
+                    </p>
+                    <Link to="/memberships" className="btn-primary">
+                        View Membership Plans
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="request-page saas-reveal">
@@ -84,5 +128,4 @@ const BookRequestPage: React.FC = () => {
         </div>
     );
 };
-
 export default BookRequestPage;

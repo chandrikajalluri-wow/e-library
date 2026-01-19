@@ -43,10 +43,20 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
+    let sortOption: any = { createdAt: -1 };
+    if (req.query.sort) {
+      const sortStr = req.query.sort as string;
+      if (sortStr.startsWith('-')) {
+        sortOption = { [sortStr.substring(1)]: -1 };
+      } else {
+        sortOption = { [sortStr]: 1 };
+      }
+    }
+
     const books = await Book.find(query)
       .populate('category_id', 'name')
       .populate('addedBy', 'name email')
-      .sort({ createdAt: -1 })
+      .sort(sortOption)
       .skip(skip)
       .limit(limit);
 

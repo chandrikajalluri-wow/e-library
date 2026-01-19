@@ -92,6 +92,7 @@ router.put('/profile', auth, upload.single('profileImage'), async (req: AuthRequ
         }
         if (booksRead !== undefined) user.booksRead = Number(booksRead);
         if (readingTarget !== undefined) user.readingTarget = Number(readingTarget);
+        if (req.body.theme) user.theme = req.body.theme;
 
         if (req.file) {
             user.profileImage = (req.file as any).path;
@@ -107,8 +108,50 @@ router.put('/profile', auth, upload.single('profileImage'), async (req: AuthRequ
                 profileImage: user.profileImage,
                 favoriteGenres: user.favoriteGenres,
                 booksRead: user.booksRead,
-                readingTarget: user.readingTarget
+                readingTarget: user.readingTarget,
+                membershipStartDate: user.membershipStartDate,
+                membershipExpiryDate: user.membershipExpiryDate,
+                theme: user.theme
             }
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Renew Membership
+router.post('/renew-membership', auth, async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id).populate('membership_id');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const membership = user.membership_id as any;
+        if (!membership || membership.name === 'basic') {
+            return res.status(400).json({ error: 'Basic membership cannot be renewed. Please upgrade to a paid plan.' });
+        }
+
+        const now = new Date();
+        let newExpiry = new Date(user.membershipExpiryDate || now);
+
+        // If expired, start from now
+        if (newExpiry < now) {
+            newExpiry = new Date(now);
+        }
+
+        // Add 30 days
+        newExpiry.setDate(newExpiry.getDate() + 30);
+
+        user.membershipExpiryDate = newExpiry;
+        if (!user.membershipStartDate) {
+            user.membershipStartDate = now;
+        }
+
+        await user.save();
+
+        res.json({
+            message: 'Membership renewed successfully',
+            membershipExpiryDate: user.membershipExpiryDate
         });
     } catch (err) {
         console.error(err);

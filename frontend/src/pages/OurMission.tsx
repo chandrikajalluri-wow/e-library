@@ -1,6 +1,6 @@
 import React from 'react';
 import UserNavbar from '../components/UserNavbar';
-import Footer from '../components/Footer';
+
 
 import '../styles/StaticPages.css';
 
@@ -33,7 +33,7 @@ const OurMission: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <Footer />
+
         </div>
     );
 };

@@ -9,6 +9,7 @@ import {
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
 import ThemeToggle from "../components/ThemeToggle";
+import { useTheme } from "../context/ThemeContext";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 import "../styles/UserSettings.css";
 import "../styles/UserProfile.css"; // Reuse some basic form styles
@@ -16,6 +17,7 @@ import "../styles/UserProfile.css"; // Reuse some basic form styles
 type SettingsTab = 'public-profile' | 'account' | 'appearance' | 'security' | 'sessions' | 'danger-zone';
 
 const UserSettings: React.FC = () => {
+    const { setTheme } = useTheme();
     const [activeTab, setActiveTab] = useState<SettingsTab>('public-profile');
     const [user, setUser] = useState<any>(null);
     const [sessions, setSessions] = useState<any[]>([]);
@@ -43,6 +45,10 @@ const UserSettings: React.FC = () => {
             setDisplayName(profileData.name);
             setSessions(sessionData.sessions);
             setLastLogin(sessionData.lastLogin);
+
+            if (profileData.theme) {
+                setTheme(profileData.theme);
+            }
         } catch (err) {
             toast.error("Failed to load settings data");
         } finally {

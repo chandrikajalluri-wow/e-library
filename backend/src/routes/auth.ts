@@ -150,7 +150,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
     await user.save();
 
-    res.json({ token, role: roleDoc.name, userId: user._id });
+    res.json({ token, role: roleDoc.name, userId: user._id, theme: user.theme });
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: 'Server error' });

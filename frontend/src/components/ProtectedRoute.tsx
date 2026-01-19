@@ -31,7 +31,10 @@ const ProtectedRoute: React.FC<Props> = ({ allowedRoles }) => {
   if (!token) return <Navigate to="/" replace />;
 
   if (role && !allowedRoles.includes(role)) {
-    return <Navigate to="/books" replace />; // Redirect unauthorized users to catalog
+    // Role-aware redirection
+    if (role === 'super_admin') return <Navigate to="/super-admin-dashboard" replace />;
+    if (role === 'admin') return <Navigate to="/admin-dashboard" replace />;
+    return <Navigate to="/books" replace />;
   }
 
   return <Outlet />;
