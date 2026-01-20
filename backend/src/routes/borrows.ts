@@ -5,6 +5,7 @@ import Book from '../models/Book';
 import { auth, checkRole, AuthRequest } from '../middleware/authMiddleware';
 import { sendNotification } from '../utils/notification';
 import User from '../models/User';
+import Membership from '../models/Membership';
 
 const router = express.Router();
 
@@ -18,13 +19,27 @@ router.post('/issue', auth, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'No copies available' });
 
     // Get user with membership
-    const user = await User.findById(req.user!._id).populate('membership_id');
+    let user = await User.findById(req.user!._id).populate('membership_id');
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const membership = user.membership_id as any;
+    let membership = user.membership_id as any;
+
+    // Lazy migration/assignment if missing
+    if (!membership) {
+      const basicMembership = await Membership.findOne({ name: 'basic' });
+      if (basicMembership) {
+        user.membership_id = basicMembership._id;
+        user.membershipStartDate = new Date();
+        await user.save();
+        // Re-populate to get the membership details
+        user = await User.findById(req.user!._id).populate('membership_id');
+        membership = user?.membership_id as any;
+      }
+    }
+
     if (!membership) {
       return res.status(400).json({
-        error: 'No membership plan assigned. Please contact admin.'
+        error: 'Default membership plan (Basic) not found. Please contact admin to seed memberships.'
       });
     }
 
