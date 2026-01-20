@@ -322,7 +322,7 @@ const BookDetail: React.FC = () => {
                   {book.isPremium && !userMembership?.canAccessPremiumBooks ? (
                     <div className="premium-lock-container">
                       <button
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/memberships')}
                         className="btn-primary premium-upgrade-btn"
                       >
                         Upgrade to Premium to Access
