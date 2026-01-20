@@ -439,7 +439,7 @@ const BookDetail: React.FC = () => {
                       <small className="review-date">
                         {new Date(r.reviewed_at).toLocaleDateString()}
                       </small>
-                      {r.user_id?._id === currentUserId && (
+                      {(r.user_id?._id === currentUserId || r.user_id === currentUserId) && (
                         <button
                           onClick={() => handleEditReview(r)}
                           className="btn-link-edit"
@@ -459,7 +459,7 @@ const BookDetail: React.FC = () => {
           </div>
 
           {/* Review Form */}
-          {hasBorrowed && (
+          {(hasBorrowed || editingReviewId) && (
             <div>
               <div className="review-form-container">
                 <h3 className="review-form-title">
