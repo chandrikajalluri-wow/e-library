@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import User from '../models/User';
 import Role from '../models/Role';
 import AuthToken from '../models/AuthToken';
+import Membership from '../models/Membership';
 import { sendEmail } from '../utils/mailer';
 import { IRole } from '../models/Role';
 
@@ -61,6 +62,13 @@ router.post('/signup', async (req: Request, res: Response) => {
       'Verify Your Email',
       `Please verify your email by clicking: ${verifyLink}`
     );
+
+    // Assign basic membership
+    const basicMembership = await Membership.findOne({ name: 'basic' });
+    if (basicMembership) {
+      user.membership_id = basicMembership._id;
+      user.membershipStartDate = new Date();
+    }
 
     await user.save();
     res.json({
@@ -146,6 +154,15 @@ router.post('/login', async (req: Request, res: Response) => {
 
     if (user.activeSessions.length > 5) {
       user.activeSessions = user.activeSessions.slice(-5);
+    }
+
+    // Lazy migration for legacy users missing membership
+    if (!user.membership_id) {
+      const basicMembership = await Membership.findOne({ name: 'basic' });
+      if (basicMembership) {
+        user.membership_id = basicMembership._id;
+        user.membershipStartDate = user.membershipStartDate || new Date();
+      }
     }
 
     await user.save();
