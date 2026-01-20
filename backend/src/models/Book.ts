@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import { ICategory } from './Category';
 import { IUser } from './User';
+import { BookStatus } from '../types/enums';
 
 export interface IBook extends Document {
   title: string;
@@ -14,7 +15,7 @@ export interface IBook extends Document {
   description?: string;
   isbn: string;
   publishedYear: number;
-  status: string; // 'available', 'issued', 'archived', 'damaged'
+  status: BookStatus;
   category_id: Types.ObjectId | ICategory;
   addedBy: Types.ObjectId | IUser;
   createdAt: Date;
@@ -39,7 +40,7 @@ const bookSchema = new Schema<IBook>(
     description: { type: String },
     isbn: { type: String, unique: true },
     publishedYear: { type: Number },
-    status: { type: String, default: 'available' },
+    status: { type: String, enum: Object.values(BookStatus), default: BookStatus.AVAILABLE },
     category_id: {
       type: Schema.Types.ObjectId,
       ref: 'Category',

@@ -10,6 +10,7 @@ import { getAllWishlists } from '../services/wishlistService';
 import { getActivityLogs } from '../services/logService';
 import { getNotifications, markAsRead, markAllAsRead } from '../services/notificationService';
 import { getAdmins } from '../services/superAdminService';
+import { RoleName, BookStatus, BorrowStatus, RequestStatus, MembershipName } from '../types/enums';
 import type { Book, Category, Borrow, User } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/AdminDashboard.css';
@@ -47,7 +48,7 @@ const AdminDashboard: React.FC = () => {
   });
 
   const [newBook, setNewBook] = useState({
-    title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
+    title: '', author: '', category_id: '', price: '', status: BookStatus.AVAILABLE, isbn: '',
     description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
     genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
     author_image_url: '', addedBy: '', rating: '0'
@@ -86,7 +87,7 @@ const AdminDashboard: React.FC = () => {
       const profile = await getProfile();
       setCurrentUser(profile);
 
-      if (profile.role === 'super_admin') {
+      if (profile.role === RoleName.SUPER_ADMIN) {
         const adminList = await getAdmins();
         setAdmins(adminList);
       }
@@ -108,7 +109,7 @@ const AdminDashboard: React.FC = () => {
   const fetchBorrows = async () => {
     setIsDataLoading(true);
     try {
-      const statusFilter = activeTab === 'requests' ? 'return_requested' : borrowStatusFilter;
+      const statusFilter = activeTab === 'requests' ? BorrowStatus.RETURN_REQUESTED : borrowStatusFilter;
       const membershipParam = activeTab === 'requests' ? 'all' : membershipFilter;
       const data = await getAllBorrows(`page=${borrowPage}&limit=10&status=${statusFilter}&membership=${membershipParam}`);
       setBorrows(data.borrows);
@@ -137,9 +138,9 @@ const AdminDashboard: React.FC = () => {
     setIsDataLoading(true);
     try {
       const profile = await getProfile();
-      const isSuperAdmin = profile.role === 'super_admin';
+      const isSuperAdmin = profile.role === RoleName.SUPER_ADMIN;
       const addedByParam = isSuperAdmin ? '' : `&addedBy=${profile._id}`;
-      const isPremiumParam = bookTypeFilter === 'all' ? '' : (bookTypeFilter === 'premium' ? '&isPremium=true' : '&isPremium=false');
+      const isPremiumParam = bookTypeFilter === 'all' ? '' : (bookTypeFilter === MembershipName.PREMIUM.toLowerCase() ? '&isPremium=true' : '&isPremium=false');
       const data = await getBooks(`page=${bookPage}&limit=10&showArchived=true&search=${searchTerm}${isPremiumParam}${addedByParam}`);
       setAllBooks(data.books);
       setBookTotalPages(data.pages);
@@ -168,7 +169,7 @@ const AdminDashboard: React.FC = () => {
     setIsStatsLoading(true);
     try {
       const profile = await getProfile();
-      const isSuperAdmin = profile.role === 'super_admin';
+      const isSuperAdmin = profile.role === RoleName.SUPER_ADMIN;
       const addedByParam = isSuperAdmin ? '' : `&addedBy=${profile._id}`;
 
       const booksData = await getBooks(`limit=1000&showArchived=true${addedByParam}`);
@@ -204,15 +205,15 @@ const AdminDashboard: React.FC = () => {
         totalUsers: new Set(borrowsData.borrows.map((b: any) => b.user_id?._id)).size,
         totalBorrows: borrowsData.total || 0,
         activeBorrows: borrowsData.borrows.filter((b: any) =>
-          ['borrowed', 'overdue', 'return_requested'].includes(b.status)
+          [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED].includes(b.status)
         ).length,
-        overdueBooks: borrowsData.borrows.filter((b: any) => b.status === 'overdue').length,
-        pendingReturns: borrowsData.borrows.filter((b: any) => b.status === 'return_requested').length,
-        pendingSuggestions: requestsData.filter((r: any) => r.status === 'pending').length,
-        mostBorrowedBook: getMostFrequent(borrowsData.borrows, (b) => b.book_id?.title),
-        mostWishlistedBook: getMostFrequent(wishlistData, (w) => w.book_id?.title),
-        mostActiveUser: getMostFrequent(borrowsData.borrows, (b) => b.user_id?.name),
-        mostFinedUser: getMaxSum(borrowsData.borrows, (b) => b.user_id?.name, (b) => b.fine_amount || 0),
+        overdueBooks: borrowsData.borrows.filter((b: any) => b.status === BorrowStatus.OVERDUE).length,
+        pendingReturns: borrowsData.borrows.filter((b: any) => b.status === BorrowStatus.RETURN_REQUESTED).length,
+        pendingSuggestions: requestsData.filter((r: any) => r.status === RequestStatus.PENDING).length,
+        mostBorrowedBook: getMostFrequent(borrowsData.borrows, (b: any) => b.book_id?.title),
+        mostWishlistedBook: getMostFrequent(wishlistData, (w: any) => w.book_id?.title),
+        mostActiveUser: getMostFrequent(borrowsData.borrows, (b: any) => b.user_id?.name),
+        mostFinedUser: getMaxSum(borrowsData.borrows, (b: any) => b.user_id?.name, (b: any) => b.fine_amount || 0),
       };
 
       setStats(newStats);
@@ -416,7 +417,7 @@ const AdminDashboard: React.FC = () => {
           }
 
           setNewBook({
-            title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
+            title: '', author: '', category_id: '', price: '', status: BookStatus.AVAILABLE, isbn: '',
             description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
             genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
             author_image_url: '', addedBy: '', rating: '0'
@@ -444,7 +445,7 @@ const AdminDashboard: React.FC = () => {
     setNewBook({
       title: book.title, author: book.author,
       category_id: typeof book.category_id === 'string' ? book.category_id : book.category_id?._id || '',
-      price: book.price?.toString() || '0', status: book.status || 'available', isbn: book.isbn || '',
+      price: book.price?.toString() || '0', status: book.status || BookStatus.AVAILABLE, isbn: book.isbn || '',
       description: book.description || '', pages: book.pages?.toString() || '0',
       publishedYear: book.publishedYear?.toString() || '', cover_image_url: book.cover_image_url || '',
       pdf_url: book.pdf_url || '', genre: book.genre || '', language: book.language || '',
@@ -459,7 +460,7 @@ const AdminDashboard: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingBookId(null);
     setNewBook({
-      title: '', author: '', category_id: '', price: '', status: 'available', isbn: '',
+      title: '', author: '', category_id: '', price: '', status: BookStatus.AVAILABLE, isbn: '',
       description: '', pages: '', publishedYear: '', cover_image_url: '', pdf_url: '',
       genre: '', language: '', noOfCopies: '1', isPremium: false, author_description: '',
       author_image_url: '', addedBy: '', rating: '0'
@@ -471,7 +472,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleDeleteBook = (id: string) => {
     const book = allBooks.find(b => b._id === id);
-    if (book && book.status === 'issued') {
+    if (book && book.status === BookStatus.ISSUED) {
       toast.error(`Cannot delete "${book.title}" because it is currently issued.`);
       return;
     }
@@ -526,7 +527,7 @@ const AdminDashboard: React.FC = () => {
     setConfirmModal({
       isOpen: true, title: `${status.charAt(0).toUpperCase() + status.slice(1)} Request`,
       message: `Are you sure you want to ${status} this book request?`,
-      type: status === 'rejected' ? 'danger' : 'info', isLoading: false,
+      type: status === RequestStatus.REJECTED ? 'danger' : 'info', isLoading: false,
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
@@ -689,7 +690,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="form-group"><label>Pages</label><input type="number" value={newBook.pages} onChange={(e) => setNewBook({ ...newBook, pages: e.target.value })} /></div>
                 <div className="form-group"><label>Published Year</label><input type="number" value={newBook.publishedYear} onChange={(e) => setNewBook({ ...newBook, publishedYear: e.target.value })} /></div>
                 <div className="form-group"><label>Copies</label><input type="number" value={newBook.noOfCopies} onChange={(e) => setNewBook({ ...newBook, noOfCopies: e.target.value })} required /></div>
-                <div className="form-group"><label>Status</label><select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value })} required><option value="available">Available</option><option value="issued">Issued</option><option value="damaged">Damaged</option></select></div>
+                <div className="form-group"><label>Status</label><select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value as any })} required><option value={BookStatus.AVAILABLE}>Available</option><option value={BookStatus.ISSUED}>Issued</option><option value={BookStatus.DAMAGED}>Damaged</option></select></div>
                 <div className="form-group"><label>Rating (0-5)</label><input type="number" step="0.1" min="0" max="5" value={(newBook as any).rating} onChange={(e) => setNewBook({ ...newBook, rating: e.target.value } as any)} /></div>
                 <div className="form-group">
                   <label>Cover Image</label>
@@ -822,7 +823,7 @@ const AdminDashboard: React.FC = () => {
                       <span className="category-name">{c.name}</span>
                       <div className="admin-actions-flex">
                         <button onClick={() => handleEditCategory(c)} className="admin-btn-edit" style={{ padding: '0.4rem 0.8rem' }}>Edit</button>
-                        {currentUser?.role === 'super_admin' && (
+                        {currentUser?.role === RoleName.SUPER_ADMIN && (
                           <button onClick={() => handleDeleteCategory(c)} className="admin-btn-delete" style={{ padding: '0.4rem 0.8rem' }}>Delete</button>
                         )}
                       </div>
@@ -847,13 +848,13 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 <table className="admin-table">
                   <thead><tr><th>Borrower</th><th>Book</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
-                  <tbody>{borrows.filter(b => b.status === 'return_requested').map(b => (
+                  <tbody>{borrows.filter(b => b.status === BorrowStatus.RETURN_REQUESTED).map(b => (
                     <tr key={b._id}>
                       <td>
                         <div className="user-info-box">
                           <span className="user-main-name">{b.user_id?.name || 'Unknown'}</span>
-                          <span className={`membership-pill ${((b.user_id as any)?.membership_id?.name || '').toLowerCase().includes('premium') ? 'membership-premium' : ''}`}>
-                            {(b.user_id as any)?.membership_id?.name || 'Basic'}
+                          <span className={`membership-pill ${((b.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
+                            {(b.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
                           </span>
                         </div>
                       </td>
@@ -909,14 +910,14 @@ const AdminDashboard: React.FC = () => {
                         <div className="user-info-box">
                           <span className="user-main-name">{req.user_id?.name || 'Unknown'}</span>
                           <span className="user-sub-email">{req.user_id?.email}</span>
-                          <span className={`membership-pill ${((req.user_id as any)?.membership_id?.name || '').toLowerCase().includes('premium') ? 'membership-premium' : ''}`}>
-                            {(req.user_id as any)?.membership_id?.name || 'Basic'}
+                          <span className={`membership-pill ${((req.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
+                            {(req.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
                           </span>
                         </div>
                       </td>
                       <td><div className="book-info-box"><span className="book-main-title">{req.title}</span><span className="book-sub-meta">by {req.author}</span></div></td>
                       <td><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
-                      <td className="admin-actions-cell">{req.status === 'pending' ? (<div className="admin-actions-flex"><button onClick={() => handleBookRequestStatus(req._id, 'approved')} className="admin-btn-edit">Approve</button><button onClick={() => handleBookRequestStatus(req._id, 'rejected')} className="admin-btn-delete">Reject</button></div>) : <span className="admin-processed-text">Processed</span>}</td>
+                      <td className="admin-actions-cell">{req.status === RequestStatus.PENDING ? (<div className="admin-actions-flex"><button onClick={() => handleBookRequestStatus(req._id, RequestStatus.APPROVED)} className="admin-btn-edit">Approve</button><button onClick={() => handleBookRequestStatus(req._id, RequestStatus.REJECTED)} className="admin-btn-delete">Reject</button></div>) : <span className="admin-processed-text">Processed</span>}</td>
                     </tr>
                   ))}</tbody>
                 </table>
@@ -944,9 +945,9 @@ const AdminDashboard: React.FC = () => {
                   <span className="admin-filter-label">Tier</span>
                   <select value={membershipFilter} onChange={(e) => setMembershipFilter(e.target.value)} className="admin-filter-select">
                     <option value="all">All Tiers</option>
-                    <option value="basic">Basic</option>
-                    <option value="standard">Standard</option>
-                    <option value="premium">Premium</option>
+                    <option value={MembershipName.BASIC.toLowerCase()}>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</option>
+                    <option value={MembershipName.STANDARD.toLowerCase()}>{MembershipName.STANDARD.charAt(0).toUpperCase() + MembershipName.STANDARD.slice(1)}</option>
+                    <option value={MembershipName.PREMIUM.toLowerCase()}>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</option>
                   </select>
                 </div>
               </div>
@@ -961,8 +962,8 @@ const AdminDashboard: React.FC = () => {
                 <table className="admin-table">
                   <thead><tr><th>Borrower</th><th>Book</th><th>Dates</th><th>Fine</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
                   <tbody>{borrows.map(b => {
-                    const membershipName = (b.user_id as any)?.membership_id?.name || 'Basic';
-                    const isPremiumUser = membershipName.toLowerCase().includes('premium');
+                    const membershipName = (b.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
+                    const isPremiumUser = membershipName.toLowerCase().includes(MembershipName.PREMIUM.toLowerCase());
 
                     return (
                       <tr key={b._id}>
@@ -1031,8 +1032,8 @@ const AdminDashboard: React.FC = () => {
                         <div className="user-info-box">
                           <span className="user-main-name">{log.user_id?.name}</span>
                           <span className="user-sub-email">{log.user_id?.email}</span>
-                          <span className={`membership-pill ${((log.user_id as any)?.membership_id?.name || '').toLowerCase().includes('premium') ? 'membership-premium' : ''}`}>
-                            {(log.user_id as any)?.membership_id?.name || 'Basic'}
+                          <span className={`membership-pill ${((log.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
+                            {(log.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
                           </span>
                         </div>
                       </td>

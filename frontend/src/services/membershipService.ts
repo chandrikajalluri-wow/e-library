@@ -9,7 +9,6 @@ export interface Membership {
     borrowDuration: number;
     canRequestBooks: boolean;
     canAccessPremiumBooks: boolean;
-    canRenewBooks: boolean;
     hasRecommendations: boolean;
     description: string;
     features: string[];

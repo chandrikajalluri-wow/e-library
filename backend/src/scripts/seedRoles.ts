@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Role from '../models/Role';
+import { RoleName } from '../types/enums';
 import connectDB from '../config/db';
 
 dotenv.config();
@@ -10,9 +11,9 @@ const seedRoles = async () => {
         await connectDB();
 
         const roles = [
-            { name: 'user', description: 'Regular library user' },
-            { name: 'admin', description: 'Library administrator' },
-            { name: 'super_admin', description: 'System super administrator with full access' },
+            { name: RoleName.USER, description: 'Regular library user' },
+            { name: RoleName.ADMIN, description: 'Library administrator' },
+            { name: RoleName.SUPER_ADMIN, description: 'System super administrator with full access' },
         ];
 
         for (const role of roles) {

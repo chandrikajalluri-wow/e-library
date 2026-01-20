@@ -1,14 +1,15 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { RoleName } from '../types/enums';
 
 export interface IRole extends Document {
-  name: string; // "user" or "admin"
+  name: RoleName;
   description?: string;
   createdAt?: Date;
 }
 
 const roleSchema = new Schema<IRole>(
   {
-    name: { type: String, required: true, unique: true },
+    name: { type: String, enum: Object.values(RoleName), required: true, unique: true },
     description: String,
     createdAt: { type: Date, default: Date.now },
   },

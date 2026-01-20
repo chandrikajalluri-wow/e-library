@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getAllUsers, manageAdmin, deleteUser } from '../../services/superAdminService';
 import { toast } from 'react-toastify';
 import ConfirmationModal from '../ConfirmationModal';
+import { RoleName } from '../../types/enums';
 
 interface User {
     _id: string;
@@ -122,19 +123,19 @@ const UserAdminManagement: React.FC = () => {
                                     <td><span className="user-main-name">{user.name}</span></td>
                                     <td>{user.email}</td>
                                     <td>
-                                        <span className={`status-badge ${user.role_id?.name === 'admin' ? 'status-borrowed' : (user.role_id?.name === 'super_admin' ? 'status-returned' : 'status-pending')}`}>
+                                        <span className={`status-badge ${user.role_id?.name === RoleName.ADMIN ? 'status-borrowed' : (user.role_id?.name === RoleName.SUPER_ADMIN ? 'status-returned' : 'status-pending')}`}>
                                             {user.role_id?.name || 'User'}
                                         </span>
                                     </td>
                                     <td>{user.isVerified ? <span className="status-badge status-available">Verified</span> : <span className="status-badge status-pending">Pending</span>}</td>
                                     <td className="admin-actions-cell">
                                         <div className="admin-actions-flex">
-                                            {user.role_id?.name !== 'super_admin' && (
+                                            {user.role_id?.name !== RoleName.SUPER_ADMIN && (
                                                 <>
-                                                    {user.role_id?.name === 'user' && (
+                                                    {user.role_id?.name === RoleName.USER && (
                                                         <button onClick={() => confirmAction(user, 'promote')} className="admin-btn-approve">Make Admin</button>
                                                     )}
-                                                    {user.role_id?.name === 'admin' && (
+                                                    {user.role_id?.name === RoleName.ADMIN && (
                                                         <button onClick={() => confirmAction(user, 'demote')} className="admin-btn-reject">Remove Admin</button>
                                                     )}
                                                     <button onClick={() => confirmAction(user, 'delete')} className="admin-btn-delete">Delete</button>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMembershipPlans, getMyMembership, upgradeMembership, type Membership } from '../services/membershipService';
+import { MembershipName } from '../types/enums';
 import { toast } from 'react-toastify';
 import MembershipCard from '../components/MembershipCard';
 import PaymentModal from '../components/PaymentModal';
@@ -101,9 +102,9 @@ const MembershipPlans: React.FC = () => {
                         <thead>
                             <tr>
                                 <th>Feature</th>
-                                <th>Basic</th>
-                                <th>Standard</th>
-                                <th>Premium</th>
+                                <th>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</th>
+                                <th>{MembershipName.STANDARD.charAt(0).toUpperCase() + MembershipName.STANDARD.slice(1)}</th>
+                                <th>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -138,12 +139,6 @@ const MembershipPlans: React.FC = () => {
                                 <td>✅</td>
                             </tr>
                             <tr>
-                                <td>Renew Books</td>
-                                <td>❌</td>
-                                <td>❌</td>
-                                <td>✅</td>
-                            </tr>
-                            <tr>
                                 <td>Recommendations</td>
                                 <td>❌</td>
                                 <td>❌</td>
@@ -154,16 +149,18 @@ const MembershipPlans: React.FC = () => {
                 </div>
             </div>
 
-            {isPaymentModalOpen && selectedMembership && (
-                <PaymentModal
-                    membership={selectedMembership}
-                    onClose={() => setIsPaymentModalOpen(false)}
-                    onSuccess={handlePaymentSuccess}
-                />
-            )}
+            {
+                isPaymentModalOpen && selectedMembership && (
+                    <PaymentModal
+                        membership={selectedMembership}
+                        onClose={() => setIsPaymentModalOpen(false)}
+                        onSuccess={handlePaymentSuccess}
+                    />
+                )
+            }
 
 
-        </div>
+        </div >
     );
 };
 

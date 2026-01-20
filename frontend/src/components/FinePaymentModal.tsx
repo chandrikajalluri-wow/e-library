@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { payFine } from '../services/borrowService';
+import { BorrowStatus } from '../types/enums';
 import { toast } from 'react-toastify';
 import Loader from './Loader';
 import '../styles/FinePaymentModal.css';
@@ -16,7 +17,7 @@ const FinePaymentModal: React.FC<FinePaymentModalProps> = ({ borrow, onClose, on
 
     const calculateFine = () => {
         let fine = borrow.fine_amount || 0;
-        if (borrow.status !== 'returned' && borrow.status !== 'archived' && new Date() > new Date(borrow.return_date)) {
+        if (borrow.status !== BorrowStatus.RETURNED && borrow.status !== BorrowStatus.ARCHIVED && new Date() > new Date(borrow.return_date)) {
             const diffTime = Math.abs(new Date().getTime() - new Date(borrow.return_date).getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             fine += diffDays * 10;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { RoleName } from '../types/enums';
 import { getProfile } from '../services/userService';
 import { getBooks } from '../services/bookService';
 import { getMembershipPlans, getMyMembership, upgradeMembership, type Membership } from '../services/membershipService';
@@ -10,6 +11,7 @@ import UserNavbar from '../components/UserNavbar';
 import ConfirmationModal from '../components/ConfirmationModal';
 import MembershipCard from '../components/MembershipCard';
 import PaymentModal from '../components/PaymentModal';
+import { toast } from 'react-toastify';
 import '../styles/Home.css';
 
 
@@ -100,9 +102,9 @@ const Home: React.FC = () => {
     try {
       const data = await getProfile();
 
-      if (data.role === 'admin') {
+      if (data.role === RoleName.ADMIN) {
         navigate('/admin-dashboard');
-      } else if (data.role === 'super_admin') {
+      } else if (data.role === RoleName.SUPER_ADMIN) {
         navigate('/super-admin-dashboard');
       }
     } catch (err) {
@@ -142,10 +144,10 @@ const Home: React.FC = () => {
       setCurrentMembership(response.membership);
       setIsDowngradeModalOpen(false);
       setSelectedMembership(null);
-      alert(response.message || 'Membership downgraded successfully');
+      toast.success(response.message || 'Membership downgraded successfully');
     } catch (err) {
       console.error('Failed to downgrade membership:', err);
-      alert('Failed to downgrade membership. Please try again.');
+      toast.error('Failed to downgrade membership. Please try again.');
     }
   };
 

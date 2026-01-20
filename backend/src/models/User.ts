@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import { IRole } from './Role'; // your Role interface
 import { IMembership } from './Membership';
+import { UserTheme } from '../types/enums';
 
 export interface IUser extends Document {
   name: string;
@@ -24,7 +25,7 @@ export interface IUser extends Document {
     lastActive: Date;
     token: string;
   }[];
-  theme?: 'light' | 'dark';
+  theme?: UserTheme;
   createdAt?: Date;
 }
 
@@ -53,7 +54,7 @@ const userSchema = new Schema<IUser>(
         token: { type: String },
       },
     ],
-    theme: { type: String, enum: ['light', 'dark'], default: 'light' },
+    theme: { type: String, enum: Object.values(UserTheme), default: UserTheme.LIGHT },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

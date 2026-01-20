@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Membership from '../models/Membership';
+import { MembershipName } from '../types/enums';
 import User from '../models/User';
 
 dotenv.config();
@@ -9,7 +10,7 @@ const MONGO_URI = process.env.MONGO_URI || '';
 
 const memberships = [
     {
-        name: 'basic',
+        name: MembershipName.BASIC,
         displayName: 'Basic',
         price: 0,
         borrowLimit: 3,
@@ -27,7 +28,7 @@ const memberships = [
         ]
     },
     {
-        name: 'standard',
+        name: MembershipName.STANDARD,
         displayName: 'Standard',
         price: 49,
         borrowLimit: 5,
@@ -46,7 +47,7 @@ const memberships = [
         ]
     },
     {
-        name: 'premium',
+        name: MembershipName.PREMIUM,
         displayName: 'Premium',
         price: 99,
         borrowLimit: 10,
@@ -82,7 +83,7 @@ async function seedMemberships() {
         console.log('Memberships created:', createdMemberships.length);
 
         // Get the basic membership ID
-        const basicMembership = createdMemberships.find(m => m.name === 'basic');
+        const basicMembership = createdMemberships.find(m => m.name === MembershipName.BASIC);
 
         if (basicMembership) {
             // Update all users without a membership to basic

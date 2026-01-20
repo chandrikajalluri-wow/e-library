@@ -8,6 +8,7 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
+    height: 100%;
 }
 
 .membership-card:hover {

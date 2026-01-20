@@ -5,6 +5,7 @@ import Loader from './Loader';
 import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { RoleName } from '../types/enums';
 import '../styles/Auth.css';
 
 const Login: React.FC = () => {
@@ -39,9 +40,9 @@ const Login: React.FC = () => {
       toast.success(`Welcome, ${email}!`);
 
       // Role-based redirect
-      if (role === 'super_admin') {
+      if (role === RoleName.SUPER_ADMIN) {
         navigate('/super-admin-dashboard');
-      } else if (role === 'admin') {
+      } else if (role === RoleName.ADMIN) {
         navigate('/admin-dashboard'); //  admins go here
       } else {
         navigate('/books'); //  normal users go here

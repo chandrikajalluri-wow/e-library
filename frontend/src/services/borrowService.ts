@@ -35,8 +35,3 @@ export const getAllBorrows = async (query = ''): Promise<any> => {
   const res = await api.get(`${BASE_URL}?${query}`); // Admin only
   return res.data;
 };
-
-export const renewBorrow = async (borrow_id: string): Promise<any> => {
-  const res = await api.post(`${BASE_URL}/renew/${borrow_id}`, {});
-  return res.data;
-};

@@ -1,3 +1,5 @@
+import { BookStatus, BorrowStatus, RoleName } from './enums';
+
 export interface Category {
   _id: string;
   name: string;
@@ -16,7 +18,6 @@ export interface Membership {
   borrowDuration: number;
   canRequestBooks: boolean;
   canAccessPremiumBooks: boolean;
-  canRenewBooks: boolean;
   hasRecommendations: boolean;
   description: string;
   features: string[];
@@ -28,7 +29,7 @@ export interface Book {
   author: string;
   category_id: string | Category; // ID when sending, Object when populated
   price: number;
-  status: string; // "available" | "issued" | "archived" | "damaged"
+  status: BookStatus;
   isbn?: string;
   description?: string;
   pages?: number;
@@ -51,7 +52,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: string;
+  role: RoleName;
   profileImage?: string;
   favoriteGenres?: string[];
   booksRead?: number;
@@ -68,7 +69,7 @@ export interface Borrow {
   issued_date?: string;
   return_date: string;
   returned_at?: string;
-  status: string; // "borrowed" | "returned" | "overdue"
+  status: BorrowStatus;
   fine_amount?: number;
 }
 

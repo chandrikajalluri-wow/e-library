@@ -35,6 +35,7 @@ import ScrollRevealHandler from './components/ScrollRevealHandler';
 import { ThemeProvider } from './context/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
 import ScrollToTop from './components/ScrollToTop';
+import { RoleName } from './types/enums';
 
 const App: React.FC = () => {
   return (
@@ -61,14 +62,14 @@ const App: React.FC = () => {
             <Route path="/memberships" element={<MembershipPlans />} />
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
+          <Route element={<ProtectedRoute allowedRoles={[RoleName.USER]} />}>
             <Route element={<UserLayout />}>
               <Route path="/books" element={<BookList />} />
               <Route path="/books/:id" element={<BookDetail />} />
             </Route>
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
+          <Route element={<ProtectedRoute allowedRoles={[RoleName.USER]} />}>
             <Route element={<UserLayout />}>
               {/* User Routes */}
               <Route path="/dashboard" element={<UserDashboard />} />
@@ -81,14 +82,14 @@ const App: React.FC = () => {
           </Route>
 
           {/* Admin Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['admin', 'super_admin']} />}>
+          <Route element={<ProtectedRoute allowedRoles={[RoleName.ADMIN, RoleName.SUPER_ADMIN]} />}>
             <Route element={<UserLayout />}>
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
             </Route>
           </Route>
 
           {/* Super Admin Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
+          <Route element={<ProtectedRoute allowedRoles={[RoleName.SUPER_ADMIN]} />}>
             <Route element={<UserLayout />}>
               <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
             </Route>

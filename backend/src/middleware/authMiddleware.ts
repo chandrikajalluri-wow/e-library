@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 import { IRole } from '../models/Role';
+import { RoleName } from '../types/enums';
 
 export interface AuthRequest extends Request {
   user?: IUser;
@@ -24,7 +25,9 @@ export const auth = async (
         id: string;
       };
 
-      const user = await User.findById(decoded.id).populate('role_id');
+      const user = await User.findById(decoded.id)
+        .populate('role_id')
+        .populate('membership_id');
       if (!user)
         return res
           .status(401)
@@ -41,7 +44,7 @@ export const auth = async (
   }
 };
 
-export const checkRole = (roles: string[]) => {
+export const checkRole = (roles: RoleName[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ error: 'Not authorized' });
 
