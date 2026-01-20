@@ -108,7 +108,9 @@ const AdminDashboard: React.FC = () => {
   const fetchBorrows = async () => {
     setIsDataLoading(true);
     try {
-      const data = await getAllBorrows(`page=${borrowPage}&limit=10&status=${borrowStatusFilter}&membership=${membershipFilter}`);
+      const statusFilter = activeTab === 'requests' ? 'return_requested' : borrowStatusFilter;
+      const membershipParam = activeTab === 'requests' ? 'all' : membershipFilter;
+      const data = await getAllBorrows(`page=${borrowPage}&limit=10&status=${statusFilter}&membership=${membershipParam}`);
       setBorrows(data.borrows);
       setBorrowTotalPages(data.pages);
     } catch (err: unknown) {
@@ -241,7 +243,7 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'borrows') fetchBorrows();
+    if (activeTab === 'borrows' || activeTab === 'requests') fetchBorrows();
   }, [activeTab, borrowPage, borrowStatusFilter, membershipFilter]);
 
   useEffect(() => {
@@ -262,7 +264,10 @@ const AdminDashboard: React.FC = () => {
     if (activeTab === 'stats') fetchStats();
     if (activeTab === 'user-requests') fetchUserRequests();
     if (activeTab === 'logs') fetchLogs();
-    if (activeTab === 'requests') fetchBorrows();
+
+    // Reset page numbers when switching tabs
+    setBookPage(1);
+    setBorrowPage(1);
   }, [activeTab]);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -861,6 +866,28 @@ const AdminDashboard: React.FC = () => {
               )}
             </div>
             {!isDataLoading && borrows.filter(b => b.status === 'return_requested').length === 0 && <div className="admin-empty-state">No pending returns.</div>}
+            {borrowTotalPages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  disabled={borrowPage === 1}
+                  onClick={() => setBorrowPage(prev => prev - 1)}
+                  className={`admin-reminder-btn ${borrowPage === 1 ? 'disabled-with-stop' : ''}`}
+                >
+                  <span className="btn-text">Previous</span>
+                  <CircleSlash size={16} className="stop-icon" />
+                </button>
+                <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
+                <button
+                  disabled={borrowPage === borrowTotalPages}
+                  onClick={() => setBorrowPage(prev => prev + 1)}
+                  className={`admin-btn-edit ${borrowPage === borrowTotalPages ? 'disabled-with-stop' : ''}`}
+                  style={{ padding: '0.45rem 1.5rem' }}
+                >
+                  <span className="btn-text">Next</span>
+                  <CircleSlash size={16} className="stop-icon" />
+                </button>
+              </div>
+            )}
           </section>
         )}
 

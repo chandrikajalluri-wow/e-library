@@ -99,6 +99,18 @@ router.post(
   ]),
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+      const { title } = req.body;
+
+      // Duplicate check (Case-insensitive title)
+      if (title) {
+        const existingBook = await Book.findOne({
+          title: { $regex: new RegExp(`^${title.trim()}$`, 'i') }
+        });
+        if (existingBook) {
+          return res.status(400).json({ error: `A book with the title "${title}" already exists.` });
+        }
+      }
+
       const bookData = { ...req.body };
 
       // Handle addedBy: Super admin can override, Admin is fixed to themselves
