@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { requestBook } from '../services/userService';
 import { getBooks } from '../services/bookService';
 import { getMyMembership } from '../services/membershipService';
+import { MembershipName } from '../types/enums';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import '../styles/UserProfile.css';
@@ -59,7 +60,7 @@ const BookRequestPage: React.FC = () => {
     if (loading) return <Loader />;
 
     // Restrict access for Basic plan
-    if (membership?.name === 'basic') {
+    if (membership?.name === MembershipName.BASIC) {
         return (
             <div className="request-page saas-reveal">
                 <div className="saas-page-header" style={{ textAlign: 'center' }}>

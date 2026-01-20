@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import cron from 'node-cron';
 import Borrow from '../models/Borrow';
+import { BorrowStatus } from '../types/enums';
 import { sendEmail } from './mailer';
 
 export const initCronJobs = () => {
@@ -23,7 +24,7 @@ export const initCronJobs = () => {
           $gte: targetDate,
           $lte: endOfTargetDate,
         },
-        status: 'borrowed',
+        status: BorrowStatus.BORROWED,
       })
         .populate('user_id', 'email name')
         .populate('book_id', 'title');

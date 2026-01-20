@@ -1,7 +1,8 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyBorrows, returnBook, renewBorrow } from '../services/borrowService';
+import { BorrowStatus, MembershipName } from '../types/enums';
+import { getMyBorrows, returnBook } from '../services/borrowService';
 import { getDashboardStats } from '../services/userService';
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { getAnnouncements } from '../services/superAdminService';
@@ -54,7 +55,7 @@ const UserDashboard: React.FC = () => {
 
   const handleReturn = async (borrow: any) => {
     let fine = borrow.fine_amount || 0;
-    if (borrow.status !== 'returned' && borrow.status !== 'archived' && new Date() > new Date(borrow.return_date)) {
+    if (borrow.status !== BorrowStatus.RETURNED && borrow.status !== BorrowStatus.ARCHIVED && new Date() > new Date(borrow.return_date)) {
       const diffTime = Math.abs(new Date().getTime() - new Date(borrow.return_date).getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       fine += diffDays * 10;
@@ -88,27 +89,6 @@ const UserDashboard: React.FC = () => {
     });
   };
 
-  const handleRenew = async (borrow: any) => {
-    setConfirmModal({
-      isOpen: true,
-      title: 'Renew Book',
-      message: `Do you want to extend the return date of "${borrow.book_id?.title}" by another ${membership?.borrowDuration || 7} days?`,
-      isLoading: false,
-      onConfirm: async () => {
-        setConfirmModal(prev => ({ ...prev, isLoading: true }));
-        try {
-          await renewBorrow(borrow._id);
-          toast.success('Book renewed successfully!');
-          loadData();
-          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
-        } catch (err: any) {
-          console.error(err);
-          toast.error(err.response?.data?.error || 'Failed to renew book');
-          setConfirmModal(prev => ({ ...prev, isLoading: false }));
-        }
-      }
-    });
-  };
 
   const navigate = useNavigate();
 
@@ -139,7 +119,7 @@ const UserDashboard: React.FC = () => {
               onClick={() => navigate('/memberships')}
               className="upgrade-link-btn"
             >
-              {membership?.name === 'premium' ? 'View Plans' : 'Upgrade Plan'}
+              {membership?.name === MembershipName.PREMIUM ? 'View Plans' : 'Upgrade Plan'}
             </button>
           </div>
         </div>
@@ -210,7 +190,7 @@ const UserDashboard: React.FC = () => {
                   <span className={`fine-amount ${(b.fine_amount > 0 || new Date() > new Date(b.return_date)) ? 'fine-danger' : ''}`}>
                     ₹{(() => {
                       let fine = b.fine_amount || 0;
-                      if (b.status !== 'returned' && b.status !== 'archived' && new Date() > new Date(b.return_date)) {
+                      if (b.status !== BorrowStatus.RETURNED && b.status !== BorrowStatus.ARCHIVED && new Date() > new Date(b.return_date)) {
                         const diffTime = Math.abs(new Date().getTime() - new Date(b.return_date).getTime());
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                         fine += diffDays * 10;
@@ -225,7 +205,7 @@ const UserDashboard: React.FC = () => {
                   </span>
                 </td>
                 <td data-label="Action">
-                  {(b.status === 'borrowed' || b.status === 'overdue') && (
+                  {(b.status === BorrowStatus.BORROWED || b.status === BorrowStatus.OVERDUE) && (
                     <div className="actions-cell">
                       {(() => {
                         let fine = b.fine_amount || 0;
@@ -253,14 +233,6 @@ const UserDashboard: React.FC = () => {
                       >
                         Request Return
                       </button>
-                      {membership?.canRenewBooks && (b.renewed_count || 0) < 1 && (
-                        <button
-                          onClick={() => handleRenew(b)}
-                          className="btn-secondary btn-renew"
-                        >
-                          Renew
-                        </button>
-                      )}
                     </div>
                   )}
                   {b.status === 'return_requested' && (

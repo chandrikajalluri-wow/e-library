@@ -1,14 +1,14 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { MembershipName } from '../types/enums';
 
 export interface IMembership extends Document {
-    name: string; // 'basic', 'standard', 'premium'
+    name: MembershipName;
     displayName: string; // 'Basic', 'Standard', 'Premium'
     price: number; // Monthly price in rupees (0 for basic, 49 for standard, 99 for premium)
     borrowLimit: number; // Max books that can be borrowed simultaneously
     borrowDuration: number; // Default borrow duration in days
     canRequestBooks: boolean; // Can request new books
     canAccessPremiumBooks: boolean; // Can access premium collection
-    canRenewBooks: boolean; // Can renew borrowed books
     hasRecommendations: boolean; // Gets personalized recommendations
     description: string;
     features: string[]; // List of features for display
@@ -21,7 +21,7 @@ const membershipSchema = new Schema<IMembership>(
             type: String,
             required: true,
             unique: true,
-            enum: ['basic', 'standard', 'premium']
+            enum: Object.values(MembershipName)
         },
         displayName: { type: String, required: true },
         price: { type: Number, required: true, default: 0 },
@@ -29,7 +29,6 @@ const membershipSchema = new Schema<IMembership>(
         borrowDuration: { type: Number, required: true },
         canRequestBooks: { type: Boolean, default: false },
         canAccessPremiumBooks: { type: Boolean, default: false },
-        canRenewBooks: { type: Boolean, default: false },
         hasRecommendations: { type: Boolean, default: false },
         description: { type: String, required: true },
         features: [{ type: String }],

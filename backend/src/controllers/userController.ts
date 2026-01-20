@@ -1,0 +1,397 @@
+import { Response } from 'express';
+import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
+import User from '../models/User';
+import Borrow from '../models/Borrow';
+import Wishlist from '../models/Wishlist';
+import BookRequest from '../models/BookRequest';
+import AuthToken from '../models/AuthToken';
+import { AuthRequest } from '../middleware/authMiddleware';
+import { sendEmail } from '../utils/mailer';
+import { BorrowStatus, MembershipName, UserTheme, RequestStatus } from '../types/enums';
+
+export const getMe = async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id)
+            .select('-password')
+            .populate('membership_id')
+            .populate('role_id');
+
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const userObj: any = user.toObject();
+        userObj.role = (user.role_id as any)?.name;
+
+        res.json(userObj);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getDashboardStats = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user!._id;
+
+        const borrows = await Borrow.find({ user_id: userId });
+        const wishlistCount = await Wishlist.countDocuments({ user_id: userId });
+
+        const totalFine = borrows.reduce((sum, b) => {
+            if (b.isFinePaid) return sum;
+
+            let fine = b.fine_amount || 0;
+            // If book is not returned yet and is overdue, calculate current accrued fine
+            if (b.status !== BorrowStatus.RETURNED && b.status !== BorrowStatus.ARCHIVED) {
+                const now = new Date();
+                if (now > b.return_date) {
+                    const diffTime = Math.abs(now.getTime() - b.return_date.getTime());
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    fine += diffDays * 10; // ₹10 per day
+                }
+            }
+            return sum + fine;
+        }, 0);
+
+        const borrowedCount = borrows.filter(b => b.status === BorrowStatus.BORROWED || b.status === BorrowStatus.OVERDUE || b.status === BorrowStatus.RETURN_REQUESTED).length;
+
+        res.json({
+            totalFine,
+            borrowedCount,
+            wishlistCount,
+            streakCount: (req.user as any).streakCount || 0
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+    const { name, favoriteGenres, booksRead, readingTarget } = req.body;
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (name) user.name = name;
+        if (favoriteGenres !== undefined) {
+            // Ensure favoriteGenres is an array and has at most 3 items
+            const genresArray = Array.isArray(favoriteGenres)
+                ? favoriteGenres
+                : typeof favoriteGenres === 'string'
+                    ? JSON.parse(favoriteGenres)
+                    : [];
+
+            if (genresArray.length > 3) {
+                return res.status(400).json({ error: 'You can select at most 3 favorite genres' });
+            }
+            user.favoriteGenres = genresArray;
+        }
+        if (booksRead !== undefined) user.booksRead = Number(booksRead);
+        if (readingTarget !== undefined) user.readingTarget = Number(readingTarget);
+        if (req.body.theme) user.theme = req.body.theme;
+
+        if (req.file) {
+            user.profileImage = (req.file as any).path;
+        }
+
+        await user.save();
+
+        res.json({
+            message: 'Profile updated successfully',
+            user: {
+                name: user.name,
+                email: user.email,
+                profileImage: user.profileImage,
+                favoriteGenres: user.favoriteGenres,
+                booksRead: user.booksRead,
+                readingTarget: user.readingTarget,
+                membershipStartDate: user.membershipStartDate,
+                membershipExpiryDate: user.membershipExpiryDate,
+                theme: user.theme
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const renewMembership = async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id).populate('membership_id');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const membership = user.membership_id as any;
+        if (!membership || membership.name === MembershipName.BASIC) {
+            return res.status(400).json({ error: 'Basic membership cannot be renewed. Please upgrade to a paid plan.' });
+        }
+
+        const now = new Date();
+        let newExpiry = new Date(user.membershipExpiryDate || now);
+
+        if (newExpiry < now) {
+            newExpiry = new Date(now);
+        }
+
+        newExpiry.setDate(newExpiry.getDate() + 30);
+
+        user.membershipExpiryDate = newExpiry;
+        if (!user.membershipStartDate) {
+            user.membershipStartDate = now;
+        }
+
+        await user.save();
+
+        res.json({
+            message: 'Membership renewed successfully',
+            membershipExpiryDate: user.membershipExpiryDate
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const changePassword = async (req: AuthRequest, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) return res.status(400).json({ error: 'Incorrect current password' });
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            return res.status(400).json({
+                error: 'Password must be at least 8 characters long and include an uppercase letter, a number, and a special character.'
+            });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.json({ message: 'Password changed successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const requestBook = async (req: AuthRequest, res: Response) => {
+    const { title, author, reason } = req.body;
+    try {
+        if (!title || !author)
+            return res.status(400).json({ error: 'Title and author are required' });
+
+        const user = await User.findById(req.user!._id).populate('membership_id');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const membership = user.membership_id as any;
+        if (!membership) {
+            return res.status(400).json({
+                error: 'No membership plan assigned'
+            });
+        }
+
+        if (!membership.canRequestBooks) {
+            return res.status(403).json({
+                error: 'Book requests are available for Standard and Premium members. Upgrade your membership to request new books.'
+            });
+        }
+
+        const newRequest = new BookRequest({
+            user_id: req.user!._id,
+            title,
+            author,
+            reason,
+        });
+
+        await newRequest.save();
+        res.status(201).json({
+            message: 'Book request submitted successfully',
+            request: newRequest,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getAllBookRequests = async (req: AuthRequest, res: Response) => {
+    try {
+        const requests = await BookRequest.find()
+            .populate({
+                path: 'user_id',
+                select: 'name email membership_id',
+                populate: {
+                    path: 'membership_id',
+                    select: 'name displayName'
+                }
+            })
+            .sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const updateBookRequestStatus = async (req: AuthRequest, res: Response) => {
+    const { status } = req.body;
+    try {
+        if (!Object.values(RequestStatus).includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+
+        const request = await BookRequest.findById(req.params.id).populate('user_id', 'name email');
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+
+        const oldStatus = request.status;
+        request.status = status;
+        await request.save();
+
+        if (status === RequestStatus.APPROVED && oldStatus !== RequestStatus.APPROVED) {
+            const user = request.user_id as any;
+            if (user && user.email) {
+                const subject = 'Book Request Approved';
+                const text = `Hi ${user.name},\n\nYour request for the book "${request.title}" by ${request.author} has been approved.\n\nRegards,\nLibrary Administration`;
+                try {
+                    await sendEmail(user.email, subject, text);
+                } catch (emailErr) {
+                    console.error('Failed to send approval email:', emailErr);
+                }
+            }
+        }
+
+        res.json({ message: 'Request status updated', request });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const sendFineReminder = async (req: AuthRequest, res: Response) => {
+    try {
+        const borrow = await Borrow.findById(req.params.id)
+            .populate('user_id', 'name email')
+            .populate('book_id', 'title');
+
+        if (!borrow) return res.status(404).json({ error: 'Borrow record not found' });
+
+        const user: any = borrow.user_id;
+        const book: any = borrow.book_id;
+
+        let fine = borrow.fine_amount || 0;
+        if (borrow.status !== BorrowStatus.RETURNED && borrow.status !== BorrowStatus.ARCHIVED) {
+            const now = new Date();
+            if (now > borrow.return_date) {
+                const diffTime = Math.abs(now.getTime() - borrow.return_date.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                fine += diffDays * 10;
+            }
+        }
+
+        if (fine <= 50) {
+            return res.status(400).json({ error: 'Fine must exceed ₹50 to send a reminder' });
+        }
+
+        if (user && user.email) {
+            const subject = 'Important: Outstanding Library Fine Reminder';
+            const text = `Hi ${user.name},\n\n This is a reminder regarding your borrowed book "${book.title}", which was due on ${new Date(borrow.return_date).toLocaleDateString()}.\n\nYour current accrued fine is ₹${fine}. Please return the book and settle the fine as soon as possible to avoid further charges.\n\nRegards,\nLibrary Administration`;
+
+            await sendEmail(user.email, subject, text);
+            return res.json({ message: 'Reminder email sent successfully' });
+        }
+
+        res.status(400).json({ error: 'User email not found' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getSessions = async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json({
+            sessions: user.activeSessions || [],
+            lastLogin: user.lastLogin
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const logoutAll = async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        user.activeSessions = [];
+        await user.save();
+
+        res.json({ message: 'Logged out from all devices successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const deleteAccount = async (req: AuthRequest, res: Response) => {
+    const { password } = req.body;
+    try {
+        if (!password) {
+            return res.status(400).json({ error: 'Password is required to confirm deletion' });
+        }
+
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Invalid password. Account deletion aborted.' });
+        }
+
+        const activeBorrows = await mongoose.model('Borrow').findOne({
+            user_id: user._id,
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE] }
+        });
+
+        if (activeBorrows) {
+            return res.status(400).json({
+                error: 'You cannot delete your account while you have borrowed books. Please return all books first.'
+            });
+        }
+
+        const unpaidFines = await mongoose.model('Borrow').findOne({
+            user_id: user._id,
+            isFinePaid: false,
+            fine_amount: { $gt: 0 }
+        });
+
+        if (unpaidFines) {
+            return res.status(400).json({
+                error: 'You cannot delete your account while you have pending fines. Please clear all fines first.'
+            });
+        }
+
+        await mongoose.model('Wishlist').deleteMany({ user_id: user._id });
+        await mongoose.model('Borrow').deleteMany({ user_id: user._id });
+        await mongoose.model('Review').deleteMany({ user_id: user._id });
+        await mongoose.model('Notification').deleteMany({ user_id: user._id });
+        await mongoose.model('ActivityLog').deleteMany({ user_id: user._id });
+        await mongoose.model('BookRequest').deleteMany({ user_id: user._id });
+        await AuthToken.deleteMany({ user_id: user._id });
+
+        await User.findByIdAndDelete(user._id);
+
+        res.json({ message: 'Account permanently deleted. We are sorry to see you go.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error during account deletion' });
+    }
+};

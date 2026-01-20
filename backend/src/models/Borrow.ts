@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import { IUser } from './User';
 import { IBook } from './Book';
+import { BorrowStatus } from '../types/enums';
 
 export interface IBorrow extends Document {
   user_id: Types.ObjectId | IUser;
@@ -10,8 +11,7 @@ export interface IBorrow extends Document {
   returned_at?: Date; // actual return
   fine_amount?: number;
   isFinePaid: boolean;
-  status: string; // 'borrowed', 'returned', 'overdue'
-  renewed_count: number;
+  status: BorrowStatus;
 }
 
 const borrowSchema = new Schema<IBorrow>({
@@ -22,8 +22,7 @@ const borrowSchema = new Schema<IBorrow>({
   returned_at: { type: Date },
   fine_amount: { type: Number, default: 0 },
   isFinePaid: { type: Boolean, default: false },
-  status: { type: String, default: 'borrowed' },
-  renewed_count: { type: Number, default: 0 },
+  status: { type: String, enum: Object.values(BorrowStatus), default: BorrowStatus.BORROWED },
 });
 
 export default mongoose.model<IBorrow>('Borrow', borrowSchema);

@@ -10,6 +10,9 @@ import {
 } from '../services/wishlistService';
 import { getBookReviews, addReview, updateReview } from '../services/reviewService';
 import { getMyMembership, type Membership } from '../services/membershipService';
+import { getProfile } from '../services/userService';
+import { RoleName, BorrowStatus, MembershipName } from '../types/enums';
+import type { User } from '../types';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import '../styles/BookDetail.css';
@@ -30,7 +33,8 @@ const BookDetail: React.FC = () => {
   const [activeBorrowCount, setActiveBorrowCount] = useState(0);
   const [userMembership, setUserMembership] = useState<Membership | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
-  const currentUserId = localStorage.getItem('userId'); // I should ensure userId is stored
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const currentUserId = localStorage.getItem('userId');
 
   useEffect(() => {
     if (id) {
@@ -40,8 +44,18 @@ const BookDetail: React.FC = () => {
       checkBorrowStatus(id);
       fetchActiveBorrowCount();
       fetchUserMembership();
+      fetchUserProfile();
     }
   }, [id]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const profile = await getProfile();
+      setCurrentUser(profile);
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  };
 
 
 
@@ -58,7 +72,7 @@ const BookDetail: React.FC = () => {
     try {
       const myBorrows = await getMyBorrows();
       const count = myBorrows.filter((b: any) =>
-        ['borrowed', 'overdue', 'return_requested'].includes(b.status)
+        [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED].includes(b.status)
       ).length;
       setActiveBorrowCount(count);
     } catch (err) {
@@ -208,7 +222,7 @@ const BookDetail: React.FC = () => {
   const handleDownload = async () => {
     if (!id) return;
 
-    const isPremiumUser = userMembership?.name === 'premium';
+    const isPremiumUser = userMembership?.name === MembershipName.PREMIUM;
 
     if (!hasBorrowed && !isPremiumUser) {
       toast.error('You must borrow this book to download it.');
@@ -382,7 +396,7 @@ const BookDetail: React.FC = () => {
                   <BookOpen size={18} style={{ marginRight: '8px' }} /> Read PDF
                 </button>
               )}
-              {book.pdf_url && (userMembership?.name === 'standard' || userMembership?.name === 'premium') && (
+              {book.pdf_url && (userMembership?.name === MembershipName.STANDARD || userMembership?.name === MembershipName.PREMIUM) && (
                 <button
                   onClick={handleDownload}
                   className="btn-primary download-pdf-btn"
@@ -428,6 +442,9 @@ const BookDetail: React.FC = () => {
                     <div className="review-header">
                       <strong className="reviewer-name">
                         {r.user_id?.name || 'Anonymous'}
+                        {currentUser?.role === RoleName.SUPER_ADMIN && (
+                          <span className="admin-badge-small" style={{ marginLeft: '0.5rem', fontSize: '0.7rem', background: 'var(--primary-color)', color: 'white', padding: '1px 6px', borderRadius: '4px' }}>ADMIN</span>
+                        )}
                       </strong>
                       <div className="review-stars">
                         {'★'.repeat(r.rating)}

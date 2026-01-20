@@ -34,7 +34,6 @@ import userRoutes from './routes/users';
 import contactRoutes from './routes/contact';
 import notificationRoutes from './routes/notifications';
 import membershipRoutes from './routes/memberships';
-import borrowRenewalRoutes from './routes/borrows_renewal';
 import superAdminRoutes from './routes/superAdmin';
 
 app.use('/api/auth', authRoutes);
@@ -48,7 +47,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/memberships', membershipRoutes);
-app.use('/api/borrows', borrowRenewalRoutes);
 app.use('/api/super-admin', superAdminRoutes);
 
 // Global Error Handler

@@ -4,6 +4,7 @@ import {
   updateProfile,
   renewMembership,
 } from "../services/userService";
+import { MembershipName } from '../types/enums';
 import { getCategories } from "../services/categoryService";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
@@ -210,7 +211,7 @@ const UserProfile: React.FC = () => {
                     <p className="highlight-text">{user.membership_id?.displayName || 'Basic'}</p>
                   </div>
 
-                  {user.membership_id?.name !== 'basic' && (
+                  {user.membership_id?.name !== MembershipName.BASIC && (
                     <>
                       <div className="info-item">
                         <label>Member Since</label>
@@ -252,7 +253,7 @@ const UserProfile: React.FC = () => {
                   </div>
                 )}
 
-                {user.membership_id?.name === 'basic' && (
+                {user.membership_id?.name === MembershipName.BASIC && (
                   <div className="upgrade-prompt-mini">
                     <p>Upgrade to Premium to unlock more features!</p>
                   </div>
@@ -276,7 +277,7 @@ const UserProfile: React.FC = () => {
 
               <div className="card profile-card">
                 <h2 className="profile-section-title">Favorite Genres (Max 3)</h2>
-                {user.membership_id?.name === 'premium' ? (
+                {user.membership_id?.name === MembershipName.PREMIUM ? (
                   <div className="genre-selection-wrapper">
                     <div className="genre-dropdown-container">
                       <select

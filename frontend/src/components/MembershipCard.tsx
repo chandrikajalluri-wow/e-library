@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Membership } from '../services/membershipService';
+import { MembershipName } from '../types/enums';
 import '../styles/MembershipCard.css';
 
 interface MembershipCardProps {
@@ -18,7 +19,7 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
 }) => {
     const navigate = useNavigate();
     const isCurrent = currentMembership?._id === membership._id;
-    const isPremium = membership.name === 'premium';
+    const isPremium = membership.name === MembershipName.PREMIUM;
 
     const handleAction = () => {
         if (!isAuthenticated) {

@@ -227,7 +227,7 @@ const BookList: React.FC = () => {
               <div className="book-footer">
                 <div className="book-status-info">
                   <span className={`status-badge status-${book.status} book-status-badge`}>
-                    {book.status}
+                    {book.status.toUpperCase()}
                   </span>
                   <span className="book-copies-info">
                     {book.noOfCopies}{' '}

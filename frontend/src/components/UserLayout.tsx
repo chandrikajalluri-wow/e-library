@@ -4,6 +4,7 @@ import UserNavbar from './UserNavbar';
 import Footer from './Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getProfile } from '../services/userService';
+import { RoleName } from '../types/enums';
 import '../styles/Home.css';
 
 const UserLayout: React.FC = () => {
@@ -34,7 +35,7 @@ const UserLayout: React.FC = () => {
                     <Outlet />
                 </div>
             </main>
-            {localStorage.getItem('role') !== 'admin' && localStorage.getItem('role') !== 'super_admin' && <Footer />}
+            {localStorage.getItem('role') !== RoleName.ADMIN && localStorage.getItem('role') !== RoleName.SUPER_ADMIN && <Footer />}
         </div>
     );
 };

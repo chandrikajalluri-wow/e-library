@@ -1,94 +1,16 @@
-import express, { Request, Response } from 'express';
-import Review from '../models/Review';
-import Borrow from '../models/Borrow';
-import Book from '../models/Book';
-import { auth, AuthRequest } from '../middleware/authMiddleware';
+import express from 'express';
+import { auth } from '../middleware/authMiddleware';
+import * as reviewController from '../controllers/reviewController';
 
 const router = express.Router();
 
 // Get reviews for a book
-router.get('/book/:bookId', async (req: Request, res: Response) => {
-  try {
-    const reviews = await Review.find({ book_id: req.params.bookId })
-      .populate('user_id', 'name')
-      .sort({ reviewed_at: -1 });
-    res.json(reviews);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+router.get('/book/:bookId', reviewController.getReviewsForBook);
 
 // Add Review
-router.post('/', auth, async (req: AuthRequest, res: Response) => {
-  const { book_id, rating, comment } = req.body;
-  try {
-    // Check if user has borrowed the book
-    const hasBorrowed = await Borrow.findOne({
-      user_id: req.user!._id,
-      book_id: book_id,
-    });
-    if (!hasBorrowed) {
-      return res
-        .status(403)
-        .json({
-          error: 'Only users who have borrowed this book can leave a review',
-        });
-    }
-
-    const existing = await Review.findOne({ user_id: req.user!._id, book_id });
-    if (existing)
-      return res
-        .status(400)
-        .json({ error: 'You have already reviewed this book' });
-
-    const review = new Review({
-      user_id: req.user!._id,
-      book_id,
-      rating,
-      comment,
-    });
-    await review.save();
-
-    // Update book average rating
-    const allReviews = await Review.find({ book_id });
-    const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-    await Book.findByIdAndUpdate(book_id, { rating: Number(avgRating.toFixed(1)) });
-
-    res.status(201).json(review);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+router.post('/', auth, reviewController.addReview);
 
 // Update Review
-router.put('/:id', auth, async (req: AuthRequest, res: Response) => {
-  const { rating, comment } = req.body;
-  try {
-    const review = await Review.findById(req.params.id);
-    if (!review) return res.status(404).json({ error: 'Review not found' });
-
-    // Check if the review belongs to the user
-    if (review.user_id.toString() !== req.user!._id.toString()) {
-      return res.status(403).json({ error: 'Unauthorized to edit this review' });
-    }
-
-    review.rating = rating;
-    review.comment = comment;
-    review.reviewed_at = new Date();
-    await review.save();
-
-    // Update book average rating
-    const allReviews = await Review.find({ book_id: review.book_id });
-    const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-    await Book.findByIdAndUpdate(review.book_id, { rating: Number(avgRating.toFixed(1)) });
-
-    res.json(review);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+router.put('/:id', auth, reviewController.updateReview);
 
 export default router;

@@ -1,106 +1,20 @@
-import express, { Request, Response } from 'express';
-import Category from '../models/Category';
-import Book from '../models/Book';
+import express from 'express';
 import { auth, checkRole } from '../middleware/authMiddleware';
-import { IRole } from '../models/Role';
+import { RoleName } from '../types/enums';
+import * as categoryController from '../controllers/categoryController';
 
 const router = express.Router();
 
 // Get all categories
-router.get('/', auth, async (req: any, res: Response) => {
-  try {
-    const query: any = {};
-    const userRole = (req.user.role_id as any).name;
-
-    if (userRole === 'admin') {
-      query.$or = [
-        { addedBy: req.user._id },
-        { addedBy: { $exists: false } },
-        { addedBy: null }
-      ];
-    }
-
-    const categories = await Category.find(query).sort({ name: 1 });
-    res.json(categories);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+router.get('/', auth, categoryController.getAllCategories);
 
 // Create Category (Admin only)
-router.post(
-  '/',
-  auth,
-  checkRole(['admin', 'super_admin']),
-  async (req: any, res: Response) => {
-    const { name, description } = req.body;
-    try {
-      const existing = await Category.findOne({ name });
-      if (existing)
-        return res.status(400).json({ error: 'Category already exists' });
-
-      const category = new Category({
-        name,
-        description,
-        addedBy: req.user._id
-      });
-      await category.save();
-      res.status(201).json(category);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Server error' });
-    }
-  }
-);
+router.post('/', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), categoryController.createCategory);
 
 // Update Category (Admin only)
-router.put(
-  '/:id',
-  auth,
-  checkRole(['admin', 'super_admin']),
-  async (req: any, res: Response) => {
-    const { name, description } = req.body;
-    try {
-      const category = await Category.findByIdAndUpdate(
-        req.params.id,
-        { name, description },
-        { new: true }
-      );
-      if (!category)
-        return res.status(404).json({ error: 'Category not found' });
-      res.json(category);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Server error' });
-    }
-  }
-);
+router.put('/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), categoryController.updateCategory);
 
-// Delete Category (Admin only)
-router.delete(
-  '/:id',
-  auth,
-  checkRole(['admin', 'super_admin']),
-  async (req: any, res: Response) => {
-    try {
-      // Check if any books are associated with this category
-      const bookCount = await Book.countDocuments({ category: req.params.id });
-      if (bookCount > 0) {
-        return res.status(400).json({
-          error: 'Cannot delete category because there are books assigned to it.'
-        });
-      }
-
-      const category = await Category.findByIdAndDelete(req.params.id);
-      if (!category)
-        return res.status(404).json({ error: 'Category not found' });
-      res.json({ message: 'Category deleted' });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Server error' });
-    }
-  }
-);
+// Delete Category (Admin/Super Admin only)
+router.delete('/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), categoryController.deleteCategory);
 
 export default router;

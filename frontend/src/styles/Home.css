@@ -526,6 +526,16 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
   margin-top: 3rem;
+  align-items: stretch;
+}
+
+.membership-plans-grid>.saas-reveal {
+  height: 100%;
+  display: flex;
+}
+
+.membership-plans-grid>.saas-reveal>div {
+  width: 100%;
 }
 
 @media (max-width: 992px) {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Flame } from 'lucide-react';
 import { getProfile } from '../services/userService';
+import { RoleName } from '../types/enums';
 import ConfirmationModal from './ConfirmationModal';
 import NotificationCenter from './NotificationCenter';
 import '../styles/UserNavbar.css';
@@ -97,7 +98,7 @@ const UserNavbar: React.FC = () => {
 
                 <div className="nav-actions-icons">
                     {/* Home and Books links - only show for users or admins/superadmins NOT on dashboard */}
-                    {!((role === 'admin' || role === 'super_admin') && (location.pathname.startsWith('/admin-dashboard') || location.pathname.startsWith('/super-admin-dashboard'))) && (
+                    {!((role === RoleName.ADMIN || role === RoleName.SUPER_ADMIN) && (location.pathname.startsWith('/admin-dashboard') || location.pathname.startsWith('/super-admin-dashboard'))) && (
                         <>
                             {location.pathname !== '/' && (
                                 <NavIcon to="/" label="Home" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>} />
@@ -108,7 +109,7 @@ const UserNavbar: React.FC = () => {
                         </>
                     )}
 
-                    {role === 'user' && (
+                    {role === RoleName.USER && (
                         <>
                             <NavIcon to="/dashboard" label="Dashboard" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg>} />
                             <NavIcon to="/wishlist" label="Wishlist" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z" /></svg>} />
@@ -116,7 +117,7 @@ const UserNavbar: React.FC = () => {
                         </>
                     )}
 
-                    {role === 'admin' && (
+                    {role === RoleName.ADMIN && (
                         <>
                             <NavIcon to="/admin-dashboard?tab=stats" label="Stats" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>} />
                             <NavIcon to="/admin-dashboard?tab=books" label="Books" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>} />
@@ -128,7 +129,7 @@ const UserNavbar: React.FC = () => {
                         </>
                     )}
 
-                    {role === 'super_admin' && (
+                    {role === RoleName.SUPER_ADMIN && (
                         <>
                             <NavIcon to="/super-admin-dashboard?tab=overview" label="Metrics" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>} />
                             <NavIcon to="/super-admin-dashboard?tab=users" label="Users" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>} />
@@ -142,7 +143,7 @@ const UserNavbar: React.FC = () => {
 
                     {localStorage.getItem('token') ? (
                         /* Hide profile icon for admins/superadmins on their dashboards */
-                        (!((role === 'admin' || role === 'super_admin') && (location.pathname.startsWith('/admin-dashboard') || location.pathname.startsWith('/super-admin-dashboard')))) && (
+                        (!((role === RoleName.ADMIN || role === RoleName.SUPER_ADMIN) && (location.pathname.startsWith('/admin-dashboard') || location.pathname.startsWith('/super-admin-dashboard')))) && (
                             <div className="user-profile-dropdown-container">
                                 {userProfile?.streakCount > 0 && (
                                     <div className="streak-display" title={`${userProfile.streakCount} Day Streak!`}>
@@ -173,7 +174,7 @@ const UserNavbar: React.FC = () => {
                                         <div className="dropdown-header">
                                             <span className="user-name-display">{userProfile?.name || 'Reader'}</span>
                                             <span className="user-role-badge">
-                                                {role === 'super_admin' ? 'Super Admin' : role === 'admin' ? 'Administrator' : 'Reader'}
+                                                {role === RoleName.SUPER_ADMIN ? 'Super Admin' : role === RoleName.ADMIN ? 'Administrator' : 'Reader'}
                                             </span>
                                         </div>
                                         <div className="dropdown-divider"></div>
@@ -184,7 +185,7 @@ const UserNavbar: React.FC = () => {
                                             icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
                                         />
 
-                                        {role === 'user' && (
+                                        {role === RoleName.USER && (
                                             <>
                                                 <DropdownItem
                                                     to="/request-book"
