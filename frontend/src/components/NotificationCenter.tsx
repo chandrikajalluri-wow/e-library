@@ -1,17 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getMyNotifications, markNotificationRead, markAllNotificationsRead } from '../services/notificationService';
+import {
+    getMyNotifications, markNotificationRead, markAllNotificationsRead,
+    getNotifications as getAdminNotifications,
+    markAsRead as markAdminRead,
+    markAllAsRead as markAllAdminRead
+} from '../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { RoleName } from '../types/enums';
 import '../styles/NotificationCenter.css';
 
 const NotificationCenter: React.FC = () => {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const role = localStorage.getItem('role');
+    const isAdmin = role === RoleName.ADMIN || role === RoleName.SUPER_ADMIN;
 
     const fetchNotifications = async () => {
         try {
-            const data = await getMyNotifications();
+            const data = isAdmin ? await getAdminNotifications() : await getMyNotifications();
             setNotifications(data);
         } catch (err) {
             console.error("Failed to fetch notifications", err);
@@ -23,7 +31,7 @@ const NotificationCenter: React.FC = () => {
         // Poll for notifications every 30 seconds
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [isAdmin]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -37,7 +45,11 @@ const NotificationCenter: React.FC = () => {
 
     const handleMarkRead = async (id: string) => {
         try {
-            await markNotificationRead(id);
+            if (isAdmin) {
+                await markAdminRead(id);
+            } else {
+                await markNotificationRead(id);
+            }
             setNotifications(notifications.map(n => n._id === id ? { ...n, is_read: true } : n));
         } catch (err) {
             console.error("Failed to mark read", err);
@@ -46,7 +58,11 @@ const NotificationCenter: React.FC = () => {
 
     const handleMarkAllRead = async () => {
         try {
-            await markAllNotificationsRead();
+            if (isAdmin) {
+                await markAllAdminRead();
+            } else {
+                await markAllNotificationsRead();
+            }
             setNotifications(notifications.map(n => ({ ...n, is_read: true })));
         } catch (err) {
             console.error("Failed to mark all read", err);

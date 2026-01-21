@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { CircleSlash } from 'lucide-react';
 import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
@@ -8,7 +8,6 @@ import { getAllBorrows, acceptReturn } from '../services/borrowService';
 import { getAllBookRequests, updateBookRequestStatus, sendFineReminder, getProfile } from '../services/userService';
 import { getAllWishlists } from '../services/wishlistService';
 import { getActivityLogs } from '../services/logService';
-import { getNotifications, markAsRead, markAllAsRead } from '../services/notificationService';
 import { getAdmins } from '../services/superAdminService';
 import { RoleName, BookStatus, BorrowStatus, RequestStatus, MembershipName } from '../types/enums';
 import type { Book, Category, Borrow, User } from '../types';
@@ -16,7 +15,6 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/AdminDashboard.css';
 
 const AdminDashboard: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'stats';
 
@@ -29,8 +27,6 @@ const AdminDashboard: React.FC = () => {
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [admins, setAdmins] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [stats, setStats] = useState({
@@ -74,7 +70,6 @@ const AdminDashboard: React.FC = () => {
 
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [isStatsLoading, setIsStatsLoading] = useState(false);
-  const [isNotifLoading, setIsNotifLoading] = useState(false);
 
   const inventoryRef = useRef<HTMLDivElement>(null);
   const borrowsRef = useRef<HTMLDivElement>(null);
@@ -224,23 +219,8 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchNotifications = async () => {
-    setIsNotifLoading(true);
-    try {
-      const data = await getNotifications();
-      setNotifications(data);
-    } catch (err) {
-      console.error('Failed to fetch notifications', err);
-    } finally {
-      setIsNotifLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchCommonData();
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -345,24 +325,6 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-
-  const handleMarkRead = async (id: string) => {
-    try {
-      await markAsRead(id);
-      fetchNotifications();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleMarkAllRead = async () => {
-    try {
-      await markAllAsRead();
-      fetchNotifications();
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const handleCreateBook = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -543,19 +505,6 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-  const handleLogout = () => {
-    setConfirmModal({
-      isOpen: true, title: 'Confirm Logout', message: 'Are you sure you want to log out from the admin panel?',
-      type: 'warning', isLoading: false,
-      onConfirm: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        toast.info('Logged out');
-        navigate('/');
-      }
-    });
-  };
-
   return (
     <div className="admin-layout">
       <main className="admin-main-content">
@@ -587,45 +536,6 @@ const AdminDashboard: React.FC = () => {
                     </span>
                   ) : 'Refresh Stats'}
                 </button>
-              )}
-              <button onClick={() => setShowNotifications(!showNotifications)} className="admin-notification-toggle">
-                {showNotifications ? (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                ) : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                )}
-                {notifications.filter(n => !n.is_read).length > 0 && (
-                  <span className="notification-badge-icon">{notifications.filter(n => !n.is_read).length}</span>
-                )}
-              </button>
-              <button onClick={handleLogout} className="admin-notification-toggle" title="Logout">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-              </button>
-
-              {showNotifications && (
-                <div className="admin-notification-panel">
-                  <div className="notification-panel-header">
-                    <h4>Notifications</h4>
-                    <button onClick={handleMarkAllRead} className="mark-read-btn">Mark all as read</button>
-                  </div>
-                  <div className="notification-list">
-                    {isNotifLoading && notifications.length === 0 ? (
-                      <div className="notification-loading-state">
-                        <div className="spinner-mini" style={{ borderTopColor: 'var(--primary-color)' }}></div>
-                        Fetching notifications...
-                      </div>
-                    ) : notifications.length === 0 ? (
-                      <div className="notification-empty-state">No notifications yet</div>
-                    ) : (
-                      notifications.map(n => (
-                        <div key={n._id} onClick={() => handleMarkRead(n._id)} className={`notification-item-container ${!n.is_read ? 'unread' : ''}`}>
-                          <div className="notification-item-message">{n.message}</div>
-                          <div className="notification-item-time">{new Date(n.timestamp).toLocaleString()}</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
               )}
             </div>
           </div>
@@ -759,7 +669,7 @@ const AdminDashboard: React.FC = () => {
                     <tbody>
                       {allBooks.map((book) => (
                         <tr key={book._id}>
-                          <td><div className="book-info-box"><span className="book-main-title">{book.title}</span><span className="book-sub-meta">by {book.author} {book.isPremium && <span className="admin-premium-label">PREMIUM</span>}</span></div></td>
+                          <td><div className="book-info-box"><span className="book-main-title">{book.title}</span><span className="book-sub-meta">by {book.author}</span>{book.isPremium && <span className="admin-premium-label">PREMIUM</span>}</div></td>
                           <td>{typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}</td>
                           <td><span className="admin-added-by">{(book.addedBy as any)?.name || 'N/A'}</span></td>
                           <td><span className="rating-badge" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '4px 8px', borderRadius: '8px', width: 'fit-content', fontWeight: 600 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>{book.rating || 0}</span></td>
