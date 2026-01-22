@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Loader from './Loader';
 import { signup } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -13,6 +14,7 @@ const Signup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSignup = async () => {
@@ -41,6 +43,7 @@ const Signup: React.FC = () => {
       return;
     }
 
+    setIsLoading(true);
     try {
       await signup(name, email, password);
       setError('');
@@ -54,6 +57,8 @@ const Signup: React.FC = () => {
         'Signup failed, please try again';
       setError(msg);
       toast.error(msg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -137,8 +142,8 @@ const Signup: React.FC = () => {
           </div>
         </div>
 
-        <button className="auth-submit-btn" onClick={handleSignup}>
-          Sign Up
+        <button className="auth-submit-btn" onClick={handleSignup} disabled={isLoading}>
+          {isLoading ? <Loader small /> : 'Sign Up'}
         </button>
 
         <div className="auth-footer">

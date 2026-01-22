@@ -31,13 +31,30 @@ const Home: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem('token');
 
   React.useEffect(() => {
-    if (isAuthenticated) {
-      loadProfile();
-      loadCurrentMembership();
+    const role = localStorage.getItem('role');
+    if (role === RoleName.ADMIN) {
+      navigate('/admin-dashboard');
+    } else if (role === RoleName.SUPER_ADMIN) {
+      navigate('/super-admin-dashboard');
     }
-    loadBooks();
-    loadMemberships();
-    loadCategories();
+  }, []);
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      const role = localStorage.getItem('role');
+      if (role === RoleName.USER) {
+        loadProfile();
+        loadCurrentMembership();
+      }
+    }
+
+    const isAdmin = localStorage.getItem('role') === RoleName.ADMIN || localStorage.getItem('role') === RoleName.SUPER_ADMIN;
+
+    if (!isAdmin) {
+      loadBooks();
+      loadMemberships();
+      loadCategories();
+    }
   }, [isAuthenticated]);
 
   // Scroll Reveal Observer

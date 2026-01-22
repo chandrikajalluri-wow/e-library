@@ -247,3 +247,84 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
         next(err);
     }
 };
+
+export const getSimilarBooks = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const book = await Book.findById(id);
+
+        if (!book) {
+            return res.status(404).json({ error: 'Book not found' });
+        }
+
+        const similarBooks = await Book.find({
+            _id: { $ne: id },
+            $or: [
+                { genre: book.genre },
+                { author: book.author }
+            ],
+            status: { $ne: BookStatus.ARCHIVED }
+        })
+            .limit(5)
+            .populate('category_id', 'name');
+
+        res.json(similarBooks);
+    } catch (err) {
+        next(err);
+    }
+};
+
+
+export const getRecommendedBooks = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!._id;
+
+        // 1. Get User Preference & History
+        // Re-fetch user to ensure we have latest favoriteGenres
+        const user = await User.findById(userId);
+        const userBorrows = await Borrow.find({ user_id: userId }).populate('book_id');
+
+        // 2. Extract Genres & Authors from history
+        const borrowedBookIds = new Set<string>();
+        const genres = new Set<string>(); // String genres
+        const authors = new Set<string>();
+        const preferredCategoryIds = new Set<string>(); // Category ObjectIds
+
+        // Add User's explicitly set favorite genres (Categories)
+        if (user && user.favoriteGenres) {
+            user.favoriteGenres.forEach((catId: any) => preferredCategoryIds.add(catId.toString()));
+        }
+
+        userBorrows.forEach((borrow: any) => {
+            if (borrow.book_id) {
+                borrowedBookIds.add(borrow.book_id._id.toString());
+                if (borrow.book_id.genre) genres.add(borrow.book_id.genre);
+                if (borrow.book_id.author) authors.add(borrow.book_id.author);
+                // Also add borrowed book categories to preferences
+                if (borrow.book_id.category_id) preferredCategoryIds.add(borrow.book_id.category_id.toString());
+            }
+        });
+
+        // 3. Find Recommendations
+        // If no history AND no favorites, return empty
+        if (borrowedBookIds.size === 0 && preferredCategoryIds.size === 0) {
+            return res.json([]);
+        }
+
+        const recommendations = await Book.find({
+            _id: { $nin: Array.from(borrowedBookIds) }, // Exclude read books
+            $or: [
+                { genre: { $in: Array.from(genres) } },
+                { author: { $in: Array.from(authors) } },
+                { category_id: { $in: Array.from(preferredCategoryIds) } }
+            ],
+            status: { $ne: BookStatus.ARCHIVED }
+        })
+            .limit(8)
+            .populate('category_id', 'name');
+
+        res.json(recommendations);
+    } catch (err) {
+        next(err);
+    }
+};

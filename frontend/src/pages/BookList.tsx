@@ -1,9 +1,9 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { getBooks } from '../services/bookService';
+import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
-import { getProfile } from '../services/userService';
+
 import type { Book } from '../types';
 
 import '../styles/BookList.css';
@@ -69,11 +69,9 @@ const BookList: React.FC = () => {
 
   const loadPersonalizedRecs = async () => {
     try {
-      const userData = await getProfile();
-      if (userData.favoriteGenres && userData.favoriteGenres.length > 0) {
-        const query = `category=${userData.favoriteGenres.join(',')}&limit=4`;
-        const data = await getBooks(query);
-        setPersonalizedRecs(data.books || data);
+      if (localStorage.getItem('token')) {
+        const data = await getRecommendedBooks();
+        setPersonalizedRecs(data);
       }
     } catch (err) {
       console.error('Failed to load personalized recommendations', err);

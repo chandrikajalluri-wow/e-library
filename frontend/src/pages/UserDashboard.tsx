@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import FinePaymentModal from '../components/FinePaymentModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/UserDashboard.css';
+import '../styles/BookList.css';
 
 const UserDashboard: React.FC = () => {
   const [borrows, setBorrows] = useState<any[]>([]);
@@ -18,6 +19,8 @@ const UserDashboard: React.FC = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [selectedBorrow, setSelectedBorrow] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'returned'>('all');
+  const [isLoading, setIsLoading] = useState(true);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -39,6 +42,7 @@ const UserDashboard: React.FC = () => {
 
   const loadData = async () => {
     try {
+      setIsLoading(true);
       const bData = await getMyBorrows();
       setBorrows(bData);
       const sData = await getDashboardStats();
@@ -50,16 +54,37 @@ const UserDashboard: React.FC = () => {
     } catch (err) {
       console.error(err);
       toast.error('Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleReturn = async (borrow: any) => {
-    let fine = borrow.fine_amount || 0;
-    if (borrow.status !== BorrowStatus.RETURNED && borrow.status !== BorrowStatus.ARCHIVED && new Date() > new Date(borrow.return_date)) {
-      const diffTime = Math.abs(new Date().getTime() - new Date(borrow.return_date).getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      fine += diffDays * 10;
+  const getCurrentFine = (b: any) => {
+    if (b.status === BorrowStatus.RETURNED || b.status === BorrowStatus.ARCHIVED) {
+      return b.isFinePaid ? 0 : (b.fine_amount || 0);
     }
+
+    const now = new Date();
+    const endDate = (b.status === BorrowStatus.RETURN_REQUESTED && b.return_requested_at)
+      ? new Date(b.return_requested_at)
+      : now;
+    const returnDate = new Date(b.return_date);
+
+    let fineStartDate = returnDate;
+    if (b.last_fine_paid_date && new Date(b.last_fine_paid_date) > returnDate) {
+      fineStartDate = new Date(b.last_fine_paid_date);
+    }
+
+    if (endDate > fineStartDate) {
+      const diffTime = Math.abs(endDate.getTime() - fineStartDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays * 10;
+    }
+    return 0;
+  };
+
+  const handleReturn = async (borrow: any) => {
+    const fine = getCurrentFine(borrow);
 
     if (fine > 0 && !borrow.isFinePaid) {
       toast.info(`Please pay the fine of ₹${fine.toFixed(2)} before returning.`);
@@ -111,10 +136,12 @@ const UserDashboard: React.FC = () => {
         <div className="card stat-card membership-status-card">
           <div className="membership-info-main">
             <h3 className="stat-label">Membership</h3>
-            <p className="stat-value membership-name">{membership?.displayName || 'Basic'}</p>
+            <p className="stat-value membership-name">
+              {isLoading ? '...' : (membership?.displayName || 'Basic')}
+            </p>
           </div>
           <div className="membership-limits">
-            <span>Limit: {stats.borrowedCount} / {membership?.borrowLimit || 3} books</span>
+            <span>Limit: {isLoading ? '-' : stats.borrowedCount} / {isLoading ? '-' : (membership?.borrowLimit || 3)} books</span>
             <button
               onClick={() => navigate('/memberships')}
               className="upgrade-link-btn"
@@ -148,7 +175,7 @@ const UserDashboard: React.FC = () => {
             <span className="badge-new">Latest Updates</span>
           </div>
           <div className="announcements-grid">
-            {announcements.slice(0, 2).map((ann) => (
+            {announcements.slice(0, 2).map((ann: any) => (
               <div key={ann._id} className="announcement-card ripple-effect">
                 <div className="announcement-content-wrap">
                   <div className="announcement-meta">
@@ -164,87 +191,157 @@ const UserDashboard: React.FC = () => {
       )}
 
       <section className="card dashboard-section">
-        <h2>My Borrows</h2>
-        <table className="dashboard-table">
-          <thead>
-            <tr>
-              <th>Book</th>
-              <th>Issued Date</th>
-              <th>Due Date</th>
-              <th>Fine</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {borrows.map((b) => (
-              <tr key={b._id}>
-                <td data-label="Book" className="book-title">
-                  {b.book_id?.title || 'Unknown Book (Deleted)'}
-                </td>
-                <td data-label="Issued Date">{new Date(b.issued_date).toLocaleDateString()}</td>
-                <td data-label="Due Date" className={new Date() > new Date(b.return_date) ? 'overdue-date' : ''}>
-                  {new Date(b.return_date).toLocaleDateString()}
-                </td>
-                <td data-label="Fine">
-                  <span className={`fine-amount ${(b.fine_amount > 0 || new Date() > new Date(b.return_date)) ? 'fine-danger' : ''}`}>
-                    ₹{(() => {
-                      let fine = b.fine_amount || 0;
-                      if (b.status !== BorrowStatus.RETURNED && b.status !== BorrowStatus.ARCHIVED && new Date() > new Date(b.return_date)) {
-                        const diffTime = Math.abs(new Date().getTime() - new Date(b.return_date).getTime());
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        fine += diffDays * 10;
-                      }
-                      return fine.toFixed(2);
-                    })()}
-                  </span>
-                </td>
-                <td data-label="Status">
-                  <span className={`status-badge status-${b.status}`}>
-                    {b.status}
-                  </span>
-                </td>
-                <td data-label="Action">
-                  {(b.status === BorrowStatus.BORROWED || b.status === BorrowStatus.OVERDUE) && (
-                    <div className="actions-cell">
-                      {(() => {
-                        let fine = b.fine_amount || 0;
-                        if (new Date() > new Date(b.return_date)) {
-                          const diffTime = Math.abs(new Date().getTime() - new Date(b.return_date).getTime());
-                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                          fine += diffDays * 10;
-                        }
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h2 style={{ margin: 0 }}>My Borrows</h2>
+          <div className="filter-controls" style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-color)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+            <button
+              onClick={() => setFilterStatus('all')}
+              style={{
+                background: filterStatus === 'all' ? 'var(--primary-color)' : 'transparent',
+                color: filterStatus === 'all' ? 'white' : 'var(--text-secondary)',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterStatus('active')}
+              style={{
+                background: filterStatus === 'active' ? 'var(--primary-color)' : 'transparent',
+                color: filterStatus === 'active' ? 'white' : 'var(--text-secondary)',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setFilterStatus('returned')}
+              style={{
+                background: filterStatus === 'returned' ? 'var(--primary-color)' : 'transparent',
+                color: filterStatus === 'returned' ? 'white' : 'var(--text-secondary)',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              Returned
+            </button>
+          </div>
+        </div>
+        <div className="grid-books">
+          {borrows.filter(b => {
+            if (filterStatus === 'active') return b.status === BorrowStatus.BORROWED || b.status === BorrowStatus.OVERDUE;
+            if (filterStatus === 'returned') return b.status === BorrowStatus.RETURNED;
+            return true;
+          }).map((b) => (
+            <div key={b._id} className="card book-card">
+              <div className="book-cover-container">
+                {b.book_id?.cover_image_url ? (
+                  <img
+                    src={b.book_id.cover_image_url}
+                    alt={b.book_id.title}
+                    className="book-cover-img"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="no-image-placeholder">No Image</div>
+                )}
+              </div>
+              <div className="book-info-container">
+                <div className="book-category-tag">
+                  {b.book_id?.category_id?.name || 'Book'}
+                </div>
+                <h3 className="book-title-h3">{b.book_id?.title || 'Unknown Title'}</h3>
+                <p className="book-author-p">
+                  {b.book_id?.author ? `by ${b.book_id.author}` : ''}
+                </p>
 
-                        return (fine > 0 && !b.isFinePaid) ? (
-                          <button
-                            onClick={() => {
-                              setSelectedBorrow(b);
-                              setIsModalOpen(true);
-                            }}
-                            className="btn-primary btn-danger"
-                          >
-                            Pay Fine
-                          </button>
-                        ) : null;
-                      })()}
+                <div className="borrow-details-mini" style={{ marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Issued:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{new Date(b.issued_date).toLocaleDateString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                    <span>Due:</span>
+                    <span style={{ fontWeight: 600, color: new Date() > new Date(b.return_date) ? 'var(--danger-color)' : 'var(--text-primary)' }}>
+                      {new Date(b.return_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {(getCurrentFine(b) > 0 || (new Date() > new Date(b.return_date) && b.status !== 'returned')) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                      <span>Fine:</span>
+                      <span style={{ fontWeight: 700, color: 'var(--danger-color)' }}>
+                        ₹{getCurrentFine(b).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="book-footer" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span className={`status-badge status-${b.status}`} style={{ fontSize: '0.7rem' }}>
+                      {b.status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Pay Now button - always visible if fine > 0 and not paid */}
+                  {getCurrentFine(b) > 0 && !b.isFinePaid && (
+                    <button
+                      onClick={() => {
+                        setSelectedBorrow(b);
+                        setIsModalOpen(true);
+                      }}
+                      className="btn-primary btn-danger"
+                      style={{ width: '100%', padding: '0.5rem' }}
+                    >
+                      Pay Now
+                    </button>
+                  )}
+
+                  {(b.status === BorrowStatus.BORROWED || b.status === BorrowStatus.OVERDUE) && (
+                    <>
+                      <button
+                        onClick={() => navigate(`/read/${b.book_id._id}`)}
+                        className="btn-primary"
+                        style={{ width: '100%', padding: '0.5rem' }}
+                      >
+                        Read
+                      </button>
                       <button
                         onClick={() => handleReturn(b)}
                         className="btn-secondary"
+                        style={{ width: '100%', padding: '0.5rem' }}
                       >
                         Request Return
                       </button>
-                    </div>
+                    </>
                   )}
                   {b.status === 'return_requested' && (
-                    <span className="pending-badge">
-                      Pending Admin Approval
-                    </span>
+                    <div className="pending-status-msg">
+                      Pending Approval
+                    </div>
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
         {borrows.length === 0 && (
           <p className="empty-message">
             You haven't borrowed any books.

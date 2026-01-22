@@ -11,6 +11,8 @@ export interface IBorrow extends Document {
   returned_at?: Date; // actual return
   fine_amount?: number;
   isFinePaid: boolean;
+  return_requested_at?: Date;
+  last_fine_paid_date?: Date;
   status: BorrowStatus;
   last_page: number;
   bookmarks: number[];
@@ -24,6 +26,8 @@ const borrowSchema = new Schema<IBorrow>({
   returned_at: { type: Date },
   fine_amount: { type: Number, default: 0 },
   isFinePaid: { type: Boolean, default: false },
+  return_requested_at: { type: Date },
+  last_fine_paid_date: { type: Date },
   status: { type: String, enum: Object.values(BorrowStatus), default: BorrowStatus.BORROWED },
   last_page: { type: Number, default: 1 },
   bookmarks: { type: [Number], default: [] },
