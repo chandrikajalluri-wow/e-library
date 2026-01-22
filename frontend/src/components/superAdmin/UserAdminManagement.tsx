@@ -11,6 +11,7 @@ interface User {
     role_id: { _id: string; name: string };
     membership_id?: { name: string };
     isVerified: boolean;
+    deletionScheduledAt?: string; // It comes as string from JSON
 }
 
 const UserAdminManagement: React.FC = () => {
@@ -45,29 +46,65 @@ const UserAdminManagement: React.FC = () => {
         setModalOpen(true);
     };
 
-    const handleAction = async () => {
+    const [conflictData, setConflictData] = useState<{ pendingBorrows: any[], unpaidFines: any[] } | null>(null);
+
+    const handleAction = async (force: boolean = false) => {
         if (!selectedUser || !modalAction) return;
 
         try {
             if (modalAction === 'delete') {
-                await deleteUser(selectedUser._id);
-                toast.success('User deleted successfully');
+                await deleteUser(selectedUser._id, force);
+                if (force) {
+                    toast.success('User permanently deleted');
+                } else {
+                    toast.success('User scheduled for deletion (7 days)');
+                }
             } else {
                 await manageAdmin(selectedUser._id, modalAction);
                 toast.success(`User ${modalAction}d successfully`);
             }
             fetchUsers();
-        } catch (err: any) {
-            toast.error(err.response?.data?.error || 'Action failed');
-        } finally {
             setModalOpen(false);
+            setConflictData(null);
             setSelectedUser(null);
             setModalAction(null);
+        } catch (err: any) {
+            if (err.response?.status === 409 && modalAction === 'delete') {
+                setConflictData(err.response.data.details);
+                // Keep modal open, but maybe switch content or show secondary modal?
+                // Actually, let's just set conflictData. The Modal content logic can adapt.
+                return;
+            }
+            toast.error(err.response?.data?.error || 'Action failed');
+            setModalOpen(false); // Close on other errors
         }
     };
 
     const getModalContent = () => {
-        if (!selectedUser || !modalAction) return { title: '', message: '', type: 'info' as const };
+        if (!selectedUser || !modalAction) return { title: '', message: '' as React.ReactNode, type: 'info' as const };
+
+        if (conflictData) {
+            return {
+                title: 'Cannot Delete User (Pending Obligations)',
+                message: (
+                    <div>
+                        <p style={{ marginBottom: '10px' }}>User has active borrows or fines:</p>
+                        <ul style={{ listStyle: 'disc', paddingLeft: '20px', marginBottom: '10px', fontSize: '0.9em' }}>
+                            {conflictData.pendingBorrows?.map((b, i) => (
+                                <li key={`b-${i}`}>Borrowed: <strong>{b.book}</strong> (Due: {new Date(b.dueDate).toLocaleDateString()})</li>
+                            ))}
+                            {conflictData.unpaidFines?.map((f, i) => (
+                                <li key={`f-${i}`}>Fine: <strong>{f.book}</strong> (Amount: ₹{f.amount})</li>
+                            ))}
+                        </ul>
+                        <p className="status-rejected" style={{ fontWeight: 'bold' }}>Do you want to FORCE delete this user immediately?</p>
+                    </div>
+                ),
+                type: 'danger' as const,
+                confirmText: 'Force Delete',
+                onConfirm: () => handleAction(true) // Call with force=true
+            };
+        }
 
         switch (modalAction) {
             case 'promote':
@@ -84,8 +121,8 @@ const UserAdminManagement: React.FC = () => {
                 };
             case 'delete':
                 return {
-                    title: 'Delete User',
-                    message: `Are you sure you want to permanently delete ${selectedUser.name}? This action cannot be undone.`,
+                    title: 'Delete User (Safe)',
+                    message: `This will schedule ${selectedUser.name} for deletion in 7 days. If they have no pending books/fines.`,
                     type: 'danger' as const
                 };
             default:
@@ -95,10 +132,24 @@ const UserAdminManagement: React.FC = () => {
 
     const modalContent = getModalContent();
 
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredUsers = users.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <div className="card admin-table-section">
             <div className="admin-table-header-box">
                 <h3 className="admin-table-title">User & Admin Management</h3>
+                <input
+                    type="text"
+                    placeholder="Search Users..."
+                    className="admin-search-input"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
                 <button onClick={fetchUsers} className="admin-refresh-stats-btn" style={{ height: 'auto', padding: '0.5rem 1rem' }}>
                     Refresh
                 </button>
@@ -118,9 +169,19 @@ const UserAdminManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(user => (
+                            {filteredUsers.map(user => (
                                 <tr key={user._id}>
-                                    <td><span className="user-main-name">{user.name}</span></td>
+                                    <td>
+                                        <div className="user-info-box">
+                                            <span className="user-main-name">{user.name}</span>
+                                            {/* We can check deletionScheduledAt here if it was in the interface */}
+                                            {user.deletionScheduledAt && (
+                                                <span className="status-badge status-scheduled" style={{ fontSize: '0.6rem', padding: '2px 6px', marginTop: '4px' }}>
+                                                    Deletion Scheduled
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
                                     <td>{user.email}</td>
                                     <td>
                                         <span className={`status-badge ${user.role_id?.name === RoleName.ADMIN ? 'status-borrowed' : (user.role_id?.name === RoleName.SUPER_ADMIN ? 'status-returned' : 'status-pending')}`}>
@@ -155,9 +216,9 @@ const UserAdminManagement: React.FC = () => {
                 title={modalContent.title}
                 message={modalContent.message}
                 type={modalContent.type}
-                onConfirm={handleAction}
-                onCancel={() => setModalOpen(false)}
-                confirmText={modalAction === 'delete' ? 'Delete' : 'Confirm'}
+                onConfirm={modalContent.onConfirm || (() => handleAction(false))}
+                onCancel={() => { setModalOpen(false); setConflictData(null); }}
+                confirmText={modalContent.confirmText || (modalAction === 'delete' ? 'Schedule Delete' : 'Confirm')}
             />
         </div>
     );

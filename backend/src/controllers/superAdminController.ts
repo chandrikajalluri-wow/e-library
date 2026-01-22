@@ -2,9 +2,13 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import Role from '../models/Role';
 import Review from '../models/Review';
+import Book from '../models/Book';
+import Borrow from '../models/Borrow';
 import ActivityLog from '../models/ActivityLog';
 import Announcement from '../models/Announcement';
-import { RoleName, ActivityAction } from '../types/enums';
+import Notification from '../models/Notification';
+import { RoleName, ActivityAction, NotificationType } from '../types/enums';
+import { sendEmail } from '../utils/mailer';
 
 export const getAllUsers = async (req: Request, res: Response) => {
     try {
@@ -39,19 +43,89 @@ export const manageAdmin = async (req: Request, res: Response) => {
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
+    const { force } = req.body; // Expect JSON body { force: boolean }
+
     try {
-        const user = await User.findByIdAndDelete(req.params.id);
+        const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // If Force Delete is requested
+        if (force === true) {
+            await User.findByIdAndDelete(req.params.id);
+
+            await ActivityLog.create({
+                user_id: (req as any).user._id,
+                action: ActivityAction.USER_DELETED,
+                description: `Force deleted user ${user.email} (Immediate)`,
+                timestamp: new Date()
+            });
+
+            return res.json({ message: 'User permanently deleted (Force)' });
+        }
+
+        // --- Standard Conditional Logic ---
+
+        // 1. Check for Active Borrows (Not returned)
+        const pendingBorrows = await Borrow.find({
+            user_id: user._id,
+            returned_at: { $exists: false }
+        }).populate('book_id', 'title');
+
+        // 2. Check for Unpaid Fines
+        const unpaidFines = await Borrow.find({
+            user_id: user._id,
+            isFinePaid: false,
+            fine_amount: { $gt: 0 }
+        }).populate('book_id', 'title');
+
+        // If dependencies exist
+        if (pendingBorrows.length > 0 || unpaidFines.length > 0) {
+            return res.status(409).json({
+                error: 'User has pending obligations',
+                details: {
+                    pendingBorrows: pendingBorrows.map(b => ({ book: (b.book_id as any).title, dueDate: b.return_date })),
+                    unpaidFines: unpaidFines.map(b => ({ book: (b.book_id as any).title, amount: b.fine_amount }))
+                }
+            });
+        }
+
+        // If Clean: Schedule Deletion
+        const deletionDate = new Date();
+        deletionDate.setDate(deletionDate.getDate() + 7);
+
+        user.deletionScheduledAt = deletionDate;
+        await user.save();
+
+        // Notify User
+        await Notification.create({
+            user_id: user._id,
+            message: `Your account has been scheduled for deletion on ${deletionDate.toDateString()}. Please contact support if this is a mistake.`,
+            type: NotificationType.SYSTEM
+        });
+
+        // Send Email
+        try {
+            await sendEmail(
+                user.email,
+                'Account Scheduled for Deletion',
+                `Hello ${user.name},\n\nYour account has been flagged for deletion and is scheduled to be permanently removed on ${deletionDate.toDateString()}.\n\nIf you believe this is an error, please contact the library administration immediately.\n\nRegards,\nE-Library Team`
+            );
+        } catch (emailErr) {
+            console.error('Failed to send deletion email', emailErr);
+            // Continue even if email fails
+        }
 
         await ActivityLog.create({
             user_id: (req as any).user._id,
             action: ActivityAction.USER_DELETED,
-            description: `Deleted user ${user.email}`,
+            description: `Scheduled deletion for user ${user.email}`,
             timestamp: new Date()
         });
 
-        res.json({ message: 'User deleted successfully' });
+        res.json({ message: `User scheduled for deletion on ${deletionDate.toDateString()}` });
+
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -128,12 +202,74 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
         const adminCount = await User.countDocuments({ role_id: await Role.findOne({ name: RoleName.ADMIN }).then(r => r?._id) });
         const logCount = await ActivityLog.countDocuments();
 
+        // User Distribution by Role
+        const userDistribution = await User.aggregate([
+            {
+                $lookup: {
+                    from: 'roles',
+                    localField: 'role_id',
+                    foreignField: '_id',
+                    as: 'role'
+                }
+            },
+            { $unwind: '$role' },
+            {
+                $group: {
+                    _id: '$role.name',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Book Distribution by Category
+        const bookDistribution = await Book.aggregate([
+            {
+                $lookup: {
+                    from: 'categories',
+                    localField: 'category_id',
+                    foreignField: '_id',
+                    as: 'category'
+                }
+            },
+            { $unwind: '$category' },
+            {
+                $group: {
+                    _id: '$category.name',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Borrow Trends (Last 6 Months)
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+        const borrowTrends = await Borrow.aggregate([
+            {
+                $match: {
+                    issued_date: { $gte: sixMonthsAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: { $month: '$issued_date' },
+                    month: { $first: { $dateToString: { format: "%Y-%m", date: "$issued_date" } } },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { month: 1 } }
+        ]);
+
         res.json({
             users: userCount,
             admins: adminCount,
             totalActivity: logCount,
+            userDistribution,
+            bookDistribution,
+            borrowTrends
         });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
 };

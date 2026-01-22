@@ -11,6 +11,7 @@ export interface IUser extends Document {
   membership_id: Types.ObjectId | IMembership; // allow populated Membership
   membershipStartDate?: Date;
   membershipExpiryDate?: Date;
+  deletionScheduledAt?: Date;
   isVerified: boolean;
   verificationToken?: string;
   profileImage?: string;
@@ -38,6 +39,7 @@ const userSchema = new Schema<IUser>(
     membership_id: { type: Schema.Types.ObjectId, ref: 'Membership' },
     membershipStartDate: { type: Date },
     membershipExpiryDate: { type: Date },
+    deletionScheduledAt: { type: Date },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
     profileImage: { type: String },
