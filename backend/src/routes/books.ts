@@ -41,7 +41,7 @@ router.put(
 // Delete Book (Admin/Super Admin only)
 router.delete('/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), bookController.deleteBook);
 
-// Download Book PDF (Standard and Premium members only)
-router.get('/:id/download', auth, bookController.downloadBookPdf);
+// View Book PDF (Proxied through backend for CORS)
+router.get('/:id/view', auth, bookController.viewBookPdf);
 
 export default router;

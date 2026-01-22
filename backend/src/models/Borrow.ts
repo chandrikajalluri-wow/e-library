@@ -12,6 +12,8 @@ export interface IBorrow extends Document {
   fine_amount?: number;
   isFinePaid: boolean;
   status: BorrowStatus;
+  last_page: number;
+  bookmarks: number[];
 }
 
 const borrowSchema = new Schema<IBorrow>({
@@ -23,6 +25,8 @@ const borrowSchema = new Schema<IBorrow>({
   fine_amount: { type: Number, default: 0 },
   isFinePaid: { type: Boolean, default: false },
   status: { type: String, enum: Object.values(BorrowStatus), default: BorrowStatus.BORROWED },
+  last_page: { type: Number, default: 1 },
+  bookmarks: { type: [Number], default: [] },
 });
 
 export default mongoose.model<IBorrow>('Borrow', borrowSchema);

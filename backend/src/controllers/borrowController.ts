@@ -291,3 +291,61 @@ export const getAllBorrows = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+export const updateReadingProgress = async (req: AuthRequest, res: Response) => {
+    try {
+        const { bookId } = req.params;
+        const { last_page, bookmarks } = req.body;
+
+        const borrow = await Borrow.findOne({
+            user_id: req.user!._id,
+            book_id: bookId,
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+        });
+
+        if (!borrow) {
+            return res.status(404).json({ error: 'Active borrow record not found' });
+        }
+
+        if (last_page !== undefined) borrow.last_page = last_page;
+        if (bookmarks !== undefined) borrow.bookmarks = bookmarks;
+
+        console.log('Updated borrow.bookmarks to:', borrow.bookmarks);
+
+        await borrow.save();
+        console.log('Borrow record saved successfully');
+
+        // Verify the save
+        const verifyBorrow = await Borrow.findById(borrow._id);
+        console.log('Verified bookmarks after save:', verifyBorrow?.bookmarks);
+
+        res.json({ message: 'Progress updated', last_page: borrow.last_page, bookmarks: borrow.bookmarks });
+    } catch (err) {
+        console.error('Update progress error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getReadingProgress = async (req: AuthRequest, res: Response) => {
+    try {
+        const { bookId } = req.params;
+
+        const borrow = await Borrow.findOne({
+            user_id: req.user!._id,
+            book_id: bookId,
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+        });
+
+        if (!borrow) {
+            return res.status(404).json({ error: 'Active borrow record not found' });
+        }
+
+        res.json({
+            last_page: borrow.last_page || 1,
+            bookmarks: borrow.bookmarks || []
+        });
+    } catch (err) {
+        console.error('Get progress error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};

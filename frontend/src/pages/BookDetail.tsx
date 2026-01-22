@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, BookOpen, Download } from 'lucide-react';
-import { getBook, downloadBookPdf } from '../services/bookService';
+import { Heart, BookOpen } from 'lucide-react';
+import { getBook } from '../services/bookService';
 import { issueBook, getMyBorrows } from '../services/borrowService';
 import {
   addToWishlist,
@@ -11,7 +11,7 @@ import {
 import { getBookReviews, addReview, updateReview } from '../services/reviewService';
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { getProfile } from '../services/userService';
-import { RoleName, BorrowStatus, MembershipName } from '../types/enums';
+import { RoleName, BorrowStatus } from '../types/enums';
 import type { User } from '../types';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
@@ -215,64 +215,10 @@ const BookDetail: React.FC = () => {
       return;
     }
     if (book.pdf_url) {
-      window.open(book.pdf_url, '_blank');
+      navigate(`/read/${book._id}`);
     }
   };
 
-  const handleDownload = async () => {
-    if (!id) return;
-
-    const isPremiumUser = userMembership?.name === MembershipName.PREMIUM;
-
-    if (!hasBorrowed && !isPremiumUser) {
-      toast.error('You must borrow this book to download it.');
-      return;
-    }
-    try {
-      const blob = await downloadBookPdf(id);
-
-      // Check if the received blob is actually a PDF and not an error JSON
-      if (blob.size < 100) { // Tiny files are likely error messages or empty
-        const text = await blob.text();
-        try {
-          const json = JSON.parse(text);
-          if (json.error) throw new Error(json.error);
-        } catch (e) {
-          // Not JSON, continue with normal error
-        }
-      }
-
-      // Create local URL for the blob
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${book.title.replace(/\s+/g, '_')}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-
-      // Cleanup
-      link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success('Download started!');
-    } catch (err: any) {
-      console.error('Download error:', err);
-      let errorMsg = 'Failed to download PDF. Please try again.';
-
-      // Try to extract error message from axios error
-      if (err.response?.data instanceof Blob) {
-        const text = await err.response.data.text();
-        try {
-          const json = JSON.parse(text);
-          if (json.error) errorMsg = json.error;
-        } catch (e) { }
-      } else if (err.message) {
-        errorMsg = err.message;
-      }
-
-      toast.error(errorMsg);
-    }
-  };
 
 
 
@@ -394,14 +340,6 @@ const BookDetail: React.FC = () => {
                   className="btn-primary read-pdf-btn"
                 >
                   <BookOpen size={18} style={{ marginRight: '8px' }} /> Read PDF
-                </button>
-              )}
-              {book.pdf_url && (userMembership?.name === MembershipName.STANDARD || userMembership?.name === MembershipName.PREMIUM) && (
-                <button
-                  onClick={handleDownload}
-                  className="btn-primary download-pdf-btn"
-                >
-                  <Download size={18} style={{ marginRight: '8px' }} /> Download PDF
                 </button>
               )}
 

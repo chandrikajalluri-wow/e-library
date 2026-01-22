@@ -34,9 +34,3 @@ export const deleteBook = async (id: string): Promise<unknown> => {
   return res.data;
 };
 
-export const downloadBookPdf = async (id: string): Promise<Blob> => {
-  const res = await api.get(`${BASE_URL}/${id}/download`, {
-    responseType: 'blob'
-  });
-  return res.data;
-};

@@ -210,25 +210,11 @@ export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunc
     }
 };
 
-export const downloadBookPdf = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const book = await Book.findById(req.params.id);
         if (!book) return res.status(404).json({ error: 'Book not found' });
         if (!book.pdf_url) return res.status(404).json({ error: 'PDF not available for this book' });
-
-        const user = await User.findById(req.user!._id).populate('membership_id');
-        if (!user) return res.status(404).json({ error: 'User not found' });
-
-        const membership = user.membership_id as any;
-        const userRole = (req.user!.role_id as any).name;
-
-        const hasAccess = userRole === RoleName.ADMIN || (membership && [MembershipName.STANDARD, MembershipName.PREMIUM].includes(membership.name));
-
-        if (!hasAccess) {
-            return res.status(403).json({
-                error: 'Download is only available for Standard and Premium members. Please upgrade your plan.'
-            });
-        }
 
         try {
             const urlObject = new URL(book.pdf_url);
@@ -236,10 +222,13 @@ export const downloadBookPdf = async (req: AuthRequest, res: Response, next: Nex
 
             const s3Response = await getS3FileStream(key);
 
-            const fileName = `${book.title.replace(/\s+/g, '_')}.pdf`;
-
-            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+            // Set headers for inline viewing (not download)
             res.setHeader('Content-Type', s3Response.ContentType || 'application/pdf');
+            res.setHeader('Content-Disposition', 'inline');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type, Authorization');
+            res.setHeader('Accept-Ranges', 'bytes');
 
             if (s3Response.ContentLength) {
                 res.setHeader('Content-Length', s3Response.ContentLength);
