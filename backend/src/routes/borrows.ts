@@ -23,4 +23,8 @@ router.get('/my', auth, borrowController.getMyBorrows);
 // All Borrows (Admin)
 router.get('/', auth, checkRole([RoleName.ADMIN]), borrowController.getAllBorrows);
 
+// Reading Progress (User)
+router.get('/progress/:bookId', auth, borrowController.getReadingProgress);
+router.put('/progress/:bookId', auth, borrowController.updateReadingProgress);
+
 export default router;

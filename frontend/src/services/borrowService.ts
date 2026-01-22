@@ -35,3 +35,13 @@ export const getAllBorrows = async (query = ''): Promise<any> => {
   const res = await api.get(`${BASE_URL}?${query}`); // Admin only
   return res.data;
 };
+
+export const getReadingProgress = async (bookId: string): Promise<any> => {
+  const res = await api.get(`${BASE_URL}/progress/${bookId}`);
+  return res.data;
+};
+
+export const updateReadingProgress = async (bookId: string, progress: { last_page?: number; bookmarks?: number[] }): Promise<any> => {
+  const res = await api.put(`${BASE_URL}/progress/${bookId}`, progress);
+  return res.data;
+};
