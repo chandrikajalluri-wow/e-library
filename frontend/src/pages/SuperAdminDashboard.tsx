@@ -5,6 +5,7 @@ import SystemLogs from '../components/superAdmin/SystemLogs';
 import Announcements from '../components/superAdmin/Announcements';
 import ContentModeration from '../components/superAdmin/ContentModeration';
 import AdminDashboard from './AdminDashboard';
+import AnalyticsDashboard from '../components/superAdmin/AnalyticsDashboard';
 import { getSystemMetrics } from '../services/superAdminService';
 import '../styles/AdminDashboard.css';
 
@@ -37,20 +38,23 @@ const SuperAdminDashboard: React.FC = () => {
                 </div>
 
                 {activeTab === 'overview' && metrics && (
-                    <div className="admin-stats-grid-container">
-                        <div className="card stats-card-content">
-                            <span className="stats-label">Total Users</span>
-                            <span className="stats-value">{metrics.users}</span>
+                    <>
+                        <div className="admin-stats-grid-container">
+                            <div className="card stats-card-content">
+                                <span className="stats-label">Total Users</span>
+                                <span className="stats-value">{metrics.users}</span>
+                            </div>
+                            <div className="card stats-card-content">
+                                <span className="stats-label">Admins</span>
+                                <span className="stats-value stats-value-accent">{metrics.admins}</span>
+                            </div>
+                            <div className="card stats-card-content">
+                                <span className="stats-label">System Activities</span>
+                                <span className="stats-value stats-value-info">{metrics.totalActivity}</span>
+                            </div>
                         </div>
-                        <div className="card stats-card-content">
-                            <span className="stats-label">Admins</span>
-                            <span className="stats-value stats-value-accent">{metrics.admins}</span>
-                        </div>
-                        <div className="card stats-card-content">
-                            <span className="stats-label">System Activities</span>
-                            <span className="stats-value stats-value-info">{metrics.totalActivity}</span>
-                        </div>
-                    </div>
+                        <AnalyticsDashboard data={metrics} />
+                    </>
                 )}
 
                 {activeTab === 'users' && <UserAdminManagement />}

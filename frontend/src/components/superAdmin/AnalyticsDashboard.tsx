@@ -1,0 +1,107 @@
+import React from 'react';
+import {
+    PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid
+} from 'recharts';
+import '../../styles/AdminDashboard.css'; // Reusing admin styles
+
+interface AnalyticsDashboardProps {
+    data: {
+        userDistribution: { _id: string; count: number }[];
+        bookDistribution: { _id: string; count: number }[];
+        borrowTrends: { _id: number; month: string; count: number }[];
+    };
+}
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
+    // Prepare data for charts
+    const userData = data.userDistribution.map(item => ({ name: item._id, value: item.count }));
+    const bookData = data.bookDistribution.map(item => ({ name: item._id, value: item.count }));
+    const borrowData = data.borrowTrends.map(item => ({ name: item.month, borrows: item.count }));
+
+    return (
+        <div className="analytics-container" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+            {/* Pie Charts Section */}
+            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+
+                {/* User Distribution */}
+                <div className="card stats-card-content" style={{ flex: 1, minWidth: '300px', padding: '1.5rem', display: 'block' }}>
+                    <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>User Distribution</h3>
+                    <div style={{ height: '300px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={userData}
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                >
+                                    {userData.map((_, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Book Categories */}
+                <div className="card stats-card-content" style={{ flex: 1, minWidth: '300px', padding: '1.5rem', display: 'block' }}>
+                    <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Book Categories</h3>
+                    <div style={{ height: '300px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={bookData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={50}
+                                    outerRadius={80}
+                                    fill="#82ca9d"
+                                    dataKey="value"
+                                    label
+                                >
+                                    {bookData.map((_, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* Borrow Trends Bar Chart */}
+            <div className="card stats-card-content" style={{ padding: '1.5rem', display: 'block' }}>
+                <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Borrow Trends (Last 6 Months)</h3>
+                <div style={{ height: '300px' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                            data={borrowData}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="borrows" fill="#8884d8" name="Books Borrowed" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default AnalyticsDashboard;
