@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Heart, BookOpen } from 'lucide-react';
-import { getBook } from '../services/bookService';
+import { getBook, getSimilarBooks } from '../services/bookService';
 import { issueBook, getMyBorrows } from '../services/borrowService';
 import {
   addToWishlist,
@@ -34,6 +34,7 @@ const BookDetail: React.FC = () => {
   const [userMembership, setUserMembership] = useState<Membership | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [similarBooks, setSimilarBooks] = useState<any[]>([]);
   const currentUserId = localStorage.getItem('userId');
 
   useEffect(() => {
@@ -45,8 +46,18 @@ const BookDetail: React.FC = () => {
       fetchActiveBorrowCount();
       fetchUserMembership();
       fetchUserProfile();
+      fetchSimilarBooks(id);
     }
   }, [id]);
+
+  const fetchSimilarBooks = async (bookId: string) => {
+    try {
+      const data = await getSimilarBooks(bookId);
+      setSimilarBooks(data);
+    } catch (err) {
+      console.error('Error fetching similar books:', err);
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -362,6 +373,40 @@ const BookDetail: React.FC = () => {
                 <p>{book.author_description}</p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Similar Books Section */}
+      {similarBooks.length > 0 && (
+        <div className="card similar-books-card-wrapper" style={{ marginTop: '2rem' }}>
+          <h3 className="section-title" style={{ marginBottom: '1.5rem', fontWeight: 700, fontSize: '1.25rem' }}>
+            Similar Books
+          </h3>
+          <div className="similar-books-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
+            {similarBooks.map((b) => (
+              <div
+                key={b._id}
+                className="similar-book-card"
+                onClick={() => {
+                  navigate(`/books/${b._id}`);
+                  window.scrollTo(0, 0);
+                }}
+                style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+              >
+                <div className="similar-book-cover" style={{ height: '260px', borderRadius: '12px', overflow: 'hidden', marginBottom: '0.75rem', border: '1px solid var(--border-color)' }}>
+                  {b.cover_image_url ? (
+                    <img src={b.cover_image_url} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                      No Cover
+                    </div>
+                  )}
+                </div>
+                <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</h4>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{b.author}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}

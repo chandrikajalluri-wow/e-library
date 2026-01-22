@@ -9,8 +9,14 @@ const router = express.Router();
 // Get all books (Public, with filters)
 router.get('/', bookController.getAllBooks);
 
+// Get recommendations (History-based)
+router.get('/recommendations', auth, bookController.getRecommendedBooks);
+
 // Get single book
 router.get('/:id', bookController.getBookById);
+
+// Get similar books
+router.get('/:id/similar', bookController.getSimilarBooks);
 
 // Create Book (Admin/Super Admin only)
 router.post(

@@ -88,7 +88,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         }
         if (booksRead !== undefined) user.booksRead = Number(booksRead);
         if (readingTarget !== undefined) user.readingTarget = Number(readingTarget);
-        if (req.body.theme) user.theme = req.body.theme;
 
         if (req.file) {
             user.profileImage = (req.file as any).path;

@@ -28,7 +28,7 @@ const UserLayout: React.FC = () => {
     }, []);
 
     return (
-        <div className="home-page saas-theme" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <div className="user-layout-container saas-theme" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             <UserNavbar />
             <main style={{ paddingTop: '100px', flex: 1, backgroundColor: 'var(--bg-color)', transition: 'background-color 0.3s ease' }}>
                 <div className="saas-container">
