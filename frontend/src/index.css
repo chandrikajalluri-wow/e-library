@@ -80,16 +80,21 @@
   backdrop-filter: blur(20px);
   z-index: 1000;
   border-bottom: 1px solid var(--border-color);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.home-page .saas-nav {
+  position: relative !important;
+  margin-bottom: 2rem;
 }
 
 .nav-wrapper {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 5%;
+  padding: 0 1.5rem;
 }
 
 .saas-logo {
@@ -194,9 +199,9 @@ button {
 }
 
 .dashboard-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 1rem;
 }
 
 .card {
@@ -209,7 +214,7 @@ button {
 
 .navbar {
   background: var(--card-bg);
-  padding: 1rem 2rem;
+  padding: 1rem 1.5rem;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   display: flex;
   justify-content: space-between;

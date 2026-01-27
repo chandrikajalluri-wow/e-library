@@ -26,6 +26,7 @@ import MembershipPlans from './pages/MembershipPlans';
 import UserSettings from './pages/UserSettings';
 import NotificationsPage from './pages/NotificationsPage';
 import HelpCenter from './pages/HelpCenter';
+import PDFViewer from './pages/PDFViewer';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './components/UserLayout';
@@ -66,6 +67,7 @@ const App: React.FC = () => {
             <Route element={<UserLayout />}>
               <Route path="/books" element={<BookList />} />
               <Route path="/books/:id" element={<BookDetail />} />
+              <Route path="/read/:id" element={<PDFViewer />} />
             </Route>
           </Route>
 

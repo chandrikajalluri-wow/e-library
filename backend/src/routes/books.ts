@@ -9,8 +9,14 @@ const router = express.Router();
 // Get all books (Public, with filters)
 router.get('/', bookController.getAllBooks);
 
+// Get recommendations (History-based)
+router.get('/recommendations', auth, bookController.getRecommendedBooks);
+
 // Get single book
 router.get('/:id', bookController.getBookById);
+
+// Get similar books
+router.get('/:id/similar', bookController.getSimilarBooks);
 
 // Create Book (Admin/Super Admin only)
 router.post(
@@ -41,7 +47,7 @@ router.put(
 // Delete Book (Admin/Super Admin only)
 router.delete('/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), bookController.deleteBook);
 
-// Download Book PDF (Standard and Premium members only)
-router.get('/:id/download', auth, bookController.downloadBookPdf);
+// View Book PDF (Proxied through backend for CORS)
+router.get('/:id/view', auth, bookController.viewBookPdf);
 
 export default router;

@@ -210,25 +210,11 @@ export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunc
     }
 };
 
-export const downloadBookPdf = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const book = await Book.findById(req.params.id);
         if (!book) return res.status(404).json({ error: 'Book not found' });
         if (!book.pdf_url) return res.status(404).json({ error: 'PDF not available for this book' });
-
-        const user = await User.findById(req.user!._id).populate('membership_id');
-        if (!user) return res.status(404).json({ error: 'User not found' });
-
-        const membership = user.membership_id as any;
-        const userRole = (req.user!.role_id as any).name;
-
-        const hasAccess = userRole === RoleName.ADMIN || (membership && [MembershipName.STANDARD, MembershipName.PREMIUM].includes(membership.name));
-
-        if (!hasAccess) {
-            return res.status(403).json({
-                error: 'Download is only available for Standard and Premium members. Please upgrade your plan.'
-            });
-        }
 
         try {
             const urlObject = new URL(book.pdf_url);
@@ -236,10 +222,13 @@ export const downloadBookPdf = async (req: AuthRequest, res: Response, next: Nex
 
             const s3Response = await getS3FileStream(key);
 
-            const fileName = `${book.title.replace(/\s+/g, '_')}.pdf`;
-
-            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+            // Set headers for inline viewing (not download)
             res.setHeader('Content-Type', s3Response.ContentType || 'application/pdf');
+            res.setHeader('Content-Disposition', 'inline');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type, Authorization');
+            res.setHeader('Accept-Ranges', 'bytes');
 
             if (s3Response.ContentLength) {
                 res.setHeader('Content-Length', s3Response.ContentLength);
@@ -254,6 +243,87 @@ export const downloadBookPdf = async (req: AuthRequest, res: Response, next: Nex
             console.error('S3 Stream Error:', s3Err);
             res.status(500).json({ error: 'Failed to fetch PDF from storage' });
         }
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const getSimilarBooks = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const book = await Book.findById(id);
+
+        if (!book) {
+            return res.status(404).json({ error: 'Book not found' });
+        }
+
+        const similarBooks = await Book.find({
+            _id: { $ne: id },
+            $or: [
+                { genre: book.genre },
+                { author: book.author }
+            ],
+            status: { $ne: BookStatus.ARCHIVED }
+        })
+            .limit(5)
+            .populate('category_id', 'name');
+
+        res.json(similarBooks);
+    } catch (err) {
+        next(err);
+    }
+};
+
+
+export const getRecommendedBooks = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!._id;
+
+        // 1. Get User Preference & History
+        // Re-fetch user to ensure we have latest favoriteGenres
+        const user = await User.findById(userId);
+        const userBorrows = await Borrow.find({ user_id: userId }).populate('book_id');
+
+        // 2. Extract Genres & Authors from history
+        const borrowedBookIds = new Set<string>();
+        const genres = new Set<string>(); // String genres
+        const authors = new Set<string>();
+        const preferredCategoryIds = new Set<string>(); // Category ObjectIds
+
+        // Add User's explicitly set favorite genres (Categories)
+        if (user && user.favoriteGenres) {
+            user.favoriteGenres.forEach((catId: any) => preferredCategoryIds.add(catId.toString()));
+        }
+
+        userBorrows.forEach((borrow: any) => {
+            if (borrow.book_id) {
+                borrowedBookIds.add(borrow.book_id._id.toString());
+                if (borrow.book_id.genre) genres.add(borrow.book_id.genre);
+                if (borrow.book_id.author) authors.add(borrow.book_id.author);
+                // Also add borrowed book categories to preferences
+                if (borrow.book_id.category_id) preferredCategoryIds.add(borrow.book_id.category_id.toString());
+            }
+        });
+
+        // 3. Find Recommendations
+        // If no history AND no favorites, return empty
+        if (borrowedBookIds.size === 0 && preferredCategoryIds.size === 0) {
+            return res.json([]);
+        }
+
+        const recommendations = await Book.find({
+            _id: { $nin: Array.from(borrowedBookIds) }, // Exclude read books
+            $or: [
+                { genre: { $in: Array.from(genres) } },
+                { author: { $in: Array.from(authors) } },
+                { category_id: { $in: Array.from(preferredCategoryIds) } }
+            ],
+            status: { $ne: BookStatus.ARCHIVED }
+        })
+            .limit(8)
+            .populate('category_id', 'name');
+
+        res.json(recommendations);
     } catch (err) {
         next(err);
     }

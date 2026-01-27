@@ -3,6 +3,7 @@ import Review from '../models/Review';
 import Borrow from '../models/Borrow';
 import Book from '../models/Book';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { maskProfanity } from '../utils/profanityFilter';
 
 export const getReviewsForBook = async (req: Request, res: Response) => {
     try {
@@ -41,7 +42,7 @@ export const addReview = async (req: AuthRequest, res: Response) => {
             user_id: req.user!._id,
             book_id,
             rating,
-            comment,
+            comment: maskProfanity(comment),
         });
         await review.save();
 
@@ -67,7 +68,7 @@ export const updateReview = async (req: AuthRequest, res: Response) => {
         }
 
         review.rating = rating;
-        review.comment = comment;
+        review.comment = maskProfanity(comment);
         review.reviewed_at = new Date();
         await review.save();
 

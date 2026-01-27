@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { updateProfile } from '../services/userService';
 import '../styles/ThemeToggle.css';
 
 interface ThemeToggleProps {
@@ -9,21 +8,9 @@ interface ThemeToggleProps {
 
 const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
     const { theme, toggleTheme } = useTheme();
-    const isAuthenticated = !!localStorage.getItem('token');
 
-    const handleToggle = async () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
+    const handleToggle = () => {
         toggleTheme();
-
-        if (isAuthenticated) {
-            try {
-                const formData = new FormData();
-                formData.append('theme', newTheme);
-                await updateProfile(formData);
-            } catch (err) {
-                console.error('Failed to sync theme to backend:', err);
-            }
-        }
     };
 
     return (

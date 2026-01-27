@@ -14,6 +14,16 @@ export const getBook = async (id: string): Promise<Book> => {
   return res.data;
 };
 
+export const getSimilarBooks = async (id: string): Promise<Book[]> => {
+  const res = await api.get(`${BASE_URL}/${id}/similar`);
+  return res.data;
+};
+
+export const getRecommendedBooks = async (): Promise<Book[]> => {
+  const res = await api.get(`${BASE_URL}/recommendations`);
+  return res.data;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createBook = async (bookData: any): Promise<Book> => {
   // Axios automatically sets Content-Type for FormData
@@ -34,9 +44,3 @@ export const deleteBook = async (id: string): Promise<unknown> => {
   return res.data;
 };
 
-export const downloadBookPdf = async (id: string): Promise<Blob> => {
-  const res = await api.get(`${BASE_URL}/${id}/download`, {
-    responseType: 'blob'
-  });
-  return res.data;
-};

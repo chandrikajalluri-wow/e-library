@@ -20,7 +20,7 @@
 
 /* Hero */
 .saas-hero {
-  padding: 6rem 5% 4rem;
+  padding: 2rem 1.5rem 4rem;
   position: relative;
   background: transparent;
 }
@@ -306,7 +306,7 @@
 
 /* Sections */
 .saas-section {
-  padding: 4rem 5%;
+  padding: 4rem 1.5rem;
 }
 
 .purple-bg {

@@ -166,7 +166,11 @@
 
 .auth-submit-btn {
   width: 100%;
-  padding: 0.875rem;
+  padding: 0 1rem;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--primary-color);
   color: #ffffff;
   border: none;

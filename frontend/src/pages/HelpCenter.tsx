@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import UserNavbar from '../components/UserNavbar';
+
 
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import '../styles/StaticPages.css';
@@ -66,7 +66,7 @@ const HelpCenter: React.FC = () => {
 
     return (
         <div className="static-page-container">
-            <UserNavbar />
+
             <div className="static-content-wrapper help-center-wrapper">
                 <div className="static-hero saas-reveal">
                     <h1 className="static-title-h1">Help Center</h1>

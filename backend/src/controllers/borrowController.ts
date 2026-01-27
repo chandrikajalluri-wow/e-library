@@ -120,21 +120,34 @@ export const requestReturn = async (req: AuthRequest, res: Response) => {
                 });
         }
 
-        let currentFine = borrow.fine_amount || 0;
+        // Calculate fine
+        let currentFine = 0;
         const now = new Date();
-        if (now > borrow.return_date) {
-            const diffTime = Math.abs(now.getTime() - borrow.return_date.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            currentFine += diffDays * 10;
+        const returnDate = new Date(borrow.return_date);
+
+        // Determine start date for fine calculation (Due date or Last Paid Date)
+        let fineStartDate = returnDate;
+        if (borrow.last_fine_paid_date && new Date(borrow.last_fine_paid_date) > returnDate) {
+            fineStartDate = new Date(borrow.last_fine_paid_date);
         }
 
-        if (currentFine > 0 && !borrow.isFinePaid) {
+        if (now > fineStartDate) {
+            const diffTime = Math.abs(now.getTime() - fineStartDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            currentFine = diffDays * 10;
+        }
+
+        // Add any previously unpaid fine amount if stored (though we plan to clear it on pay)
+        // For now, assume calculated dynamic fine is the main source of truth for "new" fine
+
+        if (currentFine > 0) {
             return res.status(400).json({
                 error: `Please pay the outstanding fine of ₹${currentFine.toFixed(2)} before requesting return.`
             });
         }
 
         borrow.status = BorrowStatus.RETURN_REQUESTED;
+        borrow.return_requested_at = new Date(); // Lock the return time
         await borrow.save();
 
         const user = await User.findById(req.user!._id);
@@ -158,22 +171,35 @@ export const payFine = async (req: AuthRequest, res: Response) => {
         const borrow = await Borrow.findById(req.params.id);
         if (!borrow) return res.status(404).json({ error: 'Record not found' });
 
-        let fine = borrow.fine_amount || 0;
-        if (borrow.status !== BorrowStatus.RETURNED && borrow.status !== BorrowStatus.ARCHIVED) {
-            const now = new Date();
-            if (now > borrow.return_date) {
-                const diffTime = Math.abs(now.getTime() - borrow.return_date.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                fine += diffDays * 10;
-            }
+        let fine = 0;
+        // Fine logic: Stop at return_requested_at if set, else now
+        const now = new Date();
+        const endDate = (borrow.status === BorrowStatus.RETURN_REQUESTED && borrow.return_requested_at)
+            ? new Date(borrow.return_requested_at)
+            : now;
+
+        const returnDate = new Date(borrow.return_date);
+
+        let fineStartDate = returnDate;
+        if (borrow.last_fine_paid_date && new Date(borrow.last_fine_paid_date) > returnDate) {
+            fineStartDate = new Date(borrow.last_fine_paid_date);
+        }
+
+        if (endDate > fineStartDate) {
+            const diffTime = Math.abs(endDate.getTime() - fineStartDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            fine = diffDays * 10;
         }
 
         if (fine <= 0) {
             return res.status(400).json({ error: 'No fine to pay' });
         }
 
-        borrow.fine_amount = fine;
-        borrow.isFinePaid = true;
+        // On payment:
+        borrow.fine_amount = 0; // Clear outstanding
+        borrow.isFinePaid = true; // Mark as paid for 'now'
+        borrow.last_fine_paid_date = new Date(); // Advance the paid cursor
+
         await borrow.save();
 
         await sendNotification(
@@ -203,11 +229,20 @@ export const acceptReturn = async (req: Request, res: Response) => {
         borrow.returned_at = new Date();
         borrow.status = BorrowStatus.RETURNED;
 
-        const now = new Date();
-        if (now > borrow.return_date) {
-            const diffTime = Math.abs(now.getTime() - borrow.return_date.getTime());
+        const endDate = borrow.return_requested_at || borrow.returned_at || new Date();
+        const returnDate = new Date(borrow.return_date);
+
+        let fineStartDate = returnDate;
+        if (borrow.last_fine_paid_date && new Date(borrow.last_fine_paid_date) > returnDate) {
+            fineStartDate = new Date(borrow.last_fine_paid_date);
+        }
+
+        if (endDate > fineStartDate) {
+            const diffTime = Math.abs(endDate.getTime() - fineStartDate.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             borrow.fine_amount = diffDays * 10;
+        } else {
+            borrow.fine_amount = 0;
         }
 
         await borrow.save();
@@ -288,6 +323,64 @@ export const getAllBorrows = async (req: Request, res: Response) => {
         });
     } catch (err) {
         console.log(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const updateReadingProgress = async (req: AuthRequest, res: Response) => {
+    try {
+        const { bookId } = req.params;
+        const { last_page, bookmarks } = req.body;
+
+        const borrow = await Borrow.findOne({
+            user_id: req.user!._id,
+            book_id: bookId,
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+        });
+
+        if (!borrow) {
+            return res.status(404).json({ error: 'Active borrow record not found' });
+        }
+
+        if (last_page !== undefined) borrow.last_page = last_page;
+        if (bookmarks !== undefined) borrow.bookmarks = bookmarks;
+
+        console.log('Updated borrow.bookmarks to:', borrow.bookmarks);
+
+        await borrow.save();
+        console.log('Borrow record saved successfully');
+
+        // Verify the save
+        const verifyBorrow = await Borrow.findById(borrow._id);
+        console.log('Verified bookmarks after save:', verifyBorrow?.bookmarks);
+
+        res.json({ message: 'Progress updated', last_page: borrow.last_page, bookmarks: borrow.bookmarks });
+    } catch (err) {
+        console.error('Update progress error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getReadingProgress = async (req: AuthRequest, res: Response) => {
+    try {
+        const { bookId } = req.params;
+
+        const borrow = await Borrow.findOne({
+            user_id: req.user!._id,
+            book_id: bookId,
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+        });
+
+        if (!borrow) {
+            return res.status(404).json({ error: 'Active borrow record not found' });
+        }
+
+        res.json({
+            last_page: borrow.last_page || 1,
+            bookmarks: borrow.bookmarks || []
+        });
+    } catch (err) {
+        console.error('Get progress error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 };

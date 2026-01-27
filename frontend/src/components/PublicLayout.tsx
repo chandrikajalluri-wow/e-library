@@ -6,7 +6,7 @@ import '../styles/Home.css';
 
 const PublicLayout: React.FC = () => {
     return (
-        <div className="home-page saas-theme">
+        <div className="public-layout-container saas-theme">
             <UserNavbar />
             <main style={{ minHeight: 'calc(100vh - 300px)' }}>
                 <Outlet />

@@ -1,12 +1,10 @@
 import React from 'react';
-import UserNavbar from '../components/UserNavbar';
 
 import '../styles/StaticPages.css';
 
 const TermsAndConditions: React.FC = () => {
     return (
         <div className="static-page-container">
-            <UserNavbar />
             <div className="static-content-wrapper">
                 <div className="static-hero saas-reveal">
                     <h1 className="static-title-h1">Terms & Conditions</h1>

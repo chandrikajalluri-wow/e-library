@@ -1,6 +1,6 @@
 .dashboard-wrapper {
-    padding: 2rem;
-    max-width: 1000px;
+    padding: 1rem;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
@@ -122,64 +122,91 @@
     margin-top: 2rem;
 }
 
-.dashboard-table {
-    width: 100%;
-    border-collapse: collapse;
+.borrows-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
 }
 
-.dashboard-table th {
-    text-align: left;
+.borrow-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.borrow-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.borrow-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+}
+
+.borrow-book-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.borrow-book-author {
+    font-size: 0.85rem;
     color: var(--text-secondary);
+}
+
+.borrow-card-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color);
-    padding: 1rem;
 }
 
-.dashboard-table td {
-    border-bottom: 1px solid var(--border-color);
-    padding: 1rem;
+.borrow-detail-item {
+    display: flex;
+    flex-direction: column;
 }
 
-.book-title {
-    font-weight: 500;
-}
-
-.overdue-date {
-    color: var(--danger-color);
-}
-
-.fine-amount {
+.detail-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
     font-weight: 600;
 }
 
-.fine-danger {
-    color: var(--danger-color);
+.detail-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
-.actions-cell {
+.borrow-card-actions {
     display: flex;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: auto;
 }
 
-.pending-badge {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
+.btn-block {
+    width: 100%;
+    justify-content: center;
 }
 
-.empty-message {
-    padding: 1rem;
+.pending-status-msg {
     text-align: center;
     color: var(--text-secondary);
-}
-
-.remove-btn {
-    color: var(--danger-color) !important;
-    border-color: var(--danger-color);
-}
-
-.remove-btn:hover {
-    color: #dc2626 !important;
-    background-color: #fef2f2;
-    border-color: #dc2626;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
 }
 
 /* Responsive Design */
@@ -202,48 +229,6 @@
     .stat-card {
         padding: 1rem;
     }
-
-    .dashboard-table thead {
-        display: none;
-    }
-
-    .dashboard-table tr {
-        display: block;
-        margin-bottom: 1.5rem;
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 0.5rem;
-    }
-
-    .dashboard-table td {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        gap: 0.25rem;
-        text-align: left;
-    }
-
-    .dashboard-table td:last-child {
-        border-bottom: none;
-    }
-
-    .dashboard-table td::before {
-        content: attr(data-label);
-        font-weight: 700;
-        text-transform: uppercase;
-        font-size: 0.7rem;
-        color: var(--primary-color);
-        display: block;
-    }
-
-    .actions-cell {
-        margin-top: 0.5rem;
-        width: 100%;
-        justify-content: flex-start;
-    }
 }
 
 @media (max-width: 480px) {
@@ -253,15 +238,6 @@
 
     .stats-grid {
         grid-template-columns: 1fr;
-    }
-
-    .actions-cell {
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-
-    .actions-cell button {
-        width: 100%;
     }
 
     .profile-avatar {
