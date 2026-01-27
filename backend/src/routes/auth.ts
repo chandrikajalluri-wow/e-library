@@ -18,4 +18,7 @@ router.get('/verify/:token', authController.verifyEmail);
 // Reset Password
 router.post('/reset/:token', authController.resetPassword);
 
+// Google Login
+router.post('/google-login', authController.googleLogin);
+
 export default router;

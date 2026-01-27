@@ -9,6 +9,9 @@ import Membership from '../models/Membership';
 import { sendEmail } from '../utils/mailer';
 import { IRole } from '../models/Role';
 import { RoleName, MembershipName } from '../types/enums';
+import { OAuth2Client } from 'google-auth-library';
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const signup = async (req: Request, res: Response) => {
     const { name, email, password } = req.body;
@@ -242,5 +245,82 @@ export const resetPassword = async (req: Request, res: Response) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
+    }
+};
+export const googleLogin = async (req: Request, res: Response) => {
+    const { credential } = req.body;
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        if (!payload) return res.status(400).json({ error: 'Invalid Google token' });
+
+        const { sub, email, name, picture } = payload;
+
+        let user = await User.findOne({
+            $or: [{ googleId: sub }, { email }]
+        }).populate('role_id');
+
+        if (!user) {
+            const userRole = await Role.findOne({ name: RoleName.USER });
+            if (!userRole) return res.status(500).json({ error: 'Default role not found' });
+
+            user = new User({
+                name: name || 'Google User',
+                email: email!,
+                googleId: sub,
+                isVerified: true, // Google already verified this email
+                role_id: userRole._id,
+                profileImage: picture,
+            });
+
+            const basicMembership = await Membership.findOne({ name: MembershipName.BASIC });
+            if (basicMembership) {
+                user.membership_id = basicMembership._id;
+                user.membershipStartDate = new Date();
+            }
+
+            await user.save();
+            user = await user.populate('role_id');
+        } else if (!user.googleId) {
+            // Link existing account with Google if not already linked
+            user.googleId = sub;
+            if (!user.isVerified) user.isVerified = true;
+            if (!user.profileImage) user.profileImage = picture;
+            await user.save();
+        }
+
+        const roleDoc = user.role_id as IRole;
+        const token = jwt.sign(
+            { id: user._id, role: roleDoc.name },
+            process.env.JWT_SECRET!,
+            { expiresIn: '7d' }
+        );
+
+        const now = new Date();
+        user.lastLogin = now;
+        const device = req.headers['user-agent'] || 'Unknown Device';
+
+        if (!user.activeSessions) user.activeSessions = [];
+        user.activeSessions.push({
+            device,
+            location: 'Unknown',
+            lastActive: now,
+            token
+        });
+
+        if (user.activeSessions.length > 5) {
+            user.activeSessions = user.activeSessions.slice(-5);
+        }
+
+        await user.save();
+
+        res.json({ token, role: roleDoc.name, userId: user._id, theme: user.theme });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Google authentication failed' });
     }
 };

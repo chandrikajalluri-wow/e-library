@@ -22,3 +22,9 @@ export const forgotPassword = async (email: string) => {
 export const resetPassword = async (token: string, password: string) => {
   await api.post(`${BASE_URL}/reset/${token}`, { password });
 };
+
+// Google Login
+export const googleLogin = async (credential: string) => {
+  const res = await api.post(`${BASE_URL}/google-login`, { credential });
+  return res.data;
+};

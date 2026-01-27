@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import Loader from './Loader';
-import { signup } from '../services/authService';
+import { signup, googleLogin } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import '../styles/Auth.css';
 
 const Signup: React.FC = () => {
@@ -56,6 +57,24 @@ const Signup: React.FC = () => {
         (err as any)?.response?.data?.error ||
         'Signup failed, please try again';
       setError(msg);
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsLoading(true);
+    try {
+      const { token, role, userId } = await googleLogin(credentialResponse.credential);
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
+      localStorage.setItem('userId', userId);
+
+      toast.success('Welcome! Logged in with Google');
+      navigate('/books');
+    } catch (err: unknown) {
+      const msg = (err as any)?.response?.data?.error || 'Google Login failed';
       toast.error(msg);
     } finally {
       setIsLoading(false);
@@ -145,6 +164,20 @@ const Signup: React.FC = () => {
         <button className="auth-submit-btn" onClick={handleSignup} disabled={isLoading}>
           {isLoading ? <Loader small /> : 'Sign Up'}
         </button>
+
+        <div className="auth-separator">OR</div>
+
+        <div className="auth-social-login">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => toast.error('Google Sign In failed')}
+            useOneTap
+            theme="outline"
+            shape="pill"
+            text="signup_with"
+            width="100%"
+          />
+        </div>
 
         <div className="auth-footer">
           <p>Already have an account?

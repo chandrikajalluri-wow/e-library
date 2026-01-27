@@ -13,4 +13,13 @@ router.post('/', auth, reviewController.addReview);
 // Update Review
 router.put('/:id', auth, reviewController.updateReview);
 
+// Like Review
+router.post('/:id/like', auth, reviewController.likeReview);
+
+// Dislike Review
+router.post('/:id/dislike', auth, reviewController.dislikeReview);
+
+// Report Review
+router.post('/:id/report', auth, reviewController.reportReview);
+
 export default router;
