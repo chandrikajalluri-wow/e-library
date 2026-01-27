@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, BookOpen } from 'lucide-react';
 import { getBook, getSimilarBooks } from '../services/bookService';
+import { Heart, BookOpen, ShoppingCart } from 'lucide-react';
 import { issueBook, getMyBorrows } from '../services/borrowService';
 import {
   addToWishlist,
@@ -14,12 +14,14 @@ import { getProfile } from '../services/userService';
 import { RoleName, BorrowStatus } from '../types/enums';
 import type { User } from '../types';
 import { toast } from 'react-toastify';
+import { useBorrowCart } from '../context/BorrowCartContext';
 import Loader from '../components/Loader';
 import '../styles/BookDetail.css';
 
 const BookDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToCart, isInCart } = useBorrowCart();
   const [book, setBook] = useState<any>(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistItemId, setWishlistItemId] = useState<string | null>(null);
@@ -344,6 +346,22 @@ const BookDetail: React.FC = () => {
                 }
               >
                 {isWishlisted ? <Heart fill="currentColor" size={24} /> : <Heart size={24} />}
+              </button>
+              <button
+                onClick={() => {
+                  if (book.noOfCopies > 0) {
+                    addToCart(book);
+                    toast.success(`${book.title} added to cart!`);
+                  } else {
+                    toast.error('Out of stock');
+                  }
+                }}
+                disabled={book.noOfCopies === 0 || isInCart(book._id)}
+                className={`btn-primary ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                title={isInCart(book._id) ? 'Already in cart' : 'Add to cart'}
+              >
+                <ShoppingCart size={18} style={{ marginRight: '8px' }} />
+                {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
               </button>
               {book.pdf_url && (
                 <button

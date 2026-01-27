@@ -5,6 +5,8 @@ import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 
 import type { Book } from '../types';
+import { useBorrowCart } from '../context/BorrowCartContext';
+import { toast } from 'react-toastify';
 
 import '../styles/BookList.css';
 
@@ -12,6 +14,7 @@ const BookList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') || '';
   const searchSectionRef = React.useRef<HTMLHeadingElement>(null);
+  const { addToCart, isInCart } = useBorrowCart();
 
   const [books, setBooks] = useState<Book[]>([]);
   const [recommendations, setRecommendations] = useState<Book[]>([]);
@@ -232,12 +235,29 @@ const BookList: React.FC = () => {
                     {book.noOfCopies === 1 ? 'copy' : 'copies'} available
                   </span>
                 </div>
-                <Link
-                  to={`/books/${book._id}`}
-                  className="btn-primary view-book-btn"
-                >
-                  View
-                </Link>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => {
+                      if (book.noOfCopies > 0) {
+                        addToCart(book);
+                        toast.success(`${book.title} added to cart!`);
+                      } else {
+                        toast.error('Out of stock');
+                      }
+                    }}
+                    disabled={book.noOfCopies === 0 || isInCart(book._id)}
+                    className={`btn-primary ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                    style={{ flex: 1 }}
+                  >
+                    {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
+                  </button>
+                  <Link
+                    to={`/books/${book._id}`}
+                    className="btn-primary view-book-btn"
+                  >
+                    View
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

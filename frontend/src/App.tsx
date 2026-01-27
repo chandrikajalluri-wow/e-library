@@ -7,6 +7,8 @@ import ResetPassword from './components/ResetPassword';
 import VerifyEmail from './components/VerifyEmail';
 
 import AdminDashboard from './pages/AdminDashboard';
+import AdminOrders from './pages/AdminOrders';
+import AdminOrderDetailsPage from './pages/AdminOrderDetailsPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import AxiosInterceptor from './components/AxiosInterceptor';
 
@@ -16,6 +18,9 @@ import UserDashboard from './pages/UserDashboard';
 import UserProfile from './pages/UserProfile';
 import WishlistPage from './pages/WishlistPage';
 import BookRequestPage from './pages/BookRequestPage';
+import BorrowCart from './pages/BorrowCart';
+import Checkout from './pages/Checkout';
+import DeliveryAddress from './pages/DeliveryAddress';
 import Home from './pages/Home';
 import About from './pages/About';
 import OurMission from './pages/OurMission';
@@ -80,6 +85,9 @@ const App: React.FC = () => {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
+              <Route path="/borrow-cart" element={<BorrowCart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout/address" element={<DeliveryAddress />} />
             </Route>
           </Route>
 
@@ -87,6 +95,8 @@ const App: React.FC = () => {
           <Route element={<ProtectedRoute allowedRoles={[RoleName.ADMIN, RoleName.SUPER_ADMIN]} />}>
             <Route element={<UserLayout />}>
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/orders" element={<AdminOrders />} />
+              <Route path="/admin/orders/:orderId" element={<AdminOrderDetailsPage />} />
             </Route>
           </Route>
 
