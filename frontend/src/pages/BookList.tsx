@@ -16,6 +16,11 @@ const BookList: React.FC = () => {
   const searchSectionRef = React.useRef<HTMLHeadingElement>(null);
   const { addToCart, isInCart } = useBorrowCart();
 
+  const ensureHttps = (url: string) => {
+    if (!url) return url;
+    return url.replace(/^http:\/\//i, 'https://');
+  };
+
   const [books, setBooks] = useState<Book[]>([]);
   const [recommendations, setRecommendations] = useState<Book[]>([]);
   const [personalizedRecs, setPersonalizedRecs] = useState<Book[]>([]);
@@ -198,7 +203,7 @@ const BookList: React.FC = () => {
             <div className="book-cover-container">
               {book.cover_image_url ? (
                 <img
-                  src={book.cover_image_url}
+                  src={ensureHttps(book.cover_image_url)}
                   alt={book.title}
                   className="book-cover-img"
                   loading="lazy"
