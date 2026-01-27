@@ -10,6 +10,8 @@ router.get('/admin/all', auth, orderController.getAllOrders);
 router.patch('/admin/:id/status', auth, orderController.updateOrderStatus);
 router.get('/admin/:id', auth, orderController.getOrderById);
 
+// User Routes
+router.get('/my-orders', auth, orderController.getMyOrders);
 router.post('/', auth, orderController.placeOrder);
 
 export default router;

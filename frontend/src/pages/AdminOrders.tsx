@@ -21,6 +21,7 @@ interface Order {
     user_id: { name: string; email: string };
     items: OrderItem[];
     totalAmount: number;
+    deliveryFee: number;
     status: string;
     createdAt: string;
     paymentMethod: string;
@@ -223,6 +224,10 @@ const AdminOrders: React.FC = () => {
                                     <div className="order-summary-mini">
                                         <p className="label">Items</p>
                                         <p className="value">{order.items.length} items</p>
+                                    </div>
+                                    <div className="order-fees-mini">
+                                        <p className="label">Del. Fee</p>
+                                        <p className="value">{order.deliveryFee > 0 ? `₹${order.deliveryFee}` : 'FREE'}</p>
                                     </div>
                                     <div className="order-total-mini">
                                         <p className="label">Total Amount</p>

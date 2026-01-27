@@ -232,3 +232,20 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: 'Failed to fetch order details' });
     }
 };
+
+// User: Get My Orders
+export const getMyOrders = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user!._id;
+
+        const orders = await Order.find({ user_id: userId })
+            .populate('items.book_id', 'title cover_image_url')
+            .populate('address_id')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json(orders);
+    } catch (error: any) {
+        console.error('Get my orders error:', error);
+        res.status(500).json({ error: 'Failed to fetch your orders' });
+    }
+};

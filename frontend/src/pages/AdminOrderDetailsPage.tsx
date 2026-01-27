@@ -26,6 +26,7 @@ interface OrderDetails {
         country: string;
     };
     totalAmount: number;
+    deliveryFee: number;
     paymentMethod: string;
     status: string;
     createdAt: string;
@@ -216,6 +217,12 @@ const AdminOrderDetailsPage: React.FC = () => {
                                 ₹{order.items.reduce((sum, item) =>
                                     sum + (item.priceAtOrder * item.quantity), 0
                                 ).toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="summary-row">
+                            <span className="summary-label">Delivery Charges</span>
+                            <span className="summary-value">
+                                {order.deliveryFee > 0 ? `₹${order.deliveryFee.toFixed(2)}` : 'FREE'}
                             </span>
                         </div>
                         <div className="summary-row total-row">

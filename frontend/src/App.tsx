@@ -16,6 +16,8 @@ import BookList from './pages/BookList';
 import BookDetail from './pages/BookDetail';
 import UserDashboard from './pages/UserDashboard';
 import UserProfile from './pages/UserProfile';
+import UserOrders from './pages/UserOrders';
+import UserOrderDetails from './pages/UserOrderDetails';
 import WishlistPage from './pages/WishlistPage';
 import BookRequestPage from './pages/BookRequestPage';
 import BorrowCart from './pages/BorrowCart';
@@ -81,6 +83,8 @@ const App: React.FC = () => {
               {/* User Routes */}
               <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/profile" element={<UserProfile />} />
+              <Route path="/my-orders" element={<UserOrders />} />
+              <Route path="/orders/:orderId" element={<UserOrderDetails />} />
               <Route path="/settings" element={<UserSettings />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
