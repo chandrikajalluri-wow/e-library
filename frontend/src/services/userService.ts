@@ -64,3 +64,14 @@ export const deleteAccount = async (password: string) => {
     const res = await api.delete(`${BASE_URL}/me`, { data: { password } });
     return res.data;
 };
+
+// Address Management
+export const getAddresses = async () => {
+    const res = await api.get(`${BASE_URL}/addresses`);
+    return res.data;
+};
+
+export const addAddress = async (addressData: any) => {
+    const res = await api.post(`${BASE_URL}/addresses`, addressData);
+    return res.data;
+};

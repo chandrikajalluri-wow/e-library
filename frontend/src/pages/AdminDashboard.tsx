@@ -16,6 +16,7 @@ import '../styles/AdminDashboard.css';
 
 const AdminDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
+  // const navigate = useNavigate();
   const activeTab = searchParams.get('tab') || 'stats';
 
   const [categories, setCategories] = useState<Category[]>([]);

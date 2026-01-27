@@ -384,3 +384,146 @@ export const getReadingProgress = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+export const checkoutCart = async (req: AuthRequest, res: Response) => {
+    const { items } = req.body; // items: [{ book_id, quantity }]
+
+    try {
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Cart is empty' });
+        }
+
+        // Get user with membership
+        let user = await User.findById(req.user!._id).populate('membership_id');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        let membership = user.membership_id as any;
+
+        // Assign basic membership if none exists
+        if (!membership) {
+            const basicMembership = await Membership.findOne({ name: MembershipName.BASIC });
+            if (basicMembership) {
+                user.membership_id = basicMembership._id;
+                user.membershipStartDate = new Date();
+                await user.save();
+                user = await User.findById(req.user!._id).populate('membership_id');
+                membership = user?.membership_id as any;
+            }
+        }
+
+        if (!membership) {
+            return res.status(400).json({
+                error: 'Default membership plan (Basic) not found. Please contact admin.'
+            });
+        }
+
+        // Calculate total items to borrow
+        const totalItemsToBorrow = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+
+        // Check current active borrows
+        const activeBorrowsCount = await Borrow.countDocuments({
+            user_id: req.user!._id,
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] },
+        });
+
+        // Check if user will exceed borrow limit
+        if (activeBorrowsCount + totalItemsToBorrow > membership.borrowLimit) {
+            return res.status(400).json({
+                error: `Cannot checkout. You would exceed your membership limit of ${membership.borrowLimit} books. You currently have ${activeBorrowsCount} active borrows.`,
+            });
+        }
+
+        // Validate all books and check stock
+        const bookIds = items.map((item: any) => item.book_id);
+        const books = await Book.find({ _id: { $in: bookIds } });
+
+        if (books.length !== items.length) {
+            return res.status(404).json({ error: 'One or more books not found' });
+        }
+
+        // Create a map for easy lookup
+        const bookMap = new Map(books.map(book => [book._id.toString(), book]));
+
+        // Validate stock and premium access for each item
+        for (const item of items) {
+            const book = bookMap.get(item.book_id);
+            if (!book) {
+                return res.status(404).json({ error: `Book not found: ${item.book_id}` });
+            }
+
+            // Check stock
+            if (book.noOfCopies < item.quantity) {
+                return res.status(400).json({
+                    error: `Insufficient stock for "${book.title}". Available: ${book.noOfCopies}, Requested: ${item.quantity}`
+                });
+            }
+
+            // Check premium access
+            if (book.isPremium && !membership.canAccessPremiumBooks) {
+                return res.status(403).json({
+                    error: `"${book.title}" is a premium book. Upgrade to Premium membership to access.`
+                });
+            }
+
+            // Check if user already has active borrow for this book
+            const existingBorrow = await Borrow.findOne({
+                user_id: req.user!._id,
+                book_id: book._id,
+                status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] },
+            });
+
+            if (existingBorrow) {
+                return res.status(400).json({
+                    error: `You already have an active borrow for "${book.title}". Please return it before borrowing again.`
+                });
+            }
+        }
+
+        // All validations passed, create borrow records and update stock
+        const createdBorrows = [];
+        const borrowDays = membership.borrowDuration;
+
+        for (const item of items) {
+            const book = bookMap.get(item.book_id);
+            if (!book) continue;
+
+            // Create borrow records for each quantity
+            for (let i = 0; i < item.quantity; i++) {
+                const returnDate = new Date();
+                returnDate.setDate(returnDate.getDate() + borrowDays);
+
+                const borrow = new Borrow({
+                    user_id: req.user!._id,
+                    book_id: book._id,
+                    return_date: returnDate,
+                });
+                await borrow.save();
+                createdBorrows.push(borrow);
+            }
+
+            // Update book stock
+            book.noOfCopies -= item.quantity;
+            if (book.noOfCopies === 0) {
+                book.status = BookStatus.ISSUED;
+            }
+            await book.save();
+        }
+
+        // Send notification
+        await sendNotification(
+            NotificationType.BORROW,
+            `${user?.name || 'A user'} checked out ${totalItemsToBorrow} book(s) from cart`,
+            req.user!._id as any,
+            null as any
+        );
+
+        res.status(201).json({
+            message: `Successfully checked out ${totalItemsToBorrow} book(s)`,
+            borrows: createdBorrows,
+            totalBooks: totalItemsToBorrow
+        });
+    } catch (err: any) {
+        console.error('Checkout error:', err);
+        res.status(500).json({ error: 'Server error: ' + err.message });
+    }
+};

@@ -3,8 +3,13 @@ import { auth, checkRole } from '../middleware/authMiddleware';
 import { RoleName } from '../types/enums';
 import { upload } from '../middleware/uploadMiddleware';
 import * as userController from '../controllers/userController';
+import * as addressController from '../controllers/addressController';
 
 const router = express.Router();
+
+// User Addresses
+router.get('/addresses', auth, addressController.getAddresses);
+router.post('/addresses', auth, addressController.addAddress);
 
 // Get Current User Profile
 router.get('/me', auth, userController.getMe);

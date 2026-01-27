@@ -45,3 +45,8 @@ export const updateReadingProgress = async (bookId: string, progress: { last_pag
   const res = await api.put(`${BASE_URL}/progress/${bookId}`, progress);
   return res.data;
 };
+
+export const checkoutCart = async (items: { book_id: string; quantity: number }[]): Promise<any> => {
+  const res = await api.post(`${BASE_URL}/checkout`, { items });
+  return res.data;
+};

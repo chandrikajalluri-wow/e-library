@@ -277,6 +277,17 @@ select:focus {
   transform: translateY(-1px);
 }
 
+.btn-in-cart {
+  background-color: #10b981 !important;
+  opacity: 0.8;
+  cursor: default;
+}
+
+.btn-in-cart:hover {
+  background-color: #10b981 !important;
+  transform: none !important;
+}
+
 .status-badge {
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;

@@ -17,7 +17,7 @@ app.use(
     origin: process.env.ALLOWED_ORIGINS
       ? process.env.ALLOWED_ORIGINS.split(',')
       : ["http://localhost:5173", "http://localhost:5174", "https://e-library-three-pi.vercel.app"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
@@ -35,6 +35,7 @@ import contactRoutes from './routes/contact';
 import notificationRoutes from './routes/notifications';
 import membershipRoutes from './routes/memberships';
 import superAdminRoutes from './routes/superAdmin';
+import orderRoutes from './routes/orders';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -48,6 +49,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/memberships', membershipRoutes);
 app.use('/api/super-admin', superAdminRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {

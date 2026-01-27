@@ -27,4 +27,7 @@ router.get('/', auth, checkRole([RoleName.ADMIN]), borrowController.getAllBorrow
 router.get('/progress/:bookId', auth, borrowController.getReadingProgress);
 router.put('/progress/:bookId', auth, borrowController.updateReadingProgress);
 
+// Checkout cart (User)
+router.post('/checkout', auth, borrowController.checkoutCart);
+
 export default router;
