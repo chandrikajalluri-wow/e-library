@@ -101,6 +101,10 @@ export const login = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Please verify your email first' });
         }
 
+        if (!user.password) {
+            return res.status(400).json({ error: 'Invalid credentials. Please login with Google if you signed up with social account.' });
+        }
+
         const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(400).json({ error: 'Invalid credentials' });
 

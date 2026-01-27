@@ -157,6 +157,10 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
         const user = await User.findById(req.user!._id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
+        if (!user.password) {
+            return res.status(400).json({ error: 'This account does not have a password (signed up via social login).' });
+        }
+
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) return res.status(400).json({ error: 'Incorrect current password' });
 
@@ -349,6 +353,10 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
 
         const user = await User.findById(req.user!._id);
         if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (!user.password) {
+            return res.status(400).json({ error: 'Account deletion failed. Please contact support (Social account).' });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
