@@ -39,6 +39,11 @@ const BookDetail: React.FC = () => {
   const [similarBooks, setSimilarBooks] = useState<any[]>([]);
   const currentUserId = localStorage.getItem('userId');
 
+  const ensureHttps = (url: string) => {
+    if (!url) return url;
+    return url.replace(/^http:\/\//i, 'https://');
+  };
+
   useEffect(() => {
     if (id) {
       fetchBook(id);
@@ -251,7 +256,7 @@ const BookDetail: React.FC = () => {
         <div className="book-cover-wrapper">
           {book.cover_image_url ? (
             <img
-              src={book.cover_image_url}
+              src={ensureHttps(book.cover_image_url)}
               alt={book.title}
               className="book-detail-cover"
               loading="lazy"
