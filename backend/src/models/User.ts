@@ -6,7 +6,8 @@ import { UserTheme } from '../types/enums';
 export interface IUser extends Document {
   name: string;
   email: string;
-  password: string;
+  password?: string;
+  googleId?: string;
   role_id: Types.ObjectId | IRole; // allow populated Role
   membership_id: Types.ObjectId | IMembership; // allow populated Membership
   membershipStartDate?: Date;
@@ -34,7 +35,8 @@ const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String, required: false },
+    googleId: { type: String, sparse: true },
     role_id: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
     membership_id: { type: Schema.Types.ObjectId, ref: 'Membership' },
     membershipStartDate: { type: Date },

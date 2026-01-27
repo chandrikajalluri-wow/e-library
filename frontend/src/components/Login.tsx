@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../services/authService';
+import { login, googleLogin } from '../services/authService';
 import Loader from './Loader';
 import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { RoleName } from '../types/enums';
+import { GoogleLogin } from '@react-oauth/google';
 import '../styles/Auth.css';
 
 const Login: React.FC = () => {
@@ -51,6 +52,36 @@ const Login: React.FC = () => {
       const msg =
         (err as any)?.response?.data?.error || 'Login failed, please try again';
       setError(msg);
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsLoading(true);
+    try {
+      const { token, role, userId, theme } = await googleLogin(credentialResponse.credential);
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
+      localStorage.setItem('userId', userId);
+
+      if (theme) {
+        setTheme(theme);
+        localStorage.setItem('theme', theme);
+      }
+
+      toast.success('Welcome back!');
+
+      if (role === RoleName.SUPER_ADMIN) {
+        navigate('/super-admin-dashboard');
+      } else if (role === RoleName.ADMIN) {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/books');
+      }
+    } catch (err: unknown) {
+      const msg = (err as any)?.response?.data?.error || 'Google Login failed';
       toast.error(msg);
     } finally {
       setIsLoading(false);
@@ -111,6 +142,20 @@ const Login: React.FC = () => {
         <button className="auth-submit-btn" onClick={handleLogin} disabled={isLoading}>
           {isLoading ? <Loader small /> : 'Sign In'}
         </button>
+
+        <div className="auth-separator">OR</div>
+
+        <div className="auth-social-login">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => toast.error('Google Sign In failed')}
+            useOneTap
+            theme="outline"
+            shape="pill"
+            text="signin_with"
+            width="100%"
+          />
+        </div>
 
         <div className="auth-footer">
           <p>Don't have an account?

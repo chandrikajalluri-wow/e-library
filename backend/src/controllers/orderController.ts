@@ -196,9 +196,9 @@ Hi ${user.name},
 
 Your order #${order._id} status has been updated to: ${status.toUpperCase()}.
 
-Thank you for choosing BookHaven!
+Thank you for choosing BookStack!
 
-— BookHaven Team
+— BookStack Team
         `;
 
         // Fire and forget email (don't block response)

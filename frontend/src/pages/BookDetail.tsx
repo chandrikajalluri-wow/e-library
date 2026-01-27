@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBook, getSimilarBooks } from '../services/bookService';
-import { Heart, BookOpen, ShoppingCart } from 'lucide-react';
+import { Heart, BookOpen, ShoppingCart, ThumbsUp, ThumbsDown, Flag } from 'lucide-react';
 import { issueBook, getMyBorrows } from '../services/borrowService';
 import {
   addToWishlist,
   getWishlist,
   removeFromWishlist,
 } from '../services/wishlistService';
-import { getBookReviews, addReview, updateReview } from '../services/reviewService';
+import { getBookReviews, addReview, updateReview, likeReview, dislikeReview, reportReview } from '../services/reviewService';
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { getProfile } from '../services/userService';
 import { RoleName, BorrowStatus } from '../types/enums';
@@ -16,6 +16,7 @@ import type { User } from '../types';
 import { toast } from 'react-toastify';
 import { useBorrowCart } from '../context/BorrowCartContext';
 import Loader from '../components/Loader';
+import ReportReviewModal from '../components/ReportReviewModal';
 import '../styles/BookDetail.css';
 
 const BookDetail: React.FC = () => {
@@ -37,6 +38,8 @@ const BookDetail: React.FC = () => {
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [similarBooks, setSimilarBooks] = useState<any[]>([]);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportingReviewId, setReportingReviewId] = useState<string | null>(null);
   const currentUserId = localStorage.getItem('userId');
 
   const ensureHttps = (url: string) => {
@@ -227,6 +230,50 @@ const BookDetail: React.FC = () => {
     setNewReview({ rating: 5, comment: '' });
   };
 
+  const handleLike = async (reviewId: string) => {
+    if (!localStorage.getItem('token')) {
+      toast.info('Please sign in to like reviews');
+      return;
+    }
+    try {
+      await likeReview(reviewId);
+      fetchReviews(id!);
+    } catch (err: any) {
+      toast.error('Failed to like review');
+    }
+  };
+
+  const handleDislike = async (reviewId: string) => {
+    if (!localStorage.getItem('token')) {
+      toast.info('Please sign in to dislike reviews');
+      return;
+    }
+    try {
+      await dislikeReview(reviewId);
+      fetchReviews(id!);
+    } catch (err: any) {
+      toast.error('Failed to dislike review');
+    }
+  };
+
+  const handleReport = (reviewId: string) => {
+    if (!localStorage.getItem('token')) {
+      toast.info('Please sign in to report reviews');
+      return;
+    }
+    setReportingReviewId(reviewId);
+    setIsReportModalOpen(true);
+  };
+
+  const submitReport = async (reason: string) => {
+    if (!reportingReviewId) return;
+    try {
+      await reportReview(reportingReviewId, reason);
+      toast.success('Review reported. Thank you.');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to report review');
+    }
+  };
   const handleRead = () => {
     if (!hasBorrowed) {
       toast.error('You must borrow this book to read it.');
@@ -471,6 +518,31 @@ const BookDetail: React.FC = () => {
                         </button>
                       )}
                     </div>
+                    <div className="review-interactions">
+                      <div className="interaction-left">
+                        <button
+                          className={`interaction-btn ${r.likes?.includes(currentUserId) ? 'active' : ''}`}
+                          onClick={() => handleLike(r._id)}
+                        >
+                          <ThumbsUp size={16} />
+                          <span>{r.likes?.length || 0}</span>
+                        </button>
+                        <button
+                          className={`interaction-btn ${r.dislikes?.includes(currentUserId) ? 'active' : ''}`}
+                          onClick={() => handleDislike(r._id)}
+                        >
+                          <ThumbsDown size={16} />
+                          <span>{r.dislikes?.length || 0}</span>
+                        </button>
+                      </div>
+                      <button
+                        className="interaction-btn report-btn"
+                        onClick={() => handleReport(r._id)}
+                        title="Report review"
+                      >
+                        <Flag size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -546,6 +618,11 @@ const BookDetail: React.FC = () => {
         </div>
       </div>
 
+      <ReportReviewModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        onReport={submitReport}
+      />
     </div>
   );
 };

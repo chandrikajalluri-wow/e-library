@@ -80,3 +80,23 @@ export interface WishlistItem {
   added_at: string;
   expectedReturnDate?: string;
 }
+
+export interface Review {
+  _id: string;
+  user_id: {
+    _id: string;
+    name: string;
+  };
+  book_id: string;
+  rating: number;
+  comment?: string;
+  likes: string[];
+  dislikes: string[];
+  reports: {
+    user_id: string;
+    reason: string;
+    reported_at: string;
+  }[];
+  reviewed_at: string;
+  updated_at?: string;
+}

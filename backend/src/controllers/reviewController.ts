@@ -82,3 +82,79 @@ export const updateReview = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+export const likeReview = async (req: AuthRequest, res: Response) => {
+    try {
+        const review = await Review.findById(req.params.id);
+        if (!review) return res.status(404).json({ error: 'Review not found' });
+
+        const userId = req.user!._id;
+
+        // Toggle Like
+        if (review.likes.includes(userId)) {
+            review.likes = review.likes.filter(id => id.toString() !== userId.toString());
+        } else {
+            review.likes.push(userId);
+            // Remove Dislike if exists
+            review.dislikes = review.dislikes.filter(id => id.toString() !== userId.toString());
+        }
+
+        await review.save();
+        res.json({ likes: review.likes.length, dislikes: review.dislikes.length });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const dislikeReview = async (req: AuthRequest, res: Response) => {
+    try {
+        const review = await Review.findById(req.params.id);
+        if (!review) return res.status(404).json({ error: 'Review not found' });
+
+        const userId = req.user!._id;
+
+        // Toggle Dislike
+        if (review.dislikes.includes(userId)) {
+            review.dislikes = review.dislikes.filter(id => id.toString() !== userId.toString());
+        } else {
+            review.dislikes.push(userId);
+            // Remove Like if exists
+            review.likes = review.likes.filter(id => id.toString() !== userId.toString());
+        }
+
+        await review.save();
+        res.json({ likes: review.likes.length, dislikes: review.dislikes.length });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const reportReview = async (req: AuthRequest, res: Response) => {
+    const { reason } = req.body;
+    try {
+        const review = await Review.findById(req.params.id);
+        if (!review) return res.status(404).json({ error: 'Review not found' });
+
+        const hasAlreadyReported = review.reports.some(
+            (r) => r.user_id.toString() === req.user!._id.toString()
+        );
+
+        if (hasAlreadyReported) {
+            return res.status(400).json({ error: 'You have already reported this review' });
+        }
+
+        review.reports.push({
+            user_id: req.user!._id,
+            reason,
+            reported_at: new Date(),
+        });
+
+        await review.save();
+        res.json({ message: 'Review reported successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};

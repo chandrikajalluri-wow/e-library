@@ -23,3 +23,18 @@ export const updateReview = async (
   const res = await api.put(`${BASE_URL}/${id}`, reviewData);
   return res.data;
 };
+
+export const likeReview = async (id: string) => {
+  const res = await api.post(`${BASE_URL}/${id}/like`);
+  return res.data;
+};
+
+export const dislikeReview = async (id: string) => {
+  const res = await api.post(`${BASE_URL}/${id}/dislike`);
+  return res.data;
+};
+
+export const reportReview = async (id: string, reason: string) => {
+  const res = await api.post(`${BASE_URL}/${id}/report`, { reason });
+  return res.data;
+};
