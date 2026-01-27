@@ -239,7 +239,9 @@ const BookDetail: React.FC = () => {
       await likeReview(reviewId);
       fetchReviews(id!);
     } catch (err: any) {
-      toast.error('Failed to like review');
+      console.error('Like error:', err.response || err);
+      const msg = err.response?.data?.error || 'Failed to like review';
+      toast.error(msg);
     }
   };
 
@@ -252,7 +254,9 @@ const BookDetail: React.FC = () => {
       await dislikeReview(reviewId);
       fetchReviews(id!);
     } catch (err: any) {
-      toast.error('Failed to dislike review');
+      console.error('Dislike error:', err.response || err);
+      const msg = err.response?.data?.error || 'Failed to dislike review';
+      toast.error(msg);
     }
   };
 
@@ -271,7 +275,9 @@ const BookDetail: React.FC = () => {
       await reportReview(reportingReviewId, reason);
       toast.success('Review reported. Thank you.');
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to report review');
+      console.error('Report error:', err.response || err);
+      const msg = err.response?.data?.error || 'Failed to report review';
+      toast.error(msg);
     }
   };
   const handleRead = () => {
