@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-    ArrowLeft, Calendar, Clock, MapPin, CreditCard,
-    User, Mail, Phone
+    ArrowLeft, Calendar, Clock
 } from 'lucide-react';
 import { getOrderById, updateOrderStatus } from '../services/adminOrderService';
 import StatusDropdown from '../components/StatusDropdown';
