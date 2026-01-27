@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import '../styles/ConfirmationModal.css'; // Reusing modal styles
+import '../styles/ReportReviewModal.css';
 import Loader from './Loader';
+import { Flag, X } from 'lucide-react';
 
 interface ReportReviewModalProps {
     isOpen: boolean;
@@ -28,44 +29,54 @@ const ReportReviewModal: React.FC<ReportReviewModalProps> = ({
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content confirmation-modal warning">
-                <div className="modal-header">
-                    <h2 className="modal-title">Report Review</h2>
-                </div>
-                <div className="modal-body">
-                    <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
-                        Please provide a reason for reporting this review. This helps our moderators keep the community safe.
-                    </p>
-                    <form onSubmit={handleSubmit} id="report-form">
-                        <textarea
-                            className="form-textarea-field"
-                            placeholder="Reason for reporting..."
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            required
-                            rows={4}
-                            autoFocus
-                        />
+        <div className="report-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="report-modal-container">
+                <div className="report-modal-content">
+                    <button className="report-modal-close" onClick={onClose}>
+                        <X size={20} />
+                    </button>
+
+                    <div className="report-modal-header">
+                        <div className="report-icon-container">
+                            <Flag size={24} className="report-flag-icon" />
+                        </div>
+                        <h2 className="report-modal-title">Report Content</h2>
+                        <p className="report-modal-subtitle">Help us understand what's wrong with this review.</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="report-modal-form">
+                        <div className="report-form-group">
+                            <label htmlFor="report-reason">Reason for reporting</label>
+                            <textarea
+                                id="report-reason"
+                                className="report-textarea"
+                                placeholder="Tell us why you're reporting this review (e.g., spam, inappropriate language, spoilers)..."
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                required
+                                rows={5}
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="report-modal-actions">
+                            <button
+                                type="button"
+                                className="report-btn-cancel"
+                                onClick={onClose}
+                                disabled={isLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="report-btn-submit"
+                                disabled={isLoading || !reason.trim()}
+                            >
+                                {isLoading ? <Loader small /> : 'Submit Report'}
+                            </button>
+                        </div>
                     </form>
-                </div>
-                <div className="modal-actions">
-                    <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={onClose}
-                        disabled={isLoading}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        form="report-form"
-                        className="btn-primary btn-danger"
-                        disabled={isLoading || !reason.trim()}
-                    >
-                        {isLoading ? <Loader small /> : 'Submit Report'}
-                    </button>
                 </div>
             </div>
         </div>

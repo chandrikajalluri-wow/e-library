@@ -90,13 +90,19 @@ export const likeReview = async (req: AuthRequest, res: Response) => {
 
         const userId = req.user!._id;
 
+        // Initialize if missing (for legacy reviews)
+        if (!review.likes) review.likes = [];
+        if (!review.dislikes) review.dislikes = [];
+
+        const userIdStr = userId.toString();
+
         // Toggle Like
-        if (review.likes.includes(userId)) {
-            review.likes = review.likes.filter(id => id.toString() !== userId.toString());
+        if (review.likes.some(id => id.toString() === userIdStr)) {
+            review.likes = review.likes.filter(id => id.toString() !== userIdStr);
         } else {
             review.likes.push(userId);
             // Remove Dislike if exists
-            review.dislikes = review.dislikes.filter(id => id.toString() !== userId.toString());
+            review.dislikes = review.dislikes.filter(id => id.toString() !== userIdStr);
         }
 
         await review.save();
@@ -114,13 +120,19 @@ export const dislikeReview = async (req: AuthRequest, res: Response) => {
 
         const userId = req.user!._id;
 
+        // Initialize if missing (for legacy reviews)
+        if (!review.likes) review.likes = [];
+        if (!review.dislikes) review.dislikes = [];
+
+        const userIdStr = userId.toString();
+
         // Toggle Dislike
-        if (review.dislikes.includes(userId)) {
-            review.dislikes = review.dislikes.filter(id => id.toString() !== userId.toString());
+        if (review.dislikes.some(id => id.toString() === userIdStr)) {
+            review.dislikes = review.dislikes.filter(id => id.toString() !== userIdStr);
         } else {
             review.dislikes.push(userId);
             // Remove Like if exists
-            review.likes = review.likes.filter(id => id.toString() !== userId.toString());
+            review.likes = review.likes.filter(id => id.toString() !== userIdStr);
         }
 
         await review.save();
@@ -136,6 +148,9 @@ export const reportReview = async (req: AuthRequest, res: Response) => {
     try {
         const review = await Review.findById(req.params.id);
         if (!review) return res.status(404).json({ error: 'Review not found' });
+
+        // Initialize if missing
+        if (!review.reports) review.reports = [];
 
         const hasAlreadyReported = review.reports.some(
             (r) => r.user_id.toString() === req.user!._id.toString()
