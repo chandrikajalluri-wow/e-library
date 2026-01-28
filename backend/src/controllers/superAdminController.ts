@@ -7,6 +7,7 @@ import Borrow from '../models/Borrow';
 import ActivityLog from '../models/ActivityLog';
 import Announcement from '../models/Announcement';
 import Notification from '../models/Notification';
+import Order from '../models/Order';
 import { RoleName, ActivityAction, NotificationType } from '../types/enums';
 import { sendEmail } from '../utils/mailer';
 
@@ -260,13 +261,41 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
             { $sort: { month: 1 } }
         ]);
 
+        // Order Trends (Last 6 Months)
+        const orderTrends = await Order.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: sixMonthsAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: { $month: '$createdAt' },
+                    month: { $first: { $dateToString: { format: "%Y-%m", date: "$createdAt" } } },
+                    count: { $sum: 1 },
+                    revenue: { $sum: '$totalAmount' }
+                }
+            },
+            { $sort: { month: 1 } }
+        ]);
+
+        const totalOrders = await Order.countDocuments();
+        const revenueResult = await Order.aggregate([
+            { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        ]);
+        const totalRevenue = revenueResult[0]?.total || 0;
+
         res.json({
+            version: '2026-01-28-v1', // Debug version tag
             users: userCount,
             admins: adminCount,
             totalActivity: logCount,
+            totalOrders,
+            totalRevenue,
             userDistribution,
             bookDistribution,
-            borrowTrends
+            borrowTrends,
+            orderTrends
         });
     } catch (err) {
         console.error(err);

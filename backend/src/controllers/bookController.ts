@@ -8,6 +8,7 @@ import Borrow from '../models/Borrow';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadToS3, getS3FileStream } from '../utils/s3Service';
 import ActivityLog from '../models/ActivityLog';
+import { notifySuperAdmins } from '../utils/notification';
 import { RoleName, BookStatus, BorrowStatus, MembershipName } from '../types/enums';
 
 export const getAllBooks = async (req: Request, res: Response, next: NextFunction) => {
@@ -132,6 +133,10 @@ export const createBook = async (req: AuthRequest, res: Response, next: NextFunc
             book_id: book._id,
         }).save();
 
+        if (userRole === RoleName.ADMIN) {
+            await notifySuperAdmins(`Admin ${req.user!.name} added a new book: ${book.title}`);
+        }
+
         res.status(201).json(book);
     } catch (err) {
         next(err);
@@ -174,6 +179,10 @@ export const updateBook = async (req: AuthRequest, res: Response, next: NextFunc
                 action: `Updated book: ${book.title}`,
                 book_id: book._id,
             }).save();
+
+            if (userRole === RoleName.ADMIN) {
+                await notifySuperAdmins(`Admin ${req.user!.name} updated book: ${book.title}`);
+            }
         } catch (logErr) {
             console.error('Failed to log activity:', logErr);
         }
@@ -205,6 +214,10 @@ export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunc
             action: `Deleted book: ${book.title}`,
             book_id: book._id,
         }).save();
+
+        if ((req.user!.role_id as any).name === RoleName.ADMIN) {
+            await notifySuperAdmins(`Admin ${req.user!.name} deleted book: ${book.title}`);
+        }
 
         res.json({ message: 'Book deleted' });
     } catch (err) {

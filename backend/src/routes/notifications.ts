@@ -16,12 +16,12 @@ router.put('/read-all/my', auth, notificationController.markAllMyNotificationsAs
 
 // Admin Routes below...
 // Get all notifications (Admin)
-router.get('/', auth, checkRole([RoleName.ADMIN]), notificationController.getAllNotifications);
+router.get('/', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), notificationController.getAllNotifications);
 
 // Mark notification as read (Admin)
-router.put('/:id/read', auth, checkRole([RoleName.ADMIN]), notificationController.markNotificationAsReadAdmin);
+router.put('/:id/read', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), notificationController.markNotificationAsReadAdmin);
 
 // Mark all as read (Admin)
-router.put('/read-all', auth, checkRole([RoleName.ADMIN]), notificationController.markAllNotificationsAsReadAdmin);
+router.put('/read-all', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), notificationController.markAllNotificationsAsReadAdmin);
 
 export default router;
