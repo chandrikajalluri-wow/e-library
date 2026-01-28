@@ -42,11 +42,11 @@ const UserNavbar: React.FC = () => {
     const NavIcon = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
         const location = useLocation();
 
-        // Manual active check
+        // Highlight stats/metrics tab if on dashboard with no search params
         const currentPath = location.pathname + (location.search || '');
-        // Highlight stats tab if on admin dashboard with no search params
         const isStatsDefault = to.includes('tab=stats') && location.pathname === '/admin-dashboard' && !location.search;
-        const isActive = (currentPath === to) || isStatsDefault;
+        const isMetricsDefault = to.includes('tab=metrics') && location.pathname === '/super-admin-dashboard' && !location.search;
+        const isActive = (currentPath === to) || isStatsDefault || isMetricsDefault;
 
         return (
             <Link
@@ -157,7 +157,7 @@ const UserNavbar: React.FC = () => {
 
                     {role === RoleName.SUPER_ADMIN && (
                         <>
-                            <NavIcon to="/super-admin-dashboard?tab=overview" label="Metrics" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>} />
+                            <NavIcon to="/super-admin-dashboard?tab=metrics" label="Metrics" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>} />
                             <NavIcon to="/super-admin-dashboard?tab=users" label="Users" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>} />
                             <NavIcon to="/super-admin-dashboard?tab=books" label="Books" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>} />
                             <NavIcon to="/super-admin-dashboard?tab=categories" label="Category" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>} />

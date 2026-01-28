@@ -11,19 +11,20 @@ import '../styles/AdminDashboard.css';
 
 const SuperAdminDashboard: React.FC = () => {
     const [searchParams] = useSearchParams();
-    const activeTab = searchParams.get('tab') || 'overview';
+    const activeTab = searchParams.get('tab') || 'metrics';
     const [metrics, setMetrics] = useState<any>(null);
 
     useEffect(() => {
         const fetchMetrics = async () => {
             try {
                 const data = await getSystemMetrics();
+                console.log('Fetched Metrics Data:', data);
                 setMetrics(data);
             } catch (err) {
-                console.error(err);
+                console.error('Failed to fetch metrics:', err);
             }
         };
-        if (activeTab === 'overview') fetchMetrics();
+        if (activeTab === 'metrics') fetchMetrics();
     }, [activeTab]);
 
     return (
@@ -37,9 +38,9 @@ const SuperAdminDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {activeTab === 'overview' && metrics && (
+                {activeTab === 'metrics' && metrics && (
                     <>
-                        <div className="admin-stats-grid-container">
+                        <div className="admin-stats-grid-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                             <div className="card stats-card-content">
                                 <span className="stats-label">Total Users</span>
                                 <span className="stats-value">{metrics.users}</span>
@@ -47,6 +48,14 @@ const SuperAdminDashboard: React.FC = () => {
                             <div className="card stats-card-content">
                                 <span className="stats-label">Admins</span>
                                 <span className="stats-value stats-value-accent">{metrics.admins}</span>
+                            </div>
+                            <div className="card stats-card-content">
+                                <span className="stats-label">Total Orders</span>
+                                <span className="stats-value stats-value-info">{metrics.totalOrders}</span>
+                            </div>
+                            <div className="card stats-card-content">
+                                <span className="stats-label">Total Revenue</span>
+                                <span className="stats-value stats-value-accent">₹{metrics.totalRevenue?.toLocaleString()}</span>
                             </div>
                             <div className="card stats-card-content">
                                 <span className="stats-label">System Activities</span>

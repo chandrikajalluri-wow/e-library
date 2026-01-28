@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import Category from '../models/Category';
 import Book from '../models/Book';
+import { notifySuperAdmins } from '../utils/notification';
 import { RoleName } from '../types/enums';
 
 export const getAllCategories = async (req: any, res: Response) => {
@@ -37,6 +38,12 @@ export const createCategory = async (req: any, res: Response) => {
             addedBy: req.user._id
         });
         await category.save();
+
+        const userRole = (req.user.role_id as any).name;
+        if (userRole === RoleName.ADMIN) {
+            await notifySuperAdmins(`Admin ${req.user.name} created a new category: ${category.name}`);
+        }
+
         res.status(201).json(category);
     } catch (err) {
         console.error(err);
@@ -54,6 +61,12 @@ export const updateCategory = async (req: any, res: Response) => {
         );
         if (!category)
             return res.status(404).json({ error: 'Category not found' });
+
+        const userRole = (req.user.role_id as any).name;
+        if (userRole === RoleName.ADMIN) {
+            await notifySuperAdmins(`Admin ${req.user.name} updated category: ${category.name}`);
+        }
+
         res.json(category);
     } catch (err) {
         console.error(err);
@@ -73,6 +86,12 @@ export const deleteCategory = async (req: any, res: Response) => {
         const category = await Category.findByIdAndDelete(req.params.id);
         if (!category)
             return res.status(404).json({ error: 'Category not found' });
+
+        const userRole = (req.user.role_id as any).name;
+        if (userRole === RoleName.ADMIN) {
+            await notifySuperAdmins(`Admin ${req.user.name} deleted category: ${category.name}`);
+        }
+
         res.json({ message: 'Category deleted' });
     } catch (err) {
         console.error(err);

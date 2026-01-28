@@ -1,5 +1,8 @@
 import Notification from '../models/Notification';
+import User from '../models/User';
+import Role from '../models/Role';
 import { Types } from 'mongoose';
+import { RoleName } from '../types/enums';
 
 export const sendNotification = async (
     type: 'borrow' | 'return' | 'wishlist' | 'fine' | 'system',
@@ -17,5 +20,26 @@ export const sendNotification = async (
         await notification.save();
     } catch (error) {
         console.error('Error sending notification:', error);
+    }
+};
+
+export const notifySuperAdmins = async (message: string, type: 'system' | 'borrow' | 'return' = 'system') => {
+    try {
+        const superAdminRole = await Role.findOne({ name: RoleName.SUPER_ADMIN });
+        if (!superAdminRole) return;
+
+        const superAdmins = await User.find({ role_id: superAdminRole._id });
+
+        const notifications = superAdmins.map(admin => ({
+            user_id: admin._id,
+            message,
+            type
+        }));
+
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications);
+        }
+    } catch (err) {
+        console.error('Error notifying super admins:', err);
     }
 };

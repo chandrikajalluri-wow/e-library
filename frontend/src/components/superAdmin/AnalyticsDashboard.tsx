@@ -10,16 +10,22 @@ interface AnalyticsDashboardProps {
         userDistribution: { _id: string; count: number }[];
         bookDistribution: { _id: string; count: number }[];
         borrowTrends: { _id: number; month: string; count: number }[];
+        orderTrends: { _id: number; month: string; count: number; revenue: number }[];
     };
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
-    // Prepare data for charts
-    const userData = data.userDistribution.map(item => ({ name: item._id, value: item.count }));
-    const bookData = data.bookDistribution.map(item => ({ name: item._id, value: item.count }));
-    const borrowData = data.borrowTrends.map(item => ({ name: item.month, borrows: item.count }));
+    // Prepare data for charts with defensive checks
+    const userData = (data.userDistribution || []).map(item => ({ name: item._id, value: item.count }));
+    const bookData = (data.bookDistribution || []).map(item => ({ name: item._id, value: item.count }));
+    const borrowData = (data.borrowTrends || []).map(item => ({ name: item.month, borrows: item.count }));
+    const orderData = (data.orderTrends || []).map(item => ({
+        name: item.month,
+        orders: item.count,
+        revenue: item.revenue
+    }));
 
     return (
         <div className="analytics-container" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -81,23 +87,48 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
                 </div>
             </div>
 
-            {/* Borrow Trends Bar Chart */}
-            <div className="card stats-card-content" style={{ padding: '1.5rem', display: 'block' }}>
-                <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Borrow Trends (Last 6 Months)</h3>
-                <div style={{ height: '300px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={borrowData}
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="borrows" fill="#8884d8" name="Books Borrowed" />
-                        </BarChart>
-                    </ResponsiveContainer>
+            {/* Trends Bar Charts Section */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                {/* Borrow Trends */}
+                <div className="card stats-card-content" style={{ padding: '1.5rem', display: 'block' }}>
+                    <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Borrow Trends (Last 6 Months)</h3>
+                    <div style={{ height: '300px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={borrowData}
+                                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Bar dataKey="borrows" fill="#8884d8" name="Books Borrowed" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Order & Revenue Trends */}
+                <div className="card stats-card-content" style={{ padding: '1.5rem', display: 'block' }}>
+                    <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Order & Revenue Trends (Last 6 Months)</h3>
+                    <div style={{ height: '350px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={orderData}
+                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                                <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                                <Tooltip />
+                                <Legend />
+                                <Bar yAxisId="left" dataKey="orders" fill="#8884d8" name="Total Orders" />
+                                <Bar yAxisId="right" dataKey="revenue" fill="#82ca9d" name="Revenue (₹)" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
         </div>

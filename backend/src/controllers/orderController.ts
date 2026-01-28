@@ -7,8 +7,9 @@ import Address from '../models/Address';
 import Membership from '../models/Membership';
 import Borrow from '../models/Borrow';
 import { NotificationType, BorrowStatus, MembershipName, BookStatus } from '../types/enums';
-import { sendNotification } from '../utils/notification';
+import { sendNotification, notifySuperAdmins } from '../utils/notification';
 import { sendEmail } from '../utils/mailer';
+import { RoleName } from '../types/enums';
 
 export const placeOrder = async (req: AuthRequest, res: Response) => {
     const { items, selectedAddressId } = req.body;
@@ -188,6 +189,11 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
 
         order.status = status;
         await order.save();
+
+        const userRole = (req.user!.role_id as any).name;
+        if (userRole === RoleName.ADMIN) {
+            await notifySuperAdmins(`Admin ${req.user!.name} updated order #${order._id} status to ${status.toUpperCase()}`);
+        }
 
         // Send Email Notification
         const user = order.user_id as any;
