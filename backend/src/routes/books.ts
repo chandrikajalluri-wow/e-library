@@ -50,4 +50,7 @@ router.delete('/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), b
 // View Book PDF (Proxied through backend for CORS)
 router.get('/:id/view', auth, bookController.viewBookPdf);
 
+// Diagnostic test endpoint
+router.get('/debug/test-s3', bookController.testS3Config);
+
 export default router;
