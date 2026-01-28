@@ -16,6 +16,7 @@ export interface IBorrow extends Document {
   status: BorrowStatus;
   last_page: number;
   bookmarks: number[];
+  order_id?: Types.ObjectId;
 }
 
 const borrowSchema = new Schema<IBorrow>({
@@ -31,6 +32,7 @@ const borrowSchema = new Schema<IBorrow>({
   status: { type: String, enum: Object.values(BorrowStatus), default: BorrowStatus.BORROWED },
   last_page: { type: Number, default: 1 },
   bookmarks: { type: [Number], default: [] },
+  order_id: { type: Schema.Types.ObjectId, ref: 'Order' },
 });
 
 export default mongoose.model<IBorrow>('Borrow', borrowSchema);
