@@ -217,8 +217,18 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
         if (!book.pdf_url) return res.status(404).json({ error: 'PDF not available for this book' });
 
         try {
-            const urlObject = new URL(book.pdf_url);
-            const key = decodeURIComponent(urlObject.pathname.substring(1));
+            // Robust key extraction
+            let key: string;
+            try {
+                const urlObject = new URL(book.pdf_url);
+                // Remove leading slash and handle potential double slashes
+                key = decodeURIComponent(urlObject.pathname).replace(/^\/+/, '');
+            } catch (urlErr) {
+                // Fallback if it's already a key or relative path
+                key = book.pdf_url.replace(/^\/+/, '');
+            }
+
+            console.log(`[viewBookPdf] Attempting to fetch PDF from S3. Book: ${book.title}, ID: ${req.params.id}, Key: ${key}`);
 
             const s3Response = await getS3FileStream(key);
 
@@ -237,11 +247,17 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
             if (s3Response.Body) {
                 (s3Response.Body as Readable).pipe(res);
             } else {
+                console.error(`[viewBookPdf] PDF content not found in S3 for key: ${key}`);
                 res.status(404).json({ error: 'PDF content not found in storage' });
             }
-        } catch (s3Err) {
-            console.error('S3 Stream Error:', s3Err);
-            res.status(500).json({ error: 'Failed to fetch PDF from storage' });
+        } catch (s3Err: any) {
+            console.error(`[viewBookPdf] S3 Stream Error for book ${req.params.id}:`, s3Err);
+            const statusCode = s3Err.name === 'NoSuchKey' ? 404 : 500;
+            const message = s3Err.name === 'NoSuchKey' ? 'PDF file not found in storage' : 'Failed to fetch PDF from storage';
+            res.status(statusCode).json({
+                error: message,
+                details: process.env.NODE_ENV === 'development' ? s3Err.message : undefined
+            });
         }
     } catch (err) {
         next(err);
