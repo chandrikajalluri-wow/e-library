@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet } from 'lucide-react';
+import { ArrowLeft, Wallet, Check, Package, ShieldCheck, Truck, ShoppingBag } from 'lucide-react';
 import { useBorrowCart } from '../context/BorrowCartContext';
 import { toast } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/Checkout.css';
 
 const Checkout: React.FC = () => {
@@ -25,104 +26,179 @@ const Checkout: React.FC = () => {
     const deliveryFee = subtotal > 0 && subtotal <= 50 ? 50 : 0;
     const totalPrice = subtotal + deliveryFee;
 
+    const containerVariants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.6,
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, x: -20 },
+        visible: { opacity: 1, x: 0 }
+    };
+
     if (cartItems.length === 0) {
         return (
-            <div className="dashboard-container saas-reveal">
-                <div className="checkout-container">
-                    <div className="empty-checkout">
-                        <h2>Your cart is empty</h2>
-                        <p>Add some books to your cart before checking out.</p>
-                        <button onClick={() => navigate('/books')} className="btn-primary">
-                            Browse Books
-                        </button>
+            <div className="checkout-page-wrapper">
+                <div className="empty-checkout-premium saas-reveal">
+                    <div className="empty-checkout-icon">
+                        <ShoppingBag size={60} />
                     </div>
+                    <h2>Your cart is empty</h2>
+                    <p>It seems you haven't added any books to your cart yet. Discover your next read!</p>
+                    <button onClick={() => navigate('/books')} className="premium-discovery-btn">
+                        Browse Collection
+                    </button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="dashboard-container saas-reveal">
-            <div className="checkout-container">
-                {/* Header */}
-                <div className="checkout-header">
-                    <button onClick={() => navigate('/borrow-cart')} className="back-btn">
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div className="checkout-title-section">
-                        <div className="checkout-icon">
-                            <Wallet size={24} />
-                        </div>
-                        <h1 className="checkout-title">Order Checkout</h1>
+        <div className="checkout-page-wrapper">
+            <div className="checkout-max-width">
+                {/* Progress Stepper */}
+                <div className="checkout-stepper">
+                    <div className="step active">
+                        <div className="step-circle"><ShoppingBag size={18} /></div>
+                        <span>Review</span>
+                    </div>
+                    <div className="step-line"></div>
+                    <div className="step">
+                        <div className="step-circle"><Truck size={18} /></div>
+                        <span>Delivery</span>
+                    </div>
+                    <div className="step-line"></div>
+                    <div className="step">
+                        <div className="step-circle"><Check size={18} /></div>
+                        <span>Success</span>
                     </div>
                 </div>
-                <p className="checkout-subtitle">Review and confirm your order items before payment</p>
 
-                <div className="checkout-grid">
-                    {/* Order Summary */}
-                    <div className="checkout-order-summary">
-                        <h2 className="section-title">Order Summary</h2>
-                        <div className="order-items-list">
-                            {cartItems.map((item) => (
-                                <div key={item.book._id} className="checkout-item">
-                                    <div className="checkout-item-image">
-                                        <img
-                                            src={item.book.cover_image_url || 'https://via.placeholder.com/80x120?text=No+Cover'}
-                                            alt={item.book.title}
-                                        />
+                <motion.div
+                    className="checkout-content-container"
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                >
+                    <header className="checkout-enhanced-header">
+                        <button onClick={() => navigate('/borrow-cart')} className="back-btn-modern">
+                            <ArrowLeft size={18} />
+                            <span>Return to Cart</span>
+                        </button>
+                        <div className="checkout-header-main">
+                            <h1>Order Checkout</h1>
+                            <p>Verify your items and proceed to delivery details</p>
+                        </div>
+                    </header>
+
+                    <div className="checkout-main-grid">
+                        <div className="checkout-items-card-new">
+                            <div className="items-card-header">
+                                <Package size={20} />
+                                <h2>Review My Items ({totalItems})</h2>
+                            </div>
+
+                            <div className="checkout-items-scroller">
+                                <AnimatePresence>
+                                    {cartItems.map((item) => (
+                                        <motion.div
+                                            key={item.book._id}
+                                            className="checkout-item-premium"
+                                            variants={itemVariants}
+                                        >
+                                            <div className="item-img-box">
+                                                <img
+                                                    src={item.book.cover_image_url || 'https://via.placeholder.com/100x150?text=No+Cover'}
+                                                    alt={item.book.title}
+                                                />
+                                            </div>
+                                            <div className="item-info-box">
+                                                <h3 className="item-title">{item.book.title}</h3>
+                                                <span className="item-author-label">by {item.book.author}</span>
+                                                <div className="item-meta-row">
+                                                    <span className="item-qty-badge">Qty: {item.quantity}</span>
+                                                    <span className="item-price-each">₹{item.book.price.toFixed(2)} ea</span>
+                                                </div>
+                                            </div>
+                                            <div className="item-total-price-box">
+                                                ₹{(item.book.price * item.quantity).toFixed(2)}
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+
+                            <div className="trust-badges-checkout">
+                                <div className="trust-item">
+                                    <ShieldCheck size={18} />
+                                    <span>Secure SSL Encrypted</span>
+                                </div>
+                                <div className="trust-item">
+                                    <Truck size={18} />
+                                    <span>Safe Delivery</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <aside className="checkout-sidebar-sticky">
+                            <motion.div
+                                className="payment-summary-box-new"
+                                variants={itemVariants}
+                            >
+                                <h2 className="summary-title">Payment Method</h2>
+                                <div className="payment-method-selected">
+                                    <div className="payment-icon">
+                                        <Wallet size={20} />
                                     </div>
-                                    <div className="checkout-item-details">
-                                        <h3 className="checkout-item-title">{item.book.title}</h3>
-                                        <p className="checkout-item-qty">Qty: {item.quantity}</p>
+                                    <div className="payment-text">
+                                        <strong>Cash on Delivery</strong>
+                                        <span>Pay when you receive items</span>
                                     </div>
-                                    <div className="checkout-item-price">
-                                        ₹{(item.book.price * item.quantity).toFixed(2)}
+                                    <div className="payment-check">
+                                        <Check size={16} />
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+
+                                <div className="summary-table">
+                                    <div className="summary-tr">
+                                        <span>Items Subtotal</span>
+                                        <span>₹{subtotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="summary-tr">
+                                        <span>Delivery Fee</span>
+                                        <span className={deliveryFee === 0 ? 'free-text' : ''}>
+                                            {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
+                                        </span>
+                                    </div>
+                                    <div className="summary-divider-modern"></div>
+                                    <div className="summary-total-row-new">
+                                        <span className="total-label">Total Amount</span>
+                                        <span className="total-amount-val">₹{totalPrice.toFixed(2)}</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    className="premium-checkout-confirm-btn"
+                                    onClick={handleContinue}
+                                >
+                                    Continue to Address
+                                    <ArrowLeft size={18} className="rotate-180" />
+                                </button>
+
+                                <p className="legal-notice">
+                                    I agree to the Terms & Conditions of E-library marketplace.
+                                </p>
+                            </motion.div>
+                        </aside>
                     </div>
-
-                    {/* Payment Section */}
-                    <div className="checkout-payment-section">
-                        <h2 className="section-title">Payment Method</h2>
-                        <div className="payment-method-card">
-                            <div className="payment-option selected">
-                                <Wallet size={20} />
-                                <span>Cash on Delivery</span>
-                            </div>
-                        </div>
-
-                        <div className="checkout-summary">
-                            <div className="summary-row">
-                                <span className="summary-label">Subtotal</span>
-                                <span className="summary-value">₹{subtotal.toFixed(2)}</span>
-                            </div>
-                            <div className="summary-row">
-                                <span className="summary-label">Delivery</span>
-                                <span className="summary-value">
-                                    {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
-                                </span>
-                            </div>
-                            <div className="summary-divider"></div>
-                            <div className="summary-total-row">
-                                <span className="total-label">Total Payable</span>
-                                <span className="total-value">₹{totalPrice.toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        <button
-                            className="confirm-order-btn"
-                            onClick={handleContinue}
-                        >
-                            Continue →
-                        </button>
-
-                        <p className="checkout-note">
-                            By clicking confirm, you agree to the purchase of {totalItems} {totalItems === 1 ? 'book' : 'books'}.
-                        </p>
-                    </div>
-                </div>
+                </motion.div>
             </div>
         </div>
     );

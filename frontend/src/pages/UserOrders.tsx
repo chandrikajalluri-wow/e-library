@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Package, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { Package, Calendar, Clock, ChevronRight, XCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getMyOrders } from '../services/userOrderService';
+import { cancelOrder } from '../services/orderService';
 import Loader from '../components/Loader';
+import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/UserOrders.css';
 
 interface OrderItem {
-    book_id: { title: string; cover_image_url: string };
+    book_id: { title: string; cover_image_url: string; price: number; author: string };
     quantity: number;
     priceAtOrder: number;
 }
@@ -26,6 +29,9 @@ const UserOrders: React.FC = () => {
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     useEffect(() => {
         fetchUserOrders();
@@ -37,115 +43,216 @@ const UserOrders: React.FC = () => {
             const data = await getMyOrders();
             setOrders(data);
         } catch (error: any) {
-            toast.error(error);
+            toast.error(error.response?.data?.error || 'Failed to fetch orders');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'pending': return 'status-pending';
-            case 'processing': return 'status-processing';
-            case 'shipped': return 'status-shipped';
-            case 'delivered': return 'status-delivered';
-            case 'cancelled': return 'status-cancelled';
-            default: return 'status-pending';
+    const handleCancelOrder = async () => {
+        if (!orderToCancel) return;
+        setIsCancelling(true);
+        try {
+            await cancelOrder(orderToCancel);
+            toast.success('Order cancelled successfully');
+            fetchUserOrders();
+            setIsCancelModalOpen(false);
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Failed to cancel order');
+        } finally {
+            setIsCancelling(false);
+            setOrderToCancel(null);
         }
+    };
+
+    const getStatusStyles = (status: string) => {
+        switch (status) {
+            case 'pending': return { class: 'status-pending', label: 'Order Pending' };
+            case 'processing': return { class: 'status-processing', label: 'Processing' };
+            case 'shipped': return { class: 'status-shipped', label: 'Shipped' };
+            case 'delivered': return { class: 'status-delivered', label: 'Delivered' };
+            case 'cancelled': return { class: 'status-cancelled', label: 'Cancelled' };
+            default: return { class: 'status-pending', label: status };
+        }
+    };
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+        }
+    };
+
+    const cardVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: { y: 0, opacity: 1 },
+        hover: { y: -5, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }
     };
 
     if (isLoading) return <Loader />;
 
     return (
-        <div className="dashboard-container saas-reveal">
-            <div className="user-orders-header">
-                <h1>My Orders</h1>
-                <p>Track and manage your book orders</p>
-            </div>
-
-            {orders.length === 0 ? (
-                <div className="no-orders-state">
-                    <Package size={64} className="no-orders-icon" />
-                    <h3>No orders yet</h3>
-                    <p>Start browsing our collection and place your first order!</p>
-                    <button onClick={() => navigate('/books')} className="btn-primary">
-                        Browse Books
+        <motion.div
+            className="orders-view-container"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+        >
+            <div className="orders-page-header">
+                <div className="header-top-nav">
+                    <button onClick={() => navigate('/dashboard')} className="minimal-back-btn">
+                        <ArrowLeft size={18} />
+                        <span>Dashboard</span>
                     </button>
                 </div>
-            ) : (
-                <div className="orders-list">
-                    {orders.map(order => (
-                        <div
-                            key={order._id}
-                            className="user-order-card"
-                            onClick={() => navigate(`/orders/${order._id}`)}
-                        >
-                            <div className="order-card-header">
-                                <div className="order-id-section">
-                                    <h3>Order #{order._id.slice(-8).toUpperCase()}</h3>
-                                    <div className="order-meta-info">
-                                        <span className="meta-item">
-                                            <Calendar size={14} />
-                                            {new Date(order.createdAt).toLocaleDateString()}
-                                        </span>
-                                        <span className="meta-item">
-                                            <Clock size={14} />
-                                            {new Date(order.createdAt).toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
-                                        </span>
-                                    </div>
-                                </div>
-                                <span className={`order-status-badge ${getStatusColor(order.status)}`}>
-                                    {order.status}
-                                </span>
-                            </div>
-
-                            <div className="order-items-preview">
-                                {order.items.slice(0, 3).map((item, idx) => (
-                                    <div key={idx} className="preview-book">
-                                        <img
-                                            src={item.book_id.cover_image_url}
-                                            alt={item.book_id.title}
-                                        />
-                                        {item.quantity > 1 && (
-                                            <span className="quantity-badge">×{item.quantity}</span>
-                                        )}
-                                    </div>
-                                ))}
-                                {order.items.length > 3 && (
-                                    <div className="more-items">
-                                        +{order.items.length - 3} more
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="order-card-footer">
-                                <div className="order-summary-row" style={{ display: 'flex', gap: '1.5rem' }}>
-                                    <div className="order-total">
-                                        <span className="total-label">Subtotal:</span>
-                                        <span className="total-amount" style={{ fontSize: '1rem' }}>₹{order.items.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0).toFixed(2)}</span>
-                                    </div>
-                                    <div className="order-total">
-                                        <span className="total-label">Del. Fee:</span>
-                                        <span className="total-amount" style={{ fontSize: '1rem' }}>{order.deliveryFee > 0 ? `₹${order.deliveryFee}` : 'FREE'}</span>
-                                    </div>
-                                    <div className="order-total">
-                                        <span className="total-label">Total:</span>
-                                        <span className="total-amount">₹{order.totalAmount.toFixed(2)}</span>
-                                    </div>
-                                </div>
-                                <button className="view-details-btn">
-                                    View Details
-                                    <ChevronRight size={16} />
-                                </button>
-                            </div>
+                <div className="header-content">
+                    <div className="title-section">
+                        <h1>Purchase History</h1>
+                        <p>Keep track of all your reading adventures</p>
+                    </div>
+                    <div className="stats-badges">
+                        <div className="stat-pill">
+                            <span className="stat-value">{orders.length}</span>
+                            <span className="stat-label">Total Orders</span>
                         </div>
-                    ))}
+                        <div className="stat-pill primary">
+                            <ShoppingBag size={14} />
+                            <span>{orders.filter(o => o.status !== 'cancelled' && o.status !== 'delivered').length} Active</span>
+                        </div>
+                    </div>
                 </div>
-            )}
-        </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+                {orders.length === 0 ? (
+                    <motion.div
+                        key="empty"
+                        className="empty-orders-premium"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                    >
+                        <div className="empty-visual">
+                            <Package size={80} strokeWidth={1} />
+                        </div>
+                        <h2>No orders found</h2>
+                        <p>Your library is waiting for its first collection. Start exploring our vast catalog today.</p>
+                        <button onClick={() => navigate('/books')} className="premium-browse-btn">
+                            Browse Collection
+                            <ChevronRight size={18} />
+                        </button>
+                    </motion.div>
+                ) : (
+                    <div key="list" className="orders-grid">
+                        {orders.map(order => {
+                            const status = getStatusStyles(order.status);
+                            const canCancel = ['pending', 'processing'].includes(order.status);
+
+                            return (
+                                <motion.div
+                                    key={order._id}
+                                    className="order-master-card"
+                                    variants={cardVariants}
+                                    whileHover="hover"
+                                >
+                                    <div className="card-glass-glow"></div>
+
+                                    <div className="card-top-header">
+                                        <div className="id-group">
+                                            <span className="order-id-label">ORDER ID</span>
+                                            <span className="order-id-value">#{order._id.slice(-8).toUpperCase()}</span>
+                                        </div>
+                                        <div className={`status-pill ${status.class}`}>
+                                            <div className="status-dot"></div>
+                                            <span>{status.label}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="order-main-content">
+                                        <div className="meta-grid">
+                                            <div className="meta-cell">
+                                                <Calendar size={16} />
+                                                <div className="meta-text">
+                                                    <span className="label">Date</span>
+                                                    <span className="value">{new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                </div>
+                                            </div>
+                                            <div className="meta-cell">
+                                                <Clock size={16} />
+                                                <div className="meta-text">
+                                                    <span className="label">Time</span>
+                                                    <span className="value">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            </div>
+                                            <div className="meta-cell">
+                                                <Package size={16} />
+                                                <div className="meta-text">
+                                                    <span className="label">Items</span>
+                                                    <span className="value">{order.items.reduce((acc, curr) => acc + curr.quantity, 0)} Books</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="books-preview-strip">
+                                            {order.items.map((item, idx) => (
+                                                <div key={idx} className="preview-book-thumb" title={item.book_id.title}>
+                                                    <img src={item.book_id.cover_image_url} alt={item.book_id.title} />
+                                                    {item.quantity > 1 && <span className="qty-overlay">x{item.quantity}</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="card-bottom-actions">
+                                        <div className="total-display">
+                                            <span className="label">Grand Total</span>
+                                            <span className="value">₹{order.totalAmount.toFixed(2)}</span>
+                                        </div>
+
+                                        <div className="action-buttons-group">
+                                            {canCancel && (
+                                                <button
+                                                    className="cancel-order-btn-premium"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOrderToCancel(order._id);
+                                                        setIsCancelModalOpen(true);
+                                                    }}
+                                                >
+                                                    <XCircle size={16} />
+                                                    <span>Cancel Order</span>
+                                                </button>
+                                            )}
+                                            <button
+                                                className="view-order-details-btn"
+                                                onClick={() => navigate(`/orders/${order._id}`)}
+                                            >
+                                                <span>Details</span>
+                                                <ChevronRight size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <ConfirmationModal
+                isOpen={isCancelModalOpen}
+                title="Cancel Order"
+                message="Are you sure you want to cancel this order? This action cannot be undone and book stock will be released."
+                onConfirm={handleCancelOrder}
+                onCancel={() => {
+                    setIsCancelModalOpen(false);
+                    setOrderToCancel(null);
+                }}
+                isLoading={isCancelling}
+                type="danger"
+                confirmText="Yes, Cancel Order"
+            />
+        </motion.div>
     );
 };
 

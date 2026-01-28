@@ -90,6 +90,7 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
                     user_id: req.user!._id,
                     book_id: book._id,
                     return_date: returnDate,
+                    order_id: newOrder._id
                 }).save();
             }
         }
@@ -239,7 +240,7 @@ export const getMyOrders = async (req: AuthRequest, res: Response) => {
         const userId = req.user!._id;
 
         const orders = await Order.find({ user_id: userId })
-            .populate('items.book_id', 'title cover_image_url')
+            .populate('items.book_id', 'title cover_image_url price author')
             .populate('address_id')
             .sort({ createdAt: -1 });
 
@@ -247,5 +248,61 @@ export const getMyOrders = async (req: AuthRequest, res: Response) => {
     } catch (error: any) {
         console.error('Get my orders error:', error);
         res.status(500).json({ error: 'Failed to fetch your orders' });
+    }
+};
+
+// User: Cancel My Own Order
+export const cancelOwnOrder = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!._id;
+
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Check ownership
+        if (order.user_id.toString() !== userId.toString()) {
+            return res.status(403).json({ error: 'Unauthorized to cancel this order' });
+        }
+
+        // Check status
+        if (!['pending', 'processing'].includes(order.status)) {
+            return res.status(400).json({ error: `Cannot cancel order in ${order.status} status` });
+        }
+
+        // Revert stock and delete borrow records
+        for (const item of order.items) {
+            const book = await Book.findById(item.book_id);
+            if (book) {
+                book.noOfCopies += item.quantity;
+                // If status was ISSUED, it might be available now
+                if (book.status === BookStatus.ISSUED && book.noOfCopies > 0) {
+                    book.status = BookStatus.AVAILABLE;
+                }
+                await book.save();
+            }
+        }
+
+        // Delete associated borrow records
+        await Borrow.deleteMany({ order_id: order._id });
+
+        // Update order status
+        order.status = 'cancelled';
+        await order.save();
+
+        // Send Notification
+        await sendNotification(
+            NotificationType.BORROW,
+            `Order cancelled: Your order #${order._id.toString().slice(-8).toUpperCase()} has been cancelled and stock has been reverted.`,
+            userId as any,
+            null as any
+        );
+
+        res.status(200).json({ message: 'Order cancelled successfully', order });
+    } catch (error: any) {
+        console.error('Cancel order error:', error);
+        res.status(500).json({ error: 'Failed to cancel order' });
     }
 };

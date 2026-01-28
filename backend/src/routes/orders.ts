@@ -12,6 +12,7 @@ router.get('/admin/:id', auth, orderController.getOrderById);
 
 // User Routes
 router.get('/my-orders', auth, orderController.getMyOrders);
+router.patch('/:id/cancel', auth, orderController.cancelOwnOrder);
 router.post('/', auth, orderController.placeOrder);
 
 export default router;
