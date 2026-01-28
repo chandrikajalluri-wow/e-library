@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Readable } from 'stream';
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { s3Client } from '../utils/s3Service';
 import Book from '../models/Book';
 import User from '../models/User';
 import Borrow from '../models/Borrow';
@@ -290,6 +292,57 @@ export const getSimilarBooks = async (req: Request, res: Response, next: NextFun
     }
 };
 
+
+
+export const testS3Config = async (req: Request, res: Response) => {
+    try {
+        const bucketName = process.env.AWS_S3_BUCKET_NAME;
+        const region = process.env.AWS_REGION;
+        const accessKey = process.env.AWS_ACCESS_KEY_ID;
+        const hasSecret = !!process.env.AWS_SECRET_ACCESS_KEY;
+
+        const results: any = {
+            env: {
+                AWS_S3_BUCKET_NAME: bucketName ? 'Set' : 'MISSING',
+                AWS_REGION: region ? region : 'MISSING (Defaults to ap-south-1)',
+                AWS_ACCESS_KEY_ID: accessKey ? `Set (${accessKey.substring(0, 5)}...)` : 'MISSING',
+                AWS_SECRET_ACCESS_KEY: hasSecret ? 'Set' : 'MISSING'
+            }
+        };
+
+        if (!bucketName || !accessKey || !hasSecret) {
+            return res.status(500).json({
+                error: 'S3 Configuration Incomplete',
+                details: results.env
+            });
+        }
+
+        // Test one simple list operation or get
+        try {
+            await s3Client.send(new GetObjectCommand({
+                Bucket: bucketName,
+                Key: 'test-connection-dummy-key-' + Date.now()
+            }));
+            // We expect NoSuchKey error if connection is ok
+        } catch (s3Err: any) {
+            results.s3Test = {
+                connected: true,
+                message: s3Err.name === 'NoSuchKey' ? 'Connected (Bucket exists and credentials work)' : 'Possible issue',
+                errorName: s3Err.name,
+                errorMessage: s3Err.message
+            };
+
+            if (s3Err.name === 'CredentialsError' || s3Err.name === 'InvalidAccessKeyId' || s3Err.name === 'AccessDenied') {
+                results.s3Test.connected = false;
+                results.s3Test.message = 'Authentication or Permission Failed';
+            }
+        }
+
+        res.json(results);
+    } catch (err: any) {
+        res.status(500).json({ error: 'Diagnostic Failed', details: err.message });
+    }
+};
 
 export const getRecommendedBooks = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
