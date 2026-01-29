@@ -6,8 +6,18 @@ export enum RoleName {
 
 export enum MembershipName {
     BASIC = 'basic',
-    STANDARD = 'standard',
     PREMIUM = 'premium'
+}
+
+export enum OrderStatus {
+    PENDING = 'pending',
+    PROCESSING = 'processing',
+    SHIPPED = 'shipped',
+    DELIVERED = 'delivered',
+    CANCELLED = 'cancelled',
+    RETURN_REQUESTED = 'return_requested',
+    RETURNED = 'returned',
+    RETURN_REJECTED = 'return_rejected'
 }
 
 export enum BookStatus {

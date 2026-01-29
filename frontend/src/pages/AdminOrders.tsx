@@ -4,10 +4,13 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import {
     Package, Search, Filter, Calendar,
-    Clock, CheckCircle, Truck, XCircle, AlertCircle
+    Clock, CheckCircle, Truck, XCircle, AlertCircle,
+    Download, CheckSquare, Square, ArrowUpDown
 } from 'lucide-react';
-import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
+import { getAllOrders, bulkUpdateOrderStatus } from '../services/adminOrderService';
 import Loader from '../components/Loader';
+import { exportOrdersToCSV } from '../utils/csvExport';
+import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/AdminOrders.css';
 
 interface OrderItem {
@@ -33,11 +36,14 @@ const AdminOrders: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('all');
     const [search, setSearch] = useState('');
+    const [sortBy, setSortBy] = useState('newest');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+    const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
     useEffect(() => {
         fetchOrders();
-    }, [filterStatus, dateRange]);
+    }, [filterStatus, dateRange, sortBy]);
 
     const fetchOrders = async () => {
         setIsLoading(true);
@@ -45,10 +51,12 @@ const AdminOrders: React.FC = () => {
             const data = await getAllOrders({
                 status: filterStatus,
                 search: search,
+                sort: sortBy,
                 startDate: dateRange.start,
                 endDate: dateRange.end
             });
             setOrders(data);
+            setSelectedOrders([]); // Clear selection on refresh
         } catch (error: any) {
             toast.error(error);
         } finally {
@@ -61,29 +69,52 @@ const AdminOrders: React.FC = () => {
         fetchOrders();
     };
 
-    const handleStatusChange = async (orderId: string, newStatus: string) => {
-        // Optimistic Update
-        const originalOrders = [...orders];
-        setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
-
+    const handleBulkStatusChange = async (newStatus: string) => {
+        if (selectedOrders.length === 0) return;
+        setIsBulkProcessing(true);
         try {
-            await updateOrderStatus(orderId, newStatus);
-            toast.success(`Order status updated to ${newStatus}`);
+            await bulkUpdateOrderStatus(selectedOrders, newStatus);
+            toast.success(`Updated ${selectedOrders.length} orders to ${newStatus}`);
+            fetchOrders();
         } catch (error: any) {
-            // Revert on failure
-            setOrders(originalOrders);
-            toast.error('Failed to update status');
+            toast.error(error);
+        } finally {
+            setIsBulkProcessing(false);
         }
     };
 
-    const getStatusColor = (status: string) => {
+
+    const toggleOrderSelection = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedOrders(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const toggleAllSelection = () => {
+        if (selectedOrders.length === orders.length) {
+            setSelectedOrders([]);
+        } else {
+            setSelectedOrders(orders.map(o => o._id));
+        }
+    };
+
+    const handleExport = () => {
+        if (orders.length === 0) {
+            toast.info('No orders to export');
+            return;
+        }
+        exportOrdersToCSV(orders);
+    };
+
+    const getStatusStep = (status: string) => {
         switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800';
-            case 'processing': return 'bg-yellow-100 text-yellow-800';
-            case 'shipped': return 'bg-blue-100 text-blue-800';
-            case 'delivered': return 'bg-green-100 text-green-800';
-            case 'cancelled': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'pending': return 1;
+            case 'processing': return 2;
+            case 'shipped': return 3;
+            case 'delivered': return 4;
+            case 'cancelled': return 0;
+            default: return 1;
         }
     };
 
@@ -102,7 +133,13 @@ const AdminOrders: React.FC = () => {
             <div className="admin-header">
                 <div>
                     <h1>Order Management</h1>
-                    <p>Track and manage user orders</p>
+                    <p>Track, manage and export user orders</p>
+                </div>
+                <div className="admin-header-actions">
+                    <button className="export-btn" onClick={handleExport}>
+                        <Download size={18} />
+                        <span>Export CSV</span>
+                    </button>
                 </div>
             </div>
 
@@ -148,6 +185,19 @@ const AdminOrders: React.FC = () => {
 
                 <div className="filter-group">
                     <div className="filter-item">
+                        <ArrowUpDown size={16} />
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                        >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="total_desc">Highest Amount</option>
+                            <option value="total_asc">Lowest Amount</option>
+                        </select>
+                    </div>
+
+                    <div className="filter-item">
                         <Filter size={16} />
                         <select
                             value={filterStatus}
@@ -158,6 +208,8 @@ const AdminOrders: React.FC = () => {
                             <option value="processing">Processing</option>
                             <option value="shipped">Shipped</option>
                             <option value="delivered">Delivered</option>
+                            <option value="return_requested">Return Requested</option>
+                            <option value="returned">Returned</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
@@ -166,15 +218,62 @@ const AdminOrders: React.FC = () => {
                         <Calendar size={16} />
                         <input
                             type="date"
+                            value={dateRange.start}
                             onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                         />
                         <span>to</span>
                         <input
                             type="date"
+                            value={dateRange.end}
                             onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
                         />
                     </div>
                 </div>
+            </div>
+
+            <div className="list-controls">
+                <button className="select-all-btn" onClick={toggleAllSelection}>
+                    {selectedOrders.length === orders.length && orders.length > 0 ? (
+                        <CheckSquare size={18} className="text-indigo-600" />
+                    ) : (
+                        <Square size={18} />
+                    )}
+                    <span>Select All</span>
+                </button>
+
+                <AnimatePresence>
+                    {selectedOrders.length > 0 && (
+                        <motion.div
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -20, opacity: 0 }}
+                            className="bulk-action-bar"
+                        >
+                            <div className="bulk-info">
+                                <span className="count">{selectedOrders.length}</span>
+                                <span>Selected</span>
+                            </div>
+                            <div className="bulk-actions">
+                                <select
+                                    onChange={(e) => handleBulkStatusChange(e.target.value)}
+                                    disabled={isBulkProcessing}
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>Status...</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="shipped">Shipped</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="returned">Returned</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                                <button className="bulk-cancel-btn" onClick={() => setSelectedOrders([])}>
+                                    Clear
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Orders List */}
@@ -187,64 +286,81 @@ const AdminOrders: React.FC = () => {
                             <p>Try adjusting your search or filters</p>
                         </div>
                     ) : (
-                        orders.map(order => (
-                            <div
-                                key={order._id}
-                                className="admin-order-card cursor-pointer hover:shadow-md transition-shadow"
-                                onClick={() => navigate(`/admin/orders/${order._id}`)}
-                            >
-                                <div className="order-header">
-                                    <div className="order-id-info">
-                                        <h4>#{order._id.slice(-6).toUpperCase()}</h4>
-                                        <span className="order-date">
-                                            {new Date(order.createdAt).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                    <div className="status-control" onClick={(e) => e.stopPropagation()}>
-                                        <select
-                                            value={order.status}
-                                            onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                                            className={`status-select ${getStatusColor(order.status)}`}
-                                        >
-                                            <option value="pending">Pending</option>
-                                            <option value="processing">Processing</option>
-                                            <option value="shipped">Shipped</option>
-                                            <option value="delivered">Delivered</option>
-                                            <option value="cancelled">Cancelled</option>
-                                        </select>
-                                    </div>
-                                </div>
+                        orders.map(order => {
+                            const step = getStatusStep(order.status);
+                            const isSelected = selectedOrders.includes(order._id);
 
-                                <div className="order-body">
-                                    <div className="user-details">
-                                        <p className="label">Customer</p>
-                                        <p className="value">{order.user_id.name}</p>
-                                        <p className="sub-value">{order.user_id.email}</p>
+                            return (
+                                <div
+                                    key={order._id}
+                                    className={`admin-order-card cursor-pointer hover:shadow-md transition-shadow ${isSelected ? 'selected' : ''}`}
+                                    onClick={() => navigate(`/admin/orders/${order._id}`)}
+                                >
+                                    <div className="selection-checkbox" onClick={(e) => toggleOrderSelection(order._id, e)}>
+                                        {isSelected ? <CheckSquare size={20} className="text-indigo-600" /> : <Square size={20} />}
                                     </div>
-                                    <div className="order-summary-mini">
-                                        <p className="label">Items</p>
-                                        <p className="value">{order.items.length} items</p>
-                                    </div>
-                                    <div className="order-fees-mini">
-                                        <p className="label">Del. Fee</p>
-                                        <p className="value">{order.deliveryFee > 0 ? `₹${order.deliveryFee}` : 'FREE'}</p>
-                                    </div>
-                                    <div className="order-total-mini">
-                                        <p className="label">Total Amount</p>
-                                        <p className="value highlight">₹{order.totalAmount}</p>
-                                    </div>
-                                </div>
 
-                                <div className="order-items-preview">
-                                    {order.items.map((item, idx) => (
-                                        <div key={idx} className="preview-item" title={item.book_id.title}>
-                                            <img src={item.book_id.cover_image_url} alt="Cover" />
-                                            <span className="qty-badge">x{item.quantity}</span>
+                                    <div className="order-header">
+                                        <div className="order-id-info">
+                                            <h4>#{order._id.slice(-6).toUpperCase()}</h4>
+                                            <span className="order-date">
+                                                {new Date(order.createdAt).toLocaleDateString()}
+                                            </span>
                                         </div>
-                                    ))}
+                                        <div className="status-control" onClick={(e) => e.stopPropagation()}>
+                                            <div className={`status-badge-premium ${order.status}`}>
+                                                {order.status}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="order-body">
+                                        <div className="user-details">
+                                            <p className="label">Customer</p>
+                                            <p className="value">{order.user_id?.name}</p>
+                                            <p className="sub-value">{order.user_id?.email}</p>
+                                        </div>
+                                        <div className="order-summary-mini">
+                                            <p className="label">Items</p>
+                                            <p className="value">{order.items.length} items</p>
+                                        </div>
+                                        <div className="order-total-mini text-right">
+                                            <p className="label">Total Amount</p>
+                                            <p className="value highlight">₹{order.totalAmount}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="order-progress-container">
+                                        <div className="order-progress-bar">
+                                            <div
+                                                className={`progress-fill ${order.status}`}
+                                                style={{ width: `${order.status === 'cancelled' ? 100 : (step / 4) * 100}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="progress-labels">
+                                            <span>Placed</span>
+                                            <span>Processing</span>
+                                            <span>Shipped</span>
+                                            <span>Delivered</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="order-footer">
+                                        <div className="order-items-preview">
+                                            {order.items.map((item, idx) => (
+                                                <div key={idx} className="preview-item" title={item.book_id.title}>
+                                                    <img src={item.book_id.cover_image_url} alt="Cover" />
+                                                    <span className="qty-badge">x{item.quantity}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="card-actions">
+                                            <button className="quick-view-btn">View Details</button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             )}

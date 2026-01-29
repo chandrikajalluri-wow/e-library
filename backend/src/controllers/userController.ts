@@ -67,12 +67,13 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
 };
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
-    const { name, favoriteGenres, booksRead, readingTarget } = req.body;
+    const { name, phone, favoriteGenres, booksRead, readingTarget } = req.body;
     try {
         const user = await User.findById(req.user!._id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         if (name) user.name = name;
+        if (phone) user.phone = phone;
         if (favoriteGenres !== undefined) {
             // Ensure favoriteGenres is an array and has at most 3 items
             const genresArray = Array.isArray(favoriteGenres)
@@ -100,6 +101,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
             user: {
                 name: user.name,
                 email: user.email,
+                phone: user.phone,
                 profileImage: user.profileImage,
                 favoriteGenres: user.favoriteGenres,
                 booksRead: user.booksRead,
@@ -200,7 +202,7 @@ export const requestBook = async (req: AuthRequest, res: Response) => {
 
         if (!membership.canRequestBooks) {
             return res.status(403).json({
-                error: 'Book requests are available for Standard and Premium members. Upgrade your membership to request new books.'
+                error: 'Book requests are available for Premium members. Upgrade your membership to request new books.'
             });
         }
 

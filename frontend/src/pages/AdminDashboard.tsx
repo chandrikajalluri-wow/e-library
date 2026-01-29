@@ -4,7 +4,8 @@ import { toast } from 'react-toastify';
 import { CircleSlash } from 'lucide-react';
 import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
-import { getAllBorrows, acceptReturn } from '../services/borrowService';
+import { getAllBorrows } from '../services/borrowService';
+import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
 import { getAllBookRequests, updateBookRequestStatus, sendFineReminder, getProfile } from '../services/userService';
 import { getAllWishlists } from '../services/wishlistService';
 import { getActivityLogs } from '../services/logService';
@@ -22,6 +23,7 @@ const AdminDashboard: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [borrows, setBorrows] = useState<Borrow[]>([]);
   const [userRequests, setUserRequests] = useState<any[]>([]);
+  const [orderReturns, setOrderReturns] = useState<any[]>([]);
   const [borrowStatusFilter, setBorrowStatusFilter] = useState('all');
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [bookTypeFilter, setBookTypeFilter] = useState('all');
@@ -105,9 +107,7 @@ const AdminDashboard: React.FC = () => {
   const fetchBorrows = async () => {
     setIsDataLoading(true);
     try {
-      const statusFilter = activeTab === 'requests' ? BorrowStatus.RETURN_REQUESTED : borrowStatusFilter;
-      const membershipParam = activeTab === 'requests' ? 'all' : membershipFilter;
-      const data = await getAllBorrows(`page=${borrowPage}&limit=10&status=${statusFilter}&membership=${membershipParam}`);
+      const data = await getAllBorrows(`page=${borrowPage}&limit=10&status=${borrowStatusFilter}&membership=${membershipFilter}`);
       setBorrows(data.borrows);
       setBorrowTotalPages(data.pages);
     } catch (err: unknown) {
@@ -125,6 +125,19 @@ const AdminDashboard: React.FC = () => {
     } catch (err) {
       console.error(err);
       toast.error('Failed to fetch user requests');
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
+
+  const fetchOrderReturns = async () => {
+    setIsDataLoading(true);
+    try {
+      const data = await getAllOrders({ status: 'return_requested' });
+      setOrderReturns(data);
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error('Failed to fetch order returns');
     } finally {
       setIsDataLoading(false);
     }
@@ -225,7 +238,8 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'borrows' || activeTab === 'requests') fetchBorrows();
+    if (activeTab === 'borrows') fetchBorrows();
+    if (activeTab === 'requests') fetchOrderReturns();
   }, [activeTab, borrowPage, borrowStatusFilter, membershipFilter]);
 
   useEffect(() => {
@@ -245,6 +259,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (activeTab === 'stats') fetchStats();
     if (activeTab === 'user-requests') fetchUserRequests();
+    if (activeTab === 'requests') fetchOrderReturns();
     if (activeTab === 'logs') fetchLogs();
 
     // Reset page numbers when switching tabs
@@ -458,24 +473,6 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-  const handleAcceptReturn = (borrowId: string) => {
-    setConfirmModal({
-      isOpen: true, title: 'Accept Return', message: 'Are you sure you want to accept this return request?',
-      type: 'info', isLoading: false,
-      onConfirm: async () => {
-        setConfirmModal(prev => ({ ...prev, isLoading: true }));
-        try {
-          await acceptReturn(borrowId);
-          toast.success('Return request accepted');
-          fetchBorrows();
-          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
-        } catch (err) {
-          toast.error('Failed to accept return');
-          setConfirmModal(prev => ({ ...prev, isLoading: false }));
-        }
-      }
-    });
-  };
 
   const handleSendReminder = async (borrowId: string) => {
     try {
@@ -500,6 +497,50 @@ const AdminDashboard: React.FC = () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         } catch (err) {
           toast.error('Failed to update request status');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
+  };
+
+  const handleApproveOrderReturn = async (orderId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Approve Return Request',
+      message: 'Are you sure you want to approve this return request?',
+      type: 'info',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await updateOrderStatus(orderId, 'returned');
+          toast.success('Return request approved');
+          fetchOrderReturns();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err: any) {
+          toast.error(err || 'Failed to approve return');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
+  };
+
+  const handleDeclineOrderReturn = async (orderId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Decline Return Request',
+      message: 'Are you sure you want to decline this return request?',
+      type: 'danger',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await updateOrderStatus(orderId, 'return_rejected');
+          toast.success('Return request declined');
+          fetchOrderReturns();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (err: any) {
+          toast.error(err || 'Failed to decline return');
           setConfirmModal(prev => ({ ...prev, isLoading: false }));
         }
       }
@@ -749,59 +790,43 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'requests' && (
           <section className="card admin-table-section">
-            <div className="admin-table-header-box"><h3 className="admin-table-title">Return Requests</h3></div>
+            <div className="admin-table-header-box"><h3 className="admin-table-title">Order Return Requests</h3></div>
             <div className="admin-table-wrapper">
               {isDataLoading ? (
                 <div className="admin-loading-container">
                   <div className="spinner"></div>
-                  <p>Fetching Requests...</p>
+                  <p>Fetching Return Requests...</p>
                 </div>
               ) : (
                 <table className="admin-table">
-                  <thead><tr><th>Borrower</th><th>Book</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
-                  <tbody>{borrows.filter(b => b.status === BorrowStatus.RETURN_REQUESTED).map(b => (
-                    <tr key={b._id}>
+                  <thead><tr><th>Customer</th><th>Order ID</th><th>Items</th><th>Total</th><th>Return Reason</th><th className="admin-actions-cell">Action</th></tr></thead>
+                  <tbody>{orderReturns.map(order => (
+                    <tr key={order._id}>
                       <td>
                         <div className="user-info-box">
-                          <span className="user-main-name">{b.user_id?.name || 'Unknown'}</span>
-                          <span className={`membership-pill ${((b.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
-                            {(b.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
-                          </span>
+                          <span className="user-main-name">{order.user_id?.name || 'Unknown'}</span>
+                          <span className="user-sub-email">{order.user_id?.email}</span>
                         </div>
                       </td>
-                      <td><div className="book-info-box"><span className="book-main-title">{b.book_id?.title || 'Unknown'}</span></div></td>
-                      <td><span className="status-badge status-return_requested">Return Requested</span></td>
-                      <td className="admin-actions-cell"><button onClick={() => handleAcceptReturn(b._id)} className="admin-btn-edit">Accept Return</button></td>
+                      <td><span className="book-main-title">#{order._id.slice(-8).toUpperCase()}</span></td>
+                      <td><span className="book-sub-meta">{order.items?.length || 0} items</span></td>
+                      <td><span className="admin-fine-amount">₹{order.totalAmount?.toFixed(2)}</span></td>
+                      <td><div className="book-info-box"><span className="book-sub-meta">{order.returnReason || 'No reason provided'}</span></div></td>
+                      <td className="admin-actions-cell">
+                        <div className="admin-actions-flex">
+                          <button onClick={() => handleApproveOrderReturn(order._id)} className="admin-btn-edit">Approve</button>
+                          <button onClick={() => handleDeclineOrderReturn(order._id)} className="admin-btn-delete">Decline</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}</tbody>
                 </table>
               )}
             </div>
-            {!isDataLoading && borrows.filter(b => b.status === 'return_requested').length === 0 && <div className="admin-empty-state">No pending returns.</div>}
-            {borrowTotalPages > 1 && (
-              <div className="pagination-controls">
-                <button
-                  disabled={borrowPage === 1}
-                  onClick={() => setBorrowPage(prev => prev - 1)}
-                  className={`admin-reminder-btn ${borrowPage === 1 ? 'disabled-with-stop' : ''}`}
-                >
-                  <span className="btn-text">Previous</span>
-                  <CircleSlash size={16} className="stop-icon" />
-                </button>
-                <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
-                <button
-                  disabled={borrowPage === borrowTotalPages}
-                  onClick={() => setBorrowPage(prev => prev + 1)}
-                  className={`admin-btn-edit ${borrowPage === borrowTotalPages ? 'disabled-with-stop' : ''}`}
-                  style={{ padding: '0.45rem 1.5rem' }}
-                >
-                  <span className="btn-text">Next</span>
-                  <CircleSlash size={16} className="stop-icon" />
-                </button>
-              </div>
-            )}
+            {!isDataLoading && orderReturns.length === 0 && <div className="admin-empty-state">No pending order returns.</div>}
           </section>
         )}
+
 
         {activeTab === 'user-requests' && (
           <section className="card admin-table-section">
@@ -838,134 +863,137 @@ const AdminDashboard: React.FC = () => {
           </section>
         )}
 
-        {activeTab === 'borrows' && (
-          <section className="card admin-table-section" ref={borrowsRef}>
-            <div className="admin-table-header-box">
-              <h3 className="admin-table-title">Borrow History</h3>
-              <div className="admin-filter-group">
-                <div className="admin-filter-item">
-                  <span className="admin-filter-label">Status</span>
-                  <select value={borrowStatusFilter} onChange={(e) => setBorrowStatusFilter(e.target.value)} className="admin-filter-select">
-                    <option value="all">All Records</option>
-                    <option value="borrowed">Borrowed</option>
-                    <option value="returned">Returned</option>
-                    <option value="overdue">Overdue</option>
-                  </select>
-                </div>
-                <div className="admin-filter-item">
-                  <span className="admin-filter-label">Tier</span>
-                  <select value={membershipFilter} onChange={(e) => setMembershipFilter(e.target.value)} className="admin-filter-select">
-                    <option value="all">All Tiers</option>
-                    <option value={MembershipName.BASIC.toLowerCase()}>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</option>
-                    <option value={MembershipName.STANDARD.toLowerCase()}>{MembershipName.STANDARD.charAt(0).toUpperCase() + MembershipName.STANDARD.slice(1)}</option>
-                    <option value={MembershipName.PREMIUM.toLowerCase()}>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</option>
-                  </select>
+        {
+          activeTab === 'borrows' && (
+            <section className="card admin-table-section" ref={borrowsRef}>
+              <div className="admin-table-header-box">
+                <h3 className="admin-table-title">Borrow History</h3>
+                <div className="admin-filter-group">
+                  <div className="admin-filter-item">
+                    <span className="admin-filter-label">Status</span>
+                    <select value={borrowStatusFilter} onChange={(e) => setBorrowStatusFilter(e.target.value)} className="admin-filter-select">
+                      <option value="all">All Records</option>
+                      <option value="borrowed">Borrowed</option>
+                      <option value="returned">Returned</option>
+                      <option value="overdue">Overdue</option>
+                    </select>
+                  </div>
+                  <div className="admin-filter-item">
+                    <span className="admin-filter-label">Tier</span>
+                    <select value={membershipFilter} onChange={(e) => setMembershipFilter(e.target.value)} className="admin-filter-select">
+                      <option value="all">All Tiers</option>
+                      <option value={MembershipName.BASIC.toLowerCase()}>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</option>
+                      <option value={MembershipName.PREMIUM.toLowerCase()}>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="admin-table-wrapper">
-              {isDataLoading ? (
-                <div className="admin-loading-container">
-                  <div className="spinner"></div>
-                  <p>Processing Records...</p>
-                </div>
-              ) : (
-                <table className="admin-table">
-                  <thead><tr><th>Borrower</th><th>Book</th><th>Dates</th><th>Fine</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
-                  <tbody>{borrows.map(b => {
-                    const membershipName = (b.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
-                    const isPremiumUser = membershipName.toLowerCase().includes(MembershipName.PREMIUM.toLowerCase());
+              <div className="admin-table-wrapper">
+                {isDataLoading ? (
+                  <div className="admin-loading-container">
+                    <div className="spinner"></div>
+                    <p>Processing Records...</p>
+                  </div>
+                ) : (
+                  <table className="admin-table">
+                    <thead><tr><th>Borrower</th><th>Book</th><th>Dates</th><th>Fine</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
+                    <tbody>{borrows.map(b => {
+                      const membershipName = (b.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
+                      const isPremiumUser = membershipName.toLowerCase().includes(MembershipName.PREMIUM.toLowerCase());
 
-                    return (
-                      <tr key={b._id}>
+                      return (
+                        <tr key={b._id}>
+                          <td>
+                            <div className="user-info-box">
+                              <span className="user-main-name">{b.user_id?.name}</span>
+                              <span className={`membership-pill ${isPremiumUser ? 'membership-premium' : ''}`}>
+                                {membershipName}
+                              </span>
+                            </div>
+                          </td>
+                          <td><div className="book-info-box"><span className="book-main-title">{b.book_id?.title}</span></div></td>
+                          <td><div className="book-info-box"><div>Issued: {b.issued_date ? new Date(b.issued_date).toLocaleDateString() : 'N/A'}</div><div>Due: {b.return_date ? new Date(b.return_date).toLocaleDateString() : 'N/A'}</div></div></td>
+                          <td><span className={`admin-fine-amount ${(b.fine_amount || 0) > 0 ? 'admin-fine-danger' : ''}`}>₹{(b.fine_amount || 0).toFixed(2)}</span></td>
+                          <td><span className={`status-badge status-${b.status}`}>{b.status.replace(/_/g, ' ')}</span></td>
+                          <td className="admin-actions-cell">{(b.fine_amount || 0) > 50 && <button onClick={() => handleSendReminder(b._id)} className="admin-reminder-btn">Remind</button>}</td>
+                        </tr>
+                      );
+                    })}</tbody>
+                  </table>
+                )}
+              </div>
+              {!isDataLoading && borrows.length === 0 && (
+                <div className="admin-empty-state">No borrow history records found.</div>
+              )}
+              {borrowTotalPages > 1 && (
+                <div className="pagination-controls">
+                  <button
+                    disabled={borrowPage === 1}
+                    onClick={() => setBorrowPage(prev => prev - 1)}
+                    className={`admin-reminder-btn ${borrowPage === 1 ? 'disabled-with-stop' : ''}`}
+                  >
+                    <span className="btn-text">Previous</span>
+                    <CircleSlash size={16} className="stop-icon" />
+                  </button>
+                  <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
+                  <button
+                    disabled={borrowPage === borrowTotalPages}
+                    onClick={() => setBorrowPage(prev => prev + 1)}
+                    className={`admin-btn-edit ${borrowPage === borrowTotalPages ? 'disabled-with-stop' : ''}`}
+                    style={{ padding: '0.45rem 1.5rem' }}
+                  >
+                    <span className="btn-text">Next</span>
+                    <CircleSlash size={16} className="stop-icon" />
+                  </button>
+                </div>
+              )}
+            </section>
+          )
+        }
+
+        {
+          activeTab === 'logs' && (
+            <section className="card admin-table-section">
+              <div className="admin-table-header-box"><h3 className="admin-table-title">Activity Logs</h3></div>
+              <div className="admin-table-wrapper">
+                {isDataLoading ? (
+                  <div className="admin-loading-container">
+                    <div className="spinner"></div>
+                    <p>Loading System Logs...</p>
+                  </div>
+                ) : (
+                  <table className="admin-table">
+                    <thead><tr><th>User</th><th>Action</th><th>Timestamp</th></tr></thead>
+                    <tbody>{logs.map(log => (
+                      <tr key={log._id}>
                         <td>
                           <div className="user-info-box">
-                            <span className="user-main-name">{b.user_id?.name}</span>
-                            <span className={`membership-pill ${isPremiumUser ? 'membership-premium' : ''}`}>
-                              {membershipName}
+                            <span className="user-main-name">{log.user_id?.name}</span>
+                            <span className="user-sub-email">{log.user_id?.email}</span>
+                            <span className={`membership-pill ${((log.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
+                              {(log.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
                             </span>
                           </div>
                         </td>
-                        <td><div className="book-info-box"><span className="book-main-title">{b.book_id?.title}</span></div></td>
-                        <td><div className="book-info-box"><div>Issued: {b.issued_date ? new Date(b.issued_date).toLocaleDateString() : 'N/A'}</div><div>Due: {b.return_date ? new Date(b.return_date).toLocaleDateString() : 'N/A'}</div></div></td>
-                        <td><span className={`admin-fine-amount ${(b.fine_amount || 0) > 0 ? 'admin-fine-danger' : ''}`}>₹{(b.fine_amount || 0).toFixed(2)}</span></td>
-                        <td><span className={`status-badge status-${b.status}`}>{b.status.replace(/_/g, ' ')}</span></td>
-                        <td className="admin-actions-cell">{(b.fine_amount || 0) > 50 && <button onClick={() => handleSendReminder(b._id)} className="admin-reminder-btn">Remind</button>}</td>
+                        <td><span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{log.action}</span></td>
+                        <td><span className="book-sub-meta">{new Date(log.timestamp).toLocaleString()}</span></td>
                       </tr>
-                    );
-                  })}</tbody>
-                </table>
-              )}
-            </div>
-            {!isDataLoading && borrows.length === 0 && (
-              <div className="admin-empty-state">No borrow history records found.</div>
-            )}
-            {borrowTotalPages > 1 && (
-              <div className="pagination-controls">
-                <button
-                  disabled={borrowPage === 1}
-                  onClick={() => setBorrowPage(prev => prev - 1)}
-                  className={`admin-reminder-btn ${borrowPage === 1 ? 'disabled-with-stop' : ''}`}
-                >
-                  <span className="btn-text">Previous</span>
-                  <CircleSlash size={16} className="stop-icon" />
-                </button>
-                <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
-                <button
-                  disabled={borrowPage === borrowTotalPages}
-                  onClick={() => setBorrowPage(prev => prev + 1)}
-                  className={`admin-btn-edit ${borrowPage === borrowTotalPages ? 'disabled-with-stop' : ''}`}
-                  style={{ padding: '0.45rem 1.5rem' }}
-                >
-                  <span className="btn-text">Next</span>
-                  <CircleSlash size={16} className="stop-icon" />
-                </button>
+                    ))}</tbody>
+                  </table>
+                )}
               </div>
-            )}
-          </section>
-        )}
-
-        {activeTab === 'logs' && (
-          <section className="card admin-table-section">
-            <div className="admin-table-header-box"><h3 className="admin-table-title">Activity Logs</h3></div>
-            <div className="admin-table-wrapper">
-              {isDataLoading ? (
-                <div className="admin-loading-container">
-                  <div className="spinner"></div>
-                  <p>Loading System Logs...</p>
-                </div>
-              ) : (
-                <table className="admin-table">
-                  <thead><tr><th>User</th><th>Action</th><th>Timestamp</th></tr></thead>
-                  <tbody>{logs.map(log => (
-                    <tr key={log._id}>
-                      <td>
-                        <div className="user-info-box">
-                          <span className="user-main-name">{log.user_id?.name}</span>
-                          <span className="user-sub-email">{log.user_id?.email}</span>
-                          <span className={`membership-pill ${((log.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
-                            {(log.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
-                          </span>
-                        </div>
-                      </td>
-                      <td><span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{log.action}</span></td>
-                      <td><span className="book-sub-meta">{new Date(log.timestamp).toLocaleString()}</span></td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              )}
-            </div>
-            {!isDataLoading && logs.length === 0 && <div className="admin-empty-state">No logs found.</div>}
-          </section>
-        )}
-      </main>
+              {!isDataLoading && logs.length === 0 && <div className="admin-empty-state">No logs found.</div>}
+            </section>
+          )
+        }
+      </main >
 
       <ConfirmationModal
         isOpen={confirmModal.isOpen} title={confirmModal.title} message={confirmModal.message}
         type={confirmModal.type} isLoading={confirmModal.isLoading} onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
-    </div>
+    </div >
   );
 };
 

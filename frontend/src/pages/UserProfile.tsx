@@ -17,6 +17,7 @@ const UserProfile: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState({
     name: "",
+    phone: "",
     favoriteGenres: [] as string[],
     booksRead: 0,
     readingTarget: 0
@@ -37,6 +38,7 @@ const UserProfile: React.FC = () => {
       setUser(data);
       setFormData({
         name: data.name,
+        phone: data.phone || "",
         favoriteGenres: data.favoriteGenres || [],
         booksRead: data.booksRead || 0,
         readingTarget: data.readingTarget || 0
@@ -90,6 +92,7 @@ const UserProfile: React.FC = () => {
     try {
       const data = new FormData();
       data.append("name", formData.name);
+      data.append("phone", formData.phone);
       data.append("favoriteGenres", JSON.stringify(formData.favoriteGenres));
       data.append("booksRead", formData.booksRead.toString());
       data.append("readingTarget", formData.readingTarget.toString());
@@ -271,6 +274,15 @@ const UserProfile: React.FC = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Phone Number</label>
+                  <input
+                    type="tel"
+                    placeholder="+91 00000 00000"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
               </div>

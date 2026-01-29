@@ -7,10 +7,21 @@ export type RoleName = typeof RoleName[keyof typeof RoleName];
 
 export const MembershipName = {
     BASIC: 'basic',
-    STANDARD: 'standard',
     PREMIUM: 'premium'
 } as const;
 export type MembershipName = typeof MembershipName[keyof typeof MembershipName];
+
+export const OrderStatus = {
+    PENDING: 'pending',
+    PROCESSING: 'processing',
+    SHIPPED: 'shipped',
+    DELIVERED: 'delivered',
+    CANCELLED: 'cancelled',
+    RETURN_REQUESTED: 'return_requested',
+    RETURNED: 'returned',
+    RETURN_REJECTED: 'return_rejected'
+} as const;
+export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
 
 export const BookStatus = {
     AVAILABLE: 'available',
