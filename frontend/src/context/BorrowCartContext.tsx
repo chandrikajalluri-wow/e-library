@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import type { Book } from '../types';
+import { getCart, syncCart } from '../services/userService';
 
 export interface CartItem {
     book: Book;
@@ -21,8 +22,9 @@ interface BorrowCartContextType {
 const BorrowCartContext = createContext<BorrowCartContextType | undefined>(undefined);
 
 export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const isInitialMount = useRef(true);
+    const token = localStorage.getItem('token');
     const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-        // Load cart from localStorage on initialization
         try {
             const savedCart = localStorage.getItem('borrowCart');
             return savedCart ? JSON.parse(savedCart) : [];
@@ -32,18 +34,57 @@ export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
     });
 
-    // Save cart to localStorage whenever it changes
+    // Load cart from localStorage on initialization
     useEffect(() => {
+        const fetchRemoteCart = async () => {
+            if (token) {
+                try {
+                    const remoteCart = await getCart();
+                    if (remoteCart && remoteCart.length > 0) {
+                        const formattedCart: CartItem[] = remoteCart.map((item: any) => ({
+                            book: item.book_id,
+                            quantity: item.quantity
+                        }));
+                        setCartItems(formattedCart);
+                    }
+                } catch (error) {
+                    console.error('Error fetching remote cart:', error);
+                }
+            }
+        };
+        fetchRemoteCart();
+    }, [token]);
+
+    // Save cart to localStorage and backend whenever it changes
+    useEffect(() => {
+        // Save to localStorage
         try {
             localStorage.setItem('borrowCart', JSON.stringify(cartItems));
         } catch (error) {
             console.error('Error saving cart to localStorage:', error);
         }
-    }, [cartItems]);
+
+        // Sync to backend if logged in (skip initial mount to avoid overwriting remote cart with local on load)
+        const syncWithBackend = async () => {
+            if (token && !isInitialMount.current) {
+                try {
+                    await syncCart(cartItems);
+                } catch (error) {
+                    console.error('Error syncing cart with backend:', error);
+                }
+            }
+        };
+
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+        } else {
+            syncWithBackend();
+        }
+    }, [cartItems, token]);
 
     const addToCart = (book: Book) => {
-        setCartItems((prevItems) => {
-            const existingItem = prevItems.find((item) => item.book._id === book._id);
+        setCartItems((prevItems: CartItem[]) => {
+            const existingItem = prevItems.find((item: CartItem) => item.book._id === book._id);
 
             if (existingItem) {
                 // Increment quantity if book already in cart (max: available stock)
@@ -63,12 +104,12 @@ export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     const removeFromCart = (bookId: string) => {
-        setCartItems((prevItems) => prevItems.filter((item) => item.book._id !== bookId));
+        setCartItems((prevItems: CartItem[]) => prevItems.filter((item: CartItem) => item.book._id !== bookId));
     };
 
     const increaseQty = (bookId: string) => {
-        setCartItems((prevItems) =>
-            prevItems.map((item) => {
+        setCartItems((prevItems: CartItem[]) =>
+            prevItems.map((item: CartItem) => {
                 if (item.book._id === bookId && item.quantity < item.book.noOfCopies) {
                     return { ...item, quantity: item.quantity + 1 };
                 }
@@ -78,8 +119,8 @@ export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     const decreaseQty = (bookId: string) => {
-        setCartItems((prevItems) =>
-            prevItems.map((item) => {
+        setCartItems((prevItems: CartItem[]) =>
+            prevItems.map((item: CartItem) => {
                 if (item.book._id === bookId && item.quantity > 1) {
                     return { ...item, quantity: item.quantity - 1 };
                 }

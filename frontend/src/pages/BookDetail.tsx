@@ -231,14 +231,43 @@ const BookDetail: React.FC = () => {
   };
 
   const handleLike = async (reviewId: string) => {
-    if (!localStorage.getItem('token')) {
+    if (!localStorage.getItem('token') || !currentUserId) {
       toast.info('Please sign in to like reviews');
       return;
     }
+
+    // Optimistic Update
+    const previousReviews = [...reviews];
+    setReviews(prev => prev.map(r => {
+      if (r._id === reviewId) {
+        const isLiked = r.likes?.includes(currentUserId);
+        const isDisliked = r.dislikes?.includes(currentUserId);
+
+        // Remove from dislikes if it was there
+        let newDislikes = r.dislikes || [];
+        if (isDisliked) {
+          newDislikes = newDislikes.filter((id: string) => id !== currentUserId);
+        }
+
+        // Toggle like
+        let newLikes = r.likes || [];
+        if (isLiked) {
+          newLikes = newLikes.filter((id: string) => id !== currentUserId);
+        } else {
+          newLikes = [...newLikes, currentUserId];
+        }
+
+        return { ...r, likes: newLikes, dislikes: newDislikes };
+      }
+      return r;
+    }));
+
     try {
       await likeReview(reviewId);
-      fetchReviews(id!);
+      // No need to fetchReviews here as we already updated optimistically
+      // and we expect the server to be in sync.
     } catch (err: any) {
+      setReviews(previousReviews); // Rollback
       console.error('Like error:', err.response || err);
       const msg = err.response?.data?.error || 'Failed to like review';
       toast.error(msg);
@@ -246,14 +275,41 @@ const BookDetail: React.FC = () => {
   };
 
   const handleDislike = async (reviewId: string) => {
-    if (!localStorage.getItem('token')) {
+    if (!localStorage.getItem('token') || !currentUserId) {
       toast.info('Please sign in to dislike reviews');
       return;
     }
+
+    // Optimistic Update
+    const previousReviews = [...reviews];
+    setReviews(prev => prev.map(r => {
+      if (r._id === reviewId) {
+        const isLiked = r.likes?.includes(currentUserId);
+        const isDisliked = r.dislikes?.includes(currentUserId);
+
+        // Remove from likes if it was there
+        let newLikes = r.likes || [];
+        if (isLiked) {
+          newLikes = newLikes.filter((id: string) => id !== currentUserId);
+        }
+
+        // Toggle dislike
+        let newDislikes = r.dislikes || [];
+        if (isDisliked) {
+          newDislikes = newDislikes.filter((id: string) => id !== currentUserId);
+        } else {
+          newDislikes = [...newDislikes, currentUserId];
+        }
+
+        return { ...r, likes: newLikes, dislikes: newDislikes };
+      }
+      return r;
+    }));
+
     try {
       await dislikeReview(reviewId);
-      fetchReviews(id!);
     } catch (err: any) {
+      setReviews(previousReviews); // Rollback
       console.error('Dislike error:', err.response || err);
       const msg = err.response?.data?.error || 'Failed to dislike review';
       toast.error(msg);

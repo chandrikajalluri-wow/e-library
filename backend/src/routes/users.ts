@@ -47,4 +47,9 @@ router.post('/logout-all', auth, userController.logoutAll);
 // Delete Account
 router.delete('/me', auth, userController.deleteAccount);
 
+// Cart Sync
+router.get('/cart', auth, userController.getCart);
+router.post('/cart/sync', auth, userController.syncCart);
+router.delete('/cart', auth, userController.clearCartLocally);
+
 export default router;

@@ -33,6 +33,10 @@ export const auth = async (
           .status(401)
           .json({ error: 'Not authorized, user not found' });
 
+      if (user.isDeleted) {
+        return res.status(401).json({ error: 'Account has been deleted' });
+      }
+
       req.user = user;
       next();
     } catch (error) {

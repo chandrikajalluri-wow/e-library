@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getAllUsers, manageAdmin, deleteUser } from '../../services/superAdminService';
+import { getAllUsers, manageAdmin, deleteUser, revokeUserDeletion } from '../../services/superAdminService';
 import { toast } from 'react-toastify';
 import ConfirmationModal from '../ConfirmationModal';
 import { RoleName } from '../../types/enums';
@@ -14,14 +14,18 @@ interface User {
     deletionScheduledAt?: string; // It comes as string from JSON
 }
 
-const UserAdminManagement: React.FC = () => {
+interface UserAdminManagementProps {
+    hideTitle?: boolean;
+}
+
+const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = false }) => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [modalAction, setModalAction] = useState<'promote' | 'demote' | 'delete' | null>(null);
+    const [modalAction, setModalAction] = useState<'promote' | 'demote' | 'delete' | 'revoke' | null>(null);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -40,7 +44,7 @@ const UserAdminManagement: React.FC = () => {
         fetchUsers();
     }, []);
 
-    const confirmAction = (user: User, action: 'promote' | 'demote' | 'delete') => {
+    const confirmAction = (user: User, action: 'promote' | 'demote' | 'delete' | 'revoke') => {
         setSelectedUser(user);
         setModalAction(action);
         setModalOpen(true);
@@ -59,6 +63,9 @@ const UserAdminManagement: React.FC = () => {
                 } else {
                     toast.success('User scheduled for deletion (7 days)');
                 }
+            } else if (modalAction === 'revoke') {
+                await revokeUserDeletion(selectedUser._id);
+                toast.success('User deletion revoked successfully');
             } else {
                 await manageAdmin(selectedUser._id, modalAction);
                 toast.success(`User ${modalAction}d successfully`);
@@ -125,6 +132,12 @@ const UserAdminManagement: React.FC = () => {
                     message: `This will schedule ${selectedUser.name} for deletion in 7 days. If they have no pending books/fines.`,
                     type: 'danger' as const
                 };
+            case 'revoke':
+                return {
+                    title: 'Revoke Deletion',
+                    message: `Are you sure you want to cancel the scheduled deletion for ${selectedUser.name}?`,
+                    type: 'info' as const
+                };
             default:
                 return { title: '', message: '', type: 'info' as const };
         }
@@ -142,7 +155,7 @@ const UserAdminManagement: React.FC = () => {
     return (
         <div className="card admin-table-section">
             <div className="admin-table-header-box">
-                <h3 className="admin-table-title">User & Admin Management</h3>
+                {!hideTitle && <h3 className="admin-table-title">User & Admin Management</h3>}
                 <input
                     type="text"
                     placeholder="Search Users..."
@@ -199,7 +212,11 @@ const UserAdminManagement: React.FC = () => {
                                                     {user.role_id?.name === RoleName.ADMIN && (
                                                         <button onClick={() => confirmAction(user, 'demote')} className="admin-btn-reject">Remove Admin</button>
                                                     )}
-                                                    <button onClick={() => confirmAction(user, 'delete')} className="admin-btn-delete">Delete</button>
+                                                    {user.deletionScheduledAt ? (
+                                                        <button onClick={() => confirmAction(user, 'revoke')} className="admin-btn-approve">Revoke</button>
+                                                    ) : (
+                                                        <button onClick={() => confirmAction(user, 'delete')} className="admin-btn-delete">Delete</button>
+                                                    )}
                                                 </>
                                             )}
                                         </div>

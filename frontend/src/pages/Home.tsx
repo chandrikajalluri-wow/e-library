@@ -359,7 +359,9 @@ const Home: React.FC = () => {
         title="Sign Out"
         message="Are you sure you want to sign out from Bookstack?"
         onConfirm={() => {
-          localStorage.clear();
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          localStorage.removeItem('userId');
           window.location.reload();
         }}
         onCancel={() => setIsLogoutModalOpen(false)}
