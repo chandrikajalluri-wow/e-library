@@ -44,3 +44,21 @@ export const RequestStatus = {
     REJECTED: 'rejected'
 } as const;
 export type RequestStatus = typeof RequestStatus[keyof typeof RequestStatus];
+
+export const AnnouncementType = {
+    INFO: 'INFO',
+    OFFER: 'OFFER',
+    GREETING: 'GREETING',
+    MAINTENANCE: 'MAINTENANCE',
+    WARNING: 'WARNING'
+} as const;
+export type AnnouncementType = typeof AnnouncementType[keyof typeof AnnouncementType];
+
+export const TargetPage = {
+    ALL: 'ALL',
+    HOME: 'HOME',
+    BOOKS: 'BOOKS',
+    DASHBOARD: 'DASHBOARD',
+    PROFILE: 'PROFILE'
+} as const;
+export type TargetPage = typeof TargetPage[keyof typeof TargetPage];

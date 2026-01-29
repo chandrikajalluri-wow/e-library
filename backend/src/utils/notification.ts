@@ -43,3 +43,29 @@ export const notifySuperAdmins = async (message: string, type: 'system' | 'borro
         console.error('Error notifying super admins:', err);
     }
 };
+
+export const notifyAllUsers = async (message: string, type: 'system' | 'borrow' | 'return' | 'wishlist' | 'fine' = 'system', book_id?: string | Types.ObjectId) => {
+    try {
+        // Find all users with RoleName.USER
+        // We assume 'User' role is for standard users. Assuming we want to notify ALL registered users including admins?
+        // Usually "Users" means everyone.
+
+        const users = await User.find().select('_id');
+
+        if (users.length === 0) return;
+
+        const notifications = users.map(user => ({
+            user_id: user._id,
+            message,
+            type,
+            book_id,
+            timestamp: new Date(),
+            is_read: false
+        }));
+
+        // Batch insert
+        await Notification.insertMany(notifications);
+    } catch (err) {
+        console.error('Error notifying all users:', err);
+    }
+};

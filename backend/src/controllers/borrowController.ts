@@ -7,6 +7,7 @@ import Membership from '../models/Membership';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendNotification } from '../utils/notification';
 import { MembershipName, BorrowStatus, BookStatus, NotificationType } from '../types/enums';
+import ActivityLog from '../models/ActivityLog';
 
 export const issueBook = async (req: AuthRequest, res: Response) => {
     const { book_id, days } = req.body;
@@ -101,6 +102,14 @@ export const issueBook = async (req: AuthRequest, res: Response) => {
             book._id as any
         );
 
+        await ActivityLog.create({
+            user_id: req.user!._id,
+            action: 'BORROW_BOOK',
+            description: `Borrowed book: ${book.title}`,
+            book_id: book._id,
+            timestamp: new Date()
+        });
+
         res.status(201).json(borrow);
     } catch (err: any) {
         console.error('Borrow error:', err);
@@ -159,6 +168,14 @@ export const requestReturn = async (req: AuthRequest, res: Response) => {
             borrow.book_id as any
         );
 
+        await ActivityLog.create({
+            user_id: req.user!._id,
+            action: 'RETURN_REQUEST',
+            description: `Requested to return book: ${book?.title || 'Unknown Book'}`,
+            book_id: borrow.book_id,
+            timestamp: new Date()
+        });
+
         res.json(borrow);
     } catch (err) {
         console.log(err);
@@ -208,6 +225,14 @@ export const payFine = async (req: AuthRequest, res: Response) => {
             req.user!._id as any,
             borrow.book_id as any
         );
+
+        await ActivityLog.create({
+            user_id: req.user!._id,
+            action: 'FINE_PAID',
+            description: `Paid fine of ₹${fine} for book: ${(await Book.findById(borrow.book_id))?.title}`,
+            book_id: borrow.book_id,
+            timestamp: new Date()
+        });
 
         res.json({ message: 'Fine paid successfully', borrow });
     } catch (err) {
@@ -516,6 +541,19 @@ export const checkoutCart = async (req: AuthRequest, res: Response) => {
             req.user!._id as any,
             null as any
         );
+
+        // Create detailed description for Activity Log
+        const bookTitles = items.map((item: any) => {
+            const book = bookMap.get(item.book_id);
+            return book ? book.title : 'Unknown';
+        }).join(', '); // Simple join, can truncated if too long
+
+        await ActivityLog.create({
+            user_id: req.user!._id,
+            action: 'CART_CHECKOUT',
+            description: `Checked out ${totalItemsToBorrow} books: ${bookTitles.substring(0, 200)}${bookTitles.length > 200 ? '...' : ''}`,
+            timestamp: new Date()
+        });
 
         res.status(201).json({
             message: `Successfully checked out ${totalItemsToBorrow} book(s)`,

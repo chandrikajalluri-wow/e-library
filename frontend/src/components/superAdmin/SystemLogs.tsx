@@ -23,7 +23,7 @@ const SystemLogs: React.FC = () => {
     return (
         <div className="card admin-table-section">
             <div className="admin-table-header-box">
-                <h3 className="admin-table-title">System Activity Logs</h3>
+                <h3 className="admin-table-title">Admin Activity Logs</h3>
                 <span className="page-info">Showing last {logs.length} entries</span>
             </div>
             <div className="admin-table-wrapper">

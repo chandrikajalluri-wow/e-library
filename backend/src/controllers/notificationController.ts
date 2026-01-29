@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Notification from '../models/Notification';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { RoleName } from '../types/enums';
 
 export const getMyNotifications = async (req: AuthRequest, res: Response) => {
     try {
@@ -43,11 +44,24 @@ export const markAllMyNotificationsAsRead = async (req: AuthRequest, res: Respon
 export const getAllNotifications = async (req: Request, res: Response) => {
     try {
         const notifications = await Notification.find()
-            .populate('user_id', 'name email')
+            .populate({
+                path: 'user_id',
+                select: 'name email role_id',
+                populate: {
+                    path: 'role_id',
+                    select: 'name'
+                }
+            })
             .populate('book_id', 'title')
             .sort({ timestamp: -1 })
             .limit(50);
-        res.json(notifications);
+
+        const userNotifications = notifications.filter(notif => {
+            const user = notif.user_id as any;
+            return user?.role_id?.name === RoleName.USER;
+        });
+
+        res.json(userNotifications);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }

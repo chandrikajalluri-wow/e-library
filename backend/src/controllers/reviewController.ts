@@ -4,6 +4,8 @@ import Borrow from '../models/Borrow';
 import Book from '../models/Book';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { maskProfanity } from '../utils/profanityFilter';
+import { notifySuperAdmins } from '../utils/notification';
+import ActivityLog from '../models/ActivityLog';
 
 export const getReviewsForBook = async (req: Request, res: Response) => {
     try {
@@ -48,7 +50,15 @@ export const addReview = async (req: AuthRequest, res: Response) => {
 
         const allReviews = await Review.find({ book_id });
         const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-        await Book.findByIdAndUpdate(book_id, { rating: Number(avgRating.toFixed(1)) });
+        const bookDoc = await Book.findByIdAndUpdate(book_id, { rating: Number(avgRating.toFixed(1)) }, { new: true });
+
+        await ActivityLog.create({
+            user_id: req.user!._id,
+            action: 'REVIEW_ADDED',
+            description: `Added review for: ${bookDoc?.title || 'Unknown Book'}`,
+            book_id: book_id,
+            timestamp: new Date()
+        });
 
         res.status(201).json(review);
     } catch (err) {
@@ -146,7 +156,7 @@ export const dislikeReview = async (req: AuthRequest, res: Response) => {
 export const reportReview = async (req: AuthRequest, res: Response) => {
     const { reason } = req.body;
     try {
-        const review = await Review.findById(req.params.id);
+        const review = await Review.findById(req.params.id).populate('book_id');
         if (!review) return res.status(404).json({ error: 'Review not found' });
 
         // Initialize if missing
@@ -167,6 +177,12 @@ export const reportReview = async (req: AuthRequest, res: Response) => {
         });
 
         await review.save();
+
+        const bookTitle = (review.book_id as any).title || 'Unknown Book';
+        await notifySuperAdmins(
+            `Review reported by ${req.user!.name} for book "${bookTitle}". Reason: ${reason}`
+        );
+
         res.json({ message: 'Review reported successfully' });
     } catch (err) {
         console.error(err);
