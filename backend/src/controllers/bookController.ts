@@ -8,7 +8,7 @@ import Borrow from '../models/Borrow';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadToS3, getS3FileStream } from '../utils/s3Service';
 import ActivityLog from '../models/ActivityLog';
-import { notifySuperAdmins } from '../utils/notification';
+import { notifySuperAdmins, notifyAllUsers } from '../utils/notification';
 import { RoleName, BookStatus, BorrowStatus, MembershipName } from '../types/enums';
 
 export const getAllBooks = async (req: Request, res: Response, next: NextFunction) => {
@@ -137,6 +137,9 @@ export const createBook = async (req: AuthRequest, res: Response, next: NextFunc
             await notifySuperAdmins(`Admin ${req.user!.name} added a new book: ${book.title}`);
         }
 
+        // Notify all users about the new book
+        await notifyAllUsers(`New Addition: "${book.title}" is now available!`, 'system', book._id);
+
         res.status(201).json(book);
     } catch (err) {
         next(err);
@@ -227,9 +230,21 @@ export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunc
 
 export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+        console.log(`[viewBookPdf] Request received for book ID: ${req.params.id}`);
+
         const book = await Book.findById(req.params.id);
-        if (!book) return res.status(404).json({ error: 'Book not found' });
-        if (!book.pdf_url) return res.status(404).json({ error: 'PDF not available for this book' });
+        if (!book) {
+            console.error(`[viewBookPdf] Book not found: ${req.params.id}`);
+            return res.status(404).json({ error: 'Book not found' });
+        }
+
+        console.log(`[viewBookPdf] Book found: ${book.title}`);
+        console.log(`[viewBookPdf] PDF URL: ${book.pdf_url}`);
+
+        if (!book.pdf_url) {
+            console.error(`[viewBookPdf] No PDF URL for book: ${book.title}`);
+            return res.status(404).json({ error: 'PDF not available for this book' });
+        }
 
         try {
             // Robust key extraction
@@ -243,9 +258,13 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
                 key = book.pdf_url.replace(/^\/+/, '');
             }
 
-            console.log(`[viewBookPdf] Attempting to fetch PDF from S3. Book: ${book.title}, ID: ${req.params.id}, Key: ${key}`);
+            console.log(`[viewBookPdf] Extracted S3 Key: "${key}"`);
+            console.log(`[viewBookPdf] Bucket: ${process.env.AWS_S3_BUCKET_NAME}`);
+            console.log(`[viewBookPdf] Region: ${process.env.AWS_REGION}`);
 
             const s3Response = await getS3FileStream(key);
+
+            console.log(`[viewBookPdf] S3 Response received. Content-Type: ${s3Response.ContentType}, Content-Length: ${s3Response.ContentLength}`);
 
             // Set headers for inline viewing (not download)
             res.setHeader('Content-Type', s3Response.ContentType || 'application/pdf');
@@ -261,12 +280,20 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
 
             if (s3Response.Body) {
                 (s3Response.Body as Readable).pipe(res);
+                console.log(`[viewBookPdf] Streaming PDF to client`);
             } else {
                 console.error(`[viewBookPdf] PDF content not found in S3 for key: ${key}`);
                 res.status(404).json({ error: 'PDF content not found in storage' });
             }
         } catch (s3Err: any) {
-            console.error(`[viewBookPdf] S3 Stream Error for book ${req.params.id}:`, s3Err);
+            console.error(`[viewBookPdf] S3 Error for book ${req.params.id}:`, {
+                name: s3Err.name,
+                message: s3Err.message,
+                code: s3Err.code,
+                statusCode: s3Err.$metadata?.httpStatusCode,
+                stack: s3Err.stack
+            });
+
             const statusCode = s3Err.name === 'NoSuchKey' ? 404 : 500;
             const message = s3Err.name === 'NoSuchKey' ? 'PDF file not found in storage' : 'Failed to fetch PDF from storage';
             res.status(statusCode).json({
@@ -274,7 +301,11 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
                 details: process.env.NODE_ENV === 'development' ? s3Err.message : undefined
             });
         }
-    } catch (err) {
+    } catch (err: any) {
+        console.error(`[viewBookPdf] Unexpected error:`, {
+            message: err.message,
+            stack: err.stack
+        });
         next(err);
     }
 };

@@ -34,8 +34,8 @@ export const getAnnouncements = async () => {
     return response.data;
 };
 
-export const createAnnouncement = async (title: string, content: string) => {
-    const response = await api.post('/super-admin/announcements', { title, content });
+export const createAnnouncement = async (title: string, content: string, type: string, targetPage: string) => {
+    const response = await api.post('/super-admin/announcements', { title, content, type, targetPage });
     return response.data;
 };
 
@@ -56,5 +56,25 @@ export const deleteReview = async (id: string) => {
 
 export const getAdmins = async () => {
     const response = await api.get('/super-admin/admins');
+    return response.data;
+};
+
+export const getContactQueries = async () => {
+    const response = await api.get('/super-admin/contact-queries');
+    return response.data;
+};
+
+export const updateContactQueryStatus = async (id: string, status: string) => {
+    const response = await api.patch(`/super-admin/contact-queries/${id}`, { status });
+    return response.data;
+};
+
+export const getReportedReviews = async () => {
+    const response = await api.get('/super-admin/reported-reviews');
+    return response.data;
+};
+
+export const dismissReviewReports = async (id: string) => {
+    const response = await api.patch(`/super-admin/reviews/${id}/dismiss`);
     return response.data;
 };

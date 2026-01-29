@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import Category from '../models/Category';
+import ActivityLog from '../models/ActivityLog';
 import Book from '../models/Book';
 import { notifySuperAdmins } from '../utils/notification';
 import { RoleName } from '../types/enums';
@@ -39,6 +40,12 @@ export const createCategory = async (req: any, res: Response) => {
         });
         await category.save();
 
+        await new ActivityLog({
+            user_id: req.user._id,
+            action: `Created category: ${category.name}`,
+            description: `Category ${category.name} created by ${req.user.name}`,
+        }).save();
+
         const userRole = (req.user.role_id as any).name;
         if (userRole === RoleName.ADMIN) {
             await notifySuperAdmins(`Admin ${req.user.name} created a new category: ${category.name}`);
@@ -61,6 +68,12 @@ export const updateCategory = async (req: any, res: Response) => {
         );
         if (!category)
             return res.status(404).json({ error: 'Category not found' });
+
+        await new ActivityLog({
+            user_id: req.user._id,
+            action: `Updated category: ${category.name}`,
+            description: `Category ${category.name} updated by ${req.user.name}`,
+        }).save();
 
         const userRole = (req.user.role_id as any).name;
         if (userRole === RoleName.ADMIN) {
@@ -86,6 +99,12 @@ export const deleteCategory = async (req: any, res: Response) => {
         const category = await Category.findByIdAndDelete(req.params.id);
         if (!category)
             return res.status(404).json({ error: 'Category not found' });
+
+        await new ActivityLog({
+            user_id: req.user._id,
+            action: `Deleted category: ${category.name}`,
+            description: `Category ${category.name} deleted by ${req.user.name}`,
+        }).save();
 
         const userRole = (req.user.role_id as any).name;
         if (userRole === RoleName.ADMIN) {

@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { getAnnouncements, createAnnouncement, deleteAnnouncement } from '../../services/superAdminService';
 import { toast } from 'react-toastify';
+import { AnnouncementType, TargetPage } from '../../types/enums';
 import ConfirmationModal from '../ConfirmationModal';
 
 const Announcements: React.FC = () => {
     const [announcements, setAnnouncements] = useState<any[]>([]);
-    const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '' });
+    const [newAnnouncement, setNewAnnouncement] = useState<{
+        title: string;
+        content: string;
+        type: AnnouncementType;
+        targetPage: TargetPage;
+    }>({
+        title: '',
+        content: '',
+        type: AnnouncementType.INFO,
+        targetPage: TargetPage.ALL
+    });
     const [loading, setLoading] = useState(false);
 
     // Modal State
@@ -31,9 +42,19 @@ const Announcements: React.FC = () => {
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await createAnnouncement(newAnnouncement.title, newAnnouncement.content);
+            await createAnnouncement(
+                newAnnouncement.title,
+                newAnnouncement.content,
+                newAnnouncement.type,
+                newAnnouncement.targetPage
+            );
             toast.success('Announcement created');
-            setNewAnnouncement({ title: '', content: '' });
+            setNewAnnouncement({
+                title: '',
+                content: '',
+                type: AnnouncementType.INFO,
+                targetPage: TargetPage.ALL
+            });
             fetchData();
         } catch (err) {
             toast.error('Failed to create announcement');
@@ -72,7 +93,6 @@ const Announcements: React.FC = () => {
                             onChange={e => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
                             required
                             className="admin-search-input"
-                            style={{ width: '100%' }}
                         />
                     </div>
                     <div className="form-group">
@@ -84,6 +104,30 @@ const Announcements: React.FC = () => {
                             className="admin-textarea"
                             rows={5}
                         />
+                    </div>
+                    <div className="form-group">
+                        <label>Type</label>
+                        <select
+                            value={newAnnouncement.type}
+                            onChange={e => setNewAnnouncement({ ...newAnnouncement, type: e.target.value as AnnouncementType })}
+                            className="admin-select"
+                        >
+                            {Object.values(AnnouncementType).map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>Target Page</label>
+                        <select
+                            value={newAnnouncement.targetPage}
+                            onChange={e => setNewAnnouncement({ ...newAnnouncement, targetPage: e.target.value as TargetPage })}
+                            className="admin-select"
+                        >
+                            {Object.values(TargetPage).map(page => (
+                                <option key={page} value={page}>{page}</option>
+                            ))}
+                        </select>
                     </div>
                     <button type="submit" className="admin-btn-edit" style={{ marginTop: '1rem' }}>Post Announcement</button>
                 </form>
@@ -100,7 +144,21 @@ const Announcements: React.FC = () => {
                     {loading ? <div className="spinner-mini"></div> : announcements.map(ann => (
                         <div key={ann._id} className="admin-category-card">
                             <div className="category-header">
-                                <span className="category-name" style={{ fontSize: '1.1rem' }}>{ann.title}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                    <span className="category-name" style={{ fontSize: '1.1rem' }}>{ann.title}</span>
+                                    <span className={`badge badge-${ann.type?.toLowerCase() || 'info'}`} style={{
+                                        fontSize: '0.75rem',
+                                        padding: '0.2rem 0.5rem',
+                                        borderRadius: '12px',
+                                        background: 'rgba(99, 102, 241, 0.1)',
+                                        color: 'var(--primary-color)'
+                                    }}>
+                                        {ann.type || 'INFO'}
+                                    </span>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                        Target: {ann.targetPage || 'ALL'}
+                                    </span>
+                                </div>
                                 <button onClick={() => confirmDelete(ann._id)} className="admin-btn-delete" style={{ padding: '0.3rem 0.6rem' }}>Delete</button>
                             </div>
                             <p className="category-desc">{ann.content}</p>
@@ -120,7 +178,7 @@ const Announcements: React.FC = () => {
                 confirmText="Delete"
                 type="danger"
             />
-        </div>
+        </div >
     );
 };
 

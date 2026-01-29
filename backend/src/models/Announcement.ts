@@ -4,6 +4,8 @@ export interface IAnnouncement extends Document {
     title: string;
     content: string;
     author: Types.ObjectId;
+    type: 'INFO' | 'OFFER' | 'GREETING' | 'MAINTENANCE' | 'WARNING';
+    targetPage: 'ALL' | 'HOME' | 'BOOKS' | 'DASHBOARD' | 'PROFILE';
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -14,6 +16,16 @@ const announcementSchema = new Schema<IAnnouncement>(
         title: { type: String, required: true },
         content: { type: String, required: true },
         author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        type: {
+            type: String,
+            enum: ['INFO', 'OFFER', 'GREETING', 'MAINTENANCE', 'WARNING'],
+            default: 'INFO'
+        },
+        targetPage: {
+            type: String,
+            enum: ['ALL', 'HOME', 'BOOKS', 'DASHBOARD', 'PROFILE'],
+            default: 'ALL'
+        },
         isActive: { type: Boolean, default: true },
     },
     { timestamps: true }

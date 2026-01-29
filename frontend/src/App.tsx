@@ -45,12 +45,15 @@ import ThemeToggle from './components/ThemeToggle';
 import ScrollToTop from './components/ScrollToTop';
 import { RoleName } from './types/enums';
 
+import AnnouncementBanner from './components/AnnouncementBanner';
+
 const App: React.FC = () => {
   return (
     <ThemeProvider>
       <Router>
         <ScrollRevealHandler />
         <AxiosInterceptor />
+        <AnnouncementBanner />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import UserAdminManagement from '../components/superAdmin/UserAdminManagement';
 import SystemLogs from '../components/superAdmin/SystemLogs';
 import Announcements from '../components/superAdmin/Announcements';
-import ContentModeration from '../components/superAdmin/ContentModeration';
+import ContactQueries from '../components/superAdmin/ContactQueries';
+import ReportedReviews from '../components/superAdmin/ReportedReviews';
 import AdminDashboard from './AdminDashboard';
 import AnalyticsDashboard from '../components/superAdmin/AnalyticsDashboard';
 import { getSystemMetrics } from '../services/superAdminService';
@@ -69,7 +70,8 @@ const SuperAdminDashboard: React.FC = () => {
                 {activeTab === 'users' && <UserAdminManagement />}
                 {(activeTab === 'books' || activeTab === 'categories') && <AdminDashboard />}
                 {activeTab === 'announcements' && <Announcements />}
-                {activeTab === 'moderation' && <ContentModeration />}
+                {activeTab === 'queries' && <ContactQueries />}
+                {activeTab === 'reported-reviews' && <ReportedReviews />}
                 {activeTab === 'logs' && <SystemLogs />}
             </main>
         </div>
