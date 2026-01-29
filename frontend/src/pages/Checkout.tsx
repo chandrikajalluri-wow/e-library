@@ -4,11 +4,27 @@ import { ArrowLeft, Wallet, Check, Package, ShieldCheck, Truck, ShoppingBag } fr
 import { useBorrowCart } from '../context/BorrowCartContext';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getMyMembership, type Membership } from '../services/membershipService';
+import { MembershipName } from '../types/enums';
 import '../styles/Checkout.css';
 
 const Checkout: React.FC = () => {
     const navigate = useNavigate();
     const { cartItems, getCartCount } = useBorrowCart();
+    const [membership, setMembership] = React.useState<Membership | null>(null);
+
+    React.useEffect(() => {
+        loadMembership();
+    }, []);
+
+    const loadMembership = async () => {
+        try {
+            const data = await getMyMembership();
+            setMembership(data);
+        } catch (err) {
+            console.error('Failed to load membership', err);
+        }
+    };
 
     const handleContinue = () => {
         if (cartItems.length === 0) {
@@ -175,6 +191,12 @@ const Checkout: React.FC = () => {
                                         <span>Delivery Fee</span>
                                         <span className={deliveryFee === 0 ? 'free-text' : ''}>
                                             {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
+                                        </span>
+                                    </div>
+                                    <div className="summary-tr">
+                                        <span>Estimated Delivery</span>
+                                        <span className="estimate-text">
+                                            {membership?.name === MembershipName.PREMIUM ? '24 Hours' : '3-4 Days'}
                                         </span>
                                     </div>
                                     <div className="summary-divider-modern"></div>

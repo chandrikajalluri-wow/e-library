@@ -7,7 +7,7 @@ import User from '../models/User';
 import Address from '../models/Address';
 import Membership from '../models/Membership';
 import Borrow from '../models/Borrow';
-import { NotificationType, BorrowStatus, MembershipName, BookStatus } from '../types/enums';
+import { NotificationType, BorrowStatus, MembershipName, BookStatus, OrderStatus } from '../types/enums';
 import { sendNotification, notifySuperAdmins } from '../utils/notification';
 import { sendEmail } from '../utils/mailer';
 import { RoleName } from '../types/enums';
@@ -62,6 +62,10 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
         const deliveryFee = subtotal > 50 ? 0 : 50;
         const totalAmount = subtotal + deliveryFee;
 
+        const estimatedDeliveryDate = new Date();
+        const isPremium = membership?.name === MembershipName.PREMIUM;
+        estimatedDeliveryDate.setHours(estimatedDeliveryDate.getHours() + (isPremium ? 24 : 96)); // 24h for Premium, 4 days (96h) for Basic
+
         const newOrder = new Order({
             user_id: req.user!._id,
             items: orderItems,
@@ -69,7 +73,8 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
             totalAmount,
             deliveryFee,
             paymentMethod: 'Cash on Delivery',
-            status: 'pending'
+            status: 'pending',
+            estimatedDeliveryDate
         });
 
         await newOrder.save();
@@ -157,11 +162,20 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
         let sortOption: any = { createdAt: -1 };
         if (sort === 'oldest') {
             sortOption = { createdAt: 1 };
+        } else if (sort === 'total_asc') {
+            sortOption = { totalAmount: 1 };
+        } else if (sort === 'total_desc') {
+            sortOption = { totalAmount: -1 };
+        } else if (sort === 'items_desc') {
+            // Sorting by items length in MongoDB requires aggregation or a virtual/pre-saved count
+            // For simplicity in this implementation, we'll keep it to basic fields or handle it in memory if needed
+            // but for now let's stick to standard fields.
+            sortOption = { createdAt: -1 };
         }
 
         const orders = await Order.find(filter)
-            .populate('user_id', 'name email')
-            .populate('items.book_id', 'title cover_image_url')
+            .populate('user_id', 'name email phone')
+            .populate('items.book_id', 'title cover_image_url price')
             .populate('address_id')
             .sort(sortOption);
 
@@ -178,7 +192,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const { status } = req.body;
 
-        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        const validStatuses = Object.values(OrderStatus) as string[];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
@@ -188,9 +202,58 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ error: 'Order not found' });
         }
 
+        const previousStatus = order.status;
         order.status = status;
+
+        // Revert stock/borrows for CANCELLED/RETURNED
+        if ((status === OrderStatus.CANCELLED || status === OrderStatus.RETURNED) && previousStatus !== status) {
+            for (const item of order.items) {
+                const book = await Book.findById(item.book_id);
+                if (book) {
+                    book.noOfCopies += item.quantity;
+                    if (book.status === BookStatus.ISSUED && book.noOfCopies > 0) {
+                        book.status = BookStatus.AVAILABLE;
+                    }
+                    await book.save();
+                }
+            }
+
+            if (status === OrderStatus.RETURNED) {
+                await Borrow.updateMany(
+                    { order_id: order._id },
+                    { $set: { status: BorrowStatus.RETURNED, returned_date: new Date() } }
+                );
+            } else if (status === OrderStatus.CANCELLED) {
+                await Borrow.deleteMany({ order_id: order._id });
+            }
+        }
+
+        // Handle RETURN_REJECTED: Revert borrow status from return_requested back to borrowed
+        if (status === OrderStatus.RETURN_REJECTED && previousStatus === OrderStatus.RETURN_REQUESTED) {
+            const borrows = await Borrow.find({ order_id: order._id });
+            for (const borrow of borrows) {
+                const isOverdue = borrow.return_date < new Date();
+                borrow.status = isOverdue ? BorrowStatus.OVERDUE : BorrowStatus.BORROWED;
+                await borrow.save();
+            }
+        }
+
         await order.save();
 
+        // Send In-App Notification for Return Decisions
+        if (status === OrderStatus.RETURNED || status === OrderStatus.RETURN_REJECTED) {
+            const isApproved = status === OrderStatus.RETURNED;
+            const message = isApproved
+                ? `Your return request for Order #${order._id.toString().slice(-8).toUpperCase()} has been APPROVED.`
+                : `Your return request for Order #${order._id.toString().slice(-8).toUpperCase()} has been REJECTED.`;
+
+            await sendNotification(
+                NotificationType.BORROW,
+                message,
+                order.user_id as any,
+                null as any
+            );
+        }
         await new ActivityLog({
             user_id: req.user!._id,
             action: `Order Status Updated`,
@@ -208,14 +271,13 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         const emailText = `
 Hi ${user.name},
 
-Your order #${order._id} status has been updated to: ${status.toUpperCase()}.
+Your order #${order._id} status has been updated to: ${status.toUpperCase().replace(/_/g, ' ')}.
 
 Thank you for choosing BookStack!
 
 — BookStack Team
         `;
 
-        // Fire and forget email (don't block response)
         sendEmail(user.email, emailSubject, emailText).catch(err =>
             console.error('Failed to send order status email:', err)
         );
@@ -224,6 +286,38 @@ Thank you for choosing BookStack!
     } catch (error: any) {
         console.error('Update order status error:', error);
         res.status(500).json({ error: 'Failed to update order status' });
+    }
+};
+
+// Admin: Bulk Update Order Status
+export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => {
+    try {
+        const { orderIds, status } = req.body;
+
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ error: 'No orders selected' });
+        }
+
+        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+
+        const result = await Order.updateMany(
+            { _id: { $in: orderIds } },
+            { $set: { status: status } }
+        );
+
+        // Optionally send emails for each, but for bulk it might be noisy. 
+        // For now, just update the DB.
+
+        res.status(200).json({
+            message: `Successfully updated ${result.modifiedCount} orders to ${status}`,
+            modifiedCount: result.modifiedCount
+        });
+    } catch (error: any) {
+        console.error('Bulk update order status error:', error);
+        res.status(500).json({ error: 'Failed to perform bulk update' });
     }
 };
 
@@ -317,5 +411,86 @@ export const cancelOwnOrder = async (req: AuthRequest, res: Response) => {
     } catch (error: any) {
         console.error('Cancel order error:', error);
         res.status(500).json({ error: 'Failed to cancel order' });
+    }
+};
+
+// User: Get single Order By ID (for invoice/details)
+export const getMyOrderById = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!._id;
+
+        const order = await Order.findById(id)
+            .populate('items.book_id', 'title cover_image_url price author')
+            .populate('address_id');
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Check ownership
+        if (order.user_id.toString() !== userId.toString()) {
+            return res.status(403).json({ error: 'Unauthorized to view this order' });
+        }
+
+        res.status(200).json(order);
+    } catch (error: any) {
+        console.error('Get my order by ID error:', error);
+        res.status(500).json({ error: 'Failed to fetch order details' });
+    }
+};
+
+// User: Request Return Order
+export const requestReturnOrder = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        const userId = req.user!._id;
+
+        if (!reason) {
+            return res.status(400).json({ error: 'Reason for return is required' });
+        }
+
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Check ownership
+        if (order.user_id.toString() !== userId.toString()) {
+            return res.status(403).json({ error: 'Unauthorized to return this order' });
+        }
+
+        // Check status - can only return if delivered
+        if (order.status !== OrderStatus.DELIVERED) {
+            return res.status(400).json({ error: `Cannot return order with status: ${order.status}` });
+        }
+
+        // Update status and reason
+        order.status = OrderStatus.RETURN_REQUESTED;
+        order.returnReason = reason;
+        await order.save();
+
+        // Update associated borrow records (optional: could mark them as return_requested too)
+        await Borrow.updateMany(
+            { order_id: order._id },
+            { $set: { status: BorrowStatus.RETURN_REQUESTED } }
+        );
+
+        // Notify Admins
+        await notifySuperAdmins(`New Return Request for Order #${order._id.toString().slice(-8).toUpperCase()} from ${req.user!.name}`);
+
+        // Notify User
+        await sendNotification(
+            NotificationType.BORROW,
+            `Return request submitted for Order #${order._id.toString().slice(-8).toUpperCase()}. Awaiting admin approval.`,
+            userId as any,
+            null as any
+        );
+
+        res.status(200).json({ message: 'Return request submitted successfully', order });
+    } catch (error: any) {
+        console.error('Request return error:', error);
+        res.status(500).json({ error: 'Failed to submit return request' });
     }
 };

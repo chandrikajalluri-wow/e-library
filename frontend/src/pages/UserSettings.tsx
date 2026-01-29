@@ -27,6 +27,7 @@ const UserSettings: React.FC = () => {
         confirmPassword: "",
     });
     const [displayName, setDisplayName] = useState("");
+    const [phone, setPhone] = useState("");
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     useEffect(() => {
@@ -41,6 +42,7 @@ const UserSettings: React.FC = () => {
             ]);
             setUser(profileData);
             setDisplayName(profileData.name);
+            setPhone(profileData.phone || "");
             setSessions(sessionData.sessions);
             setLastLogin(sessionData.lastLogin);
         } catch (err) {
@@ -50,16 +52,17 @@ const UserSettings: React.FC = () => {
         }
     };
 
-    const handleUpdateName = async (e: React.FormEvent) => {
+    const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const formData = new FormData();
             formData.append("name", displayName);
+            formData.append("phone", phone);
             await updateProfile(formData);
-            toast.success("Display name updated!");
+            toast.success("Profile updated!");
             loadData();
         } catch (err) {
-            toast.error("Failed to update name");
+            toast.error("Failed to update profile");
         }
     };
 
@@ -169,7 +172,7 @@ const UserSettings: React.FC = () => {
                                 <h2>Public profile</h2>
                                 <p>This information will be displayed publicly.</p>
                             </div>
-                            <form onSubmit={handleUpdateName}>
+                            <form onSubmit={handleUpdateProfile}>
                                 <div className="form-group">
                                     <label>Name</label>
                                     <input
@@ -191,11 +194,24 @@ const UserSettings: React.FC = () => {
                                 <h2>Account settings</h2>
                                 <p>Manage your account credentials and personal information.</p>
                             </div>
-                            <div className="form-group">
-                                <label>Email Address</label>
-                                <input type="email" value={user?.email} disabled className="disabled-input" />
-                                <small className="form-help">Primary email cannot be changed at this time.</small>
-                            </div>
+                            <form onSubmit={handleUpdateProfile}>
+                                <div className="form-group">
+                                    <label>Email Address</label>
+                                    <input type="email" value={user?.email} disabled className="disabled-input" />
+                                    <small className="form-help">Primary email cannot be changed at this time.</small>
+                                </div>
+                                <div className="form-group">
+                                    <label>Phone Number</label>
+                                    <input
+                                        type="tel"
+                                        placeholder="+91 00000 00000"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                    />
+                                    <small className="form-help">Used for delivery updates and account security.</small>
+                                </div>
+                                <button type="submit" className="btn-primary">Update Account</button>
+                            </form>
                         </div>
                     )}
 
@@ -308,12 +324,12 @@ const UserSettings: React.FC = () => {
                         </div>
                     )}
                 </main>
-            </div>
+            </div >
             <DeleteAccountModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
             />
-        </div>
+        </div >
     );
 };
 

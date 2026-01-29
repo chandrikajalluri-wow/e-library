@@ -71,7 +71,7 @@ const BookRequestPage: React.FC = () => {
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
                     <h3>Premium Feature Locked</h3>
                     <p style={{ color: 'var(--text-secondary)', margin: '1rem 0 2rem' }}>
-                        Book requests are exclusively available for <strong>Standard</strong> and <strong>Premium</strong> members.
+                        Book requests are exclusively available for <strong>Premium</strong> members.
                         Upgrade your plan to suggest new titles for our collection.
                     </p>
                     <Link to="/memberships" className="btn-primary">

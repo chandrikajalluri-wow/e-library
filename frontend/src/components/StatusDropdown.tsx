@@ -8,11 +8,14 @@ interface StatusDropdownProps {
 }
 
 const statuses = [
-    { value: 'pending', label: 'Pending', color: 'text-yellow-600 bg-yellow-50' },
-    { value: 'processing', label: 'Processing', color: 'text-yellow-600 bg-yellow-50' },
-    { value: 'shipped', label: 'Shipped', color: 'text-blue-600 bg-blue-50' },
-    { value: 'delivered', label: 'Delivered', color: 'text-green-600 bg-green-50' },
-    { value: 'cancelled', label: 'Cancelled', color: 'text-red-600 bg-red-50' },
+    { value: 'pending', label: 'Pending', icon: 'pending' },
+    { value: 'processing', label: 'Processing', icon: 'processing' },
+    { value: 'shipped', label: 'Shipped', icon: 'shipped' },
+    { value: 'delivered', label: 'Delivered', icon: 'delivered' },
+    { value: 'return_requested', label: 'Return Req.', icon: 'return_requested' },
+    { value: 'returned', label: 'Returned', icon: 'returned' },
+    { value: 'return_rejected', label: 'Return Rej.', icon: 'return_rejected' },
+    { value: 'cancelled', label: 'Cancelled', icon: 'cancelled' },
 ];
 
 const StatusDropdown: React.FC<StatusDropdownProps> = ({ currentStatus, onStatusChange, isLoading }) => {
@@ -30,20 +33,23 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({ currentStatus, onStatus
     }, []);
 
     const currentStatusObj = statuses.find(s => s.value === currentStatus) || statuses[0];
+    const isCancelled = currentStatus === 'cancelled';
 
     return (
-        <div className="relative" ref={dropdownRef}>
+        <div className="premium-status-dropdown" ref={dropdownRef}>
             <button
-                onClick={() => !isLoading && setIsOpen(!isOpen)}
-                disabled={isLoading}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${currentStatusObj.color} border-current border-opacity-20 hover:brightness-95 disabled:opacity-50`}
+                onClick={() => !isLoading && !isCancelled && setIsOpen(!isOpen)}
+                disabled={isLoading || isCancelled}
+                className={`status-trigger ${currentStatus} ${isOpen ? 'active' : ''} ${isCancelled ? 'locked' : ''}`}
             >
-                <span className="font-medium capitalize">{currentStatusObj.label}</span>
-                <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <div className="status-indicator"></div>
+                <span className="status-label">{currentStatusObj.label}</span>
+                {!isCancelled && <ChevronDown size={14} className={`arrow-icon ${isOpen ? 'rotate' : ''}`} />}
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+                <div className="status-menu">
+                    <div className="menu-header">Update Status</div>
                     {statuses.map((status) => (
                         <button
                             key={status.value}
@@ -51,12 +57,11 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({ currentStatus, onStatus
                                 onStatusChange(status.value);
                                 setIsOpen(false);
                             }}
-                            className="w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            className={`status-option ${status.value === currentStatus ? 'current' : ''} ${status.value}`}
                         >
-                            <span className={`text-sm font-medium ${status.value === currentStatus ? status.color.replace('bg-', 'text-') : 'text-gray-700'}`}>
-                                {status.label}
-                            </span>
-                            {status.value === currentStatus && <Check size={14} className="text-gray-900" />}
+                            <div className="option-dot"></div>
+                            <span className="option-label">{status.label}</span>
+                            {status.value === currentStatus && <Check size={14} className="check-icon" />}
                         </button>
                     ))}
                 </div>

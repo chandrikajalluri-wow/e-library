@@ -36,7 +36,7 @@ const HelpCenter: React.FC = () => {
         },
         {
             question: "How long can I keep a borrowed book?",
-            answer: "Our standard borrowing period is 14 days. You can view your active borrows and their due dates in your Dashboard."
+            answer: "Our borrowing period depends on your membership plan, ranging from 7 days (Basic) to 21 days (Premium). You can view your active borrows and their due dates in your Dashboard."
         },
         {
             question: "How do I return a book?",

@@ -103,7 +103,6 @@ const MembershipPlans: React.FC = () => {
                             <tr>
                                 <th>Feature</th>
                                 <th>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</th>
-                                <th>{MembershipName.STANDARD.charAt(0).toUpperCase() + MembershipName.STANDARD.slice(1)}</th>
                                 <th>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</th>
                             </tr>
                         </thead>
@@ -111,36 +110,30 @@ const MembershipPlans: React.FC = () => {
                             <tr>
                                 <td>Monthly Price</td>
                                 <td>Free</td>
-                                <td>₹49</td>
                                 <td>₹99</td>
                             </tr>
                             <tr>
                                 <td>Books Limit</td>
                                 <td>3 books</td>
-                                <td>5 books</td>
                                 <td>10 books</td>
                             </tr>
                             <tr>
                                 <td>Borrow Period</td>
                                 <td>7 days</td>
-                                <td>14 days</td>
                                 <td>21 days</td>
                             </tr>
                             <tr>
                                 <td>Request New Books</td>
                                 <td>❌</td>
                                 <td>✅</td>
-                                <td>✅</td>
                             </tr>
                             <tr>
                                 <td>Premium Collection</td>
-                                <td>❌</td>
                                 <td>❌</td>
                                 <td>✅</td>
                             </tr>
                             <tr>
                                 <td>Recommendations</td>
-                                <td>❌</td>
                                 <td>❌</td>
                                 <td>✅</td>
                             </tr>

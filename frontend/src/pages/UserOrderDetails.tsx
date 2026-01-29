@@ -10,10 +10,15 @@ import {
     Truck,
     Box,
     AlertCircle,
-    ShoppingBag
+    ShoppingBag,
+    Download,
+    RotateCcw,
+    X
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { getOrderDetails } from '../services/userOrderService';
+import { motion, AnimatePresence } from 'framer-motion';
+import { getOrderDetails, requestReturn } from '../services/userOrderService';
+import { generateInvoice } from '../utils/invoiceGenerator';
+import { OrderStatus } from '../types/enums';
 import Loader from '../components/Loader';
 import '../styles/UserOrderDetails.css';
 
@@ -42,6 +47,8 @@ interface OrderDetails {
     paymentMethod: string;
     status: string;
     createdAt: string;
+    estimatedDeliveryDate?: string;
+    returnReason?: string;
 }
 
 const UserOrderDetails: React.FC = () => {
@@ -49,6 +56,9 @@ const UserOrderDetails: React.FC = () => {
     const navigate = useNavigate();
     const [order, setOrder] = useState<OrderDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+    const [returnReason, setReturnReason] = useState('');
+    const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
 
     useEffect(() => {
         if (orderId) {
@@ -66,6 +76,22 @@ const UserOrderDetails: React.FC = () => {
             navigate('/my-orders');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleReturnSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!order) return;
+        setIsSubmittingReturn(true);
+        try {
+            await requestReturn(order._id, returnReason);
+            toast.success('Return request submitted successfully');
+            setIsReturnModalOpen(false);
+            fetchOrderDetails(order._id);
+        } catch (error: any) {
+            toast.error(error || 'Failed to submit return request');
+        } finally {
+            setIsSubmittingReturn(false);
         }
     };
 
@@ -123,7 +149,18 @@ const UserOrderDetails: React.FC = () => {
                 <div className="header-main-info">
                     <div className="id-group">
                         <span className="order-label">ORDER DETAILS</span>
-                        <h1>#{order._id.toUpperCase()}</h1>
+                        <div className="id-header-row">
+                            <h1>#{order._id.toUpperCase()}</h1>
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="download-invoice-btn-mini"
+                                onClick={() => generateInvoice(order)}
+                            >
+                                <Download size={18} />
+                                <span>Invoice</span>
+                            </motion.button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -192,6 +229,15 @@ const UserOrderDetails: React.FC = () => {
                                 <h2>Delivery Address</h2>
                             </div>
                             <div className="address-display-premium">
+                                <div className="delivery-estimate-box">
+                                    <span className="estimate-label">Estimated Delivery</span>
+                                    <span className="estimate-date">
+                                        {order.estimatedDeliveryDate
+                                            ? new Date(order.estimatedDeliveryDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                            : 'Calculating...'}
+                                    </span>
+                                </div>
+                                <div className="address-divider"></div>
                                 <span className="street-line">{order.address_id?.street}</span>
                                 <span className="city-line">{order.address_id?.city}, {order.address_id?.state}</span>
                                 <span className="zip-line">{order.address_id?.zipCode}</span>
@@ -227,9 +273,102 @@ const UserOrderDetails: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Return Order Button */}
+                        {order.status === OrderStatus.DELIVERED && (
+                            <motion.button
+                                className="return-order-btn-premium"
+                                onClick={() => setIsReturnModalOpen(true)}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <RotateCcw size={18} />
+                                <span>Request Return</span>
+                            </motion.button>
+                        )}
+
+                        {/* Return Status Info */}
+                        {order.status === OrderStatus.RETURN_REQUESTED && (
+                            <div className="return-status-box pending">
+                                <RotateCcw size={20} />
+                                <div>
+                                    <h4>Return Requested</h4>
+                                    <p>Your return request is being reviewed by our team.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {order.status === OrderStatus.RETURNED && (
+                            <div className="return-status-box success">
+                                <CheckCircle2 size={20} />
+                                <div>
+                                    <h4>Return Request Accepted</h4>
+                                    <p>This order has been successfully returned.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {order.status === OrderStatus.RETURN_REJECTED && (
+                            <div className="return-status-box warning">
+                                <AlertCircle size={20} />
+                                <div>
+                                    <h4>Return Request Declined</h4>
+                                    <p>Your request for return has been reviewed and declined. Please contact support if you have any questions.</p>
+                                </div>
+                            </div>
+                        )}
                     </motion.section>
                 </div>
             </div>
+
+            {/* Return Modal */}
+            <AnimatePresence>
+                {isReturnModalOpen && (
+                    <motion.div
+                        className="modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsReturnModalOpen(false)}
+                    >
+                        <motion.div
+                            className="modal-content-premium"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="modal-header">
+                                <h3>Request Return</h3>
+                                <button onClick={() => setIsReturnModalOpen(false)} className="close-btn">
+                                    <X size={24} />
+                                </button>
+                            </div>
+                            <form onSubmit={handleReturnSubmit}>
+                                <div className="modal-body">
+                                    <p>Please tell us why you want to return this order:</p>
+                                    <textarea
+                                        value={returnReason}
+                                        onChange={(e) => setReturnReason(e.target.value)}
+                                        placeholder="Reason for return..."
+                                        required
+                                        className="return-reason-input"
+                                        rows={4}
+                                    />
+                                </div>
+                                <div className="modal-actions">
+                                    <button type="button" onClick={() => setIsReturnModalOpen(false)} className="cancel-btn">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="submit-btn" disabled={isSubmittingReturn}>
+                                        {isSubmittingReturn ? 'Submitting...' : 'Submit Request'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };

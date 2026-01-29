@@ -28,25 +28,6 @@ const memberships = [
         ]
     },
     {
-        name: MembershipName.STANDARD,
-        displayName: 'Standard',
-        price: 49,
-        borrowLimit: 5,
-        borrowDuration: 14,
-        canRequestBooks: true,
-        canAccessPremiumBooks: false,
-        canRenewBooks: false,
-        hasRecommendations: false,
-        description: 'Great for regular readers',
-        features: [
-            'Borrow up to 5 books',
-            '14 days borrowing period',
-            'Access to standard collection',
-            'Request new books',
-            'Priority email support'
-        ]
-    },
-    {
         name: MembershipName.PREMIUM,
         displayName: 'Premium',
         price: 99,

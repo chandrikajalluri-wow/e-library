@@ -35,3 +35,11 @@ export const getOrderById = async (orderId: string) => {
         throw error.response?.data?.error || 'Failed to fetch order details';
     }
 };
+export const bulkUpdateOrderStatus = async (orderIds: string[], status: string) => {
+    try {
+        const response = await api.post('orders/admin/bulk-status', { orderIds, status });
+        return response.data;
+    } catch (error: any) {
+        throw error.response?.data?.error || 'Failed to perform bulk update';
+    }
+};
