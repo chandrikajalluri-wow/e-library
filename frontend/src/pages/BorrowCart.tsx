@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRecommendedBooks } from '../services/bookService';
 import { getMyOrders } from '../services/userOrderService';
+import { getMyMembership, type Membership } from '../services/membershipService';
 import type { Book } from '../types';
 import '../styles/BorrowCart.css';
 
@@ -16,6 +17,7 @@ const BorrowCart: React.FC = () => {
     const [recommendations, setRecommendations] = useState<Book[]>([]);
     const [buyAgain, setBuyAgain] = useState<Book[]>([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
+    const [userMembership, setUserMembership] = useState<Membership | null>(null);
 
     useEffect(() => {
         const fetchSuggestions = async () => {
@@ -53,7 +55,17 @@ const BorrowCart: React.FC = () => {
         };
 
         fetchSuggestions();
+        fetchUserMembership();
     }, []);
+
+    const fetchUserMembership = async () => {
+        try {
+            const data = await getMyMembership();
+            setUserMembership(data);
+        } catch (err) {
+            console.error('Error fetching membership:', err);
+        }
+    };
 
     const handleProceedToCheckout = () => {
         if (cartItems.length === 0) return;
@@ -68,6 +80,8 @@ const BorrowCart: React.FC = () => {
     const deliveryFee = subtotal > 0 && subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 50;
     const totalPrice = subtotal + deliveryFee;
     const progressToFree = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+
+    const hasPremiumRestrictedItems = cartItems.some(item => item.book.isPremium && !userMembership?.canAccessPremiumBooks);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -315,10 +329,23 @@ const BorrowCart: React.FC = () => {
                                         </div>
                                     </div>
 
+                                    {hasPremiumRestrictedItems && (
+                                        <div className="premium-restriction-warning" style={{ color: '#ef4444', backgroundColor: '#fef2f2', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem', border: '1px solid #fee2e2' }}>
+                                            <p style={{ margin: 0, fontWeight: 600 }}>Action Required</p>
+                                            <p style={{ margin: '0.25rem 0 0.75rem' }}>Your cart contains Premium books that require a Premium membership.</p>
+                                            <button
+                                                onClick={() => navigate('/memberships')}
+                                                style={{ width: '100%', padding: '0.5rem', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                                            >
+                                                Upgrade Now
+                                            </button>
+                                        </div>
+                                    )}
+
                                     <button
-                                        className="premium-checkout-btn"
+                                        className={`premium-checkout-btn ${hasPremiumRestrictedItems ? 'disabled-checkout' : ''}`}
                                         onClick={handleProceedToCheckout}
-                                        disabled={cartItems.length === 0}
+                                        disabled={cartItems.length === 0 || hasPremiumRestrictedItems}
                                     >
                                         <span>Proceed to Checkout</span>
                                         <ChevronRight size={20} />

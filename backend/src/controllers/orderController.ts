@@ -51,6 +51,13 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
                 return res.status(400).json({ error: `Insufficient stock for "${book.title}"` });
             }
 
+            // Check if user has access to premium books
+            if (book.isPremium && !membership.canAccessPremiumBooks) {
+                return res.status(403).json({
+                    error: `"${book.title}" is a premium book. Upgrade to Premium membership to purchase.`
+                });
+            }
+
             subtotal += book.price * item.quantity;
             orderItems.push({
                 book_id: book._id,

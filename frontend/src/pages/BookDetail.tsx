@@ -348,22 +348,32 @@ const BookDetail: React.FC = () => {
 
           <div>
             <div className="action-buttons">
-              {book.noOfCopies > 0 ? (
-                <div>
-                  {book.isPremium && !userMembership?.canAccessPremiumBooks ? (
-                    <div className="premium-lock-container">
-                      <button
-                        onClick={() => navigate('/memberships')}
-                        className="btn-primary premium-upgrade-btn"
-                      >
-                        Upgrade to Premium to Access
-                      </button>
-                      <p className="premium-info-text text-muted">
-                        This book is part of our Premium collection.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
+              {book.isPremium && !userMembership?.canAccessPremiumBooks ? (
+                <div className="premium-lock-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                      onClick={() => navigate('/memberships')}
+                      className="btn-primary premium-upgrade-btn"
+                      style={{ flex: 1 }}
+                    >
+                      Upgrade to Premium to Access
+                    </button>
+                    <button
+                      onClick={handleToggleWishlist}
+                      className="btn-secondary wishlist-toggle-btn"
+                      title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                    >
+                      {isWishlisted ? <Heart fill="currentColor" size={24} /> : <Heart size={24} />}
+                    </button>
+                  </div>
+                  <p className="premium-info-text text-muted" style={{ margin: 0 }}>
+                    This book is part of our Premium collection. Please upgrade your plan to borrow, purchase or read this book.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {book.noOfCopies > 0 ? (
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                       <button
                         onClick={handleBorrow}
                         disabled={localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? true : false}
@@ -372,64 +382,59 @@ const BookDetail: React.FC = () => {
                       >
                         {localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'Borrow Limit Reached' : 'Borrow This Book'}
                       </button>
-                      {localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) && (
-                        <p className="limit-warning">
-                          You have reached your membership limit of {userMembership?.borrowLimit || 3} borrowed books.
+
+                      <button
+                        onClick={() => {
+                          if (book.noOfCopies > 0) {
+                            addToCart(book);
+                            toast.success(`${book.title} added to cart!`);
+                          } else {
+                            toast.error('Out of stock');
+                          }
+                        }}
+                        disabled={book.noOfCopies === 0 || isInCart(book._id)}
+                        className={`btn-primary ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                        title={isInCart(book._id) ? 'Already in cart' : 'Add to cart'}
+                      >
+                        <ShoppingCart size={18} style={{ marginRight: '8px' }} />
+                        {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="unavailable-container">
+                      <button
+                        disabled
+                        className="btn-secondary unavailable-btn"
+                      >
+                        Currently Unavailable
+                      </button>
+                      {isWishlisted && expectedReturnDate && (
+                        <p className="return-date-info">
+                          Expected return:{' '}
+                          {new Date(expectedReturnDate).toLocaleDateString()}
                         </p>
                       )}
-                    </>
+                    </div>
                   )}
-                </div>
-              ) : (
-                <div className="unavailable-container">
-                  <button
-                    disabled
-                    className="btn-secondary unavailable-btn"
-                  >
-                    Currently Unavailable
-                  </button>
-                  {isWishlisted && expectedReturnDate && (
-                    <p className="return-date-info">
-                      Expected return:{' '}
-                      {new Date(expectedReturnDate).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              )}
-              <button
-                onClick={handleToggleWishlist}
-                className="btn-secondary wishlist-toggle-btn"
-                title={
-                  isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'
-                }
-              >
-                {isWishlisted ? <Heart fill="currentColor" size={24} /> : <Heart size={24} />}
-              </button>
-              <button
-                onClick={() => {
-                  if (book.noOfCopies > 0) {
-                    addToCart(book);
-                    toast.success(`${book.title} added to cart!`);
-                  } else {
-                    toast.error('Out of stock');
-                  }
-                }}
-                disabled={book.noOfCopies === 0 || isInCart(book._id)}
-                className={`btn-primary ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                title={isInCart(book._id) ? 'Already in cart' : 'Add to cart'}
-              >
-                <ShoppingCart size={18} style={{ marginRight: '8px' }} />
-                {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
-              </button>
-              {book.pdf_url && (
-                <button
-                  onClick={handleRead}
-                  className="btn-primary read-pdf-btn"
-                >
-                  <BookOpen size={18} style={{ marginRight: '8px' }} /> Read PDF
-                </button>
-              )}
 
+                  <button
+                    onClick={handleToggleWishlist}
+                    className="btn-secondary wishlist-toggle-btn"
+                    title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                  >
+                    {isWishlisted ? <Heart fill="currentColor" size={24} /> : <Heart size={24} />}
+                  </button>
+
+                  {book.pdf_url && (
+                    <button
+                      onClick={handleRead}
+                      className="btn-primary read-pdf-btn"
+                    >
+                      <BookOpen size={18} style={{ marginRight: '8px' }} /> Read PDF
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
