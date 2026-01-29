@@ -17,7 +17,11 @@ interface Review {
     reviewed_at: string;
 }
 
-const ReportedReviews: React.FC = () => {
+interface ReportedReviewsProps {
+    hideTitle?: boolean;
+}
+
+const ReportedReviews: React.FC<ReportedReviewsProps> = ({ hideTitle = false }) => {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState<string | null>(null);
@@ -75,8 +79,12 @@ const ReportedReviews: React.FC = () => {
         <div className="admin-section-container">
             <div className="admin-section-header">
                 <div>
-                    <h3 className="section-title">Reported Reviews</h3>
-                    <p className="section-subtitle">Moderation queue for user reports</p>
+                    {!hideTitle && (
+                        <>
+                            <h3 className="section-title">Reported Reviews</h3>
+                            <p className="section-subtitle">Moderation queue for user reports</p>
+                        </>
+                    )}
                 </div>
                 <div className="admin-premium-label" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fee2e2', color: '#dc2626' }}>
                     <AlertTriangle size={18} />

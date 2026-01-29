@@ -82,6 +82,10 @@ export const login = async (req: Request, res: Response) => {
         const user = await User.findOne({ email }).populate('role_id');
         if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
+        if (user.isDeleted) {
+            return res.status(400).json({ error: 'This account has been deleted' });
+        }
+
         if (!user.isVerified) {
             if (!user.verificationToken) {
                 user.verificationToken = crypto.randomBytes(20).toString('hex');
@@ -267,6 +271,10 @@ export const googleLogin = async (req: Request, res: Response) => {
         let user = await User.findOne({
             $or: [{ googleId: sub }, { email }]
         }).populate('role_id');
+
+        if (user && user.isDeleted) {
+            return res.status(400).json({ error: 'This account has been deleted' });
+        }
 
         if (!user) {
             const userRole = await Role.findOne({ name: RoleName.USER });

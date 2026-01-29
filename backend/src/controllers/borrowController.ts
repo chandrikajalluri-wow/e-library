@@ -534,6 +534,10 @@ export const checkoutCart = async (req: AuthRequest, res: Response) => {
             await book.save();
         }
 
+        // Clear backend cart after successful checkout
+        user!.cart = [];
+        await user!.save();
+
         // Send notification
         await sendNotification(
             NotificationType.BORROW,

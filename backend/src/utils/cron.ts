@@ -53,10 +53,21 @@ export const initCronJobs = () => {
       });
 
       for (const user of usersToDelete) {
-        await User.findByIdAndDelete(user._id);
+        user.name = 'Deleted User';
+        user.email = `deleted_${Date.now()}_${user._id}@example.com`;
+        user.password = undefined;
+        user.googleId = undefined;
+        user.profileImage = undefined;
+        user.isDeleted = true;
+        user.deletedAt = new Date();
+        user.activeSessions = [];
+        user.deletionScheduledAt = undefined;
+
+        await user.save();
+
         await ActivityLog.create({
           action: ActivityAction.USER_DELETED,
-          description: `System auto-deleted user ${user.email} (Scheduled)`,
+          description: `System auto-deactivated user (Scheduled Soft Delete)`,
           timestamp: new Date()
         });
       }

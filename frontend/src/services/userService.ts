@@ -75,3 +75,19 @@ export const addAddress = async (addressData: any) => {
     const res = await api.post(`${BASE_URL}/addresses`, addressData);
     return res.data;
 };
+
+// Cart Management
+export const getCart = async () => {
+    const res = await api.get(`${BASE_URL}/cart`);
+    return res.data;
+};
+
+export const syncCart = async (cartItems: any[]) => {
+    const res = await api.post(`${BASE_URL}/cart/sync`, { cartItems });
+    return res.data;
+};
+
+export const clearCart = async () => {
+    const res = await api.delete(`${BASE_URL}/cart`);
+    return res.data;
+};

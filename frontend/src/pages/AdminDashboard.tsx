@@ -15,7 +15,11 @@ import type { Book, Category, Borrow, User } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/AdminDashboard.css';
 
-const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+  hideHeader?: boolean;
+}
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) => {
   const [searchParams] = useSearchParams();
   // const navigate = useNavigate();
   const activeTab = searchParams.get('tab') || 'stats';
@@ -550,38 +554,42 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="admin-layout">
       <main className="admin-main-content">
-        <header className="admin-header">
-          <div className="admin-header-flex">
-            <div className="admin-header-titles">
-              <h2 className="admin-header-title">
-                {activeTab === 'stats' && 'Dashboard Overview'}
-                {activeTab === 'books' && 'Manage Books'}
-                {activeTab === 'categories' && 'Manage Categories'}
-                {activeTab === 'requests' && 'Return Requests'}
-                {activeTab === 'user-requests' && 'Book Suggestions'}
-                {activeTab === 'borrows' && 'Borrow History'}
-                {activeTab === 'logs' && 'User Activity Logs'}
-              </h2>
-              <p className="admin-header-subtitle">Welcome back, Administrator</p>
+        {!hideHeader && (
+          <header className="admin-header">
+            <div className="admin-header-flex">
+              <div className="admin-header-titles">
+                <h2 className="admin-header-title">
+                  {activeTab === 'stats' && 'Dashboard Overview'}
+                  {activeTab === 'books' && 'Manage Books'}
+                  {activeTab === 'categories' && 'Manage Categories'}
+                  {activeTab === 'requests' && 'Return Requests'}
+                  {activeTab === 'user-requests' && 'Book Suggestions'}
+                  {activeTab === 'borrows' && 'Borrow History'}
+                  {activeTab === 'logs' && 'User Activity Logs'}
+                </h2>
+                <p className="admin-header-subtitle">
+                  Welcome back, {currentUser?.role === RoleName.SUPER_ADMIN ? 'Super Administrator' : 'Administrator'}
+                </p>
+              </div>
+              <div className="admin-header-actions">
+                {activeTab === 'stats' && (
+                  <button
+                    onClick={fetchStats}
+                    className="admin-refresh-stats-btn"
+                    disabled={isStatsLoading}
+                  >
+                    {isStatsLoading ? (
+                      <span className="button-loader-flex">
+                        <div className="spinner-mini"></div>
+                        Refreshing...
+                      </span>
+                    ) : 'Refresh Stats'}
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="admin-header-actions">
-              {activeTab === 'stats' && (
-                <button
-                  onClick={fetchStats}
-                  className="admin-refresh-stats-btn"
-                  disabled={isStatsLoading}
-                >
-                  {isStatsLoading ? (
-                    <span className="button-loader-flex">
-                      <div className="spinner-mini"></div>
-                      Refreshing...
-                    </span>
-                  ) : 'Refresh Stats'}
-                </button>
-              )}
-            </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         {activeTab === 'stats' && (
           <div className="admin-stats-grid-container">

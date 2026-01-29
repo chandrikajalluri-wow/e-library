@@ -396,11 +396,66 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
         await mongoose.model('BookRequest').deleteMany({ user_id: user._id });
         await AuthToken.deleteMany({ user_id: user._id });
 
-        await User.findByIdAndDelete(user._id);
+        // Perform Anonymized Soft Delete
+        user.name = 'Deleted User';
+        user.email = `deleted_${Date.now()}_${user._id}@example.com`;
+        user.password = undefined;
+        user.googleId = undefined;
+        user.profileImage = undefined;
+        user.isDeleted = true;
+        user.deletedAt = new Date();
+        user.activeSessions = [];
+        user.deletionScheduledAt = undefined;
 
-        res.json({ message: 'Account permanently deleted. We are sorry to see you go.' });
+        await user.save();
+
+        res.json({ message: 'Account permanently deactivated. We are sorry to see you go.' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error during account deletion' });
+    }
+};
+
+export const getCart = async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id).populate('cart.book_id');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user.cart || []);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const syncCart = async (req: AuthRequest, res: Response) => {
+    const { cartItems } = req.body;
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        user.cart = cartItems.map((item: any) => ({
+            book_id: item.book._id,
+            quantity: item.quantity
+        }));
+
+        await user.save();
+        res.json({ message: 'Cart synced successfully', cart: user.cart });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const clearCartLocally = async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        user.cart = [];
+        await user.save();
+        res.json({ message: 'Cart cleared successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
 };

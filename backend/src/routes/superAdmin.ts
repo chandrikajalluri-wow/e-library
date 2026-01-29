@@ -16,6 +16,9 @@ router.post('/manage-admin', auth, checkRole([RoleName.SUPER_ADMIN]), superAdmin
 // Remove User/Admin
 router.delete('/user/:id', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.deleteUser);
 
+// Revoke Deletion
+router.post('/user/:id/revoke-deletion', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.revokeUserDeletion);
+
 // --- Content Moderation ---
 
 // Get All Reviews (for moderation)

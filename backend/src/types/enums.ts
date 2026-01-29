@@ -50,6 +50,7 @@ export enum ActivityAction {
     BOOK_CREATED = 'BOOK_CREATED',
     BOOK_UPDATED = 'BOOK_UPDATED',
     BOOK_DELETED = 'BOOK_DELETED',
+    USER_UPDATED = 'USER_UPDATED',
 }
 
 export enum UserTheme {

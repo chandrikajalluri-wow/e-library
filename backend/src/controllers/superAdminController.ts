@@ -14,7 +14,7 @@ import { sendEmail } from '../utils/mailer';
 
 export const getAllUsers = async (req: Request, res: Response) => {
     try {
-        const users = await User.find().populate('role_id').populate('membership_id');
+        const users = await User.find({ isDeleted: { $ne: true } }).populate('role_id').populate('membership_id');
         res.json(users);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
@@ -45,42 +45,46 @@ export const manageAdmin = async (req: Request, res: Response) => {
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
-    const { force } = req.body; // Expect JSON body { force: boolean }
+    const { force } = req.body;
 
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        // If Force Delete is requested
         if (force === true) {
-            await User.findByIdAndDelete(req.params.id);
+            user.name = 'Deleted User';
+            user.email = `deleted_${Date.now()}_${user._id}@example.com`;
+            user.password = undefined;
+            user.googleId = undefined;
+            user.profileImage = undefined;
+            user.isDeleted = true;
+            user.deletedAt = new Date();
+            user.activeSessions = [];
+            user.deletionScheduledAt = undefined;
+
+            await user.save();
 
             await ActivityLog.create({
                 user_id: (req as any).user._id,
                 action: ActivityAction.USER_DELETED,
-                description: `Force deleted user ${user.email} (Immediate)`,
+                description: `Soft deleted user ${user.email} (Immediate)`,
                 timestamp: new Date()
             });
 
-            return res.json({ message: 'User permanently deleted (Force)' });
+            return res.json({ message: 'User deactivated and anonymized (Force)' });
         }
 
-        // --- Standard Conditional Logic ---
-
-        // 1. Check for Active Borrows (Not returned)
         const pendingBorrows = await Borrow.find({
             user_id: user._id,
             returned_at: { $exists: false }
         }).populate('book_id', 'title');
 
-        // 2. Check for Unpaid Fines
         const unpaidFines = await Borrow.find({
             user_id: user._id,
             isFinePaid: false,
             fine_amount: { $gt: 0 }
         }).populate('book_id', 'title');
 
-        // If dependencies exist
         if (pendingBorrows.length > 0 || unpaidFines.length > 0) {
             return res.status(409).json({
                 error: 'User has pending obligations',
@@ -91,30 +95,26 @@ export const deleteUser = async (req: Request, res: Response) => {
             });
         }
 
-        // If Clean: Schedule Deletion
         const deletionDate = new Date();
         deletionDate.setDate(deletionDate.getDate() + 7);
 
         user.deletionScheduledAt = deletionDate;
         await user.save();
 
-        // Notify User
         await Notification.create({
             user_id: user._id,
-            message: `Your account has been scheduled for deletion on ${deletionDate.toDateString()}. Please contact support if this is a mistake.`,
+            message: `Your account has been scheduled for deletion on ${deletionDate.toDateString()}.`,
             type: NotificationType.SYSTEM
         });
 
-        // Send Email
         try {
             await sendEmail(
                 user.email,
                 'Account Scheduled for Deletion',
-                `Hello ${user.name},\n\nYour account has been flagged for deletion and is scheduled to be permanently removed on ${deletionDate.toDateString()}.\n\nIf you believe this is an error, please contact the library administration immediately.\n\nRegards,\nE-Library Team`
+                `Hello ${user.name},\n\nYour account is scheduled for deletion on ${deletionDate.toDateString()}.`
             );
         } catch (emailErr) {
             console.error('Failed to send deletion email', emailErr);
-            // Continue even if email fails
         }
 
         await ActivityLog.create({
@@ -125,7 +125,32 @@ export const deleteUser = async (req: Request, res: Response) => {
         });
 
         res.json({ message: `User scheduled for deletion on ${deletionDate.toDateString()}` });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
 
+export const revokeUserDeletion = async (req: Request, res: Response) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (!user.deletionScheduledAt) {
+            return res.status(400).json({ error: 'User deletion is not scheduled' });
+        }
+
+        user.deletionScheduledAt = undefined;
+        await user.save();
+
+        await ActivityLog.create({
+            user_id: (req as any).user._id,
+            action: ActivityAction.USER_UPDATED,
+            description: `Revoked scheduled deletion for user ${user.email}`,
+            timestamp: new Date()
+        });
+
+        res.json({ message: 'User deletion revoked successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
