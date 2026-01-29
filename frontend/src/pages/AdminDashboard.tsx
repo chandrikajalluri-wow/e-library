@@ -519,7 +519,7 @@ const AdminDashboard: React.FC = () => {
                 {activeTab === 'requests' && 'Return Requests'}
                 {activeTab === 'user-requests' && 'Book Suggestions'}
                 {activeTab === 'borrows' && 'Borrow History'}
-                {activeTab === 'logs' && 'Activity Logs'}
+                {activeTab === 'logs' && 'User Activity Logs'}
               </h2>
               <p className="admin-header-subtitle">Welcome back, Administrator</p>
             </div>
@@ -927,12 +927,12 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'logs' && (
           <section className="card admin-table-section">
-            <div className="admin-table-header-box"><h3 className="admin-table-title">Activity Logs</h3></div>
+            <div className="admin-table-header-box"><h3 className="admin-table-title">User Activity Logs</h3></div>
             <div className="admin-table-wrapper">
               {isDataLoading ? (
                 <div className="admin-loading-container">
                   <div className="spinner"></div>
-                  <p>Loading System Logs...</p>
+                  <p>Loading User Logs...</p>
                 </div>
               ) : (
                 <table className="admin-table">

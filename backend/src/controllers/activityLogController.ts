@@ -22,12 +22,13 @@ export const getActivityLogs = async (req: Request, res: Response) => {
             .sort({ timestamp: -1 })
             .limit(200);
 
-        const adminLogs = logs.filter(log => {
+        const userLogs = logs.filter(log => {
             const user = log.user_id as any;
-            return user?.role_id?.name === RoleName.ADMIN || user?.role_id?.name === RoleName.SUPER_ADMIN;
+            // console.log(`Log ID: ${log._id}, User Role: ${user?.role_id?.name}`);
+            return user?.role_id?.name === RoleName.USER;
         });
 
-        res.json(adminLogs.slice(0, 100));
+        res.json(userLogs.slice(0, 100));
     } catch (err: unknown) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });

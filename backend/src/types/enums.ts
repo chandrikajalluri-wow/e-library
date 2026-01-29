@@ -52,3 +52,19 @@ export enum RequestStatus {
     APPROVED = 'approved',
     REJECTED = 'rejected'
 }
+
+export enum AnnouncementType {
+    INFO = 'INFO',
+    OFFER = 'OFFER',
+    GREETING = 'GREETING',
+    MAINTENANCE = 'MAINTENANCE',
+    WARNING = 'WARNING'
+}
+
+export enum TargetPage {
+    ALL = 'ALL',
+    HOME = 'HOME',
+    BOOKS = 'BOOKS',
+    DASHBOARD = 'DASHBOARD',
+    PROFILE = 'PROFILE'
+}

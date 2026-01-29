@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Order from '../models/Order';
 import Book from '../models/Book';
+import ActivityLog from '../models/ActivityLog';
 import User from '../models/User';
 import Address from '../models/Address';
 import Membership from '../models/Membership';
@@ -189,6 +190,12 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
 
         order.status = status;
         await order.save();
+
+        await new ActivityLog({
+            user_id: req.user!._id,
+            action: `Order Status Updated`,
+            description: `Order #${order._id} status updated to ${status} by ${req.user!.name}`,
+        }).save();
 
         const userRole = (req.user!.role_id as any).name;
         if (userRole === RoleName.ADMIN) {

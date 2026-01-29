@@ -259,7 +259,7 @@ export const updateBookRequestStatus = async (req: AuthRequest, res: Response) =
             const user = request.user_id as any;
             if (user && user.email) {
                 const subject = 'Book Request Approved';
-                const text = `Hi ${user.name},\n\nYour request for the book "${request.title}" by ${request.author} has been approved.\n\nRegards,\nLibrary Administration`;
+                const text = `Hi ${user.name},\n\nYour request for the book "${request.title}" by ${request.author} has been approved.\n\nRegards,\nBookStack Administration`;
                 try {
                     await sendEmail(user.email, subject, text);
                 } catch (emailErr) {
@@ -302,7 +302,7 @@ export const sendFineReminder = async (req: AuthRequest, res: Response) => {
 
         if (user && user.email) {
             const subject = 'Important: Outstanding Library Fine Reminder';
-            const text = `Hi ${user.name},\n\n This is a reminder regarding your borrowed book "${book.title}", which was due on ${new Date(borrow.return_date).toLocaleDateString()}.\n\nYour current accrued fine is ₹${fine}. Please return the book and settle the fine as soon as possible to avoid further charges.\n\nRegards,\nLibrary Administration`;
+            const text = `Hi ${user.name},\n\n This is a reminder regarding your borrowed book "${book.title}", which was due on ${new Date(borrow.return_date).toLocaleDateString()}.\n\nYour current accrued fine is ₹${fine}. Please return the book and settle the fine as soon as possible to avoid further charges.\n\nRegards,\nBookStack Administration`;
 
             await sendEmail(user.email, subject, text);
             return res.json({ message: 'Reminder email sent successfully' });

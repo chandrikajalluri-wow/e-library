@@ -27,7 +27,7 @@ export const sendEmail = async (to: string, subject: string, text: string) => {
   const sendSmtpEmail = new brevo.SendSmtpEmail();
   sendSmtpEmail.subject = subject;
   sendSmtpEmail.sender = {
-    name: 'E-Library',
+    name: 'BookStack',
     email: process.env.EMAIL_USER
   };
   sendSmtpEmail.to = [{ email: to }];

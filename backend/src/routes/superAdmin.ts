@@ -46,4 +46,12 @@ router.get('/metrics', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminContro
 // Get all admins (simple list for dropdown)
 router.get('/admins', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.getAdmins);
 
+// --- Contact Queries ---
+router.get('/contact-queries', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.getContactQueries);
+router.patch('/contact-queries/:id', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.updateContactQueryStatus);
+
+// --- Reported Reviews ---
+router.get('/reported-reviews', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.getReportedReviews);
+router.patch('/reviews/:id/dismiss', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.dismissReviewReports);
+
 export default router;

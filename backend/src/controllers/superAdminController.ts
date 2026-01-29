@@ -8,6 +8,7 @@ import ActivityLog from '../models/ActivityLog';
 import Announcement from '../models/Announcement';
 import Notification from '../models/Notification';
 import Order from '../models/Order';
+import Contact from '../models/Contact';
 import { RoleName, ActivityAction, NotificationType } from '../types/enums';
 import { sendEmail } from '../utils/mailer';
 
@@ -165,11 +166,13 @@ export const getAllAnnouncements = async (req: Request, res: Response) => {
 };
 
 export const createAnnouncement = async (req: Request, res: Response) => {
-    const { title, content } = req.body;
+    const { title, content, type, targetPage } = req.body;
     try {
         const announcement = new Announcement({
             title,
             content,
+            type,
+            targetPage,
             author: (req as any).user._id
         });
         await announcement.save();
@@ -190,8 +193,24 @@ export const deleteAnnouncement = async (req: Request, res: Response) => {
 
 export const getSystemLogs = async (req: Request, res: Response) => {
     try {
-        const logs = await ActivityLog.find().populate('user_id', 'name email').sort({ timestamp: -1 }).limit(200);
-        res.json(logs);
+        const logs = await ActivityLog.find()
+            .populate({
+                path: 'user_id',
+                select: 'name email role_id',
+                populate: {
+                    path: 'role_id',
+                    select: 'name'
+                }
+            })
+            .sort({ timestamp: -1 })
+            .limit(200);
+
+        const adminLogs = logs.filter(log => {
+            const user = log.user_id as any;
+            return user?.role_id?.name === RoleName.ADMIN;
+        });
+
+        res.json(adminLogs);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
@@ -310,6 +329,47 @@ export const getAdmins = async (req: Request, res: Response) => {
 
         const admins = await User.find({ role_id: adminRole._id }).select('name email');
         res.json(admins);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getContactQueries = async (req: Request, res: Response) => {
+    try {
+        const queries = await Contact.find().sort({ createdAt: -1 });
+        res.json(queries);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const updateContactQueryStatus = async (req: Request, res: Response) => {
+    try {
+        const { status } = req.body;
+        const query = await Contact.findByIdAndUpdate(req.params.id, { status }, { new: true });
+        res.json(query);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getReportedReviews = async (req: Request, res: Response) => {
+    try {
+        const reviews = await Review.find({ 'reports.0': { $exists: true } })
+            .populate('user_id', 'name email')
+            .populate('book_id', 'title')
+            .populate('reports.user_id', 'name email')
+            .sort({ 'reports.reported_at': -1 });
+        res.json(reviews);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const dismissReviewReports = async (req: Request, res: Response) => {
+    try {
+        await Review.findByIdAndUpdate(req.params.id, { $set: { reports: [] } });
+        res.json({ message: 'Reports dismissed' });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
