@@ -25,7 +25,7 @@ export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
 
 export const BookStatus = {
     AVAILABLE: 'available',
-    ISSUED: 'issued',
+    OUT_OF_STOCK: 'issued',
     ARCHIVED: 'archived',
     DAMAGED: 'damaged'
 } as const;

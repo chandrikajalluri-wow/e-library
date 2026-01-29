@@ -11,7 +11,7 @@ import {
 import { getBookReviews, addReview, updateReview, likeReview, dislikeReview, reportReview } from '../services/reviewService';
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { getProfile } from '../services/userService';
-import { RoleName, BorrowStatus } from '../types/enums';
+import { RoleName, BorrowStatus, BookStatus } from '../types/enums';
 import type { User } from '../types';
 import { toast } from 'react-toastify';
 import { useBorrowCart } from '../context/BorrowCartContext';
@@ -323,7 +323,7 @@ const BookDetail: React.FC = () => {
         <div className="book-info-main">
           <div className="status-badge-container">
             <span className={`status-badge status-${book.status}`}>
-              {book.status.toUpperCase()}
+              {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status.toUpperCase()}
             </span>
             {book.isPremium && (
               <span className="premium-badge">

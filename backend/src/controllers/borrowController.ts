@@ -82,7 +82,7 @@ export const issueBook = async (req: AuthRequest, res: Response) => {
         try {
             book.noOfCopies -= 1;
             if (book.noOfCopies === 0) {
-                book.status = BookStatus.ISSUED;
+                book.status = BookStatus.OUT_OF_STOCK;
             }
             await book.save();
         } catch (updateError: any) {
@@ -529,7 +529,7 @@ export const checkoutCart = async (req: AuthRequest, res: Response) => {
             // Update book stock
             book.noOfCopies -= item.quantity;
             if (book.noOfCopies === 0) {
-                book.status = BookStatus.ISSUED;
+                book.status = BookStatus.OUT_OF_STOCK;
             }
             await book.save();
         }

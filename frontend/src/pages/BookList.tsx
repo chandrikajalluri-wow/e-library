@@ -5,6 +5,7 @@ import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 
 import type { Book } from '../types';
+import { BookStatus } from '../types/enums';
 import { useBorrowCart } from '../context/BorrowCartContext';
 import { toast } from 'react-toastify';
 
@@ -233,14 +234,14 @@ const BookList: React.FC = () => {
               <div className="book-footer">
                 <div className="book-status-info">
                   <span className={`status-badge status-${book.status} book-status-badge`}>
-                    {book.status.toUpperCase()}
+                    {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status.toUpperCase()}
                   </span>
                   <span className="book-copies-info">
                     {book.noOfCopies}{' '}
                     {book.noOfCopies === 1 ? 'copy' : 'copies'} available
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div className="book-actions-row">
                   <button
                     onClick={() => {
                       if (book.noOfCopies > 0) {
@@ -251,14 +252,13 @@ const BookList: React.FC = () => {
                       }
                     }}
                     disabled={book.noOfCopies === 0 || isInCart(book._id)}
-                    className={`btn-primary ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                    style={{ flex: 1 }}
+                    className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
                   >
                     {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
                   </button>
                   <Link
                     to={`/books/${book._id}`}
-                    className="btn-primary view-book-btn"
+                    className="btn-primary view-book-btn book-action-btn"
                   >
                     View
                   </Link>

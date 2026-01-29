@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BorrowStatus, MembershipName } from '../types/enums';
+import { BorrowStatus, MembershipName, BookStatus } from '../types/enums';
 import { getMyBorrows, returnBook } from '../services/borrowService';
 import { getDashboardStats } from '../services/userService';
 import { getMyMembership, type Membership } from '../services/membershipService';
@@ -293,10 +293,10 @@ const UserDashboard: React.FC = () => {
                   )}
                 </div>
 
-                <div className="book-footer" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <span className={`status-badge status-${b.status}`} style={{ fontSize: '0.7rem' }}>
-                      {b.status.toUpperCase()}
+                <div className="book-footer">
+                  <div className="book-status-info">
+                    <span className={`status-badge status-${b.status} book-status-badge`}>
+                      {b.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : b.status.toUpperCase()}
                     </span>
                   </div>
 
@@ -307,33 +307,30 @@ const UserDashboard: React.FC = () => {
                         setSelectedBorrow(b);
                         setIsModalOpen(true);
                       }}
-                      className="btn-primary btn-danger"
-                      style={{ width: '100%', padding: '0.5rem' }}
+                      className="btn-danger book-action-btn"
                     >
                       Pay Now
                     </button>
                   )}
 
                   {(b.status === BorrowStatus.BORROWED || b.status === BorrowStatus.OVERDUE) && (
-                    <>
+                    <div className="book-actions-row">
                       <button
                         onClick={() => navigate(`/read/${b.book_id._id}`)}
-                        className="btn-primary"
-                        style={{ width: '100%', padding: '0.5rem' }}
+                        className="btn-primary book-action-btn"
                       >
                         Read
                       </button>
                       <button
                         onClick={() => handleReturn(b)}
-                        className="btn-secondary"
-                        style={{ width: '100%', padding: '0.5rem' }}
+                        className="btn-secondary book-action-btn"
                       >
-                        Request Return
+                        Return
                       </button>
-                    </>
+                    </div>
                   )}
                   {b.status === 'return_requested' && (
-                    <div className="pending-status-msg">
+                    <div className="pending-status-msg" style={{ textAlign: 'center', padding: '0.5rem', background: 'var(--bg-color)', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700 }}>
                       Pending Approval
                     </div>
                   )}

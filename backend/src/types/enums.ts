@@ -22,7 +22,7 @@ export enum OrderStatus {
 
 export enum BookStatus {
     AVAILABLE = 'available',
-    ISSUED = 'issued',
+    OUT_OF_STOCK = 'issued',
     ARCHIVED = 'archived',
     DAMAGED = 'damaged'
 }
