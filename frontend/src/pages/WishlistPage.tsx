@@ -4,6 +4,7 @@ import { getWishlist, removeFromWishlist } from '../services/wishlistService';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { BookStatus } from '../types/enums';
 import '../styles/UserDashboard.css'; // Reusing dashboard or common styles
 
 const WishlistPage: React.FC = () => {
@@ -91,17 +92,18 @@ const WishlistPage: React.FC = () => {
                                 <p className="book-author-p">{book.author}</p>
 
                                 <div className="book-footer">
-                                    <span className={`status-badge status-${book.status}`}>
-                                        {book.status}
-                                    </span>
-                                    <div className="admin-actions-flex">
-                                        <Link to={`/books/${book._id}`} className="btn-primary view-book-btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
+                                    <div className="book-status-info">
+                                        <span className={`status-badge status-${book.status} book-status-badge`}>
+                                            {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div className="book-actions-row">
+                                        <Link to={`/books/${book._id}`} className="view-book-btn book-action-btn">
                                             View
                                         </Link>
                                         <button
                                             onClick={() => handleRemove(item._id)}
-                                            className="admin-btn-delete"
-                                            style={{ border: 'none', cursor: 'pointer' }}
+                                            className="btn-danger book-action-btn"
                                         >
                                             Remove
                                         </button>
@@ -113,14 +115,16 @@ const WishlistPage: React.FC = () => {
                 })}
             </div>
 
-            {wishlist.length === 0 && (
-                <div className="admin-empty-state">
-                    <p>Your wishlist is currently empty.</p>
-                    <Link to="/books" className="btn-primary" style={{ display: 'inline-block', marginTop: '1rem' }}>
-                        Explore Books
-                    </Link>
-                </div>
-            )}
+            {
+                wishlist.length === 0 && (
+                    <div className="admin-empty-state">
+                        <p>Your wishlist is currently empty.</p>
+                        <Link to="/books" className="btn-primary" style={{ display: 'inline-block', marginTop: '1rem' }}>
+                            Explore Books
+                        </Link>
+                    </div>
+                )
+            }
 
             <ConfirmationModal
                 isOpen={confirmModal.isOpen}
@@ -131,7 +135,7 @@ const WishlistPage: React.FC = () => {
                 onConfirm={confirmModal.onConfirm}
                 onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
             />
-        </div>
+        </div >
     );
 };
 

@@ -450,7 +450,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleDeleteBook = (id: string) => {
     const book = allBooks.find(b => b._id === id);
-    if (book && book.status === BookStatus.ISSUED) {
+    if (book && book.status === BookStatus.OUT_OF_STOCK) {
       toast.error(`Cannot delete "${book.title}" because it is currently issued.`);
       return;
     }
@@ -642,7 +642,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="form-group"><label>Pages</label><input type="number" value={newBook.pages} onChange={(e) => setNewBook({ ...newBook, pages: e.target.value })} /></div>
                 <div className="form-group"><label>Published Year</label><input type="number" value={newBook.publishedYear} onChange={(e) => setNewBook({ ...newBook, publishedYear: e.target.value })} /></div>
                 <div className="form-group"><label>Copies</label><input type="number" value={newBook.noOfCopies} onChange={(e) => setNewBook({ ...newBook, noOfCopies: e.target.value })} required /></div>
-                <div className="form-group"><label>Status</label><select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value as any })} required><option value={BookStatus.AVAILABLE}>Available</option><option value={BookStatus.ISSUED}>Issued</option><option value={BookStatus.DAMAGED}>Damaged</option></select></div>
+                <div className="form-group"><label>Status</label><select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value as any })} required><option value={BookStatus.AVAILABLE}>Available</option><option value={BookStatus.OUT_OF_STOCK}>Out of Stock</option><option value={BookStatus.DAMAGED}>Damaged</option></select></div>
                 <div className="form-group"><label>Rating (0-5)</label><input type="number" step="0.1" min="0" max="5" value={(newBook as any).rating} onChange={(e) => setNewBook({ ...newBook, rating: e.target.value } as any)} /></div>
                 <div className="form-group">
                   <label>Cover Image</label>
@@ -716,7 +716,11 @@ const AdminDashboard: React.FC = () => {
                           <td><span className="admin-added-by">{(book.addedBy as any)?.name || 'N/A'}</span></td>
                           <td><span className="rating-badge" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '4px 8px', borderRadius: '8px', width: 'fit-content', fontWeight: 600 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>{book.rating || 0}</span></td>
                           <td style={{ fontWeight: 700 }}>{book.noOfCopies}</td>
-                          <td><span className={`status-badge status-${book.status}`}>{book.status}</span></td>
+                          <td>
+                            <span className={`status-badge status-${book.status}`}>
+                              {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status}
+                            </span>
+                          </td>
                           <td className="admin-actions-cell"><div className="admin-actions-flex"><button onClick={() => handleEditBook(book)} className="admin-btn-edit">Edit</button><button onClick={() => handleDeleteBook(book._id)} className="admin-btn-delete">Delete</button></div></td>
                         </tr>
                       ))}
@@ -863,93 +867,91 @@ const AdminDashboard: React.FC = () => {
           </section>
         )}
 
-        {
-          activeTab === 'borrows' && (
-            <section className="card admin-table-section" ref={borrowsRef}>
-              <div className="admin-table-header-box">
-                <h3 className="admin-table-title">Borrow History</h3>
-                <div className="admin-filter-group">
-                  <div className="admin-filter-item">
-                    <span className="admin-filter-label">Status</span>
-                    <select value={borrowStatusFilter} onChange={(e) => setBorrowStatusFilter(e.target.value)} className="admin-filter-select">
-                      <option value="all">All Records</option>
-                      <option value="borrowed">Borrowed</option>
-                      <option value="returned">Returned</option>
-                      <option value="overdue">Overdue</option>
-                    </select>
-                  </div>
-                  <div className="admin-filter-item">
-                    <span className="admin-filter-label">Tier</span>
-                    <select value={membershipFilter} onChange={(e) => setMembershipFilter(e.target.value)} className="admin-filter-select">
-                      <option value="all">All Tiers</option>
-                      <option value={MembershipName.BASIC.toLowerCase()}>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</option>
-                      <option value={MembershipName.PREMIUM.toLowerCase()}>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</option>
-                    </select>
-                  </div>
+        {activeTab === 'borrows' && (
+          <section className="card admin-table-section" ref={borrowsRef}>
+            <div className="admin-table-header-box">
+              <h3 className="admin-table-title">Borrow History</h3>
+              <div className="admin-filter-group">
+                <div className="admin-filter-item">
+                  <span className="admin-filter-label">Status</span>
+                  <select value={borrowStatusFilter} onChange={(e) => setBorrowStatusFilter(e.target.value)} className="admin-filter-select">
+                    <option value="all">All Records</option>
+                    <option value="borrowed">Borrowed</option>
+                    <option value="returned">Returned</option>
+                    <option value="overdue">Overdue</option>
+                  </select>
+                </div>
+                <div className="admin-filter-item">
+                  <span className="admin-filter-label">Tier</span>
+                  <select value={membershipFilter} onChange={(e) => setMembershipFilter(e.target.value)} className="admin-filter-select">
+                    <option value="all">All Tiers</option>
+                    <option value={MembershipName.BASIC.toLowerCase()}>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</option>
+                    <option value={MembershipName.PREMIUM.toLowerCase()}>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</option>
+                  </select>
                 </div>
               </div>
-              <div className="admin-table-wrapper">
-                {isDataLoading ? (
-                  <div className="admin-loading-container">
-                    <div className="spinner"></div>
-                    <p>Processing Records...</p>
-                  </div>
-                ) : (
-                  <table className="admin-table">
-                    <thead><tr><th>Borrower</th><th>Book</th><th>Dates</th><th>Fine</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
-                    <tbody>{borrows.map(b => {
-                      const membershipName = (b.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
-                      const isPremiumUser = membershipName.toLowerCase().includes(MembershipName.PREMIUM.toLowerCase());
+            </div>
+            <div className="admin-table-wrapper">
+              {isDataLoading ? (
+                <div className="admin-loading-container">
+                  <div className="spinner"></div>
+                  <p>Processing Records...</p>
+                </div>
+              ) : (
+                <table className="admin-table">
+                  <thead><tr><th>Borrower</th><th>Book</th><th>Dates</th><th>Fine</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
+                  <tbody>{borrows.map(b => {
+                    const membershipName = (b.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
+                    const isPremiumUser = membershipName.toLowerCase().includes(MembershipName.PREMIUM.toLowerCase());
 
-                      return (
-                        <tr key={b._id}>
-                          <td>
-                            <div className="user-info-box">
-                              <span className="user-main-name">{b.user_id?.name}</span>
-                              <span className={`membership-pill ${isPremiumUser ? 'membership-premium' : ''}`}>
-                                {membershipName}
-                              </span>
-                            </div>
-                          </td>
-                          <td><div className="book-info-box"><span className="book-main-title">{b.book_id?.title}</span></div></td>
-                          <td><div className="book-info-box"><div>Issued: {b.issued_date ? new Date(b.issued_date).toLocaleDateString() : 'N/A'}</div><div>Due: {b.return_date ? new Date(b.return_date).toLocaleDateString() : 'N/A'}</div></div></td>
-                          <td><span className={`admin-fine-amount ${(b.fine_amount || 0) > 0 ? 'admin-fine-danger' : ''}`}>₹{(b.fine_amount || 0).toFixed(2)}</span></td>
-                          <td><span className={`status-badge status-${b.status}`}>{b.status.replace(/_/g, ' ')}</span></td>
-                          <td className="admin-actions-cell">{(b.fine_amount || 0) > 50 && <button onClick={() => handleSendReminder(b._id)} className="admin-reminder-btn">Remind</button>}</td>
-                        </tr>
-                      );
-                    })}</tbody>
-                  </table>
-                )}
+                    return (
+                      <tr key={b._id}>
+                        <td>
+                          <div className="user-info-box">
+                            <span className="user-main-name">{b.user_id?.name}</span>
+                            <span className={`membership-pill ${isPremiumUser ? 'membership-premium' : ''}`}>
+                              {membershipName}
+                            </span>
+                          </div>
+                        </td>
+                        <td><div className="book-info-box"><span className="book-main-title">{b.book_id?.title}</span></div></td>
+                        <td><div className="book-info-box"><div>Issued: {b.issued_date ? new Date(b.issued_date).toLocaleDateString() : 'N/A'}</div><div>Due: {b.return_date ? new Date(b.return_date).toLocaleDateString() : 'N/A'}</div></div></td>
+                        <td><span className={`admin-fine-amount ${(b.fine_amount || 0) > 0 ? 'admin-fine-danger' : ''}`}>₹{(b.fine_amount || 0).toFixed(2)}</span></td>
+                        <td><span className={`status-badge status-${b.status}`}>{b.status.replace(/_/g, ' ')}</span></td>
+                        <td className="admin-actions-cell">{(b.fine_amount || 0) > 50 && <button onClick={() => handleSendReminder(b._id)} className="admin-reminder-btn">Remind</button>}</td>
+                      </tr>
+                    );
+                  })}</tbody>
+                </table>
+              )}
+            </div>
+            {!isDataLoading && borrows.length === 0 && (
+              <div className="admin-empty-state">No borrow history records found.</div>
+            )}
+            {borrowTotalPages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  disabled={borrowPage === 1}
+                  onClick={() => setBorrowPage(prev => prev - 1)}
+                  className={`admin-reminder-btn ${borrowPage === 1 ? 'disabled-with-stop' : ''}`}
+                >
+                  <span className="btn-text">Previous</span>
+                  <CircleSlash size={16} className="stop-icon" />
+                </button>
+                <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
+                <button
+                  disabled={borrowPage === borrowTotalPages}
+                  onClick={() => setBorrowPage(prev => prev + 1)}
+                  className={`admin-btn-edit ${borrowPage === borrowTotalPages ? 'disabled-with-stop' : ''}`}
+                  style={{ padding: '0.45rem 1.5rem' }}
+                >
+                  <span className="btn-text">Next</span>
+                  <CircleSlash size={16} className="stop-icon" />
+                </button>
               </div>
-              {!isDataLoading && borrows.length === 0 && (
-                <div className="admin-empty-state">No borrow history records found.</div>
-              )}
-              {borrowTotalPages > 1 && (
-                <div className="pagination-controls">
-                  <button
-                    disabled={borrowPage === 1}
-                    onClick={() => setBorrowPage(prev => prev - 1)}
-                    className={`admin-reminder-btn ${borrowPage === 1 ? 'disabled-with-stop' : ''}`}
-                  >
-                    <span className="btn-text">Previous</span>
-                    <CircleSlash size={16} className="stop-icon" />
-                  </button>
-                  <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
-                  <button
-                    disabled={borrowPage === borrowTotalPages}
-                    onClick={() => setBorrowPage(prev => prev + 1)}
-                    className={`admin-btn-edit ${borrowPage === borrowTotalPages ? 'disabled-with-stop' : ''}`}
-                    style={{ padding: '0.45rem 1.5rem' }}
-                  >
-                    <span className="btn-text">Next</span>
-                    <CircleSlash size={16} className="stop-icon" />
-                  </button>
-                </div>
-              )}
-            </section>
-          )
-        }
+            )}
+          </section>
+        )}
 
         {activeTab === 'logs' && (
           <section className="card admin-table-section">
@@ -991,7 +993,7 @@ const AdminDashboard: React.FC = () => {
         type={confirmModal.type} isLoading={confirmModal.isLoading} onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
-    </div >
+    </div>
   );
 };
 
