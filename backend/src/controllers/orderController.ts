@@ -84,7 +84,7 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
             const book = bookMap.get(item.book_id)!;
             book.noOfCopies -= item.quantity;
             if (book.noOfCopies === 0) {
-                book.status = BookStatus.ISSUED;
+                book.status = BookStatus.OUT_OF_STOCK;
             }
             await book.save();
 
@@ -211,7 +211,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
                 const book = await Book.findById(item.book_id);
                 if (book) {
                     book.noOfCopies += item.quantity;
-                    if (book.status === BookStatus.ISSUED && book.noOfCopies > 0) {
+                    if (book.status === BookStatus.OUT_OF_STOCK && book.noOfCopies > 0) {
                         book.status = BookStatus.AVAILABLE;
                     }
                     await book.save();
@@ -384,8 +384,8 @@ export const cancelOwnOrder = async (req: AuthRequest, res: Response) => {
             const book = await Book.findById(item.book_id);
             if (book) {
                 book.noOfCopies += item.quantity;
-                // If status was ISSUED, it might be available now
-                if (book.status === BookStatus.ISSUED && book.noOfCopies > 0) {
+                // If status was OUT_OF_STOCK, it might be available now
+                if (book.status === BookStatus.OUT_OF_STOCK && book.noOfCopies > 0) {
                     book.status = BookStatus.AVAILABLE;
                 }
                 await book.save();
