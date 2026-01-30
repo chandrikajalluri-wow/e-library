@@ -6,7 +6,8 @@ import * as categoryController from '../controllers/categoryController';
 const router = express.Router();
 
 // Get all categories
-router.get('/', auth, categoryController.getAllCategories);
+// Get all categories (Public)
+router.get('/', categoryController.getAllCategories);
 
 // Create Category (Admin only)
 router.post('/', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), categoryController.createCategory);

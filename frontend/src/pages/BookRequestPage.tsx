@@ -5,8 +5,10 @@ import { getBooks } from '../services/bookService';
 import { getMyMembership } from '../services/membershipService';
 import { MembershipName } from '../types/enums';
 import { toast } from 'react-toastify';
+import { Lock, Send, BookOpen, User as UserIcon, MessageSquare, ChevronRight } from 'lucide-react';
 import Loader from '../components/Loader';
-import '../styles/UserProfile.css';
+import { motion } from 'framer-motion';
+import '../styles/BookRequest.css';
 
 const BookRequestPage: React.FC = () => {
     const [request, setRequest] = useState({ title: '', author: '', reason: '' });
@@ -62,75 +64,93 @@ const BookRequestPage: React.FC = () => {
     // Restrict access for Basic plan
     if (membership?.name === MembershipName.BASIC) {
         return (
-            <div className="request-page saas-reveal">
+            <motion.div
+                className="request-page"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+            >
                 <header className="admin-header">
-                    <div className="admin-header-titles">
-                        <h1 className="admin-header-title">Request a Book</h1>
-                        <p className="admin-header-subtitle">Upgrade your plan to unlock this feature</p>
-                    </div>
+                    <h1 className="admin-header-title">Request a Book</h1>
+                    <p className="admin-header-subtitle">Expand your horizons with new titles</p>
                 </header>
-                <div className="card profile-card" style={{ maxWidth: '600px', margin: '2rem auto', textAlign: 'center', padding: '3rem 2rem' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
-                    <h3>Premium Feature Locked</h3>
-                    <p style={{ color: 'var(--text-secondary)', margin: '1rem 0 2rem' }}>
-                        Book requests are exclusively available for <strong>Premium</strong> members.
-                        Upgrade your plan to suggest new titles for our collection.
+
+                <div className="locked-feature-card">
+                    <div className="lock-sphere">
+                        <Lock size={48} />
+                    </div>
+                    <h3 className="locked-title">Premium Access Required</h3>
+                    <p className="locked-description">
+                        Book requests are a <strong>Premium Exclusive</strong> feature.
+                        Join our premium community to suggest new books, rare finds, and trending titles to our global collection.
                     </p>
-                    <Link to="/memberships" className="btn-primary">
-                        View Membership Plans
+                    <Link to="/memberships" className="upgrade-link-btn">
+                        <span>Upgrade to Premium</span>
+                        <ChevronRight size={18} />
                     </Link>
                 </div>
-            </div>
+            </motion.div>
         );
     }
 
     return (
-        <div className="request-page saas-reveal">
+        <motion.div
+            className="request-page"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+        >
             <header className="admin-header">
-                <div className="admin-header-titles">
-                    <h1 className="admin-header-title">Request a Book</h1>
-                    <p className="admin-header-subtitle">Help us expand our collection with your suggestions</p>
-                </div>
+                <h1 className="admin-header-title">Request a Book</h1>
+                <p className="admin-header-subtitle">Can't find what you're looking for? Let us know!</p>
             </header>
 
-            <div className="card profile-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label>Book Title</label>
-                        <input
-                            type="text"
-                            value={request.title}
-                            onChange={(e) => setRequest({ ...request, title: e.target.value })}
-                            placeholder="Enter the book title"
-                            required
-                        />
+            <div className="request-card">
+                <form onSubmit={handleSubmit} className="request-form">
+                    <div className="form-group-flex">
+                        <div className="form-group">
+                            <label><BookOpen size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Book Title</label>
+                            <input
+                                type="text"
+                                value={request.title}
+                                onChange={(e) => setRequest({ ...request, title: e.target.value })}
+                                placeholder="e.g. The Pragmatic Programmer"
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label><UserIcon size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Author</label>
+                            <input
+                                type="text"
+                                value={request.author}
+                                onChange={(e) => setRequest({ ...request, author: e.target.value })}
+                                placeholder="e.g. Andrew Hunt"
+                                required
+                            />
+                        </div>
                     </div>
                     <div className="form-group">
-                        <label>Author</label>
-                        <input
-                            type="text"
-                            value={request.author}
-                            onChange={(e) => setRequest({ ...request, author: e.target.value })}
-                            placeholder="Enter the author's name"
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Reason for Request (Optional)</label>
+                        <label><MessageSquare size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Why should we add this?</label>
                         <textarea
                             value={request.reason}
                             onChange={(e) => setRequest({ ...request, reason: e.target.value })}
-                            rows={4}
-                            placeholder="Why should we add this book to our library?"
-                            className="form-textarea"
+                            rows={5}
+                            placeholder="Help our curation team understand the value of this book..."
                         />
                     </div>
-                    <button type="submit" className="btn-primary" disabled={isSubmitting}>
-                        {isSubmitting ? 'Submitting...' : 'Submit Request'}
+                    <button type="submit" className="request-submit-btn" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            'Processing...'
+                        ) : (
+                            <>
+                                <span>Submit Request</span>
+                                <Send size={20} />
+                            </>
+                        )}
                     </button>
                 </form>
             </div>
-        </div>
+        </motion.div>
     );
 };
+
 export default BookRequestPage;
+

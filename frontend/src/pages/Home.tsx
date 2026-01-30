@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Briefcase, Wand2, Calculator, Hourglass, Heart, Rocket, Cpu, Sparkles, BookOpen, ArrowRight } from 'lucide-react';
 import { RoleName } from '../types/enums';
 import { getProfile } from '../services/userService';
 import { getBooks } from '../services/bookService';
@@ -174,6 +175,19 @@ const Home: React.FC = () => {
     setSelectedMembership(null);
   };
 
+  const getCategoryIcon = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('business')) return <Briefcase width="32" height="32" />;
+    if (lower.includes('fantasy')) return <Wand2 width="32" height="32" />;
+    if (lower.includes('finance')) return <Calculator width="32" height="32" />;
+    if (lower.includes('history')) return <Hourglass width="32" height="32" />;
+    if (lower.includes('rom')) return <Heart width="32" height="32" />;
+    if (lower.includes('sci')) return <Rocket width="32" height="32" />;
+    if (lower.includes('tech')) return <Cpu width="32" height="32" />;
+    if (lower.includes('fiction')) return <Sparkles width="32" height="32" />;
+    return <BookOpen width="32" height="32" />;
+  };
+
   return (
     <div className="home-page saas-theme">
       {/* Dynamic Navbar */}
@@ -253,29 +267,75 @@ const Home: React.FC = () => {
         </div>
       </header>
 
+      {/* Trust Badges / Service Guarantee */}
+
       {/* Purpose Section: How it Works */}
       <section className="saas-section purple-bg">
         <div className="saas-container">
           <div className="section-head text-center saas-reveal">
             <h2 className="section-title">Experience the modern library</h2>
-            <p className="section-sub">Simple, fast, and completely digital.</p>
+            <p className="section-sub">The best of both worlds: Physical books delivered & instant digital access.</p>
           </div>
 
           <div className="how-it-works-grid">
             <div className="work-card saas-reveal">
               <div className="icon-circ">📚</div>
-              <h3>Browse the Collection</h3>
-              <p>Search through curated genres from classics to the latest tech breakthroughs.</p>
+              <h3>Browse & Discover</h3>
+              <p>Explore our vast catalog of physical books and e-books, curated for every interest.</p>
             </div>
             <div className="work-card saas-reveal">
-              <div className="icon-circ">🔖</div>
-              <h3>Borrow Instantly</h3>
-              <p>No waiting in line. Click borrow and your digital copy is ready on your dashboard.</p>
+              <div className="icon-circ">🚚</div>
+              <h3>Doorstep Delivery</h3>
+              <p>Order physical books online and get them delivered to your home. Easy returns included.</p>
             </div>
             <div className="work-card saas-reveal">
-              <div className="icon-circ">📖</div>
-              <h3>Read Anywhere</h3>
-              <p>Access your borrowed books from any device. Your personalized library, always with you.</p>
+              <div className="icon-circ">📱</div>
+              <h3>Read Instantly</h3>
+              <p>Access premium e-books anytime, anywhere. Your personalized digital library awaits.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Badges / Service Guarantee */}
+      <section className="trust-badges-section">
+        <div className="saas-container">
+          <div className="trust-grid">
+            <div className="trust-item saas-reveal">
+              <div className="trust-icon-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 18 1 18 1 3"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+              </div>
+              <div className="trust-text">
+                <h4>Fast Delivery</h4>
+                <p>2-3 Day Shipping</p>
+              </div>
+            </div>
+            <div className="trust-item saas-reveal">
+              <div className="trust-icon-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              </div>
+              <div className="trust-text">
+                <h4>Hygiene Verified</h4>
+                <p>Sanitized & Clean</p>
+              </div>
+            </div>
+            <div className="trust-item saas-reveal">
+              <div className="trust-icon-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              </div>
+              <div className="trust-text">
+                <h4>Easy Returns</h4>
+                <p>7-Day Policy</p>
+              </div>
+            </div>
+            <div className="trust-item saas-reveal">
+              <div className="trust-icon-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </div>
+              <div className="trust-text">
+                <h4>Secure Payment</h4>
+                <p>100% Protected</p>
+              </div>
             </div>
           </div>
         </div>
@@ -313,22 +373,56 @@ const Home: React.FC = () => {
           </div>
 
           <div className="categories-grid">
-            {categories.slice(0, 8).map((category) => (
-              <Link
+            {categories.slice(0, 7).map((category) => (
+              <div
                 key={category._id}
-                to={`/books?category=${category._id}`}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    toast.info('Please sign in to explore categories');
+                    navigate('/login');
+                  } else {
+                    navigate(`/books?category=${category._id}`);
+                  }
+                }}
                 className="category-card saas-reveal"
                 data-category={category.name.toLowerCase().replace(/\s+/g, '-')}
+                style={{ cursor: 'pointer' }}
               >
                 <div className="category-icon">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-                  </svg>
+                  {getCategoryIcon(category.name)}
                 </div>
                 <h3>{category.name}</h3>
                 <p>{category.description || 'Explore this collection'}</p>
-              </Link>
+              </div>
             ))}
+
+            {/* View All Card */}
+            <div
+              onClick={handleExplore}
+              className="category-card saas-reveal"
+              style={{
+                cursor: 'pointer',
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%)',
+                borderColor: 'var(--saas-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
+            >
+              <div
+                className="category-icon"
+                style={{
+                  background: 'var(--saas-primary)',
+                  marginBottom: '1rem',
+                  borderRadius: '50%'
+                }}
+              >
+                <ArrowRight width="32" height="32" />
+              </div>
+              <h3>View All</h3>
+              <p style={{ transform: 'none', opacity: 1 }}>Explore our full catalog</p>
+            </div>
           </div>
         </div>
       </section>
@@ -339,7 +433,18 @@ const Home: React.FC = () => {
           <div className="cta-box">
             <h2>Ready to start reading?</h2>
             <p>Join thousands of knowledge seekers today. Your first book is just a click away.</p>
-            <button onClick={handleExplore} className="btn-vibrant large">Join Bookstack Now</button>
+            <div className="cta-actions" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+              <button onClick={handleExplore} className="btn-vibrant large">Join Bookstack Now</button>
+              <button onClick={() => {
+                const element = document.querySelector('.membership-plans-grid');
+                if (element) element.scrollIntoView({ behavior: 'smooth' });
+              }} className="btn-outline large" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>View Plans</button>
+            </div>
+
+            {/* Visual Decor */}
+            <div className="cta-decor" style={{ position: 'absolute', top: '-50px', right: '-50px', opacity: 0.1, transform: 'rotate(15deg)' }}>
+              <BookOpen width="200" height="200" color="white" />
+            </div>
           </div>
         </div>
       </section>

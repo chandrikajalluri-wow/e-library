@@ -360,7 +360,7 @@ const UserOrderDetails: React.FC = () => {
                                     <button type="button" onClick={() => setIsReturnModalOpen(false)} className="cancel-btn">
                                         Cancel
                                     </button>
-                                    <button type="submit" className="submit-btn" disabled={isSubmittingReturn}>
+                                    <button type="submit" className="submit-btn-premium" disabled={isSubmittingReturn}>
                                         {isSubmittingReturn ? 'Submitting...' : 'Submit Request'}
                                     </button>
                                 </div>

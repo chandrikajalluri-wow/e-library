@@ -1,6 +1,6 @@
 .footer {
     background: var(--saas-bg);
-    padding: 6rem 5% 3rem;
+    padding: 3rem 5% 2rem;
     border-top: 1px solid var(--saas-border);
     color: var(--saas-text);
     position: relative;
@@ -92,7 +92,7 @@
 }
 
 .footer-bottom {
-    margin-top: 6rem;
+    margin-top: 3rem;
     padding-top: 2rem;
     border-top: 1px solid var(--saas-border);
     text-align: center;
