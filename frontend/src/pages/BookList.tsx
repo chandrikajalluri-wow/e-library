@@ -1,8 +1,9 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
+import { getMyMembership, type Membership } from '../services/membershipService';
 
 import type { Book } from '../types';
 import { BookStatus } from '../types/enums';
@@ -13,6 +14,7 @@ import '../styles/BookList.css';
 
 const BookList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const categoryParam = searchParams.get('category') || '';
   const searchSectionRef = React.useRef<HTMLHeadingElement>(null);
   const { addToCart, isInCart } = useBorrowCart();
@@ -32,6 +34,7 @@ const BookList: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState('all'); // 'all', 'premium', 'free'
+  const [userMembership, setUserMembership] = useState<Membership | null>(null);
 
   // Sync state with URL parameter
   useEffect(() => {
@@ -74,7 +77,17 @@ const BookList: React.FC = () => {
   useEffect(() => {
     loadRecommendations();
     loadPersonalizedRecs();
+    fetchUserMembership();
   }, []);
+
+  const fetchUserMembership = async () => {
+    try {
+      const data = await getMyMembership();
+      setUserMembership(data);
+    } catch (err) {
+      console.error('Error fetching membership:', err);
+    }
+  };
 
   const loadPersonalizedRecs = async () => {
     try {
@@ -242,20 +255,29 @@ const BookList: React.FC = () => {
                   </span>
                 </div>
                 <div className="book-actions-row">
-                  <button
-                    onClick={() => {
-                      if (book.noOfCopies > 0) {
-                        addToCart(book);
-                        toast.success(`${book.title} added to cart!`);
-                      } else {
-                        toast.error('Out of stock');
-                      }
-                    }}
-                    disabled={book.noOfCopies === 0 || isInCart(book._id)}
-                    className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                  >
-                    {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
-                  </button>
+                  {book.isPremium && !userMembership?.canAccessPremiumBooks ? (
+                    <button
+                      onClick={() => navigate('/memberships')}
+                      className="btn-primary book-action-btn premium-upgrade-btn"
+                    >
+                      Upgrade to Premium
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (book.noOfCopies > 0) {
+                          addToCart(book);
+                          toast.success(`${book.title} added to cart!`);
+                        } else {
+                          toast.error('Out of stock');
+                        }
+                      }}
+                      disabled={book.noOfCopies === 0 || isInCart(book._id)}
+                      className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                    >
+                      {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
+                    </button>
+                  )}
                   <Link
                     to={`/books/${book._id}`}
                     className="btn-primary view-book-btn book-action-btn"
