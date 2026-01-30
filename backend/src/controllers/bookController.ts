@@ -247,7 +247,7 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(404).json({ error: 'PDF URL is missing for this book' });
         }
 
-<<<<<<< HEAD
+
         // Check premium access
         if (book.isPremium) {
             const user = await User.findById(req.user!._id).populate('role_id').populate('membership_id');
@@ -259,9 +259,9 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
             }
         }
 
-=======
+
         let key = '';
->>>>>>> 4d7d088647cf66ec6bf9f198096eb701691e530d
+
         try {
             // Robust key extraction
             try {
