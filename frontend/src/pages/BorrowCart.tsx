@@ -12,7 +12,7 @@ import '../styles/BorrowCart.css';
 
 const BorrowCart: React.FC = () => {
     const navigate = useNavigate();
-    const { cartItems, removeFromCart, increaseQty, decreaseQty, getCartCount, addToCart, isInCart } = useBorrowCart();
+    const { cartItems, removeFromCart, increaseQty, decreaseQty, addToCart, isInCart } = useBorrowCart();
 
     const [recommendations, setRecommendations] = useState<Book[]>([]);
     const [buyAgain, setBuyAgain] = useState<Book[]>([]);
@@ -68,14 +68,18 @@ const BorrowCart: React.FC = () => {
     };
 
     const handleProceedToCheckout = () => {
-        if (cartItems.length === 0) return;
+        if (availableItems.length === 0) {
+            toast.error('No items available for checkout');
+            return;
+        }
         navigate('/checkout');
     };
 
-    const totalItems = getCartCount();
+    const availableItems = cartItems.filter(item => item.book.noOfCopies > 0);
+    const totalItems = availableItems.reduce((acc, item) => acc + item.quantity, 0);
 
     // Calculate financial summary
-    const subtotal = cartItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
+    const subtotal = availableItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
     const FREE_SHIPPING_THRESHOLD = 500;
     const deliveryFee = subtotal > 0 && subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 50;
     const totalPrice = subtotal + deliveryFee;
@@ -114,7 +118,9 @@ const BorrowCart: React.FC = () => {
                     <Link to={`/books/${book._id}`} className="suggestion-title">{book.title}</Link>
                     <p className="suggestion-author">by {book.author}</p>
                     <div className="suggestion-footer">
-                        <span className="suggestion-price">₹{book.price.toFixed(2)}</span>
+                        <div className="suggestion-price-box">
+                            <span className="suggestion-price">₹{book.price.toFixed(2)}</span>
+                        </div>
                         <button
                             className={`suggestion-add-btn ${inCart ? 'in-cart' : ''}`}
                             onClick={() => {
@@ -125,7 +131,7 @@ const BorrowCart: React.FC = () => {
                             }}
                             disabled={inCart}
                         >
-                            {inCart ? 'In Cart' : <Plus size={16} />}
+                            {inCart ? 'In' : <Plus size={18} />}
                         </button>
                     </div>
                 </div>
@@ -223,7 +229,7 @@ const BorrowCart: React.FC = () => {
                                                                 <span className="item-author-sub">by {item.book.author}</span>
                                                             </div>
                                                             <div className="price-tag-premium">
-                                                                ₹{item.book.price.toFixed(2)}
+                                                                {item.book.noOfCopies > 0 ? `₹${item.book.price.toFixed(2)}` : <span style={{ color: 'var(--danger-color)', fontSize: '0.8rem' }}>Out of Stock</span>}
                                                             </div>
                                                         </div>
 
@@ -307,6 +313,11 @@ const BorrowCart: React.FC = () => {
                                             <span className="label">Subtotal ({totalItems} items)</span>
                                             <span className="value">₹{subtotal.toFixed(2)}</span>
                                         </div>
+                                        {cartItems.some(i => i.book.noOfCopies <= 0) && (
+                                            <div className="data-row" style={{ fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--danger-color)' }}>
+                                                <span>* Out of stock items excluded</span>
+                                            </div>
+                                        )}
                                         <div className="data-row">
                                             <span className="label">Estimated Delivery</span>
                                             <span className={`value ${deliveryFee === 0 ? 'free-text' : ''}`}>

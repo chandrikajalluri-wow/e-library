@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBook, getSimilarBooks } from '../services/bookService';
-import { Heart, BookOpen, ShoppingCart, ThumbsUp, ThumbsDown, Flag } from 'lucide-react';
-import { issueBook, getMyBorrows } from '../services/borrowService';
+import { Heart, BookOpen, ShoppingCart, ThumbsUp, ThumbsDown, Flag, ShoppingBag } from 'lucide-react';
+import { addToReadlist } from '../services/borrowService';
 import {
   addToWishlist,
   getWishlist,
@@ -10,8 +10,8 @@ import {
 } from '../services/wishlistService';
 import { getBookReviews, addReview, updateReview, likeReview, dislikeReview, reportReview } from '../services/reviewService';
 import { getMyMembership, type Membership } from '../services/membershipService';
-import { getProfile } from '../services/userService';
-import { RoleName, BorrowStatus, BookStatus } from '../types/enums';
+import { getProfile, getDashboardStats, checkBookAccess } from '../services/userService';
+import { RoleName, BookStatus } from '../types/enums';
 import type { User } from '../types';
 import { toast } from 'react-toastify';
 import { useBorrowCart } from '../context/BorrowCartContext';
@@ -26,17 +26,14 @@ const BookDetail: React.FC = () => {
   const [book, setBook] = useState<any>(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistItemId, setWishlistItemId] = useState<string | null>(null);
-  const [expectedReturnDate, setExpectedReturnDate] = useState<string | null>(
-    null
-  );
   const [reviews, setReviews] = useState<any[]>([]);
-  const [hasBorrowed, setHasBorrowed] = useState(false);
+  const [hasBorrowed, setHasBorrowed] = useState(false); // Renamed to hasAccess in logic
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeBorrowCount, setActiveBorrowCount] = useState(0);
   const [userMembership, setUserMembership] = useState<Membership | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [monthlyBorrowCount, setMonthlyBorrowCount] = useState(0);
   const [similarBooks, setSimilarBooks] = useState<any[]>([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportingReviewId, setReportingReviewId] = useState<string | null>(null);
@@ -52,13 +49,22 @@ const BookDetail: React.FC = () => {
       fetchBook(id);
       checkWishlist(id);
       fetchReviews(id);
-      checkBorrowStatus(id);
-      fetchActiveBorrowCount();
+      checkAccessStatus(id);
       fetchUserMembership();
       fetchUserProfile();
       fetchSimilarBooks(id);
+      fetchMonthlyBorrowCount();
     }
   }, [id]);
+
+  const fetchMonthlyBorrowCount = async () => {
+    try {
+      const stats = await getDashboardStats();
+      setMonthlyBorrowCount(stats.borrowedCount || 0);
+    } catch (err) {
+      console.error('Error fetching monthly borrow count:', err);
+    }
+  };
 
   const fetchSimilarBooks = async (bookId: string) => {
     try {
@@ -89,17 +95,7 @@ const BookDetail: React.FC = () => {
     }
   };
 
-  const fetchActiveBorrowCount = async () => {
-    try {
-      const myBorrows = await getMyBorrows();
-      const count = myBorrows.filter((b: any) =>
-        [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED].includes(b.status)
-      ).length;
-      setActiveBorrowCount(count);
-    } catch (err) {
-      console.error('Error fetching borrow count:', err);
-    }
-  };
+
 
   const fetchBook = async (bookId: string) => {
     try {
@@ -117,26 +113,23 @@ const BookDetail: React.FC = () => {
       if (item) {
         setIsWishlisted(true);
         setWishlistItemId(item._id);
-        setExpectedReturnDate(item.expectedReturnDate || null);
       } else {
         setIsWishlisted(false);
         setWishlistItemId(null);
-        setExpectedReturnDate(null);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  const checkBorrowStatus = async (bookId: string) => {
+  const checkAccessStatus = async (bookId: string) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const myBorrows = await getMyBorrows();
-      const borrowed = myBorrows.some((b: any) => b.book_id._id === bookId);
-      setHasBorrowed(borrowed);
+      const accessData = await checkBookAccess(bookId);
+      setHasBorrowed(accessData.hasAccess);
     } catch (err) {
-      console.error('Error checking borrow status:', err);
+      console.error('Error checking access status:', err);
     }
   };
 
@@ -149,19 +142,33 @@ const BookDetail: React.FC = () => {
     }
   };
 
-  const handleBorrow = async () => {
-    if (!localStorage.getItem('token')) {
-      toast.info('Please sign in to borrow books');
-      navigate('/login');
-      return;
+  const handleBuyNow = () => {
+    if (book.noOfCopies > 0) {
+      addToCart(book);
+      navigate('/checkout');
+    } else {
+      toast.error('Out of stock');
     }
-    if (!book) return;
+  };
+
+  const handleAddToReadlist = async () => {
     try {
-      await issueBook(book._id);
-      toast.success('Book borrowed successfully!');
-      navigate('/dashboard');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login to add to readlist');
+        navigate('/login');
+        return;
+      }
+      setIsSubmitting(true);
+      await addToReadlist(book._id);
+      setHasBorrowed(true);
+      toast.success('Added to your readlist! Happy reading.');
+      // Refresh access status
+      checkAccessStatus(book._id);
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to borrow book');
+      toast.error(err.response?.data?.error || 'Failed to add to readlist');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -336,15 +343,6 @@ const BookDetail: React.FC = () => {
       toast.error(msg);
     }
   };
-  const handleRead = () => {
-    if (!hasBorrowed) {
-      toast.error('You must borrow this book to read it.');
-      return;
-    }
-    if (book.pdf_url) {
-      navigate(`/read/${book._id}`);
-    }
-  };
 
 
 
@@ -403,94 +401,61 @@ const BookDetail: React.FC = () => {
 
 
           <div>
-            <div className="action-buttons">
-              {book.isPremium && !userMembership?.canAccessPremiumBooks ? (
-                <div className="premium-lock-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button
-                      onClick={() => navigate('/memberships')}
-                      className="btn-primary premium-upgrade-btn"
-                      style={{ flex: 1 }}
-                    >
-                      Upgrade to Premium to Access
-                    </button>
-                    <button
-                      onClick={handleToggleWishlist}
-                      className="btn-secondary wishlist-toggle-btn"
-                      title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                    >
-                      {isWishlisted ? <Heart fill="currentColor" size={24} /> : <Heart size={24} />}
-                    </button>
-                  </div>
-                  <p className="premium-info-text text-muted" style={{ margin: 0 }}>
-                    This book is part of our Premium collection. Please upgrade your plan to borrow, purchase or read this book.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {book.noOfCopies > 0 ? (
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={handleBorrow}
-                        disabled={localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? true : false}
-                        className={`btn-primary borrow-btn ${localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'disabled-btn' : ''}`}
-                        title={localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? `Borrow limit (${userMembership?.borrowLimit || 3}) reached` : ''}
-                      >
-                        {localStorage.getItem('token') && activeBorrowCount >= (userMembership?.borrowLimit || 3) ? 'Borrow Limit Reached' : 'Borrow This Book'}
-                      </button>
+            <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleAddToReadlist}
+                  disabled={isSubmitting || (localStorage.getItem('token') && monthlyBorrowCount >= (userMembership?.borrowLimit || 3) ? true : false)}
+                  className={`btn-primary readlist-btn ${localStorage.getItem('token') && monthlyBorrowCount >= (userMembership?.borrowLimit || 3) ? 'disabled-btn' : ''}`}
+                  title={localStorage.getItem('token') && monthlyBorrowCount >= (userMembership?.borrowLimit || 3) ? `Monthly limit(${userMembership?.borrowLimit || 3}) reached` : ''}
+                >
+                  <BookOpen size={18} />
+                  {isSubmitting ? 'Adding...' : (localStorage.getItem('token') && monthlyBorrowCount >= (userMembership?.borrowLimit || 3) ? 'Monthly Limit Reached' : 'Add to Readlist')}
+                </button>
 
-                      <button
-                        onClick={() => {
-                          if (book.noOfCopies > 0) {
-                            addToCart(book);
-                            toast.success(`${book.title} added to cart!`);
-                          } else {
-                            toast.error('Out of stock');
-                          }
-                        }}
-                        disabled={book.noOfCopies === 0 || isInCart(book._id)}
-                        className={`btn-primary ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                        title={isInCart(book._id) ? 'Already in cart' : 'Add to cart'}
-                      >
-                        <ShoppingCart size={18} style={{ marginRight: '8px' }} />
-                        {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="unavailable-container">
-                      <button
-                        disabled
-                        className="btn-secondary unavailable-btn"
-                      >
-                        Currently Unavailable
-                      </button>
-                      {isWishlisted && expectedReturnDate && (
-                        <p className="return-date-info">
-                          Expected return:{' '}
-                          {new Date(expectedReturnDate).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                <button
+                  onClick={handleBuyNow}
+                  className="btn-primary buy-now-btn"
+                >
+                  <ShoppingBag size={18} />
+                  Buy Now {book.noOfCopies === 0 && '(Out of Stock)'}
+                </button>
 
-                  <button
-                    onClick={handleToggleWishlist}
-                    className="btn-secondary wishlist-toggle-btn"
-                    title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                  >
-                    {isWishlisted ? <Heart fill="currentColor" size={24} /> : <Heart size={24} />}
-                  </button>
+                <button
+                  onClick={() => {
+                    addToCart(book);
+                    if (book.noOfCopies > 0) {
+                      toast.success(`${book.title} added to cart!`);
+                    } else {
+                      toast.warning(`${book.title} added to cart(Note: Currently Out of Stock)`);
+                    }
+                  }}
+                  disabled={isInCart(book._id)}
+                  className={`btn-primary add-to-cart-btn-detail ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 'fit-content',
+                    padding: '0.6rem 1.25rem',
+                    fontSize: '0.875rem'
+                  }}
+                  title={isInCart(book._id) ? 'Already in cart' : 'Add to cart'}
+                >
+                  <ShoppingCart size={18} />
+                  {isInCart(book._id) ? 'In Cart ✓' : (book.noOfCopies === 0 ? 'Add to Cart (Out of Stock)' : 'Add to Cart')}
+                </button>
+              </div>
 
-                  {book.pdf_url && (
-                    <button
-                      onClick={handleRead}
-                      className="btn-primary read-pdf-btn"
-                    >
-                      <BookOpen size={18} style={{ marginRight: '8px' }} /> Read PDF
-                    </button>
-                  )}
-                </>
-              )}
+              <button
+                onClick={handleToggleWishlist}
+                className="btn-secondary wishlist-toggle-btn"
+                title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              >
+                {isWishlisted ? <Heart fill="currentColor" size={24} /> : <Heart size={24} />}
+              </button>
+
+
             </div>
           </div>
         </div>

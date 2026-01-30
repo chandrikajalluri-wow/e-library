@@ -26,18 +26,28 @@
 .sidebar-item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
+    justify-content: flex-start;
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    border-radius: 12px;
     color: var(--text-secondary);
     background: transparent;
     border: none;
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     text-align: left;
+}
+
+.sidebar-icon-wrapper {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .sidebar-item:hover {
@@ -123,8 +133,48 @@
 
 .session-device {
     font-weight: 600;
-    display: block;
     font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.session-device-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.current-badge {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.6rem;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.session-item.current-session {
+    border-color: rgba(34, 197, 94, 0.3);
+    background: rgba(34, 197, 94, 0.02);
+}
+
+.revoke-session-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.revoke-session-btn:hover {
+    background: #ef4444;
+    color: white;
 }
 
 .session-meta {

@@ -16,10 +16,7 @@ export const returnBook = async (borrow_id: string): Promise<Borrow> => {
   return res.data;
 };
 
-export const payFine = async (borrow_id: string): Promise<any> => {
-  const res = await api.post(`${BASE_URL}/pay-fine/${borrow_id}`, {});
-  return res.data;
-};
+
 
 export const acceptReturn = async (borrow_id: string): Promise<Borrow> => {
   const res = await api.post(`${BASE_URL}/accept-return/${borrow_id}`, {});
@@ -48,5 +45,11 @@ export const updateReadingProgress = async (bookId: string, progress: { last_pag
 
 export const checkoutCart = async (items: { book_id: string; quantity: number }[]): Promise<any> => {
   const res = await api.post(`${BASE_URL}/checkout`, { items });
+  return res.data;
+};
+
+// Add book to digital readlist (no stock impact)
+export const addToReadlist = async (book_id: string): Promise<any> => {
+  const res = await api.post('users/readlist', { book_id });
   return res.data;
 };

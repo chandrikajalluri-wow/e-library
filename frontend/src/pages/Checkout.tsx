@@ -10,7 +10,7 @@ import '../styles/Checkout.css';
 
 const Checkout: React.FC = () => {
     const navigate = useNavigate();
-    const { cartItems, getCartCount } = useBorrowCart();
+    const { cartItems } = useBorrowCart();
     const [membership, setMembership] = React.useState<Membership | null>(null);
 
     React.useEffect(() => {
@@ -27,20 +27,23 @@ const Checkout: React.FC = () => {
     };
 
     const handleContinue = () => {
-        if (cartItems.length === 0) {
-            toast.error('Your cart is empty');
+        if (availableItems.length === 0) {
+            toast.error('No items available for delivery in your cart');
             navigate('/borrow-cart');
             return;
         }
         navigate('/checkout/address');
     };
 
-    const totalItems = getCartCount();
+    const availableItems = cartItems.filter(item => item.book.noOfCopies > 0);
+    const totalItems = availableItems.reduce((acc, item) => acc + item.quantity, 0);
 
     // Calculate financial summary
-    const subtotal = cartItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
+    const subtotal = availableItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
     const deliveryFee = subtotal > 0 && subtotal <= 50 ? 50 : 0;
     const totalPrice = subtotal + deliveryFee;
+
+    const hasOutOfStockItems = cartItems.some(item => item.book.noOfCopies <= 0);
 
     const containerVariants = {
         hidden: { opacity: 0, y: 30 },
@@ -126,8 +129,9 @@ const Checkout: React.FC = () => {
                                     {cartItems.map((item) => (
                                         <motion.div
                                             key={item.book._id}
-                                            className="checkout-item-premium"
+                                            className={`checkout-item-premium ${item.book.noOfCopies <= 0 ? 'out-of-stock-item' : ''}`}
                                             variants={itemVariants}
+                                            style={item.book.noOfCopies <= 0 ? { opacity: 0.6 } : {}}
                                         >
                                             <div className="item-img-box">
                                                 <img
@@ -136,19 +140,27 @@ const Checkout: React.FC = () => {
                                                 />
                                             </div>
                                             <div className="item-info-box">
-                                                <h3 className="item-title">{item.book.title}</h3>
+                                                <h3 className="item-title">
+                                                    {item.book.title}
+                                                    {item.book.noOfCopies <= 0 && <span className="oos-label" style={{ color: 'var(--danger-color)', fontSize: '0.7rem', marginLeft: '8px' }}>(Out of Stock)</span>}
+                                                </h3>
                                                 <span className="item-author-label">by {item.book.author}</span>
                                                 <div className="item-meta-row">
                                                     <span className="item-qty-badge">Qty: {item.quantity}</span>
-                                                    <span className="item-price-each">₹{item.book.price.toFixed(2)} ea</span>
+                                                    {item.book.noOfCopies > 0 && <span className="item-price-each">₹{item.book.price.toFixed(2)} ea</span>}
                                                 </div>
                                             </div>
                                             <div className="item-total-price-box">
-                                                ₹{(item.book.price * item.quantity).toFixed(2)}
+                                                {item.book.noOfCopies > 0 ? `₹${(item.book.price * item.quantity).toFixed(2)}` : '—'}
                                             </div>
                                         </motion.div>
                                     ))}
                                 </AnimatePresence>
+                                {hasOutOfStockItems && (
+                                    <p className="oos-warning" style={{ fontSize: '0.8rem', color: 'var(--danger-color)', padding: '10px 0', borderTop: '1px dashed var(--border-color)' }}>
+                                        * Items marked as Out of Stock are excluded from the order summary.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="trust-badges-checkout">

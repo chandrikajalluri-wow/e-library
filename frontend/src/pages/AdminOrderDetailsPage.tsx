@@ -103,12 +103,15 @@ const AdminOrderDetailsPage: React.FC = () => {
     return (
         <div className="admin-details-container saas-reveal">
             {/* Top Navigation Bar */}
+            {/* Standalone Back Button */}
+            <Link to="/admin/orders" className="back-link">
+                <ArrowLeft size={18} />
+                <span>Back</span>
+            </Link>
+
+            {/* Top Navigation Bar */}
             <div className="details-topbar">
                 <div className="topbar-left">
-                    <Link to="/admin/orders" className="back-link">
-                        <ArrowLeft size={18} />
-                        <span>Back</span>
-                    </Link>
                     <div className="order-id-display">
                         <Package size={18} />
                         <span>Order #{order._id.slice(-8).toUpperCase()}</span>
@@ -189,11 +192,11 @@ const AdminOrderDetailsPage: React.FC = () => {
                                 <span className="label">Name</span>
                                 <span className="value">{order.user_id?.name}</span>
                             </div>
-                            <div className="info-row">
+                            <div className="info-row row-center">
                                 <Mail size={14} className="icon-sub" />
                                 <span className="value-sub">{order.user_id?.email}</span>
                             </div>
-                            <div className="info-row">
+                            <div className="info-row row-center">
                                 <Phone size={14} className="icon-sub" />
                                 <span className="value-sub">{order.user_id?.phone || 'Not provided'}</span>
                             </div>

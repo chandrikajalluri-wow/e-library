@@ -11,8 +11,7 @@ router.post('/issue', auth, borrowController.issueBook);
 // Request return (User)
 router.post('/return/:id', auth, borrowController.requestReturn);
 
-// Pay fine (User - Dummy)
-router.post('/pay-fine/:id', auth, borrowController.payFine);
+
 
 // Accept return (Admin)
 router.post('/accept-return/:id', auth, checkRole([RoleName.ADMIN]), borrowController.acceptReturn);
