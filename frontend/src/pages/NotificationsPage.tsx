@@ -45,18 +45,18 @@ const NotificationsPage: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="notifications-page saas-container saas-reveal">
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1 className="saas-title">Notifications</h1>
-                    <p className="saas-subtitle">Stay updated with your library activities</p>
+        <div className="notifications-page dashboard-container saas-reveal">
+            <header className="admin-header">
+                <div className="admin-header-titles">
+                    <h1 className="admin-header-title">Notifications</h1>
+                    <p className="admin-header-subtitle">Stay updated with your library activities</p>
                 </div>
                 {notifications.some(n => !n.is_read) && (
                     <button className="btn-secondary mark-all-read-btn" onClick={handleMarkAllRead}>
                         Mark all as read
                     </button>
                 )}
-            </div>
+            </header>
 
             <div className="notifications-container card">
                 {notifications.length > 0 ? (

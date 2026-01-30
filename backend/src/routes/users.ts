@@ -35,16 +35,28 @@ router.get('/admin/book-requests', auth, checkRole([RoleName.ADMIN]), userContro
 // ADMIN: Update Book Request Status
 router.put('/admin/book-requests/:id', auth, checkRole([RoleName.ADMIN]), userController.updateBookRequestStatus);
 
-// ADMIN: Send Fine Reminder
-router.post('/admin/send-fine-reminder/:id', auth, checkRole([RoleName.ADMIN]), userController.sendFineReminder);
+
 
 // Get Active Sessions
 router.get('/sessions', auth, userController.getSessions);
+router.post('/sessions/revoke', auth, userController.revokeSession);
 
 // Logout from all devices
 router.post('/logout-all', auth, userController.logoutAll);
 
 // Delete Account
 router.delete('/me', auth, userController.deleteAccount);
+
+// Cart Sync
+router.get('/cart', auth, userController.getCart);
+router.post('/cart/sync', auth, userController.syncCart);
+router.delete('/cart', auth, userController.clearCartLocally);
+
+// Readlist
+router.get('/readlist', auth, userController.getReadlist);
+router.post('/readlist', auth, userController.addToReadlist);
+
+// Book Access Check
+router.get('/book-access/:bookId', auth, userController.checkBookAccess);
 
 export default router;

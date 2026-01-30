@@ -13,7 +13,11 @@ export interface IUser extends Document {
   membership_id: Types.ObjectId | IMembership; // allow populated Membership
   membershipStartDate?: Date;
   membershipExpiryDate?: Date;
+  membershipCancellationReason?: string;
+  membershipCancellationDate?: Date;
   deletionScheduledAt?: Date;
+  isDeleted: boolean;
+  deletedAt?: Date;
   isVerified: boolean;
   verificationToken?: string;
   profileImage?: string;
@@ -29,6 +33,11 @@ export interface IUser extends Document {
     token: string;
   }[];
   theme?: UserTheme;
+  cart?: {
+    book_id: Types.ObjectId;
+    quantity: number;
+  }[];
+  readlist?: Types.ObjectId[];
   createdAt?: Date;
 }
 
@@ -43,7 +52,11 @@ const userSchema = new Schema<IUser>(
     membership_id: { type: Schema.Types.ObjectId, ref: 'Membership' },
     membershipStartDate: { type: Date },
     membershipExpiryDate: { type: Date },
+    membershipCancellationReason: { type: String },
+    membershipCancellationDate: { type: Date },
     deletionScheduledAt: { type: Date },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
     profileImage: { type: String },
@@ -61,6 +74,13 @@ const userSchema = new Schema<IUser>(
       },
     ],
     theme: { type: String, enum: Object.values(UserTheme), default: UserTheme.LIGHT },
+    cart: [
+      {
+        book_id: { type: Schema.Types.ObjectId, ref: 'Book' },
+        quantity: { type: Number, default: 1 }
+      }
+    ],
+    readlist: [{ type: Schema.Types.ObjectId, ref: 'Book' }],
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

@@ -4,7 +4,11 @@ import { toast } from 'react-toastify';
 import { AnnouncementType, TargetPage } from '../../types/enums';
 import ConfirmationModal from '../ConfirmationModal';
 
-const Announcements: React.FC = () => {
+interface AnnouncementsProps {
+    hideTitle?: boolean;
+}
+
+const Announcements: React.FC<AnnouncementsProps> = ({ hideTitle = false }) => {
     const [announcements, setAnnouncements] = useState<any[]>([]);
     const [newAnnouncement, setNewAnnouncement] = useState<{
         title: string;
@@ -83,7 +87,7 @@ const Announcements: React.FC = () => {
     return (
         <div className="admin-categories-layout">
             <section className="card admin-form-section">
-                <h3 className="admin-table-title" style={{ marginBottom: '2rem' }}>Create Announcement</h3>
+                {!hideTitle && <h3 className="admin-table-title" style={{ marginBottom: '2rem' }}>Create Announcement</h3>}
                 <form onSubmit={handleCreate}>
                     <div className="form-group">
                         <label>Title</label>
@@ -135,7 +139,7 @@ const Announcements: React.FC = () => {
 
             <section className="admin-categories-list-section">
                 <div className="admin-table-header-box" style={{ borderRadius: '24px 24px 0 0', borderBottom: 'none' }}>
-                    <h3 className="admin-table-title">Active Announcements</h3>
+                    {!hideTitle && <h3 className="admin-table-title">Active Announcements</h3>}
                 </div>
                 <div className="admin-categories-grid" style={{
                     display: 'flex', flexDirection: 'column', gap: '1rem',

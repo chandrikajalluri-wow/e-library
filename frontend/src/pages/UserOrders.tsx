@@ -94,34 +94,47 @@ const UserOrders: React.FC = () => {
 
     return (
         <motion.div
-            className="orders-view-container"
+            className="orders-view-container dashboard-container"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
         >
             <div className="orders-page-header">
-                <div className="header-top-nav">
+                <div className="header-top-nav" style={{ marginBottom: '1.5rem' }}>
                     <button onClick={() => navigate('/dashboard')} className="minimal-back-btn">
                         <ArrowLeft size={18} />
                         <span>Dashboard</span>
                     </button>
                 </div>
-                <div className="header-content">
-                    <div className="title-section">
-                        <h1>Purchase History</h1>
-                        <p>Keep track of all your reading adventures</p>
+
+                <header className="admin-header">
+                    <div className="admin-header-titles">
+                        <h1 className="admin-header-title">Purchase History</h1>
+                        <p className="admin-header-subtitle">Keep track of all your reading adventures</p>
                     </div>
-                    <div className="stats-badges">
-                        <div className="stat-pill">
-                            <span className="stat-value">{orders.length}</span>
-                            <span className="stat-label">Total Orders</span>
+                    <div className="orders-summary-badges">
+                        <div className="summary-badge total-badge">
+                            <div className="badge-icon-box">
+                                <Package size={18} />
+                            </div>
+                            <div className="badge-detail-box">
+                                <span className="badge-count-val">{orders.length}</span>
+                                <span className="badge-label-txt">Orders</span>
+                            </div>
                         </div>
-                        <div className="stat-pill primary">
-                            <ShoppingBag size={14} />
-                            <span>{orders.filter(o => o.status !== 'cancelled' && o.status !== 'delivered').length} Active</span>
+                        <div className="summary-badge active-badge">
+                            <div className="badge-icon-box">
+                                <ShoppingBag size={18} />
+                            </div>
+                            <div className="badge-detail-box">
+                                <span className="badge-count-val">
+                                    {orders.filter(o => o.status !== 'cancelled' && o.status !== 'delivered').length}
+                                </span>
+                                <span className="badge-label-txt">Active</span>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </header>
             </div>
 
             <AnimatePresence mode="wait">

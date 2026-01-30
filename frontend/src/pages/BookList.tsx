@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
-import { getMyMembership, type Membership } from '../services/membershipService';
+
 
 import type { Book } from '../types';
 import { BookStatus } from '../types/enums';
@@ -15,8 +16,8 @@ import { toast } from 'react-toastify';
 import '../styles/BookList.css';
 
 const BookList: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') || '';
   const searchSectionRef = React.useRef<HTMLHeadingElement>(null);
   const { addToCart, isInCart } = useBorrowCart();
@@ -90,17 +91,9 @@ const BookList: React.FC = () => {
   useEffect(() => {
     loadRecommendations();
     loadPersonalizedRecs();
-    fetchUserMembership();
   }, []);
 
-  const fetchUserMembership = async () => {
-    try {
-      const data = await getMyMembership();
-      setUserMembership(data);
-    } catch (err) {
-      console.error('Error fetching membership:', err);
-    }
-  };
+
 
   const loadPersonalizedRecs = async () => {
     try {
@@ -408,7 +401,12 @@ const BookList: React.FC = () => {
 
       <div className="grid-books">
         {books.map((book) => (
-          <div key={book._id} className="card book-card">
+          <div
+            key={book._id}
+            className="card book-card"
+            onClick={() => navigate(`/books/${book._id}`)}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="book-cover-container">
               {book.cover_image_url ? (
                 <img
@@ -450,35 +448,33 @@ const BookList: React.FC = () => {
                   </span>
                 </div>
                 <div className="book-actions-row">
-                  {book.isPremium && !userMembership?.canAccessPremiumBooks ? (
-                    <button
-                      onClick={() => navigate('/memberships')}
-                      className="btn-primary book-action-btn premium-upgrade-btn"
-                    >
-                      Upgrade to Premium
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        if (book.noOfCopies > 0) {
-                          addToCart(book);
-                          toast.success(`${book.title} added to cart!`);
-                        } else {
-                          toast.error('Out of stock');
-                        }
-                      }}
-                      disabled={book.noOfCopies === 0 || isInCart(book._id)}
-                      className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                    >
-                      {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
-                    </button>
-                  )}
-                  <Link
-                    to={`/books/${book._id}`}
-                    className="btn-primary view-book-btn book-action-btn"
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(book);
+                      if (book.noOfCopies > 0) {
+                        toast.success(`${book.title} added to cart!`);
+                      } else {
+                        toast.warning(`${book.title} added to cart (Note: Currently Out of Stock)`);
+                      }
+                    }}
+                    disabled={isInCart(book._id)}
+                    className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      flex: '0 0 auto',
+                      width: 'fit-content',
+                      padding: '0 1.5rem',
+                      fontSize: '0.8rem',
+                      marginLeft: 'auto'
+                    }}
                   >
-                    View
-                  </Link>
+                    <ShoppingCart size={16} />
+                    {isInCart(book._id) ? 'In Cart ✓' : (book.noOfCopies === 0 ? 'Add to Cart (Out of Stock)' : 'Add to Cart')}
+                  </button>
                 </div>
               </div>
             </div>

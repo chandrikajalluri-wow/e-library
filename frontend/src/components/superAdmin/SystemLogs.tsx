@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { getSystemLogs } from '../../services/superAdminService';
 
-const SystemLogs: React.FC = () => {
+interface SystemLogsProps {
+    hideTitle?: boolean;
+}
+
+const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -23,7 +27,7 @@ const SystemLogs: React.FC = () => {
     return (
         <div className="card admin-table-section">
             <div className="admin-table-header-box">
-                <h3 className="admin-table-title">Admin Activity Logs</h3>
+                {!hideTitle && <h3 className="admin-table-title">Admin Activity Logs</h3>}
                 <span className="page-info">Showing last {logs.length} entries</span>
             </div>
             <div className="admin-table-wrapper">

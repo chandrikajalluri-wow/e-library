@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     getMyNotifications, markNotificationRead, markAllNotificationsRead,
-    getNotifications as getAdminNotifications,
     markAsRead as markAdminRead,
     markAllAsRead as markAllAdminRead
 } from '../services/notificationService';
@@ -19,7 +18,7 @@ const NotificationCenter: React.FC = () => {
 
     const fetchNotifications = async () => {
         try {
-            const data = isAdmin ? await getAdminNotifications() : await getMyNotifications();
+            const data = await getMyNotifications();
             setNotifications(data);
         } catch (err) {
             console.error("Failed to fetch notifications", err);

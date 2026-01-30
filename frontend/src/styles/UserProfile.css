@@ -21,6 +21,9 @@
 /* Avatar Card */
 .avatar-card {
     text-align: center;
+}
+
+.profile-sidebar-sticky {
     position: sticky;
     top: 100px;
 }
@@ -417,6 +420,24 @@
 .renew-btn:hover {
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     transform: translateY(-2px);
+}
+
+.cancel-btn {
+    width: fit-content;
+    background: transparent;
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+    background: rgba(239, 68, 68, 0.05);
+    transform: translateY(-1px);
 }
 
 .upgrade-prompt-mini {

@@ -26,6 +26,8 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
             navigate('/signup');
         } else if (isCurrent) {
             return; // Do nothing if it's the current plan
+        } else if (membership.name === MembershipName.BASIC && currentMembership?.name === MembershipName.PREMIUM) {
+            return; // Do nothing for downgrade
         } else {
             onUpgrade(membership);
         }
@@ -34,6 +36,9 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
     const getButtonText = () => {
         if (!isAuthenticated) return 'Sign Up';
         if (isCurrent) return 'Current Plan';
+        if (membership.name === MembershipName.BASIC && currentMembership?.name === MembershipName.PREMIUM) {
+            return 'Standard Plan';
+        }
         if (membership.price === 0) return 'Downgrade';
         return 'Upgrade Now';
     };
@@ -72,7 +77,7 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
             <button
                 className={`membership-card-button ${isCurrent ? 'membership-card-button-current' : ''}`}
                 onClick={handleAction}
-                disabled={isCurrent}
+                disabled={isCurrent || (membership.name === MembershipName.BASIC && currentMembership?.name === MembershipName.PREMIUM)}
             >
                 {getButtonText()}
             </button>

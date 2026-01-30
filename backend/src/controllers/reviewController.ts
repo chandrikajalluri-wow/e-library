@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import Review from '../models/Review';
 import Borrow from '../models/Borrow';
 import Book from '../models/Book';
+import User from '../models/User';
+import Order from '../models/Order';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { maskProfanity } from '../utils/profanityFilter';
 import { notifySuperAdmins } from '../utils/notification';
@@ -22,15 +24,24 @@ export const getReviewsForBook = async (req: Request, res: Response) => {
 export const addReview = async (req: AuthRequest, res: Response) => {
     const { book_id, rating, comment } = req.body;
     try {
-        const hasBorrowed = await Borrow.findOne({
+        // Check if user has access via readlist or purchase
+        const user = await User.findById(req.user!._id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const inReadlist = user.readlist?.some((id: any) => id.toString() === book_id);
+        const hasPurchased = await Order.exists({
             user_id: req.user!._id,
-            book_id: book_id,
+            'items.book_id': book_id,
+            status: { $in: ['pending', 'shipped', 'delivered'] }
         });
-        if (!hasBorrowed) {
+
+        if (!inReadlist && !hasPurchased) {
             return res
                 .status(403)
                 .json({
-                    error: 'Only users who have borrowed this book can leave a review',
+                    error: 'Only users who have read or purchased this book can leave a review',
                 });
         }
 

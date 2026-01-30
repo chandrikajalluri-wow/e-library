@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, ZoomIn, ZoomOut, Maximize2, Minimize2, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, List } from 'lucide-react';
 import { getBook } from '../services/bookService';
 import { getReadingProgress, updateReadingProgress } from '../services/borrowService';
+import { getMyMembership } from '../services/membershipService';
 import { toast } from 'react-toastify';
 import '../styles/PDFViewer.css';
 
@@ -108,6 +109,20 @@ const PDFViewer: React.FC = () => {
                 return;
             }
             setBook(bookData);
+
+            // Check premium access
+            if (bookData.isPremium) {
+                try {
+                    const membership = await getMyMembership();
+                    if (!membership?.canAccessPremiumBooks) {
+                        toast.error('This is a premium book. Upgrade to Premium membership to read it.');
+                        navigate(-1);
+                        return;
+                    }
+                } catch (err) {
+                    console.error('Error checking membership for PDF access:', err);
+                }
+            }
 
             // Check if pdf.js is loaded
             console.log('Checking pdf.js availability...', typeof pdfjsLib);

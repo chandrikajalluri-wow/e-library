@@ -32,7 +32,9 @@ const UserNavbar: React.FC = () => {
     }, []);
 
     const handleLogoutConfirm = () => {
-        localStorage.clear();
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userId');
         setIsLogoutModalOpen(false);
         setIsDropdownOpen(false);
         navigate('/');

@@ -3,8 +3,8 @@ import { MembershipName } from '../types/enums';
 
 export interface IMembership extends Document {
     name: MembershipName;
-    displayName: string; // 'Basic', 'Standard', 'Premium'
-    price: number; // Monthly price in rupees (0 for basic, 49 for standard, 99 for premium)
+    displayName: string; // 'Basic', 'Premium'
+    price: number; // Monthly price in rupees (0 for basic, 99 for premium)
     borrowLimit: number; // Max books that can be borrowed simultaneously
     borrowDuration: number; // Default borrow duration in days
     canRequestBooks: boolean; // Can request new books

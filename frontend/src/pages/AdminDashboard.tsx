@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CircleSlash } from 'lucide-react';
+import { CircleSlash, RefreshCw } from 'lucide-react';
 import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllBorrows } from '../services/borrowService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
-import { getAllBookRequests, updateBookRequestStatus, sendFineReminder, getProfile } from '../services/userService';
+import { getAllBookRequests, updateBookRequestStatus, getProfile } from '../services/userService';
 import { getAllWishlists } from '../services/wishlistService';
 import { getActivityLogs } from '../services/logService';
 import { getAdmins } from '../services/superAdminService';
@@ -15,7 +15,11 @@ import type { Book, Category, Borrow, User } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/AdminDashboard.css';
 
-const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+  hideHeader?: boolean;
+}
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) => {
   const [searchParams] = useSearchParams();
   // const navigate = useNavigate();
   const activeTab = searchParams.get('tab') || 'stats';
@@ -42,8 +46,7 @@ const AdminDashboard: React.FC = () => {
     pendingSuggestions: 0,
     mostBorrowedBook: 'N/A',
     mostWishlistedBook: 'N/A',
-    mostActiveUser: 'N/A',
-    mostFinedUser: 'N/A'
+    mostActiveUser: 'N/A'
   });
 
   const [newBook, setNewBook] = useState({
@@ -196,18 +199,7 @@ const AdminDashboard: React.FC = () => {
         return sorted.length > 0 ? `${sorted[0][0]} (${sorted[0][1]})` : 'N/A';
       };
 
-      const getMaxSum = (
-        arr: any[], keyExtractor: (item: any) => string | undefined, valExtractor: (item: any) => number
-      ): string => {
-        const sums: Record<string, number> = {};
-        arr.forEach((item) => {
-          const key = keyExtractor(item);
-          const val = valExtractor(item);
-          if (key && val) sums[key] = (sums[key] || 0) + val;
-        });
-        const sorted = Object.entries(sums).sort((a, b) => b[1] - a[1]);
-        return sorted.length > 0 ? `${sorted[0][0]} (₹${sorted[0][1].toFixed(2)})` : 'N/A';
-      };
+
 
       const newStats = {
         totalBooks: booksData.total || 0,
@@ -222,7 +214,6 @@ const AdminDashboard: React.FC = () => {
         mostBorrowedBook: getMostFrequent(borrowsData.borrows, (b: any) => b.book_id?.title),
         mostWishlistedBook: getMostFrequent(wishlistData, (w: any) => w.book_id?.title),
         mostActiveUser: getMostFrequent(borrowsData.borrows, (b: any) => b.user_id?.name),
-        mostFinedUser: getMaxSum(borrowsData.borrows, (b: any) => b.user_id?.name, (b: any) => b.fine_amount || 0),
       };
 
       setStats(newStats);
@@ -474,14 +465,7 @@ const AdminDashboard: React.FC = () => {
   };
 
 
-  const handleSendReminder = async (borrowId: string) => {
-    try {
-      await sendFineReminder(borrowId);
-      toast.success('Reminder email sent successfully');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to send reminder');
-    }
-  };
+
 
   const handleBookRequestStatus = (id: string, status: string) => {
     setConfirmModal({
@@ -550,70 +534,83 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="admin-layout">
       <main className="admin-main-content">
-        <header className="admin-header">
-          <div className="admin-header-flex">
-            <div className="admin-header-titles">
-              <h2 className="admin-header-title">
-                {activeTab === 'stats' && 'Dashboard Overview'}
-                {activeTab === 'books' && 'Manage Books'}
-                {activeTab === 'categories' && 'Manage Categories'}
-                {activeTab === 'requests' && 'Return Requests'}
-                {activeTab === 'user-requests' && 'Book Suggestions'}
-                {activeTab === 'borrows' && 'Borrow History'}
-                {activeTab === 'logs' && 'User Activity Logs'}
-              </h2>
-              <p className="admin-header-subtitle">Welcome back, Administrator</p>
+        {!hideHeader && (
+          <header className="admin-header">
+            <div className="admin-header-flex">
+              <div className="admin-header-titles">
+                <h1 className="admin-header-title">
+                  {activeTab === 'stats' && 'Dashboard Overview'}
+                  {activeTab === 'books' && 'Manage Books'}
+                  {activeTab === 'categories' && 'Manage Categories'}
+                  {activeTab === 'requests' && 'Return Requests'}
+                  {activeTab === 'user-requests' && 'Book Suggestions'}
+                  {activeTab === 'borrows' && 'Borrow History'}
+                  {activeTab === 'logs' && 'User Activity Logs'}
+                </h1>
+                <p className="admin-header-subtitle">
+                  Welcome back, {currentUser?.role === RoleName.SUPER_ADMIN ? 'Super Administrator' : 'Administrator'}
+                </p>
+              </div>
+              <div className="admin-header-actions">
+                {/* Header actions can be added here in the future if needed */}
+              </div>
             </div>
-            <div className="admin-header-actions">
-              {activeTab === 'stats' && (
-                <button
-                  onClick={fetchStats}
-                  className="admin-refresh-stats-btn"
-                  disabled={isStatsLoading}
-                >
-                  {isStatsLoading ? (
-                    <span className="button-loader-flex">
-                      <div className="spinner-mini"></div>
-                      Refreshing...
-                    </span>
-                  ) : 'Refresh Stats'}
-                </button>
-              )}
-            </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         {activeTab === 'stats' && (
-          <div className="admin-stats-grid-container">
-            <div className="card stats-card-content">
-              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div>
-              <span className="stats-label">Total Volume</span>
-              <span className="stats-value">{stats.totalBooks}</span>
+          <div className="admin-stats-container">
+            <div className="admin-stats-header">
+              <h3 className="admin-table-title">Performance Insights</h3>
+              <button
+                onClick={fetchStats}
+                className="admin-refresh-stats-btn"
+                disabled={isStatsLoading}
+              >
+                {isStatsLoading ? (
+                  <span className="button-loader-flex">
+                    <div className="spinner-mini"></div>
+                    Refreshing...
+                  </span>
+                ) : (
+                  <span className="button-loader-flex">
+                    <RefreshCw size={18} />
+                    Refresh Stats
+                  </span>
+                )}
+              </button>
             </div>
-            <div className="card stats-card-content">
-              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
-              <span className="stats-label">Total Users</span>
-              <span className="stats-value stats-value-accent">{stats.totalUsers}</span>
-            </div>
-            <div className="card stats-card-content">
-              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></div>
-              <span className="stats-label">Active Borrows</span>
-              <span className="stats-value stats-value-accent">{stats.activeBorrows}</span>
-            </div>
-            <div className="card stats-card-content">
-              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
-              <span className="stats-label">Overdue</span>
-              <span className="stats-value stats-value-danger">{stats.overdueBooks}</span>
-            </div>
-            <div className="card stats-card-content">
-              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>
-              <span className="stats-label">Pending Returns</span>
-              <span className="stats-value stats-value-warning">{stats.pendingReturns}</span>
-            </div>
-            <div className="card stats-card-content">
-              <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg></div>
-              <span className="stats-label">Most Active User</span>
-              <div className="user-main-name" style={{ marginTop: '0.5rem' }}>{stats.mostActiveUser}</div>
+            <div className="admin-stats-grid-container">
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div>
+                <span className="stats-label">Total Volume</span>
+                <span className="stats-value">{stats.totalBooks}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+                <span className="stats-label">Total Users</span>
+                <span className="stats-value stats-value-accent">{stats.totalUsers}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></div>
+                <span className="stats-label">Active Borrows</span>
+                <span className="stats-value stats-value-accent">{stats.activeBorrows}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
+                <span className="stats-label">Overdue</span>
+                <span className="stats-value stats-value-danger">{stats.overdueBooks}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>
+                <span className="stats-label">Pending Returns</span>
+                <span className="stats-value stats-value-warning">{stats.pendingReturns}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg></div>
+                <span className="stats-label">Most Active User</span>
+                <div className="user-main-name" style={{ marginTop: '0.5rem' }}>{stats.mostActiveUser}</div>
+              </div>
             </div>
           </div>
         )}
@@ -899,7 +896,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
               ) : (
                 <table className="admin-table">
-                  <thead><tr><th>Borrower</th><th>Book</th><th>Dates</th><th>Fine</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
+                  <thead><tr><th>Borrower</th><th>Book</th><th>Dates</th><th>Status</th></tr></thead>
                   <tbody>{borrows.map(b => {
                     const membershipName = (b.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
                     const isPremiumUser = membershipName.toLowerCase().includes(MembershipName.PREMIUM.toLowerCase());
@@ -916,9 +913,7 @@ const AdminDashboard: React.FC = () => {
                         </td>
                         <td><div className="book-info-box"><span className="book-main-title">{b.book_id?.title}</span></div></td>
                         <td><div className="book-info-box"><div>Issued: {b.issued_date ? new Date(b.issued_date).toLocaleDateString() : 'N/A'}</div><div>Due: {b.return_date ? new Date(b.return_date).toLocaleDateString() : 'N/A'}</div></div></td>
-                        <td><span className={`admin-fine-amount ${(b.fine_amount || 0) > 0 ? 'admin-fine-danger' : ''}`}>₹{(b.fine_amount || 0).toFixed(2)}</span></td>
                         <td><span className={`status-badge status-${b.status}`}>{b.status.replace(/_/g, ' ')}</span></td>
-                        <td className="admin-actions-cell">{(b.fine_amount || 0) > 50 && <button onClick={() => handleSendReminder(b._id)} className="admin-reminder-btn">Remind</button>}</td>
                       </tr>
                     );
                   })}</tbody>

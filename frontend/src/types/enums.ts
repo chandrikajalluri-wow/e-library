@@ -44,7 +44,6 @@ export const NotificationType = {
     BORROW: 'borrow',
     RETURN: 'return',
     WISHLIST: 'wishlist',
-    FINE: 'fine',
     SYSTEM: 'system'
 } as const;
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];

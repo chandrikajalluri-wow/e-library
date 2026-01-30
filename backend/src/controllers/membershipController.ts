@@ -2,6 +2,8 @@ import { Response } from 'express';
 import Membership from '../models/Membership';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { MembershipName, ActivityAction } from '../types/enums';
+import ActivityLog from '../models/ActivityLog';
 
 export const getAllMemberships = async (req: any, res: Response) => {
     try {
@@ -83,6 +85,49 @@ export const updateUserMembershipAdmin = async (req: AuthRequest, res: Response)
             user: updatedUser
         });
     } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const cancelMyMembership = async (req: AuthRequest, res: Response) => {
+    const { reason } = req.body;
+
+    if (!reason) {
+        return res.status(400).json({ error: 'Cancellation reason is required' });
+    }
+
+    try {
+        const basicPlan = await Membership.findOne({ name: MembershipName.BASIC });
+        if (!basicPlan) {
+            return res.status(500).json({ error: 'Basic membership plan not found' });
+        }
+
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        user.membership_id = (basicPlan._id as any);
+        user.membershipCancellationReason = reason;
+        user.membershipCancellationDate = new Date();
+        user.membershipStartDate = undefined;
+        user.membershipExpiryDate = undefined;
+
+        await user.save();
+
+        // Log the activity
+        await ActivityLog.create({
+            user_id: user._id,
+            action: ActivityAction.MEMBERSHIP_CANCELLED,
+            timestamp: new Date()
+        });
+
+        const updatedUser = await User.findById(req.user!._id).populate('membership_id');
+
+        res.json({
+            message: `Membership cancelled. You have been switched to ${basicPlan.displayName} plan.`,
+            membership: updatedUser?.membership_id
+        });
+    } catch (err: any) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
     }

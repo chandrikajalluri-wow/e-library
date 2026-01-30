@@ -82,6 +82,10 @@ export const login = async (req: Request, res: Response) => {
         const user = await User.findOne({ email }).populate('role_id');
         if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
+        if (user.isDeleted) {
+            return res.status(400).json({ error: 'This account has been deleted' });
+        }
+
         if (!user.isVerified) {
             if (!user.verificationToken) {
                 user.verificationToken = crypto.randomBytes(20).toString('hex');
@@ -137,12 +141,14 @@ export const login = async (req: Request, res: Response) => {
         const device = req.headers['user-agent'] || 'Unknown Device';
 
         if (!user.activeSessions) user.activeSessions = [];
-        user.activeSessions.push({
-            device,
-            location: 'Unknown',
-            lastActive: now,
-            token
-        });
+
+        const existingSessionIndex = user.activeSessions.findIndex((s: any) => s.device === device);
+        if (existingSessionIndex !== -1) {
+            user.activeSessions[existingSessionIndex].token = token;
+            user.activeSessions[existingSessionIndex].lastActive = now;
+        } else {
+            user.activeSessions.push({ device, location: 'Unknown', lastActive: now, token });
+        }
 
         if (user.activeSessions.length > 5) {
             user.activeSessions = user.activeSessions.slice(-5);
@@ -268,6 +274,10 @@ export const googleLogin = async (req: Request, res: Response) => {
             $or: [{ googleId: sub }, { email }]
         }).populate('role_id');
 
+        if (user && user.isDeleted) {
+            return res.status(400).json({ error: 'This account has been deleted' });
+        }
+
         if (!user) {
             const userRole = await Role.findOne({ name: RoleName.USER });
             if (!userRole) return res.status(500).json({ error: 'Default role not found' });
@@ -309,12 +319,14 @@ export const googleLogin = async (req: Request, res: Response) => {
         const device = req.headers['user-agent'] || 'Unknown Device';
 
         if (!user.activeSessions) user.activeSessions = [];
-        user.activeSessions.push({
-            device,
-            location: 'Unknown',
-            lastActive: now,
-            token
-        });
+
+        const existingSessionIndex = user.activeSessions.findIndex((s: any) => s.device === device);
+        if (existingSessionIndex !== -1) {
+            user.activeSessions[existingSessionIndex].token = token;
+            user.activeSessions[existingSessionIndex].lastActive = now;
+        } else {
+            user.activeSessions.push({ device, location: 'Unknown', lastActive: now, token });
+        }
 
         if (user.activeSessions.length > 5) {
             user.activeSessions = user.activeSessions.slice(-5);

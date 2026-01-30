@@ -4,12 +4,14 @@ import {
     updateProfile,
     changePassword,
     getSessions,
-    logoutAll
+    logoutAll,
+    revokeSession
 } from "../services/userService";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
 import ThemeToggle from "../components/ThemeToggle";
 import DeleteAccountModal from "../components/DeleteAccountModal";
+import ConfirmationModal from "../components/ConfirmationModal";
 import "../styles/UserSettings.css";
 import "../styles/UserProfile.css"; // Reuse some basic form styles
 
@@ -29,6 +31,10 @@ const UserSettings: React.FC = () => {
     const [displayName, setDisplayName] = useState("");
     const [phone, setPhone] = useState("");
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isRevokeModalOpen, setIsRevokeModalOpen] = useState(false);
+    const [tokenToRevoke, setTokenToRevoke] = useState<string | null>(null);
+    const [isLogoutAllModalOpen, setIsLogoutAllModalOpen] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -90,14 +96,33 @@ const UserSettings: React.FC = () => {
         }
     };
 
+    const handleRevokeSession = async () => {
+        if (!tokenToRevoke) return;
+        setActionLoading(true);
+        try {
+            await revokeSession(tokenToRevoke);
+            toast.success("Session revoked");
+            setIsRevokeModalOpen(false);
+            setTokenToRevoke(null);
+            loadData();
+        } catch (err) {
+            toast.error("Failed to revoke session");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const handleLogoutAll = async () => {
-        if (!window.confirm("Are you sure you want to log out from all devices?")) return;
+        setActionLoading(true);
         try {
             await logoutAll();
             toast.success("Logged out from all other devices");
+            setIsLogoutAllModalOpen(false);
             loadData();
         } catch (err) {
             toast.error("Failed to logout from all devices");
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -109,7 +134,7 @@ const UserSettings: React.FC = () => {
             className={`sidebar-item ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
         >
-            {icon}
+            <span className="sidebar-icon-wrapper">{icon}</span>
             {label}
         </button>
     );
@@ -117,8 +142,10 @@ const UserSettings: React.FC = () => {
     return (
         <div className="settings-container saas-reveal">
             <header className="admin-header">
-                <h1 className="admin-header-title">Settings</h1>
-                <p className="admin-header-subtitle">Manage your personal account and preferences</p>
+                <div className="admin-header-titles">
+                    <h1 className="admin-header-title">Settings</h1>
+                    <p className="admin-header-subtitle">Manage your personal account and preferences</p>
+                </div>
             </header>
 
             <div className="settings-layout">
@@ -282,19 +309,37 @@ const UserSettings: React.FC = () => {
                                 </div>
                             )}
                             <div className="sessions-list">
-                                {sessions.map((session, index) => (
-                                    <div key={index} className="session-item">
-                                        <div className="session-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="10" x="2" y="3" rx="2" /><line x1="12" y1="18" x2="12" y2="18" /><line x1="7" y1="21" x2="17" y2="21" /></svg>
+                                {sessions.map((session, index) => {
+                                    const isCurrentSession = session.token === localStorage.getItem('token');
+                                    return (
+                                        <div key={index} className={`session-item ${isCurrentSession ? 'current-session' : ''}`}>
+                                            <div className="session-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="10" x="2" y="3" rx="2" /><line x1="12" y1="18" x2="12" y2="18" /><line x1="7" y1="21" x2="17" y2="21" /></svg>
+                                            </div>
+                                            <div className="session-details">
+                                                <div className="session-device-row">
+                                                    <span className="session-device">{session.device.split(')')[0] + ')'}</span>
+                                                    {isCurrentSession && <span className="current-badge">This device</span>}
+                                                </div>
+                                                <span className="session-meta">
+                                                    {session.location} • Last active: {new Date(session.lastActive).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            {!isCurrentSession && (
+                                                <button
+                                                    className="revoke-session-btn"
+                                                    onClick={() => {
+                                                        setTokenToRevoke(session.token);
+                                                        setIsRevokeModalOpen(true);
+                                                    }}
+                                                    title="Revoke session"
+                                                >
+                                                    Revoke
+                                                </button>
+                                            )}
                                         </div>
-                                        <div className="session-details">
-                                            <span className="session-device">{session.device.split(')')[0] + ')'}</span>
-                                            <span className="session-meta">
-                                                {session.location} • Last active: {new Date(session.lastActive).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -311,7 +356,7 @@ const UserSettings: React.FC = () => {
                                         <h4>Log out of all devices</h4>
                                         <p>You will be logged out of all other active sessions except this one.</p>
                                     </div>
-                                    <button className="btn-danger-outline" onClick={handleLogoutAll}>Log out all</button>
+                                    <button className="btn-danger-outline" onClick={() => setIsLogoutAllModalOpen(true)}>Log out all</button>
                                 </div>
                                 <div className="danger-action-item">
                                     <div className="danger-action-info">
@@ -328,6 +373,31 @@ const UserSettings: React.FC = () => {
             <DeleteAccountModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
+            />
+
+            <ConfirmationModal
+                isOpen={isRevokeModalOpen}
+                title="Revoke Session"
+                message="Are you sure you want to log out from this device? You will need to log in again to access your account from that device."
+                onConfirm={handleRevokeSession}
+                onCancel={() => {
+                    setIsRevokeModalOpen(false);
+                    setTokenToRevoke(null);
+                }}
+                confirmText="Revoke Session"
+                type="danger"
+                isLoading={actionLoading}
+            />
+
+            <ConfirmationModal
+                isOpen={isLogoutAllModalOpen}
+                title="Logout from All Devices"
+                message="Are you sure you want to log out from all other active devices? This will invalidate all sessions except for the one you are currently using."
+                onConfirm={handleLogoutAll}
+                onCancel={() => setIsLogoutAllModalOpen(false)}
+                confirmText="Logout All"
+                type="danger"
+                isLoading={actionLoading}
             />
         </div >
     );

@@ -94,19 +94,13 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
                 book.status = BookStatus.OUT_OF_STOCK;
             }
             await book.save();
+        }
 
-            // Create borrow record for tracking
-            const returnDate = new Date();
-            returnDate.setDate(returnDate.getDate() + (membership?.borrowDuration || 14));
-
-            for (let i = 0; i < item.quantity; i++) {
-                await new Borrow({
-                    user_id: req.user!._id,
-                    book_id: book._id,
-                    return_date: returnDate,
-                    order_id: newOrder._id
-                }).save();
-            }
+        // Add items to user's readlist (no duplicate borrow records needed)
+        for (const item of items) {
+            await User.findByIdAndUpdate(req.user!._id, {
+                $addToSet: { readlist: item.book_id }
+            });
         }
 
         // Send notification
@@ -130,7 +124,7 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
 // Admin: Get All Orders
 export const getAllOrders = async (req: AuthRequest, res: Response) => {
     try {
-        const { status, search, startDate, endDate, sort } = req.query;
+        const { status, search, startDate, endDate, sort, membership } = req.query;
 
         // Build filter object
         let filter: any = {};
@@ -173,18 +167,26 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
             sortOption = { totalAmount: 1 };
         } else if (sort === 'total_desc') {
             sortOption = { totalAmount: -1 };
-        } else if (sort === 'items_desc') {
-            // Sorting by items length in MongoDB requires aggregation or a virtual/pre-saved count
-            // For simplicity in this implementation, we'll keep it to basic fields or handle it in memory if needed
-            // but for now let's stick to standard fields.
-            sortOption = { createdAt: -1 };
         }
 
-        const orders = await Order.find(filter)
-            .populate('user_id', 'name email phone')
+        // Fetch orders and populate user
+        let orders = await Order.find(filter)
+            .populate({
+                path: 'user_id',
+                select: 'name email phone membership_id',
+                populate: { path: 'membership_id', select: 'name displayName' }
+            })
             .populate('items.book_id', 'title cover_image_url price')
             .populate('address_id')
             .sort(sortOption);
+
+        // Filter by membership in memory if provided (since it's a deep population filter)
+        if (membership && membership !== 'all') {
+            orders = orders.filter((order: any) => {
+                const userMembership = order.user_id?.membership_id?.name;
+                return userMembership === membership;
+            });
+        }
 
         res.status(200).json(orders);
     } catch (error: any) {
