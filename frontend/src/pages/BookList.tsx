@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type } from 'lucide-react';
+import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type, ShoppingCart } from 'lucide-react';
 import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 
@@ -14,8 +14,8 @@ import { toast } from 'react-toastify';
 import '../styles/BookList.css';
 
 const BookList: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') || '';
   const searchSectionRef = React.useRef<HTMLHeadingElement>(null);
   const { addToCart, isInCart } = useBorrowCart();
@@ -89,7 +89,6 @@ const BookList: React.FC = () => {
     loadRecommendations();
     loadPersonalizedRecs();
   }, []);
-
 
   const loadPersonalizedRecs = async () => {
     try {
@@ -397,7 +396,12 @@ const BookList: React.FC = () => {
 
       <div className="grid-books">
         {books.map((book) => (
-          <div key={book._id} className="card book-card">
+          <div
+            key={book._id}
+            className="card book-card"
+            onClick={() => navigate(`/books/${book._id}`)}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="book-cover-container">
               {book.cover_image_url ? (
                 <img
@@ -441,29 +445,46 @@ const BookList: React.FC = () => {
                 <div className="book-actions-row">
                   {book.isPremium ? (
                     <button
-                      onClick={() => navigate('/memberships')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/memberships');
+                      }}
                       className="btn-primary book-action-btn premium-upgrade-btn"
                     >
                       Upgrade to Premium
                     </button>
                   ) : (
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(book);
                         if (book.noOfCopies > 0) {
-                          addToCart(book);
                           toast.success(`${book.title} added to cart!`);
                         } else {
-                          toast.error('Out of stock');
+                          toast.warning(`${book.title} added to cart (Note: Currently Out of Stock)`);
                         }
                       }}
-                      disabled={book.noOfCopies === 0 || isInCart(book._id)}
+                      disabled={isInCart(book._id)}
                       className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        flex: '0 0 auto',
+                        width: 'fit-content',
+                        padding: '0 1.5rem',
+                        fontSize: '0.8rem',
+                        marginLeft: 'auto'
+                      }}
                     >
-                      {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
+                      <ShoppingCart size={16} />
+                      {isInCart(book._id) ? 'In Cart ✓' : (book.noOfCopies === 0 ? 'Add to Cart (Out of Stock)' : 'Add to Cart')}
                     </button>
                   )}
                   <Link
                     to={`/books/${book._id}`}
+                    onClick={(e) => e.stopPropagation()}
                     className="btn-primary view-book-btn book-action-btn"
                   >
                     View

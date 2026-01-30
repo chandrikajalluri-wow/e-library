@@ -11,7 +11,11 @@ interface ContactQuery {
     createdAt: string;
 }
 
-const ContactQueries: React.FC = () => {
+interface ContactQueriesProps {
+    hideTitle?: boolean;
+}
+
+const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) => {
     const [queries, setQueries] = useState<ContactQuery[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('OPEN');
@@ -49,8 +53,12 @@ const ContactQueries: React.FC = () => {
         <div className="admin-section-container">
             <div className="admin-section-header">
                 <div>
-                    <h3 className="section-title">Contact Queries</h3>
-                    <p className="section-subtitle">Manage user support messages</p>
+                    {!hideTitle && (
+                        <>
+                            <h3 className="section-title">Contact Queries</h3>
+                            <p className="section-subtitle">Manage user support messages</p>
+                        </>
+                    )}
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     {(['OPEN', 'RESOLVED', 'ALL'] as const).map(f => (

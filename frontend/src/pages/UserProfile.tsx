@@ -4,6 +4,7 @@ import {
   updateProfile,
   renewMembership,
 } from "../services/userService";
+import { cancelMembership } from "../services/membershipService";
 import { MembershipName } from '../types/enums';
 import { getCategories } from "../services/categoryService";
 import { toast } from "react-toastify";
@@ -11,6 +12,7 @@ import Loader from "../components/Loader";
 import "../styles/UserProfile.css";
 import type { Category, Membership } from "../types";
 import PaymentModal from "../components/PaymentModal";
+import CancellationModal from "../components/CancellationModal";
 
 const UserProfile: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -26,6 +28,8 @@ const UserProfile: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false);
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+  const [isProcessingCancellation, setIsProcessingCancellation] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -109,78 +113,96 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  const handleCancelMembership = async (reason: string) => {
+    try {
+      setIsProcessingCancellation(true);
+      await cancelMembership(reason);
+      toast.success("Membership cancelled successfully");
+      setIsCancellationModalOpen(false);
+      loadProfile();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Failed to cancel membership");
+    } finally {
+      setIsProcessingCancellation(false);
+    }
+  };
+
 
   if (!user) return <Loader />;
 
   return (
-    <div className="profile-container saas-container">
+    <div className="profile-container dashboard-container">
       <header className="admin-header">
-        <h1 className="admin-header-title">User Profile</h1>
-        <p className="admin-header-subtitle">Manage your personal information and reading goals</p>
+        <div className="admin-header-titles">
+          <h1 className="admin-header-title">User Profile</h1>
+          <p className="admin-header-subtitle">Manage your personal information and reading goals</p>
+        </div>
       </header>
 
       <div className="profile-main-grid">
         <div className="profile-side">
-          <div className="card profile-card avatar-card">
-            <div className="avatar-upload-container">
-              <div className="profile-avatar-large">
-                {imagePreview ? (
-                  <img src={imagePreview} alt="User Avatar" />
-                ) : (
-                  <div className="avatar-placeholder">{user.name.charAt(0)}</div>
-                )}
+          <div className="profile-sidebar-sticky">
+            <div className="card profile-card avatar-card">
+              <div className="avatar-upload-container">
+                <div className="profile-avatar-large">
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="User Avatar" />
+                  ) : (
+                    <div className="avatar-placeholder">{user.name.charAt(0)}</div>
+                  )}
+                  {isEditing && (
+                    <label htmlFor="avatar-input" className="avatar-edit-overlay">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+                    </label>
+                  )}
+                </div>
                 {isEditing && (
-                  <label htmlFor="avatar-input" className="avatar-edit-overlay">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
-                  </label>
+                  <input
+                    type="file"
+                    id="avatar-input"
+                    className="hidden-input"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
                 )}
               </div>
-              {isEditing && (
-                <input
-                  type="file"
-                  id="avatar-input"
-                  className="hidden-input"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                />
+              <h3 className="profile-user-name">{user.name}</h3>
+              <p className="profile-user-email">{user.email}</p>
+
+              <div className="membership-status-badge">
+                <span className={`badge-plan ${user.membership_id?.name || 'basic'}`}>
+                  {user.membership_id?.displayName || 'Basic'} Plan
+                </span>
+              </div>
+
+              {!isEditing && (
+                <button className="btn-primary edit-profile-btn" onClick={() => setIsEditing(true)}>
+                  Edit Profile
+                </button>
               )}
             </div>
-            <h3 className="profile-user-name">{user.name}</h3>
-            <p className="profile-user-email">{user.email}</p>
 
-            <div className="membership-status-badge">
-              <span className={`badge-plan ${user.membership_id?.name || 'basic'}`}>
-                {user.membership_id?.displayName || 'Basic'} Plan
-              </span>
+            <div className="card profile-card stats-mini-card">
+              <h4 className="mini-card-title">Reading Velocity</h4>
+              <div className="stats-row">
+                <div className="stat-box">
+                  <span className="stat-num">{user.booksRead || 0}</span>
+                  <span className="stat-lab">Read</span>
+                </div>
+                <div className="stat-box">
+                  <span className="stat-num">{user.readingTarget || 0}</span>
+                  <span className="stat-lab">Target</span>
+                </div>
+              </div>
+              {user.readingTarget > 0 && (
+                <div className="reading-progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${Math.min((user.booksRead / user.readingTarget) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              )}
             </div>
-
-            {!isEditing && (
-              <button className="btn-primary edit-profile-btn" onClick={() => setIsEditing(true)}>
-                Edit Profile
-              </button>
-            )}
-          </div>
-
-          <div className="card profile-card stats-mini-card">
-            <h4 className="mini-card-title">Reading Velocity</h4>
-            <div className="stats-row">
-              <div className="stat-box">
-                <span className="stat-num">{user.booksRead || 0}</span>
-                <span className="stat-lab">Read</span>
-              </div>
-              <div className="stat-box">
-                <span className="stat-num">{user.readingTarget || 0}</span>
-                <span className="stat-lab">Target</span>
-              </div>
-            </div>
-            {user.readingTarget > 0 && (
-              <div className="reading-progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{ width: `${Math.min((user.booksRead / user.readingTarget) * 100, 100)}%` }}
-                ></div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -240,17 +262,27 @@ const UserProfile: React.FC = () => {
 
                       const canRenew = daysUntilExpiry !== null && daysUntilExpiry <= 7;
 
-                      return canRenew ? (
-                        <button
-                          className="btn-secondary renew-btn"
-                          onClick={() => setIsRenewalModalOpen(true)}
-                        >
-                          Renew Membership
-                        </button>
-                      ) : (
-                        <p className="text-muted text-small" style={{ fontSize: '0.85rem', margin: 0 }}>
-                          Renewal available 7 days before expiry
-                        </p>
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                          {canRenew ? (
+                            <button
+                              className="btn-secondary renew-btn"
+                              onClick={() => setIsRenewalModalOpen(true)}
+                            >
+                              Renew Membership
+                            </button>
+                          ) : (
+                            <p className="text-muted text-small" style={{ fontSize: '0.85rem', margin: 0 }}>
+                              Renewal available 7 days before expiry
+                            </p>
+                          )}
+                          <button
+                            className="btn-danger-outline cancel-btn"
+                            onClick={() => setIsCancellationModalOpen(true)}
+                          >
+                            Cancel Membership
+                          </button>
+                        </div>
                       );
                     })()}
                   </div>
@@ -381,6 +413,15 @@ const UserProfile: React.FC = () => {
               setIsRenewalModalOpen(false);
             }}
             onSubmit={renewMembership}
+          />
+        )
+      }
+      {
+        isCancellationModalOpen && (
+          <CancellationModal
+            onClose={() => setIsCancellationModalOpen(false)}
+            onConfirm={handleCancelMembership}
+            isProcessing={isProcessingCancellation}
           />
         )
       }

@@ -21,7 +21,7 @@ interface Address {
 
 const DeliveryAddress: React.FC = () => {
     const navigate = useNavigate();
-    const { cartItems, clearCart, getCartCount } = useBorrowCart();
+    const { cartItems, clearCart } = useBorrowCart();
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
@@ -118,8 +118,9 @@ const DeliveryAddress: React.FC = () => {
             return;
         }
 
-        if (cartItems.length === 0) {
-            toast.error('Your cart is empty');
+        const availableItems = cartItems.filter(item => item.book.noOfCopies > 0);
+        if (availableItems.length === 0) {
+            toast.error('No items available for delivery');
             navigate('/borrow-cart');
             return;
         }
@@ -127,7 +128,7 @@ const DeliveryAddress: React.FC = () => {
         setIsPlacingOrder(true);
         try {
             const orderData = {
-                items: cartItems.map(item => ({
+                items: availableItems.map(item => ({
                     book_id: item.book._id,
                     quantity: item.quantity
                 })),
@@ -146,8 +147,9 @@ const DeliveryAddress: React.FC = () => {
         }
     };
 
-    const cartCount = getCartCount();
-    const subtotal = cartItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
+    const availableItems = cartItems.filter(item => item.book.noOfCopies > 0);
+    const cartCount = availableItems.reduce((acc, item) => acc + item.quantity, 0);
+    const subtotal = availableItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
     const deliveryFee = subtotal > 50 ? 0 : 50;
     const totalAmount = subtotal + deliveryFee;
 

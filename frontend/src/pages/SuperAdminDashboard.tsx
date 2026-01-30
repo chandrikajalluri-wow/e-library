@@ -34,8 +34,17 @@ const SuperAdminDashboard: React.FC = () => {
                 {/* Dashboard Title */}
                 <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h2 className="admin-header-title">Super Admin Dashboard</h2>
-                        <p className="admin-header-subtitle">System Overview & Management</p>
+                        <h2 className="admin-header-title">
+                            {activeTab === 'metrics' && 'Super Admin Dashboard'}
+                            {activeTab === 'users' && 'User & Admin Management'}
+                            {activeTab === 'books' && 'Library Collection'}
+                            {activeTab === 'categories' && 'Library Categories'}
+                            {activeTab === 'announcements' && 'System Announcements'}
+                            {activeTab === 'queries' && 'User Queries'}
+                            {activeTab === 'reported-reviews' && 'Review Reports'}
+                            {activeTab === 'logs' && 'System Activity Logs'}
+                        </h2>
+                        <p className="admin-header-subtitle">Welcome back, Super Administrator</p>
                     </div>
                 </div>
 
@@ -67,12 +76,12 @@ const SuperAdminDashboard: React.FC = () => {
                     </>
                 )}
 
-                {activeTab === 'users' && <UserAdminManagement />}
-                {(activeTab === 'books' || activeTab === 'categories') && <AdminDashboard />}
-                {activeTab === 'announcements' && <Announcements />}
-                {activeTab === 'queries' && <ContactQueries />}
-                {activeTab === 'reported-reviews' && <ReportedReviews />}
-                {activeTab === 'logs' && <SystemLogs />}
+                {activeTab === 'users' && <UserAdminManagement hideTitle={true} />}
+                {(activeTab === 'books' || activeTab === 'categories') && <AdminDashboard hideHeader={true} />}
+                {activeTab === 'announcements' && <Announcements hideTitle={true} />}
+                {activeTab === 'queries' && <ContactQueries hideTitle={true} />}
+                {activeTab === 'reported-reviews' && <ReportedReviews hideTitle={true} />}
+                {activeTab === 'logs' && <SystemLogs hideTitle={true} />}
             </main>
         </div>
     );

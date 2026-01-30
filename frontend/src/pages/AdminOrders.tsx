@@ -21,7 +21,15 @@ interface OrderItem {
 
 interface Order {
     _id: string;
-    user_id: { name: string; email: string };
+    user_id: {
+        _id: string;
+        name: string;
+        email: string;
+        membership_id?: {
+            name: string;
+            displayName: string;
+        }
+    };
     items: OrderItem[];
     totalAmount: number;
     deliveryFee: number;
@@ -30,20 +38,62 @@ interface Order {
     paymentMethod: string;
 }
 
+const Countdown: React.FC<{ date: string; membership?: string; currentTime: Date }> = ({ date, membership, currentTime }) => {
+    const createdAt = new Date(date).getTime();
+    const windowHours = membership === 'premium' ? 24 : 96;
+    const deadline = createdAt + windowHours * 60 * 60 * 1000;
+    const remaining = deadline - currentTime.getTime();
+
+    if (remaining <= 0) return <span className="text-red-500 font-bold">Overdue</span>;
+
+    const hours = Math.floor(remaining / (1000 * 60 * 60));
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+
+    return <span>{hours}h {minutes}m remaining</span>;
+};
+
+const CountdownProgress: React.FC<{ date: string; membership?: string; currentTime: Date }> = ({ date, membership, currentTime }) => {
+    const createdAt = new Date(date).getTime();
+    const windowHours = membership === 'premium' ? 24 : 96;
+    const deadline = createdAt + windowHours * 60 * 60 * 1000;
+    const total = deadline - createdAt;
+    const elapsed = currentTime.getTime() - createdAt;
+    const percentage = Math.max(0, Math.min(100, (elapsed / total) * 100));
+
+    const isUrgent = percentage > 80;
+    const isPremium = membership === 'premium';
+
+    return (
+        <div className={`progress-track ${isPremium ? 'premium-track' : ''}`}>
+            <div
+                className={`progress-fill ${isUrgent ? 'urgent' : ''}`}
+                style={{ width: `${percentage}%` }}
+            ></div>
+        </div>
+    );
+};
+
 const AdminOrders: React.FC = () => {
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('all');
+    const [filterMembership, setFilterMembership] = useState('all');
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('newest');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
     const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000); // Update every minute
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         fetchOrders();
-    }, [filterStatus, dateRange, sortBy]);
+    }, [filterStatus, dateRange, sortBy, filterMembership]);
 
     const fetchOrders = async () => {
         setIsLoading(true);
@@ -53,7 +103,8 @@ const AdminOrders: React.FC = () => {
                 search: search,
                 sort: sortBy,
                 startDate: dateRange.start,
-                endDate: dateRange.end
+                endDate: dateRange.end,
+                membership: filterMembership
             });
             setOrders(data);
             setSelectedOrders([]); // Clear selection on refresh
@@ -214,6 +265,18 @@ const AdminOrders: React.FC = () => {
                         </select>
                     </div>
 
+                    <div className="filter-item">
+                        <Filter size={16} />
+                        <select
+                            value={filterMembership}
+                            onChange={(e) => setFilterMembership(e.target.value)}
+                        >
+                            <option value="all">All Memberships</option>
+                            <option value="basic">Basic Users</option>
+                            <option value="premium">Premium Users</option>
+                        </select>
+                    </div>
+
                     <div className="filter-item date-filter">
                         <Calendar size={16} />
                         <input
@@ -308,11 +371,28 @@ const AdminOrders: React.FC = () => {
                                             </span>
                                         </div>
                                         <div className="status-control" onClick={(e) => e.stopPropagation()}>
-                                            <div className={`status-badge-premium ${order.status}`}>
-                                                {order.status}
+                                            <div className="order-metadata">
+                                                {order.user_id?.membership_id?.name === 'premium' && (
+                                                    <span className="premium-badge-mini">PREMIUM</span>
+                                                )}
+                                                <div className={`status-badge-premium ${order.status}`}>
+                                                    {order.status}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+
+                                    {(order.status === 'pending' || order.status === 'processing') && order.user_id?.membership_id?.name === 'premium' ? (
+                                        <div className="delivery-countdown">
+                                            <div className="countdown-timer">
+                                                <Clock size={14} />
+                                                <Countdown date={order.createdAt} membership={order.user_id?.membership_id?.name} currentTime={currentTime} />
+                                            </div>
+                                            <div className="countdown-bar">
+                                                <CountdownProgress date={order.createdAt} membership={order.user_id?.membership_id?.name} currentTime={currentTime} />
+                                            </div>
+                                        </div>
+                                    ) : null}
 
                                     <div className="order-body">
                                         <div className="user-details">

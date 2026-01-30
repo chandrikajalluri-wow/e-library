@@ -75,11 +75,13 @@ const MembershipPlans: React.FC = () => {
     }
 
     return (
-        <div className="memberships-page">
-            <div className="memberships-header">
-                <h1>Membership Plans</h1>
-                <p>Unlock more books and features with our flexible plans</p>
-            </div>
+        <div className="memberships-page dashboard-container saas-reveal">
+            <header className="admin-header">
+                <div className="admin-header-titles">
+                    <h1 className="admin-header-title">Membership Plans</h1>
+                    <p className="admin-header-subtitle">Unlock more books and features with our flexible plans</p>
+                </div>
+            </header>
 
             <div className="memberships-container">
                 <div className="membership-plans-grid">

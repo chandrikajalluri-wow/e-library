@@ -251,7 +251,28 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(404).json({ error: 'PDF URL is missing for this book' });
         }
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 2099be150ceda4b1757b074b7951764452cc521e
+        // Check premium access
+        if (book.isPremium) {
+            const user = await User.findById(req.user!._id).populate('role_id').populate('membership_id');
+            const userRole = (user?.role_id as any)?.name;
+            const membership = user?.membership_id as any;
+
+            if (userRole !== RoleName.ADMIN && userRole !== RoleName.SUPER_ADMIN && !membership?.canAccessPremiumBooks) {
+                return res.status(403).json({ error: 'This is a premium book. Upgrade to Premium membership to read this book.' });
+            }
+        }
+
+<<<<<<< HEAD
+=======
         let key = '';
+>>>>>>> 4d7d088647cf66ec6bf9f198096eb701691e530d
+=======
+        let key = '';
+>>>>>>> 2099be150ceda4b1757b074b7951764452cc521e
         try {
             // Robust key extraction
             try {

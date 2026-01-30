@@ -39,20 +39,18 @@ export const issueBook = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        if (book.isPremium && !membership.canAccessPremiumBooks) {
-            return res.status(403).json({
-                error: 'This is a premium book. Upgrade to Premium membership to access premium collection.'
-            });
-        }
 
-        const activeBorrowsCount = await Borrow.countDocuments({
+
+        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const monthlyBorrowsCount = await Borrow.countDocuments({
             user_id: req.user!._id,
-            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] },
+            issued_date: { $gte: monthStart },
+            order_id: { $exists: false }
         });
 
-        if (activeBorrowsCount >= membership.borrowLimit) {
+        if (monthlyBorrowsCount >= membership.borrowLimit) {
             return res.status(400).json({
-                error: `You have reached your membership limit of ${membership.borrowLimit} borrowed books. Please return a book before borrowing another.`,
+                error: `You have reached your monthly membership limit of ${membership.borrowLimit} books. Wait until next month to borrow more.`,
             });
         }
 
@@ -102,6 +100,10 @@ export const issueBook = async (req: AuthRequest, res: Response) => {
             book._id as any
         );
 
+        await User.findByIdAndUpdate(req.user!._id, {
+            $addToSet: { readlist: book._id }
+        });
+
         await ActivityLog.create({
             user_id: req.user!._id,
             action: 'BORROW_BOOK',
@@ -129,31 +131,8 @@ export const requestReturn = async (req: AuthRequest, res: Response) => {
                 });
         }
 
-        // Calculate fine
-        let currentFine = 0;
-        const now = new Date();
-        const returnDate = new Date(borrow.return_date);
+        // No fine calculation needed for digital/fresh start model
 
-        // Determine start date for fine calculation (Due date or Last Paid Date)
-        let fineStartDate = returnDate;
-        if (borrow.last_fine_paid_date && new Date(borrow.last_fine_paid_date) > returnDate) {
-            fineStartDate = new Date(borrow.last_fine_paid_date);
-        }
-
-        if (now > fineStartDate) {
-            const diffTime = Math.abs(now.getTime() - fineStartDate.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            currentFine = diffDays * 10;
-        }
-
-        // Add any previously unpaid fine amount if stored (though we plan to clear it on pay)
-        // For now, assume calculated dynamic fine is the main source of truth for "new" fine
-
-        if (currentFine > 0) {
-            return res.status(400).json({
-                error: `Please pay the outstanding fine of ₹${currentFine.toFixed(2)} before requesting return.`
-            });
-        }
 
         borrow.status = BorrowStatus.RETURN_REQUESTED;
         borrow.return_requested_at = new Date(); // Lock the return time
@@ -183,63 +162,7 @@ export const requestReturn = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const payFine = async (req: AuthRequest, res: Response) => {
-    try {
-        const borrow = await Borrow.findById(req.params.id);
-        if (!borrow) return res.status(404).json({ error: 'Record not found' });
 
-        let fine = 0;
-        // Fine logic: Stop at return_requested_at if set, else now
-        const now = new Date();
-        const endDate = (borrow.status === BorrowStatus.RETURN_REQUESTED && borrow.return_requested_at)
-            ? new Date(borrow.return_requested_at)
-            : now;
-
-        const returnDate = new Date(borrow.return_date);
-
-        let fineStartDate = returnDate;
-        if (borrow.last_fine_paid_date && new Date(borrow.last_fine_paid_date) > returnDate) {
-            fineStartDate = new Date(borrow.last_fine_paid_date);
-        }
-
-        if (endDate > fineStartDate) {
-            const diffTime = Math.abs(endDate.getTime() - fineStartDate.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            fine = diffDays * 10;
-        }
-
-        if (fine <= 0) {
-            return res.status(400).json({ error: 'No fine to pay' });
-        }
-
-        // On payment:
-        borrow.fine_amount = 0; // Clear outstanding
-        borrow.isFinePaid = true; // Mark as paid for 'now'
-        borrow.last_fine_paid_date = new Date(); // Advance the paid cursor
-
-        await borrow.save();
-
-        await sendNotification(
-            NotificationType.FINE,
-            `Payment successful for fine on "${(await Book.findById(borrow.book_id))?.title}". Amount: ₹${fine}`,
-            req.user!._id as any,
-            borrow.book_id as any
-        );
-
-        await ActivityLog.create({
-            user_id: req.user!._id,
-            action: 'FINE_PAID',
-            description: `Paid fine of ₹${fine} for book: ${(await Book.findById(borrow.book_id))?.title}`,
-            book_id: borrow.book_id,
-            timestamp: new Date()
-        });
-
-        res.json({ message: 'Fine paid successfully', borrow });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-};
 
 export const acceptReturn = async (req: Request, res: Response) => {
     try {
@@ -253,22 +176,6 @@ export const acceptReturn = async (req: Request, res: Response) => {
 
         borrow.returned_at = new Date();
         borrow.status = BorrowStatus.RETURNED;
-
-        const endDate = borrow.return_requested_at || borrow.returned_at || new Date();
-        const returnDate = new Date(borrow.return_date);
-
-        let fineStartDate = returnDate;
-        if (borrow.last_fine_paid_date && new Date(borrow.last_fine_paid_date) > returnDate) {
-            fineStartDate = new Date(borrow.last_fine_paid_date);
-        }
-
-        if (endDate > fineStartDate) {
-            const diffTime = Math.abs(endDate.getTime() - fineStartDate.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            borrow.fine_amount = diffDays * 10;
-        } else {
-            borrow.fine_amount = 0;
-        }
 
         await borrow.save();
 
@@ -445,16 +352,18 @@ export const checkoutCart = async (req: AuthRequest, res: Response) => {
         // Calculate total items to borrow
         const totalItemsToBorrow = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
 
-        // Check current active borrows
-        const activeBorrowsCount = await Borrow.countDocuments({
+        // Check current monthly borrows (excluding purchases)
+        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const monthlyBorrowsCount = await Borrow.countDocuments({
             user_id: req.user!._id,
-            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] },
+            issued_date: { $gte: monthStart },
+            order_id: { $exists: false }
         });
 
-        // Check if user will exceed borrow limit
-        if (activeBorrowsCount + totalItemsToBorrow > membership.borrowLimit) {
+        // Check if user will exceed monthly borrow limit
+        if (monthlyBorrowsCount + totalItemsToBorrow > membership.borrowLimit) {
             return res.status(400).json({
-                error: `Cannot checkout. You would exceed your membership limit of ${membership.borrowLimit} books. You currently have ${activeBorrowsCount} active borrows.`,
+                error: `Cannot checkout. You would exceed your monthly membership limit of ${membership.borrowLimit} books. You have already borrowed ${monthlyBorrowsCount} books this month.`,
             });
         }
 
@@ -484,11 +393,7 @@ export const checkoutCart = async (req: AuthRequest, res: Response) => {
             }
 
             // Check premium access
-            if (book.isPremium && !membership.canAccessPremiumBooks) {
-                return res.status(403).json({
-                    error: `"${book.title}" is a premium book. Upgrade to Premium membership to access.`
-                });
-            }
+
 
             // Check if user already has active borrow for this book
             const existingBorrow = await Borrow.findOne({
@@ -533,6 +438,10 @@ export const checkoutCart = async (req: AuthRequest, res: Response) => {
             }
             await book.save();
         }
+
+        // Clear backend cart after successful checkout
+        user!.cart = [];
+        await user!.save();
 
         // Send notification
         await sendNotification(

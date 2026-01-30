@@ -151,6 +151,11 @@
   --primary-dark: #6366f1;
 }
 
+[data-theme='dark'] select option {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -187,7 +192,12 @@ button {
   border-radius: 6px;
   font-weight: 500;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
+
 
 .auth-container {
   max-width: 400px;
@@ -201,7 +211,13 @@ button {
 .dashboard-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1.5rem;
+}
+
+.admin-header-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .card {
@@ -211,6 +227,15 @@ button {
   padding: 1.5rem;
   transition: transform 0.2s;
 }
+
+/* Global Modal Content */
+.modal-content {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border-color);
+}
+
 
 /* --- Global Book Card System --- */
 .no-books-msg {
@@ -231,6 +256,13 @@ button {
   padding: 0;
   position: relative;
   overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+  cursor: pointer;
+}
+
+.book-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .book-cover-container {
@@ -265,6 +297,8 @@ button {
   flex: 1;
   display: flex;
   flex-direction: column;
+  text-align: left;
+  align-items: flex-start;
 }
 
 .book-category-tag {
@@ -370,17 +404,7 @@ button {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.view-book-btn {
-  background: transparent;
-  border: 2px solid var(--primary-color);
-  color: var(--primary-color);
-}
 
-.view-book-btn:hover {
-  background: var(--primary-color);
-  color: white;
-  transform: translateY(-2px);
-}
 
 .navbar {
   background: var(--card-bg);
