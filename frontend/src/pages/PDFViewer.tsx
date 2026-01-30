@@ -153,18 +153,30 @@ const PDFViewer: React.FC = () => {
             setLoading(false);
         } catch (err: any) {
             console.error('Error loading PDF with pdf.js:', err);
-            console.error('Error details:', {
-                message: err?.message,
-                name: err?.name,
-                stack: err?.stack
-            });
+
+            // Try to extract more detail from the proxy response
+            let detailedError = err?.message || 'Unknown error';
+            try {
+                // If it's a fetch or Axios error, it might have response data
+                const responseData = err?.response?.data;
+                if (responseData && responseData.error) {
+                    detailedError = responseData.error;
+                    if (responseData.s3Key) {
+                        detailedError += ` (Key: ${responseData.s3Key})`;
+                    }
+                }
+            } catch (e) {
+                console.log('Could not parse detailed error response');
+            }
+
+            console.error('Error details:', detailedError);
 
             // Try fallback to iframe
             console.log('Attempting fallback to iframe viewer...');
             setUseFallback(true);
             setLoading(false);
 
-            toast.warning(`Using simplified PDF viewer. Error: ${err?.message || 'Unknown error'}`);
+            toast.error(`PDF Load Error: ${detailedError}`);
         }
     };
 
