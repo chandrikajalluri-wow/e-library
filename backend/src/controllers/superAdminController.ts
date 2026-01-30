@@ -90,7 +90,6 @@ export const deleteUser = async (req: Request, res: Response) => {
                 error: 'User has pending obligations',
                 details: {
                     pendingBorrows: pendingBorrows.map(b => ({ book: (b.book_id as any).title, dueDate: b.return_date })),
-                    unpaidFines: unpaidFines.map(b => ({ book: (b.book_id as any).title, amount: b.fine_amount }))
                 }
             });
         }
