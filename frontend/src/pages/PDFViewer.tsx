@@ -25,9 +25,16 @@ const PDFViewer: React.FC = () => {
     const [useFallback, setUseFallback] = useState(false);
     const [rendering, setRendering] = useState(false);
 
+    // Page Input State
+    const [pageInput, setPageInput] = useState<string>('1');
+    const [isInputFocused, setIsInputFocused] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const saveTimerRef = useRef<number | null>(null);
+    const pdfDocRef = useRef<any>(null);
+    // Keep a ref to pagesContainer to avoid stale closures if needed
+    const pagesContainerRef = useRef<HTMLDivElement>(null);
+    const renderIdRef = useRef(0);
 
     useEffect(() => {
         if (id) {
@@ -48,10 +55,17 @@ const PDFViewer: React.FC = () => {
     }, [id]);
 
     useEffect(() => {
-        if (pdfDoc && totalPages > 0 && !rendering) {
+        if (pdfDoc && totalPages > 0 && !loading && !rendering) {
             renderAllPages();
         }
-    }, [pdfDoc, scale]);
+    }, [pdfDoc, scale, loading, totalPages]);
+
+    // Sync page input with current page when not focused
+    useEffect(() => {
+        if (!isInputFocused) {
+            setPageInput(currentPage.toString());
+        }
+    }, [currentPage, isInputFocused]);
 
     // Track current page based on scroll position
     useEffect(() => {
@@ -138,6 +152,7 @@ const PDFViewer: React.FC = () => {
 
             const pdf = await loadingTask.promise;
             setPdfDoc(pdf);
+            pdfDocRef.current = pdf;
             setTotalPages(pdf.numPages);
 
             // Fetch reading progress
@@ -195,54 +210,74 @@ const PDFViewer: React.FC = () => {
         }
     };
 
-    const pagesContainerRef = useRef<HTMLDivElement>(null);
-    const renderIdRef = useRef(0);
-
-    useEffect(() => {
-        if (pdfDoc && totalPages > 0 && !loading) {
-            renderAllPages();
-        }
-    }, [pdfDoc, scale, loading]);
-
     const renderAllPages = async () => {
-        if (!pdfDoc || !pagesContainerRef.current) return;
+        if (!pdfDoc || !pagesContainerRef.current || !containerRef.current) return;
 
-        // Increment render ID to invalidate previous renders
+        // Increment render ID immediately to handle potential race conditions
         const currentRenderId = ++renderIdRef.current;
         setRendering(true);
 
-        const container = pagesContainerRef.current;
-        container.innerHTML = ''; // Clear pages only
-
         try {
-            // Get first page to determine dimensions for placeholders
+            // 1. PRE-FETCH DIMENSIONS (Async)
+            // Do this BEFORE clearing the DOM to prevent layout collapse
             const firstPage = await pdfDoc.getPage(1);
             const viewport = firstPage.getViewport({ scale });
             const pageHeight = viewport.height;
             const pageWidth = viewport.width;
 
-            // Create placeholders for all pages
-            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                if (renderIdRef.current !== currentRenderId) return;
+            // Check if cancelled while awaiting
+            if (renderIdRef.current !== currentRenderId) return;
 
+            // 2. CAPTURE SCROLL STATE (Synchronous)
+            const container = containerRef.current;
+            const currentScrollTop = container.scrollTop;
+            const currentScrollHeight = container.scrollHeight || 1;
+            // Calculate ratio to maintain position after resize
+            const scrollRatio = currentScrollHeight > 0 ? currentScrollTop / currentScrollHeight : 0;
+            const centerPage = currentPage; // Capture logic of where we are
+
+            // 3. UPDATE DOM (Synchronous Block)
+            const pagesContainer = pagesContainerRef.current;
+            pagesContainer.innerHTML = ''; // Clear old pages
+
+            // Create placeholders using a fragment (Performance)
+            const fragment = document.createDocumentFragment();
+
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
                 const pageWrapper = document.createElement('div');
                 pageWrapper.className = 'pdf-page placeholder';
                 pageWrapper.setAttribute('data-page-number', pageNum.toString());
 
-                // Set explicit dimensions to ensure correct scroll height
+                // Set explicit dimensions
                 pageWrapper.style.width = `${pageWidth}px`;
                 pageWrapper.style.height = `${pageHeight}px`;
                 pageWrapper.style.position = 'relative';
 
-                container.appendChild(pageWrapper);
+                fragment.appendChild(pageWrapper);
             }
 
-            // Setup Intersection Observer for lazy loading
+            pagesContainer.appendChild(fragment);
+
+            // 4. RESTORE SCROLL (Synchronous)
+            // The container now has its new full height. Restore position immediately.
+            const newScrollHeight = container.scrollHeight;
+
+            if (newScrollHeight > 0) {
+                // Try to restore exact relative position
+                container.scrollTop = scrollRatio * newScrollHeight;
+            } else {
+                scrollToPage(centerPage);
+            }
+
+            // 5. OBSERVE & RENDER (Synchronous setup)
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const target = entry.target as HTMLElement;
-                        const pageNum = parseInt(target.getAttribute('data-page-number') || '0');
+                        const pageNumAttr = target.getAttribute('data-page-number');
+                        if (!pageNumAttr) return;
+
+                        const pageNum = parseInt(pageNumAttr);
 
                         // Check if already rendered or rendering
                         if (pageNum > 0 && !target.hasAttribute('data-rendered')) {
@@ -251,33 +286,25 @@ const PDFViewer: React.FC = () => {
                     }
                 });
             }, {
-                root: containerRef.current, // Use the scrolling container as root
-                rootMargin: '600px', // Pre-load pages well in advance (approx 1-2 pages)
+                root: containerRef.current,
+                rootMargin: '600px',
                 threshold: 0.1
             });
 
             // Observe all page wrappers
-            const wrappers = container.querySelectorAll('.pdf-page');
+            const wrappers = pagesContainer.querySelectorAll('.pdf-page');
             wrappers.forEach(wrapper => observer.observe(wrapper));
 
-            // Instant feedback: Render first 2 pages immediately without waiting for observer
-            if (totalPages >= 1) {
-                const p1 = container.querySelector('[data-page-number="1"]') as HTMLElement;
-                if (p1) renderPage(p1, 1, currentRenderId);
-            }
-            if (totalPages >= 2) {
-                const p2 = container.querySelector('[data-page-number="2"]') as HTMLElement;
-                if (p2) renderPage(p2, 2, currentRenderId);
+            // Instant feedback: Render visible pages immediately
+            const startPage = Math.max(1, centerPage - 1);
+            const endPage = Math.min(totalPages, centerPage + 1);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const p = pagesContainer.querySelector(`[data-page-number="${i}"]`) as HTMLElement;
+                if (p) renderPage(p, i, currentRenderId);
             }
 
             setRendering(false);
-
-            // Restore scroll position
-            setTimeout(() => {
-                if (renderIdRef.current === currentRenderId) {
-                    scrollToPage(currentPage);
-                }
-            }, 100);
 
         } catch (err) {
             console.error('Error setting up pages:', err);
@@ -287,7 +314,8 @@ const PDFViewer: React.FC = () => {
 
     const renderPage = async (wrapper: HTMLElement, pageNum: number, renderId: number) => {
         // Prevent concurrent renders of same page or cancelled renders
-        if (renderIdRef.current !== renderId || wrapper.hasAttribute('data-rendered')) return;
+        // Also ensure we have the doc
+        if (renderIdRef.current !== renderId || wrapper.hasAttribute('data-rendered') || !pdfDoc) return;
 
         // Mark as rendered immediately to prevent duplicate calls
         wrapper.setAttribute('data-rendered', 'true');
@@ -539,16 +567,31 @@ const PDFViewer: React.FC = () => {
                 </button>
                 <div className="page-input-group">
                     <input
-                        type="number"
-                        value={currentPage}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={pageInput}
                         onChange={(e) => {
-                            const page = parseInt(e.target.value);
-                            if (page >= 1 && page <= totalPages) {
-                                scrollToPage(page);
+                            const val = e.target.value;
+                            // Allow only numbers
+                            if (val === '' || /^\d+$/.test(val)) {
+                                setPageInput(val);
                             }
                         }}
-                        min={1}
-                        max={totalPages}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                const page = parseInt(pageInput);
+                                if (page >= 1 && page <= totalPages) {
+                                    scrollToPage(page);
+                                    (e.target as HTMLElement).blur();
+                                }
+                            }
+                        }}
+                        onFocus={() => setIsInputFocused(true)}
+                        onBlur={() => {
+                            setIsInputFocused(false);
+                            setPageInput(currentPage.toString());
+                        }}
                         className="page-input"
                     />
                     <span className="page-total">/ {totalPages}</span>

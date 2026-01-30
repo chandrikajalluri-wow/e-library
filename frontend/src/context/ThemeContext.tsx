@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useLayoutEffect } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -12,12 +12,25 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [theme, setTheme] = useState<Theme>(() => {
+        // 1. Prioritize saved user preference
         const savedTheme = localStorage.getItem('theme');
-        return (savedTheme as Theme) || 'light';
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+            return savedTheme;
+        }
+
+        // 2. Fallback to system preference (OS Dark Mode)
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+        }
+
+        // 3. Default to light
+        return 'light';
     });
 
-    useEffect(() => {
-        document.documentElement.setAttribute('data-theme', theme);
+    // useLayoutEffect runs synchronously before paint, preventing the "white flash"
+    useLayoutEffect(() => {
+        const root = document.documentElement;
+        root.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
     }, [theme]);
 
