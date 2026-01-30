@@ -266,6 +266,15 @@
     text-align: left;
     cursor: pointer;
     transition: all 0.2s ease;
+    justify-content: flex-start;
+}
+
+.sort-option svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-right: 0.25rem;
+    color: var(--text-secondary);
 }
 
 .sort-option:hover {

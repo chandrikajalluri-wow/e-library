@@ -8,14 +8,17 @@ import { RoleName } from '../types/enums';
 export const getAllCategories = async (req: any, res: Response) => {
     try {
         const query: any = {};
-        const userRole = (req.user.role_id as any).name;
 
-        if (userRole === RoleName.ADMIN) {
-            query.$or = [
-                { addedBy: req.user._id },
-                { addedBy: { $exists: false } },
-                { addedBy: null }
-            ];
+        if (req.user) {
+            const userRole = (req.user.role_id as any).name;
+
+            if (userRole === RoleName.ADMIN) {
+                query.$or = [
+                    { addedBy: req.user._id },
+                    { addedBy: { $exists: false } },
+                    { addedBy: null }
+                ];
+            }
         }
 
         const categories = await Category.find(query).sort({ name: 1 });

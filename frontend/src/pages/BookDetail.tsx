@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBook, getSimilarBooks } from '../services/bookService';
-import { Heart, BookOpen, ShoppingCart, ThumbsUp, ThumbsDown, Flag, ShoppingBag } from 'lucide-react';
+import { Heart, BookOpen, ShoppingCart, ThumbsUp, ThumbsDown, Flag, ShoppingBag, Truck, ShieldCheck, Zap } from 'lucide-react';
 import { addToReadlist } from '../services/borrowService';
 import {
   addToWishlist,
@@ -456,6 +456,33 @@ const BookDetail: React.FC = () => {
               </button>
 
 
+            </div>
+
+            {/* Shop with Confidence Section */}
+            <div className="confidence-section">
+              <h4 className="confidence-title">Shop with confidence</h4>
+              <ul className="confidence-list">
+                <li>
+                  <Truck size={18} className="confidence-icon" />
+                  <span>Delivered by <strong>BookStack</strong></span>
+                </li>
+                <li>
+                  <ShieldCheck size={18} className="confidence-icon" />
+                  <span>Sold by <strong>BookStack</strong> (Verified)</span>
+                </li>
+                {(!userMembership || userMembership.name !== 'Premium') && (
+                  <li>
+                    <Zap size={18} className="confidence-icon" style={{ color: '#eab308' }} />
+                    <span>Free delivery for <strong>Premium</strong> members</span>
+                  </li>
+                )}
+                {userMembership?.name === 'Premium' && (
+                  <li>
+                    <Zap size={18} className="confidence-icon" style={{ color: '#eab308' }} />
+                    <span style={{ color: '#eab308', fontWeight: 600 }}>Free delivery applied (Premium)</span>
+                  </li>
+                )}
+              </ul>
             </div>
           </div>
         </div>

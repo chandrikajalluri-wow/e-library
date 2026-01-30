@@ -58,6 +58,13 @@
   left: -5%;
 }
 
+/* GENERAL SECTIONS */
+.saas-section {
+  padding: 3rem 0;
+  position: relative;
+  z-index: 1;
+}
+
 .saas-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -68,9 +75,12 @@
 .hero-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: center;
   gap: 4rem;
-  min-height: 600px;
+  align-items: center;
+  position: relative;
+  z-index: 7;
+  margin-top: 2rem;
+  /* Removed padding-right to align carousel with edge/content below */
 }
 
 .hero-stack {
@@ -141,6 +151,53 @@
   background: var(--saas-primary-dark);
 }
 
+/* CTA SECTION */
+.saas-cta-section {
+  padding: 4rem 1.5rem;
+  background: transparent;
+  text-align: center;
+  position: relative;
+}
+
+.cta-box {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 24px;
+  padding: 2.5rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.cta-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
+}
+
+.cta-box h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(to right, #ffffff, #a5b4fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.cta-box p {
+  font-size: 1.1rem;
+  color: var(--saas-text-muted);
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+}
+
 .btn-outline {
   padding: 1.1rem 2.5rem;
   background: transparent;
@@ -189,6 +246,7 @@
   gap: 2rem;
   overflow: hidden;
   mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+  transform: translateX(4rem);
 }
 
 .carousel-track {
@@ -385,31 +443,17 @@
   display: inline-block;
 }
 
-/* CTA */
-.saas-cta-section {
-  padding-bottom: 4rem;
-}
-
-.cta-box {
-  background: linear-gradient(135deg, var(--saas-primary), #4c1d95);
-  border-radius: 50px;
-  padding: 6rem;
-  text-align: center;
-  color: white;
-  position: relative;
-  overflow: hidden;
-}
-
-.cta-box h2 {
-  font-size: 2.5rem;
-  font-weight: 900;
-  margin-bottom: 1.5rem;
-}
 
 .btn-vibrant.large {
   background: white;
   color: var(--saas-primary);
   padding: 1.25rem 4rem;
+}
+
+.cta-box .btn-outline.large:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: white !important;
+  transform: translateY(-2px);
 }
 
 /* Animations moved to index.css */
@@ -557,74 +601,86 @@
   margin-top: 3rem;
 }
 
+/* Category Cards Enhanced */
 .category-card {
-  position: relative;
-  padding: 3rem 2rem;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
-  border: 1px solid var(--saas-border);
-  border-radius: 24px;
-  text-align: center;
-  text-decoration: none;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 1.75rem;
+  background: var(--saas-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  position: relative;
   overflow: hidden;
-  min-height: 180px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  min-height: 220px;
+  text-decoration: none;
+  z-index: 1;
 }
 
 .category-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, var(--saas-primary) 0%, #a855f7 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  z-index: 0;
-}
-
-.category-card:hover::before {
-  opacity: 0.08;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  opacity: 0.6;
+  z-index: -1;
+  transition: opacity 0.3s ease;
 }
 
 .category-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-8px) scale(1.02);
   border-color: var(--saas-primary);
-  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.category-card:hover::before {
+  opacity: 0.8;
 }
 
 .category-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  position: relative;
-  z-index: 1;
-  transition: transform 0.4s ease;
+  margin-bottom: auto;
+  /* Pushes icon to top */
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .category-card:hover .category-icon {
-  transform: scale(1.1);
+  background: var(--saas-primary);
+  transform: scale(1.1) rotate(5deg);
+  border-color: var(--saas-primary);
 }
 
 .category-card h3 {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  color: var(--saas-text);
-  margin: 0;
-  position: relative;
-  z-index: 1;
+  margin: 0.5rem 0 0.25rem;
+  transition: transform 0.3s ease;
+  color: white;
+  /* Ensure text is always white on these cards */
+  z-index: 2;
 }
 
 .category-card p {
-  font-size: 0.875rem;
-  color: var(--saas-text-muted);
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
   margin: 0;
-  line-height: 1.5;
-  position: relative;
-  z-index: 1;
+  transform: translateY(10px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.category-card:hover p {
+  transform: translateY(0);
+  opacity: 1;
 }
 
 /* Category-specific background images */
@@ -759,31 +815,6 @@
 }
 
 /* Hover effects for categories with backgrounds */
-.category-card[data-category*="business"]::before,
-.category-card[data-category*="fantasy"]::before,
-.category-card[data-category*="finance"]::before,
-.category-card[data-category*="history"]::before,
-.category-card[data-category*="romance"]::before,
-.category-card[data-category*="rom"]::before,
-.category-card[data-category*="science"]::before,
-.category-card[data-category*="fiction"]::before,
-.category-card[data-category*="technology"]::before,
-.category-card[data-category*="tech"]::before {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(168, 85, 247, 0.3) 100%);
-}
-
-.category-card[data-category*="business"]:hover::before,
-.category-card[data-category*="fantasy"]:hover::before,
-.category-card[data-category*="finance"]:hover::before,
-.category-card[data-category*="history"]:hover::before,
-.category-card[data-category*="romance"]:hover::before,
-.category-card[data-category*="rom"]:hover::before,
-.category-card[data-category*="science"]:hover::before,
-.category-card[data-category*="fiction"]:hover::before,
-.category-card[data-category*="technology"]:hover::before,
-.category-card[data-category*="tech"]:hover::before {
-  opacity: 1;
-}
 
 .category-card[data-category*="business"]:hover,
 .category-card[data-category*="fantasy"]:hover,
@@ -813,5 +844,79 @@
   .category-card {
     padding: 2.5rem 1.5rem;
     min-height: 160px;
+  }
+}
+
+/* TRUST BADGES SECTION */
+.trust-badges-section {
+  padding: 3rem 0;
+  border-bottom: 1px solid var(--saas-border);
+  background: linear-gradient(to right, var(--saas-bg), rgba(99, 102, 241, 0.03), var(--saas-bg));
+}
+
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  padding: 0 1rem;
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--saas-border);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.trust-item:hover {
+  transform: translateY(-5px);
+  background: rgba(99, 102, 241, 0.05);
+  border-color: var(--saas-primary);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.trust-icon-box {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 12px;
+  color: var(--saas-primary);
+  flex-shrink: 0;
+}
+
+.trust-text h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.2rem 0;
+  color: var(--saas-text);
+}
+
+.trust-text p {
+  font-size: 0.85rem;
+  margin: 0;
+  color: var(--saas-text-muted);
+}
+
+@media (max-width: 992px) {
+  .trust-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .trust-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .trust-item {
+    justify-content: flex-start;
   }
 }

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type, ShoppingCart } from 'lucide-react';
+import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 
@@ -443,45 +443,34 @@ const BookList: React.FC = () => {
                   </span>
                 </div>
                 <div className="book-actions-row">
-                  {book.isPremium ? (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/memberships');
-                      }}
-                      className="btn-primary book-action-btn premium-upgrade-btn"
-                    >
-                      Upgrade to Premium
-                    </button>
-                  ) : (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(book);
-                        if (book.noOfCopies > 0) {
-                          toast.success(`${book.title} added to cart!`);
-                        } else {
-                          toast.warning(`${book.title} added to cart (Note: Currently Out of Stock)`);
-                        }
-                      }}
-                      disabled={isInCart(book._id)}
-                      className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        flex: '0 0 auto',
-                        width: 'fit-content',
-                        padding: '0 1.5rem',
-                        fontSize: '0.8rem',
-                        marginLeft: 'auto'
-                      }}
-                    >
-                      <ShoppingCart size={16} />
-                      {isInCart(book._id) ? 'In Cart ✓' : (book.noOfCopies === 0 ? 'Add to Cart (Out of Stock)' : 'Add to Cart')}
-                    </button>
-                  )}
+                  {/* Premium check removed to allow adding to cart */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(book);
+                      if (book.noOfCopies > 0) {
+                        toast.success(`${book.title} added to cart!`);
+                      } else {
+                        toast.warning(`${book.title} added to cart (Note: Currently Out of Stock)`);
+                      }
+                    }}
+                    disabled={isInCart(book._id)}
+                    className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      flex: '0 0 auto',
+                      width: 'fit-content',
+                      padding: '0 1.5rem',
+                      fontSize: '0.8rem',
+                      marginLeft: 'auto'
+                    }}
+                  >
+                    <ShoppingCart size={16} />
+                    {isInCart(book._id) ? 'In Cart ✓' : (book.noOfCopies === 0 ? 'Add to Cart (Out of Stock)' : 'Add to Cart')}
+                  </button>
                   <Link
                     to={`/books/${book._id}`}
                     onClick={(e) => e.stopPropagation()}
@@ -505,26 +494,77 @@ const BookList: React.FC = () => {
       {
         books.length > 0 && total > 10 && (
           <div className="pagination-container">
-            {Array.from({ length: Math.ceil(total / 10) }, (_, i) => i + 1).map((pageNum) => (
-              <button
-                key={pageNum}
-                onClick={() => {
-                  setPage(pageNum);
-                  setTimeout(() => {
-                    if (searchSectionRef.current) {
-                      const yOffset = -120; // Slightly more offset for better visibility
-                      const element = searchSectionRef.current;
-                      const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
-                      window.scrollTo({ top: y, behavior: 'smooth' });
-                    }
-                  }, 100);
-                }}
-                className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
-                disabled={loading}
-              >
-                {pageNum}
-              </button>
-            ))}
+            <button
+              className="pagination-btn"
+              disabled={page === 1 || loading}
+              onClick={() => {
+                setPage(p => Math.max(1, p - 1));
+                setTimeout(() => {
+                  if (searchSectionRef.current) {
+                    const yOffset = -120;
+                    const element = searchSectionRef.current;
+                    const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
+                }, 100);
+              }}
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            {(() => {
+              const totalPages = Math.ceil(total / 10);
+              let startPage = page;
+
+              // If on last page and there's more than 1 page, show previous one too
+              if (page === totalPages && totalPages > 1) {
+                startPage = page - 1;
+              }
+
+              // Ensure we don't go out of bounds
+              const pages = [];
+              if (startPage <= totalPages) pages.push(startPage);
+              if (startPage + 1 <= totalPages) pages.push(startPage + 1);
+
+              return pages.map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => {
+                    setPage(pageNum);
+                    setTimeout(() => {
+                      if (searchSectionRef.current) {
+                        const yOffset = -120;
+                        const element = searchSectionRef.current;
+                        const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+                      }
+                    }, 100);
+                  }}
+                  className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
+                  disabled={loading}
+                >
+                  {pageNum}
+                </button>
+              ));
+            })()}
+
+            <button
+              className="pagination-btn"
+              disabled={page === Math.ceil(total / 10) || loading}
+              onClick={() => {
+                setPage(p => Math.min(Math.ceil(total / 10), p + 1));
+                setTimeout(() => {
+                  if (searchSectionRef.current) {
+                    const yOffset = -120;
+                    const element = searchSectionRef.current;
+                    const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
+                }, 100);
+              }}
+            >
+              <ChevronRight size={20} />
+            </button>
           </div>
         )
       }

@@ -8,6 +8,7 @@ import {
     revokeSession
 } from "../services/userService";
 import { toast } from "react-toastify";
+import { Mail, Phone as PhoneIcon, ShieldCheck } from 'lucide-react';
 import Loader from "../components/Loader";
 import ThemeToggle from "../components/ThemeToggle";
 import DeleteAccountModal from "../components/DeleteAccountModal";
@@ -15,10 +16,10 @@ import ConfirmationModal from "../components/ConfirmationModal";
 import "../styles/UserSettings.css";
 import "../styles/UserProfile.css"; // Reuse some basic form styles
 
-type SettingsTab = 'public-profile' | 'account' | 'appearance' | 'security' | 'sessions' | 'danger-zone';
+type SettingsTab = 'profile' | 'account' | 'appearance' | 'security' | 'sessions' | 'danger-zone';
 
 const UserSettings: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<SettingsTab>('public-profile');
+    const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
     const [user, setUser] = useState<any>(null);
     const [sessions, setSessions] = useState<any[]>([]);
     const [lastLogin, setLastLogin] = useState<string | null>(null);
@@ -153,8 +154,8 @@ const UserSettings: React.FC = () => {
                 <aside className="settings-sidebar">
                     <nav className="sidebar-nav">
                         <SidebarItem
-                            tab="public-profile"
-                            label="Public profile"
+                            tab="profile"
+                            label="Profile"
                             icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
                         />
                         <SidebarItem
@@ -193,24 +194,42 @@ const UserSettings: React.FC = () => {
 
                 {/* Right Content Area */}
                 <main className="settings-content-area">
-                    {activeTab === 'public-profile' && (
+                    {activeTab === 'profile' && (
                         <div className="settings-card saas-reveal">
                             <div className="settings-card-header">
-                                <h2>Public profile</h2>
-                                <p>This information will be displayed publicly.</p>
+                                <h2>Profile</h2>
+                                <p>Manage how you appear to others in the Bookstack community.</p>
                             </div>
-                            <form onSubmit={handleUpdateProfile}>
+
+                            <div className="profile-preview-section">
+                                <div className="profile-avatar-wrapper">
+                                    <div className="profile-avatar-large">
+                                        {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
+                                    </div>
+                                    <div className="avatar-status-badge"></div>
+                                </div>
+                                <div className="profile-preview-info">
+                                    <h3>{displayName || 'User'}</h3>
+                                    <p>{user?.email}</p>
+                                    <span className="profile-type-tag">Profile Details</span>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleUpdateProfile} className="settings-form">
                                 <div className="form-group">
-                                    <label>Name</label>
+                                    <label>Display Name</label>
                                     <input
                                         type="text"
                                         value={displayName}
                                         onChange={(e) => setDisplayName(e.target.value)}
+                                        placeholder="Enter your display name"
                                         required
                                     />
-                                    <small className="form-help">Your name may appear around Bookstack where you are mentioned.</small>
+                                    <small className="form-help">This name will be visible to other members and in your reviews.</small>
                                 </div>
-                                <button type="submit" className="btn-primary">Update Profile</button>
+                                <div className="form-actions">
+                                    <button type="submit" className="btn-primary-premium">Update Profile</button>
+                                </div>
                             </form>
                         </div>
                     )}
@@ -219,25 +238,42 @@ const UserSettings: React.FC = () => {
                         <div className="settings-card saas-reveal">
                             <div className="settings-card-header">
                                 <h2>Account settings</h2>
-                                <p>Manage your account credentials and personal information.</p>
+                                <p>Manage your account credentials and security contact info.</p>
                             </div>
-                            <form onSubmit={handleUpdateProfile}>
+
+                            <div className="account-info-banner">
+                                <div className="banner-icon-box">
+                                    <ShieldCheck size={28} />
+                                </div>
+                                <div className="banner-text">
+                                    <h4>Account Verification</h4>
+                                    <p>Your account is verified and secure. Use this section to keep your contact details up to date.</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleUpdateProfile} className="settings-form">
                                 <div className="form-group">
-                                    <label>Email Address</label>
-                                    <input type="email" value={user?.email} disabled className="disabled-input" />
-                                    <small className="form-help">Primary email cannot be changed at this time.</small>
+                                    <label><Mail size={16} /> Email Address</label>
+                                    <div className="input-with-status">
+                                        <input type="email" value={user?.email} disabled className="disabled-input-premium" />
+                                        <span className="status-locked-badge">Primary</span>
+                                    </div>
+                                    <small className="form-help">Your primary email address is used for all communications and cannot be changed.</small>
                                 </div>
                                 <div className="form-group">
-                                    <label>Phone Number</label>
+                                    <label><PhoneIcon size={16} /> Phone Number</label>
                                     <input
                                         type="tel"
                                         placeholder="+91 00000 00000"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
+                                        className="premium-input"
                                     />
-                                    <small className="form-help">Used for delivery updates and account security.</small>
+                                    <small className="form-help">Used at the time of delivery</small>
                                 </div>
-                                <button type="submit" className="btn-primary">Update Account</button>
+                                <div className="form-actions">
+                                    <button type="submit" className="btn-primary-premium">Save Account Changes</button>
+                                </div>
                             </form>
                         </div>
                     )}
