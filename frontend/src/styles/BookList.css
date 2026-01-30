@@ -94,27 +94,412 @@
     margin: 4px 0 0;
 }
 
-.filter-container {
+/* Catalog Action Bar & Search */
+.catalog-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    margin-top: 1rem;
+    background: var(--card-bg);
+    padding: 1.25rem 2rem 1.25rem 1rem;
+    /* Reduced left padding */
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    z-index: 10;
+}
+
+.compact-search {
+    position: relative;
+    flex: 1;
+    /* Occupy most of the available space */
+    display: flex;
+    align-items: center;
+}
+
+.search-icon-inside {
+    position: absolute;
+    /* Reverted to absolute for overlay */
+    left: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.compact-search-input {
+    width: 100%;
+    height: 48px;
+    /* Standardized height */
+    padding: 0 1.25rem 0 3.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.compact-search-input:focus {
+    background: var(--card-bg);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    outline: none;
+}
+
+.action-buttons-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    height: 48px;
+    /* Match search height exactly */
+    padding: 0 1.5rem;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.action-btn:hover {
+    background: var(--bg-color);
+    border-color: #d1d5db;
+}
+
+.filter-trigger.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.filter-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    background: white;
+    color: var(--primary-color);
+    font-size: 0.75rem;
+    border-radius: 50%;
+    font-weight: 700;
+    margin-left: -5px;
+}
+
+.filter-trigger.active .filter-badge {
+    background: white;
+    color: var(--primary-color);
+}
+
+/* Sort Dropdown */
+.sort-dropdown-container {
+    position: relative;
+}
+
+.sort-label-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.sort-prefix {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.current-sort {
+    color: var(--text-color);
+}
+
+.sort-trigger .chevron {
+    transition: transform 0.2s ease;
+}
+
+.sort-trigger .chevron.open {
+    transform: rotate(180deg);
+}
+
+.dropdown-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+}
+
+.sort-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 220px;
+    background: var(--card-bg);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem;
+    z-index: 100;
+}
+
+.sort-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sort-option:hover {
+    background: var(--bg-color);
+    color: var(--primary-color);
+}
+
+.sort-option.selected {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.selected-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    margin-left: auto;
+}
+
+/* Sidebar Styling */
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+}
+
+.filter-sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    width: 350px;
+    background: var(--bg-color);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+    border-left: 1px solid var(--border-color);
+}
+
+.sidebar-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card-bg);
+}
+
+.header-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-color);
+}
+
+.header-title-group h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.close-sidebar {
+    background: transparent;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    color: var(--text-color);
+}
+
+.close-sidebar:hover {
+    background: var(--border-color);
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+}
+
+.filter-group {
+    margin-bottom: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    /* Fixed alignment */
+    align-items: flex-start;
+}
+
+.filter-group h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 1.25rem;
+}
+
+.filter-options-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.filter-chip {
+    padding: 0.6rem 1rem;
+    border-radius: 50px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+    background: var(--border-color);
+}
+
+.filter-chip.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.access-toggle-group {
+    display: flex;
+    background: var(--card-bg);
+    padding: 0.35rem;
+    border-radius: 12px;
+    width: 100%;
+    border: 1px solid var(--border-color);
+}
+
+.access-btn {
+    flex: 1;
+    padding: 0.65rem;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color);
+    opacity: 0.7;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.access-btn.active {
+    background: var(--bg-color);
+    color: var(--primary-color);
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border-color);
     display: flex;
     gap: 1rem;
-    margin-bottom: 3rem;
-    margin-top: 1rem;
+    background: var(--card-bg);
 }
 
-.search-input {
+.reset-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    padding: 0.85rem 1.25rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.reset-btn:hover {
+    background: var(--bg-color);
+}
+
+.apply-btn {
     flex: 1;
-    padding: 0.85rem 1.5rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.85rem 1.25rem;
     border-radius: 12px;
-    border: 1px solid var(--border-color);
-    background: var(--card-bg);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.category-select {
-    width: 220px;
-    padding: 0.85rem 1.5rem;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    background: var(--card-bg);
+.apply-btn:hover {
+    filter: brightness(1.1);
+}
+
+@media (max-width: 640px) {
+    .catalog-action-bar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1.5rem;
+    }
+
+    .filter-sidebar {
+        width: 100%;
+    }
+
+    .action-buttons-group {
+        justify-content: space-between;
+    }
+
+    .action-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+.category-select:hover {
+    border-color: var(--primary-color);
+}
+
+.sort-select {
+    background: rgba(99, 102, 241, 0.05);
+    border-color: rgba(99, 102, 241, 0.2);
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 

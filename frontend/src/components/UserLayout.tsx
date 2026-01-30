@@ -2,30 +2,14 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import UserNavbar from './UserNavbar';
 import Footer from './Footer';
-import { useTheme } from '../context/ThemeContext';
-import { getProfile } from '../services/userService';
+
 import { RoleName } from '../types/enums';
 import '../styles/Home.css';
 
 const UserLayout: React.FC = () => {
-    const { theme, setTheme } = useTheme();
 
-    React.useEffect(() => {
-        const syncTheme = async () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    const profile = await getProfile();
-                    if (profile.theme && profile.theme !== theme) {
-                        setTheme(profile.theme);
-                    }
-                } catch (err) {
-                    console.error('Failed to sync theme in layout:', err);
-                }
-            }
-        };
-        syncTheme();
-    }, []);
+    // Theme sync logic removed to prevent overriding local preference
+    // The ThemeContext now handles persistence reliably via localStorage
 
     return (
         <div className="user-layout-container saas-theme" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>

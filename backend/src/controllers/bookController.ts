@@ -13,11 +13,15 @@ import { RoleName, BookStatus, BorrowStatus, MembershipName } from '../types/enu
 
 export const getAllBooks = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { search, category, genre, showArchived, isPremium, addedBy } = req.query;
+        const { search, category, genre, showArchived, isPremium, addedBy, language } = req.query;
         const query: any = {};
 
         if (addedBy) {
             query.addedBy = addedBy;
+        }
+
+        if (language) {
+            query.language = { $regex: new RegExp(`^${language}$`, 'i') };
         }
 
         if (search) {
