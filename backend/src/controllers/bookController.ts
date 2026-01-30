@@ -230,20 +230,21 @@ export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunc
 
 export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        console.log(`[viewBookPdf] Request received for book ID: ${req.params.id}`);
+        const bookId = req.params.id;
+        console.log(`[viewBookPdf] DIAGNOSTIC: Request received for book ID: ${bookId}`);
 
-        const book = await Book.findById(req.params.id);
+        const book = await Book.findById(bookId);
         if (!book) {
-            console.error(`[viewBookPdf] Book not found: ${req.params.id}`);
-            return res.status(404).json({ error: 'Book not found' });
+            console.error(`[viewBookPdf] DIAGNOSTIC: Book not found in database: ${bookId}`);
+            return res.status(404).json({ error: 'Book not found in database', bookId });
         }
 
-        console.log(`[viewBookPdf] Book found: ${book.title}`);
-        console.log(`[viewBookPdf] PDF URL: ${book.pdf_url}`);
+        console.log(`[viewBookPdf] DIAGNOSTIC: Book found: "${book.title}"`);
+        console.log(`[viewBookPdf] DIAGNOSTIC: Book PDF URL: "${book.pdf_url}"`);
 
         if (!book.pdf_url) {
-            console.error(`[viewBookPdf] No PDF URL for book: ${book.title}`);
-            return res.status(404).json({ error: 'PDF not available for this book' });
+            console.error(`[viewBookPdf] DIAGNOSTIC: pdf_url is empty for book: "${book.title}"`);
+            return res.status(404).json({ error: 'PDF URL is missing for this book' });
         }
 
         // Check premium access
@@ -257,32 +258,38 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
             }
         }
 
+        let key = '';
         try {
             // Robust key extraction
-            let key: string;
             try {
-                const urlObject = new URL(book.pdf_url);
-                // Remove leading slash and handle potential double slashes
-                key = decodeURIComponent(urlObject.pathname).replace(/^\/+/, '');
+                // Check if it's already an S3 URL
+                if (book.pdf_url.startsWith('http')) {
+                    const urlObject = new URL(book.pdf_url);
+                    // Remove leading slash and handle potential double slashes
+                    key = decodeURIComponent(urlObject.pathname).replace(/^\/+/, '');
+                } else {
+                    // Assume it's a relative path or direct key
+                    key = book.pdf_url.replace(/^\/+/, '');
+                }
             } catch (urlErr) {
-                // Fallback if it's already a key or relative path
                 key = book.pdf_url.replace(/^\/+/, '');
             }
 
-            console.log(`[viewBookPdf] Extracted S3 Key: "${key}"`);
-            console.log(`[viewBookPdf] Bucket: ${process.env.AWS_S3_BUCKET_NAME}`);
-            console.log(`[viewBookPdf] Region: ${process.env.AWS_REGION}`);
+            console.log(`[viewBookPdf] DIAGNOSTIC: Extracted S3 Key: "${key}"`);
+            console.log(`[viewBookPdf] DIAGNOSTIC: Using Bucket: "${process.env.AWS_S3_BUCKET_NAME}"`);
 
             const s3Response = await getS3FileStream(key);
 
-            console.log(`[viewBookPdf] S3 Response received. Content-Type: ${s3Response.ContentType}, Content-Length: ${s3Response.ContentLength}`);
+            console.log(`[viewBookPdf] DIAGNOSTIC: S3 Stream received. Status: ${s3Response.$metadata.httpStatusCode}`);
+            console.log(`[viewBookPdf] DIAGNOSTIC: Content-Type: ${s3Response.ContentType}, Content-Length: ${s3Response.ContentLength}`);
 
-            // Set headers for inline viewing (not download)
+            // Set headers for inline viewing
             res.setHeader('Content-Type', s3Response.ContentType || 'application/pdf');
             res.setHeader('Content-Disposition', 'inline');
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
             res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type, Authorization');
+            res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
             res.setHeader('Accept-Ranges', 'bytes');
 
             if (s3Response.ContentLength) {
@@ -291,32 +298,30 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
 
             if (s3Response.Body) {
                 (s3Response.Body as Readable).pipe(res);
-                console.log(`[viewBookPdf] Streaming PDF to client`);
+                console.log(`[viewBookPdf] DIAGNOSTIC: Streaming PDF content started`);
             } else {
-                console.error(`[viewBookPdf] PDF content not found in S3 for key: ${key}`);
-                res.status(404).json({ error: 'PDF content not found in storage' });
+                console.error(`[viewBookPdf] DIAGNOSTIC: S3 Body is empty for key: ${key}`);
+                res.status(404).json({ error: 'PDF content stream is empty' });
             }
         } catch (s3Err: any) {
-            console.error(`[viewBookPdf] S3 Error for book ${req.params.id}:`, {
+            console.error(`[viewBookPdf] DIAGNOSTIC: S3 Error:`, {
                 name: s3Err.name,
                 message: s3Err.message,
                 code: s3Err.code,
-                statusCode: s3Err.$metadata?.httpStatusCode,
-                stack: s3Err.stack
+                statusCode: s3Err.$metadata?.httpStatusCode
             });
 
-            const statusCode = s3Err.name === 'NoSuchKey' ? 404 : 500;
-            const message = s3Err.name === 'NoSuchKey' ? 'PDF file not found in storage' : 'Failed to fetch PDF from storage';
+            const statusCode = s3Err.name === 'NoSuchKey' ? 404 : (s3Err.$metadata?.httpStatusCode || 500);
+            const message = s3Err.name === 'NoSuchKey' ? 'PDF file not found in S3 storage' : `S3 Error: ${s3Err.message}`;
+
             res.status(statusCode).json({
                 error: message,
-                details: process.env.NODE_ENV === 'development' ? s3Err.message : undefined
+                s3Key: key || 'unknown',
+                s3Error: s3Err.name
             });
         }
     } catch (err: any) {
-        console.error(`[viewBookPdf] Unexpected error:`, {
-            message: err.message,
-            stack: err.stack
-        });
+        console.error(`[viewBookPdf] DIAGNOSTIC: Unexpected failure:`, err);
         next(err);
     }
 };
