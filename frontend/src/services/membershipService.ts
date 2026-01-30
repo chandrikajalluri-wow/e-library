@@ -33,3 +33,8 @@ export const updateUserMembership = async (userId: string, membershipId: string)
     const res = await api.put(`/memberships/admin/users/${userId}/membership`, { membershipId });
     return res.data;
 };
+
+export const cancelMembership = async (reason: string): Promise<{ message: string; membership: Membership }> => {
+    const res = await api.put('/memberships/cancel', { reason });
+    return res.data;
+};

@@ -14,6 +14,9 @@ router.get('/my', auth, membershipController.getMyMembership);
 // User: Upgrade own membership
 router.put('/upgrade', auth, membershipController.upgradeMyMembership);
 
+// User: Cancel own membership
+router.put('/cancel', auth, membershipController.cancelMyMembership);
+
 // Admin: Update user's membership
 router.put('/admin/users/:userId/membership', auth, checkRole([RoleName.ADMIN]), membershipController.updateUserMembershipAdmin);
 

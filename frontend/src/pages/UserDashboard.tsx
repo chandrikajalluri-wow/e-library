@@ -1,40 +1,21 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BorrowStatus, MembershipName, BookStatus } from '../types/enums';
-import { getMyBorrows, returnBook } from '../services/borrowService';
-import { getDashboardStats } from '../services/userService';
+import { MembershipName } from '../types/enums';
+import { getDashboardStats, getReadlist } from '../services/userService';
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { getAnnouncements } from '../services/superAdminService';
 import { toast } from 'react-toastify';
-import FinePaymentModal from '../components/FinePaymentModal';
-import ConfirmationModal from '../components/ConfirmationModal';
+import { BookOpen, Flame, Heart } from 'lucide-react';
 import '../styles/UserDashboard.css';
 import '../styles/BookList.css';
 
 const UserDashboard: React.FC = () => {
-  const [borrows, setBorrows] = useState<any[]>([]);
+  const [readlistBooks, setReadlistBooks] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0, streakCount: 0 });
   const [membership, setMembership] = useState<Membership | null>(null);
   const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [selectedBorrow, setSelectedBorrow] = useState<any | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'returned'>('all');
   const [isLoading, setIsLoading] = useState(true);
-
-  const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    isLoading: boolean;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: () => { },
-    isLoading: false
-  });
 
   useEffect(() => {
     loadData();
@@ -43,8 +24,8 @@ const UserDashboard: React.FC = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const bData = await getMyBorrows();
-      setBorrows(bData);
+      const bData = await getReadlist();
+      setReadlistBooks(bData);
       const sData = await getDashboardStats();
       setStats(sData);
       const mData = await getMyMembership();
@@ -59,66 +40,12 @@ const UserDashboard: React.FC = () => {
     }
   };
 
-  const getCurrentFine = (b: any) => {
-    if (b.status === BorrowStatus.RETURNED || b.status === BorrowStatus.ARCHIVED) {
-      return b.isFinePaid ? 0 : (b.fine_amount || 0);
-    }
-
-    const now = new Date();
-    const endDate = (b.status === BorrowStatus.RETURN_REQUESTED && b.return_requested_at)
-      ? new Date(b.return_requested_at)
-      : now;
-    const returnDate = new Date(b.return_date);
-
-    let fineStartDate = returnDate;
-    if (b.last_fine_paid_date && new Date(b.last_fine_paid_date) > returnDate) {
-      fineStartDate = new Date(b.last_fine_paid_date);
-    }
-
-    if (endDate > fineStartDate) {
-      const diffTime = Math.abs(endDate.getTime() - fineStartDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays * 10;
-    }
-    return 0;
-  };
-
-  const handleReturn = async (borrow: any) => {
-    const fine = getCurrentFine(borrow);
-
-    if (fine > 0 && !borrow.isFinePaid) {
-      toast.info(`Please pay the fine of ₹${fine.toFixed(2)} before returning.`);
-      setSelectedBorrow(borrow);
-      setIsModalOpen(true);
-      return;
-    }
-
-    setConfirmModal({
-      isOpen: true,
-      title: 'Request Return',
-      message: `Are you sure you want to request a return for "${borrow.book_id?.title}"?`,
-      isLoading: false,
-      onConfirm: async () => {
-        setConfirmModal(prev => ({ ...prev, isLoading: true }));
-        try {
-          await returnBook(borrow._id);
-          toast.success('Return requested successfully. Admin will process it.');
-          loadData();
-          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
-        } catch (err: any) {
-          console.error(err);
-          toast.error(err.response?.data?.error || 'Failed to return book');
-          setConfirmModal(prev => ({ ...prev, isLoading: false }));
-        }
-      }
-    });
-  };
 
 
   const navigate = useNavigate();
 
   return (
-    <div className="dashboard-wrapper">
+    <div className="dashboard-wrapper dashboard-container">
       <div className="back-to-catalog-container">
         <button
           onClick={() => navigate('/books')}
@@ -128,43 +55,62 @@ const UserDashboard: React.FC = () => {
         </button>
       </div>
       <header className="admin-header">
-        <h1 className="admin-header-title">My Dashboard</h1>
-        <p className="admin-header-subtitle">Overview of your activity and fines</p>
+        <div className="admin-header-titles">
+          <h1 className="admin-header-title">My Dashboard</h1>
+          <p className="admin-header-subtitle">Overview of your activity and reading list</p>
+        </div>
       </header>
 
       <div className="stats-grid">
         <div className="card stat-card membership-status-card">
           <div className="membership-info-main">
-            <h3 className="stat-label">Membership</h3>
+            <span className="stat-label">Your Membership</span>
             <p className="stat-value membership-name">
               {isLoading ? '...' : (membership?.displayName || 'Basic')}
             </p>
           </div>
-          <div className="membership-limits">
-            <span>Limit: {isLoading ? '-' : stats.borrowedCount} / {isLoading ? '-' : (membership?.borrowLimit || 3)} books</span>
+          <div className="membership-limits-box">
+            <div className="limit-info">
+              <span className="limit-label">Monthly Limit</span>
+              <span className="limit-val">{isLoading ? '-' : stats.borrowedCount} / {isLoading ? '-' : (membership?.borrowLimit || 3)} books</span>
+            </div>
             <button
               onClick={() => navigate('/memberships')}
               className="upgrade-link-btn"
             >
-              {membership?.name === MembershipName.PREMIUM ? 'View Plans' : 'Upgrade Plan'}
+              {membership?.name === MembershipName.PREMIUM ? 'View Plans' : 'Manage Plan'}
             </button>
           </div>
         </div>
+
         <div className="card stat-card">
-          <h3 className="stat-label">Total Fine</h3>
-          <p className="stat-value stat-fine">₹{stats.totalFine.toFixed(2)}</p>
+          <div className="stat-icon-bg monthly-reads-icon">
+            <BookOpen size={22} />
+          </div>
+          <div className="stat-content">
+            <h3 className="stat-label">Monthly Reads</h3>
+            <p className="stat-value">{stats.borrowedCount}</p>
+          </div>
         </div>
+
         <div className="card stat-card">
-          <h3 className="stat-label">Borrowed</h3>
-          <p className="stat-value">{stats.borrowedCount}</p>
+          <div className="stat-icon-bg wishlisted-icon">
+            <Heart size={22} />
+          </div>
+          <div className="stat-content">
+            <h3 className="stat-label">Wishlisted</h3>
+            <p className="stat-value">{stats.wishlistCount}</p>
+          </div>
         </div>
-        <div className="card stat-card">
-          <h3 className="stat-label">Wishlisted</h3>
-          <p className="stat-value">{stats.wishlistCount}</p>
-        </div>
+
         <div className="card stat-card streak-card">
-          <h3 className="stat-label">Login Streak</h3>
-          <p className="stat-value">🔥 {stats.streakCount} Days</p>
+          <div className="stat-icon-bg streak-icon">
+            <Flame size={22} />
+          </div>
+          <div className="stat-content">
+            <h3 className="stat-label">Login Streak</h3>
+            <p className="stat-value">{stats.streakCount} Days</p>
+          </div>
         </div>
       </div>
 
@@ -192,181 +138,67 @@ const UserDashboard: React.FC = () => {
 
       <section className="card dashboard-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-          <h2 style={{ margin: 0 }}>My Borrows</h2>
-          <div className="filter-controls" style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-color)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <button
-              onClick={() => setFilterStatus('all')}
-              style={{
-                background: filterStatus === 'all' ? 'var(--primary-color)' : 'transparent',
-                color: filterStatus === 'all' ? 'white' : 'var(--text-secondary)',
-                border: 'none',
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                transition: 'all 0.2s'
-              }}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilterStatus('active')}
-              style={{
-                background: filterStatus === 'active' ? 'var(--primary-color)' : 'transparent',
-                color: filterStatus === 'active' ? 'white' : 'var(--text-secondary)',
-                border: 'none',
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                transition: 'all 0.2s'
-              }}
-            >
-              Active
-            </button>
-            <button
-              onClick={() => setFilterStatus('returned')}
-              style={{
-                background: filterStatus === 'returned' ? 'var(--primary-color)' : 'transparent',
-                color: filterStatus === 'returned' ? 'white' : 'var(--text-secondary)',
-                border: 'none',
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                transition: 'all 0.2s'
-              }}
-            >
-              Returned
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <BookOpen size={24} className="text-primary-color" />
+            <h2 style={{ margin: 0 }}>My Readlist</h2>
           </div>
         </div>
         <div className="grid-books">
-          {borrows.filter(b => {
-            if (filterStatus === 'active') return b.status === BorrowStatus.BORROWED || b.status === BorrowStatus.OVERDUE;
-            if (filterStatus === 'returned') return b.status === BorrowStatus.RETURNED;
-            return true;
-          }).map((b) => (
-            <div key={b._id} className="card book-card">
-              <div className="book-cover-container">
-                {b.book_id?.cover_image_url ? (
-                  <img
-                    src={b.book_id.cover_image_url}
-                    alt={b.book_id.title}
-                    className="book-cover-img"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="no-image-placeholder">No Image</div>
-                )}
-              </div>
-              <div className="book-info-container">
-                <div className="book-category-tag">
-                  {b.book_id?.category_id?.name || 'Book'}
+          {readlistBooks.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+              <p>Your readlist is empty. Start adding books to read digitally!</p>
+            </div>
+          ) : (
+            readlistBooks.map((book: any) => (
+              <div key={book._id} className="card book-card">
+                <div className="book-cover-container">
+                  {book.cover_image_url ? (
+                    <img
+                      src={book.cover_image_url}
+                      alt={book.title}
+                      className="book-cover-img"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="no-image-placeholder">No Image</div>
+                  )}
                 </div>
-                <h3 className="book-title-h3">{b.book_id?.title || 'Unknown Title'}</h3>
-                <p className="book-author-p">
-                  {b.book_id?.author ? `by ${b.book_id.author}` : ''}
-                </p>
+                <div className="book-info-container">
+                  <div className="book-category-tag">
+                    {book.category_id?.name || 'Book'}
+                  </div>
+                  <h3 className="book-title-h3">{book.title || 'Unknown Title'}</h3>
+                  <p className="book-author-p">
+                    {book.author ? `by ${book.author}` : ''}
+                  </p>
 
-                <div className="borrow-details-mini" style={{ marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Issued:</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{new Date(b.issued_date).toLocaleDateString()}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                    <span>Due:</span>
-                    <span style={{ fontWeight: 600, color: new Date() > new Date(b.return_date) ? 'var(--danger-color)' : 'var(--text-primary)' }}>
-                      {new Date(b.return_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {(getCurrentFine(b) > 0 || (new Date() > new Date(b.return_date) && b.status !== 'returned')) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                      <span>Fine:</span>
-                      <span style={{ fontWeight: 700, color: 'var(--danger-color)' }}>
-                        ₹{getCurrentFine(b).toFixed(2)}
-                      </span>
+                  <div className="book-footer">
+                    <div className="book-status-info">
+                      <span className="status-badge status-active book-status-badge">IN READLIST</span>
                     </div>
-                  )}
-                </div>
 
-                <div className="book-footer">
-                  <div className="book-status-info">
-                    <span className={`status-badge status-${b.status} book-status-badge`}>
-                      {b.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : b.status.toUpperCase()}
-                    </span>
-                  </div>
-
-                  {/* Pay Now button - always visible if fine > 0 and not paid */}
-                  {getCurrentFine(b) > 0 && !b.isFinePaid && (
-                    <button
-                      onClick={() => {
-                        setSelectedBorrow(b);
-                        setIsModalOpen(true);
-                      }}
-                      className="btn-danger book-action-btn"
-                    >
-                      Pay Now
-                    </button>
-                  )}
-
-                  {(b.status === BorrowStatus.BORROWED || b.status === BorrowStatus.OVERDUE) && (
                     <div className="book-actions-row">
                       <button
-                        onClick={() => navigate(`/read/${b.book_id._id}`)}
+                        onClick={() => navigate(`/read/${book._id}`)}
                         className="btn-primary book-action-btn"
                       >
                         Read
                       </button>
                       <button
-                        onClick={() => handleReturn(b)}
+                        onClick={() => navigate(`/books/${book._id}`)}
                         className="btn-secondary book-action-btn"
                       >
-                        Return
+                        View Details
                       </button>
                     </div>
-                  )}
-                  {b.status === 'return_requested' && (
-                    <div className="pending-status-msg" style={{ textAlign: 'center', padding: '0.5rem', background: 'var(--bg-color)', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700 }}>
-                      Pending Approval
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
-        {borrows.length === 0 && (
-          <p className="empty-message">
-            You haven't borrowed any books.
-          </p>
-        )}
-      </section>
-
-      {isModalOpen && selectedBorrow && (
-        <FinePaymentModal
-          borrow={selectedBorrow}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedBorrow(null);
-          }}
-          onSuccess={loadData}
-        />
-      )}
-
-      <ConfirmationModal
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        type="info"
-        isLoading={confirmModal.isLoading}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-      />
-    </div>
+      </section >
+    </div >
   );
 };
 

@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 import { RoleName } from '../types/enums';
 
 export const sendNotification = async (
-    type: 'borrow' | 'return' | 'wishlist' | 'fine' | 'system',
+    type: 'borrow' | 'return' | 'wishlist' | 'system',
     message: string,
     user_id: string | Types.ObjectId,
     book_id?: string | Types.ObjectId
@@ -44,7 +44,7 @@ export const notifySuperAdmins = async (message: string, type: 'system' | 'borro
     }
 };
 
-export const notifyAllUsers = async (message: string, type: 'system' | 'borrow' | 'return' | 'wishlist' | 'fine' = 'system', book_id?: string | Types.ObjectId) => {
+export const notifyAllUsers = async (message: string, type: 'system' | 'borrow' | 'return' | 'wishlist' = 'system', book_id?: string | Types.ObjectId) => {
     try {
         // Find all users with RoleName.USER
         // We assume 'User' role is for standard users. Assuming we want to notify ALL registered users including admins?

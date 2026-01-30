@@ -9,6 +9,7 @@ import AuthToken from '../models/AuthToken';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendEmail } from '../utils/mailer';
 import { BorrowStatus, MembershipName, UserTheme, RequestStatus } from '../types/enums';
+import Order from '../models/Order';
 
 export const getMe = async (req: AuthRequest, res: Response) => {
     try {
@@ -36,27 +37,16 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
         const borrows = await Borrow.find({ user_id: userId });
         const wishlistCount = await Wishlist.countDocuments({ user_id: userId });
 
-        const totalFine = borrows.reduce((sum, b) => {
-            if (b.isFinePaid) return sum;
+        // Count books added to readlist this month
+        const user = await User.findById(userId);
+        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-            let fine = b.fine_amount || 0;
-            // If book is not returned yet and is overdue, calculate current accrued fine
-            if (b.status !== BorrowStatus.RETURNED && b.status !== BorrowStatus.ARCHIVED) {
-                const now = new Date();
-                if (now > b.return_date) {
-                    const diffTime = Math.abs(now.getTime() - b.return_date.getTime());
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    fine += diffDays * 10; // ₹10 per day
-                }
-            }
-            return sum + fine;
-        }, 0);
-
-        const borrowedCount = borrows.filter(b => b.status === BorrowStatus.BORROWED || b.status === BorrowStatus.OVERDUE || b.status === BorrowStatus.RETURN_REQUESTED).length;
+        // For now, we'll count total readlist items as we don't track timestamps
+        // You can enhance this later by adding a readlistAddedAt field
+        const monthlyReadsCount = user?.readlist?.length || 0;
 
         res.json({
-            totalFine,
-            borrowedCount,
+            borrowedCount: monthlyReadsCount, // Now represents readlist count
             wishlistCount,
             streakCount: (req.user as any).streakCount || 0
         });
@@ -277,54 +267,50 @@ export const updateBookRequestStatus = async (req: AuthRequest, res: Response) =
     }
 };
 
-export const sendFineReminder = async (req: AuthRequest, res: Response) => {
+
+
+export const getSessions = async (req: AuthRequest, res: Response) => {
     try {
-        const borrow = await Borrow.findById(req.params.id)
-            .populate('user_id', 'name email')
-            .populate('book_id', 'title');
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
 
-        if (!borrow) return res.status(404).json({ error: 'Borrow record not found' });
+        // Filter duplicates and keep most recent (precaution for existing data)
+        const sessions = user.activeSessions || [];
+        const uniqueSessions: any[] = [];
+        const deviceMap = new Map();
 
-        const user: any = borrow.user_id;
-        const book: any = borrow.book_id;
+        // Sort by last active descending first
+        const sortedSessions = [...sessions].sort((a, b) =>
+            new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()
+        );
 
-        let fine = borrow.fine_amount || 0;
-        if (borrow.status !== BorrowStatus.RETURNED && borrow.status !== BorrowStatus.ARCHIVED) {
-            const now = new Date();
-            if (now > borrow.return_date) {
-                const diffTime = Math.abs(now.getTime() - borrow.return_date.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                fine += diffDays * 10;
+        for (const session of sortedSessions) {
+            if (!deviceMap.has(session.device)) {
+                deviceMap.set(session.device, true);
+                uniqueSessions.push(session);
             }
         }
 
-        if (fine <= 50) {
-            return res.status(400).json({ error: 'Fine must exceed ₹50 to send a reminder' });
-        }
-
-        if (user && user.email) {
-            const subject = 'Important: Outstanding Library Fine Reminder';
-            const text = `Hi ${user.name},\n\n This is a reminder regarding your borrowed book "${book.title}", which was due on ${new Date(borrow.return_date).toLocaleDateString()}.\n\nYour current accrued fine is ₹${fine}. Please return the book and settle the fine as soon as possible to avoid further charges.\n\nRegards,\nBookStack Administration`;
-
-            await sendEmail(user.email, subject, text);
-            return res.json({ message: 'Reminder email sent successfully' });
-        }
-
-        res.status(400).json({ error: 'User email not found' });
+        res.json({
+            sessions: uniqueSessions,
+            lastLogin: user.lastLogin
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
 };
 
-export const getSessions = async (req: AuthRequest, res: Response) => {
+export const revokeSession = async (req: AuthRequest, res: Response) => {
+    const { token } = req.body;
     try {
         const user = await User.findById(req.user!._id);
         if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json({
-            sessions: user.activeSessions || [],
-            lastLogin: user.lastLogin
-        });
+
+        user.activeSessions = (user.activeSessions || []).filter(s => s.token !== token);
+        await user.save();
+
+        res.json({ message: 'Session revoked successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -376,17 +362,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        const unpaidFines = await mongoose.model('Borrow').findOne({
-            user_id: user._id,
-            isFinePaid: false,
-            fine_amount: { $gt: 0 }
-        });
 
-        if (unpaidFines) {
-            return res.status(400).json({
-                error: 'You cannot delete your account while you have pending fines. Please clear all fines first.'
-            });
-        }
 
         await mongoose.model('Wishlist').deleteMany({ user_id: user._id });
         await mongoose.model('Borrow').deleteMany({ user_id: user._id });
@@ -454,6 +430,65 @@ export const clearCartLocally = async (req: AuthRequest, res: Response) => {
         user.cart = [];
         await user.save();
         res.json({ message: 'Cart cleared successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getReadlist = async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user!._id).populate('readlist');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user.readlist || []);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const checkBookAccess = async (req: AuthRequest, res: Response) => {
+    const { bookId } = req.params;
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Check if book is in readlist
+        const inReadlist = user.readlist?.some((id: any) => id.toString() === bookId);
+
+        // Check if book has been purchased (exists in completed orders)
+        const hasPurchased = await Order.exists({
+            user_id: user._id,
+            'items.book_id': bookId,
+            status: { $in: ['pending', 'shipped', 'delivered'] }
+        });
+
+        const hasAccess = inReadlist || !!hasPurchased;
+
+        res.json({ hasAccess, inReadlist, hasPurchased: !!hasPurchased });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const addToReadlist = async (req: AuthRequest, res: Response) => {
+    const { book_id } = req.body;
+    try {
+        const user = await User.findById(req.user!._id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Check if already in readlist
+        if (user.readlist?.some((id: any) => id.toString() === book_id)) {
+            return res.status(400).json({ error: 'Book already in your readlist' });
+        }
+
+        // Add to readlist (no stock check or decrease)
+        if (!user.readlist) user.readlist = [];
+        user.readlist.push(book_id);
+        await user.save();
+
+        res.json({ message: 'Book added to readlist successfully', readlist: user.readlist });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });

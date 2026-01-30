@@ -70,7 +70,6 @@ export interface Borrow {
   return_date: string;
   returned_at?: string;
   status: BorrowStatus;
-  fine_amount?: number;
 }
 
 export interface WishlistItem {

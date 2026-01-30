@@ -45,13 +45,15 @@ export const updateBookRequestStatus = async (id: string, status: string) => {
     return res.data;
 };
 
-export const sendFineReminder = async (borrowId: string) => {
-    const res = await api.post(`${BASE_URL}/admin/send-fine-reminder/${borrowId}`, {});
-    return res.data;
-};
+
 
 export const getSessions = async () => {
     const res = await api.get(`${BASE_URL}/sessions`);
+    return res.data;
+};
+
+export const revokeSession = async (token: string) => {
+    const res = await api.post(`${BASE_URL}/sessions/revoke`, { token });
     return res.data;
 };
 
@@ -89,5 +91,17 @@ export const syncCart = async (cartItems: any[]) => {
 
 export const clearCart = async () => {
     const res = await api.delete(`${BASE_URL}/cart`);
+    return res.data;
+};
+
+// Readlist Management
+export const getReadlist = async () => {
+    const res = await api.get(`${BASE_URL}/readlist`);
+    return res.data;
+};
+
+// Check if user has access to book (either in readlist or purchased)
+export const checkBookAccess = async (bookId: string) => {
+    const res = await api.get(`${BASE_URL}/book-access/${bookId}`);
     return res.data;
 };

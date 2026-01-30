@@ -77,7 +77,7 @@
 }
 
 .comparison-table th {
-    background: #f9fafb;
+    background: var(--bg-color);
     color: var(--text-secondary);
     font-weight: 700;
 }

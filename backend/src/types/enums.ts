@@ -39,7 +39,6 @@ export enum NotificationType {
     BORROW = 'borrow',
     RETURN = 'return',
     WISHLIST = 'wishlist',
-    FINE = 'fine',
     SYSTEM = 'system'
 }
 
@@ -51,6 +50,7 @@ export enum ActivityAction {
     BOOK_UPDATED = 'BOOK_UPDATED',
     BOOK_DELETED = 'BOOK_DELETED',
     USER_UPDATED = 'USER_UPDATED',
+    MEMBERSHIP_CANCELLED = 'MEMBERSHIP_CANCELLED',
 }
 
 export enum UserTheme {
