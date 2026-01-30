@@ -184,10 +184,10 @@ const PDFViewer: React.FC = () => {
     const renderIdRef = useRef(0);
 
     useEffect(() => {
-        if (pdfDoc && totalPages > 0) {
+        if (pdfDoc && totalPages > 0 && !loading) {
             renderAllPages();
         }
-    }, [pdfDoc, scale]);
+    }, [pdfDoc, scale, loading]);
 
     const renderAllPages = async () => {
         if (!pdfDoc || !pagesContainerRef.current) return;
