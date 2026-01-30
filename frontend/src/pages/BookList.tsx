@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type } from 'lucide-react';
 import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
-import { getMyMembership, type Membership } from '../services/membershipService';
 
 import type { Book } from '../types';
 import { BookStatus } from '../types/enums';
@@ -38,7 +37,6 @@ const BookList: React.FC = () => {
   const [filterType, setFilterType] = useState('all'); // 'all', 'premium', 'free'
   const [selectedLanguage, setSelectedLanguage] = useState('');
   const [sortOrder, setSortOrder] = useState(''); // Default empty for placeholder
-  const [userMembership, setUserMembership] = useState<Membership | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
@@ -90,17 +88,8 @@ const BookList: React.FC = () => {
   useEffect(() => {
     loadRecommendations();
     loadPersonalizedRecs();
-    fetchUserMembership();
   }, []);
 
-  const fetchUserMembership = async () => {
-    try {
-      const data = await getMyMembership();
-      setUserMembership(data);
-    } catch (err) {
-      console.error('Error fetching membership:', err);
-    }
-  };
 
   const loadPersonalizedRecs = async () => {
     try {
@@ -450,7 +439,7 @@ const BookList: React.FC = () => {
                   </span>
                 </div>
                 <div className="book-actions-row">
-                  {book.isPremium && !userMembership?.canAccessPremiumBooks ? (
+                  {book.isPremium ? (
                     <button
                       onClick={() => navigate('/memberships')}
                       className="btn-primary book-action-btn premium-upgrade-btn"
