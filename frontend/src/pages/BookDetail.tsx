@@ -1,16 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBook, getSimilarBooks } from '../services/bookService';
-import { Heart, BookOpen, ShoppingCart, ThumbsUp, ThumbsDown, Flag, ShoppingBag, Truck, ShieldCheck, Zap } from 'lucide-react';
-import { addToReadlist } from '../services/borrowService';
-import {
-  addToWishlist,
-  getWishlist,
-  removeFromWishlist,
-} from '../services/wishlistService';
-import { getBookReviews, addReview, updateReview, likeReview, dislikeReview, reportReview } from '../services/reviewService';
+import { Heart, ShoppingCart, ThumbsUp, ThumbsDown, Zap, Truck, ShieldCheck, BookOpen, Flag } from 'lucide-react';
+import { addToWishlist, removeFromWishlist, getWishlist } from '../services/wishlistService';
+import { getBookReviews, addReview, likeReview, dislikeReview, updateReview, reportReview } from '../services/reviewService';
 import { getMyMembership, type Membership } from '../services/membershipService';
-import { getProfile, getDashboardStats, checkBookAccess } from '../services/userService';
+import { getProfile, checkBookAccess, addToReadlist } from '../services/userService';
 import { RoleName, BookStatus } from '../types/enums';
 import type { User } from '../types';
 import { toast } from 'react-toastify';
@@ -33,7 +28,6 @@ const BookDetail: React.FC = () => {
   const [userMembership, setUserMembership] = useState<Membership | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [monthlyBorrowCount, setMonthlyBorrowCount] = useState(0);
   const [similarBooks, setSimilarBooks] = useState<any[]>([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportingReviewId, setReportingReviewId] = useState<string | null>(null);
@@ -53,18 +47,10 @@ const BookDetail: React.FC = () => {
       fetchUserMembership();
       fetchUserProfile();
       fetchSimilarBooks(id);
-      fetchMonthlyBorrowCount();
     }
   }, [id]);
 
-  const fetchMonthlyBorrowCount = async () => {
-    try {
-      const stats = await getDashboardStats();
-      setMonthlyBorrowCount(stats.borrowedCount || 0);
-    } catch (err) {
-      console.error('Error fetching monthly borrow count:', err);
-    }
-  };
+
 
   const fetchSimilarBooks = async (bookId: string) => {
     try {
@@ -142,14 +128,7 @@ const BookDetail: React.FC = () => {
     }
   };
 
-  const handleBuyNow = () => {
-    if (book.noOfCopies > 0) {
-      addToCart(book);
-      navigate('/checkout');
-    } else {
-      toast.error('Out of stock');
-    }
-  };
+
 
   const handleAddToReadlist = async () => {
     try {
@@ -165,8 +144,14 @@ const BookDetail: React.FC = () => {
       toast.success('Added to your readlist! Happy reading.');
       // Refresh access status
       checkAccessStatus(book._id);
+      navigate('/dashboard');
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to add to readlist');
+      if (err.response?.status === 403 && err.response?.data?.requiresUpgrade) {
+        toast.info(err.response.data.error);
+        navigate('/memberships');
+      } else {
+        toast.error(err.response?.data?.error || 'Failed to add to readlist');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -402,35 +387,24 @@ const BookDetail: React.FC = () => {
 
           <div>
             <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   onClick={handleAddToReadlist}
-                  disabled={isSubmitting || (localStorage.getItem('token') && monthlyBorrowCount >= (userMembership?.borrowLimit || 3) ? true : false)}
-                  className={`btn-primary readlist-btn ${localStorage.getItem('token') && monthlyBorrowCount >= (userMembership?.borrowLimit || 3) ? 'disabled-btn' : ''}`}
-                  title={localStorage.getItem('token') && monthlyBorrowCount >= (userMembership?.borrowLimit || 3) ? `Monthly limit(${userMembership?.borrowLimit || 3}) reached` : ''}
+                  disabled={isSubmitting}
+                  className="btn-primary readlist-btn"
+                  style={{ background: 'var(--accent-color)' }}
                 >
                   <BookOpen size={18} />
-                  {isSubmitting ? 'Adding...' : (localStorage.getItem('token') && monthlyBorrowCount >= (userMembership?.borrowLimit || 3) ? 'Monthly Limit Reached' : 'Add to Readlist')}
-                </button>
-
-                <button
-                  onClick={handleBuyNow}
-                  className="btn-primary buy-now-btn"
-                >
-                  <ShoppingBag size={18} />
-                  Buy Now {book.noOfCopies === 0 && '(Out of Stock)'}
+                  {isSubmitting ? 'Adding...' : 'Add to Readlist'}
                 </button>
 
                 <button
                   onClick={() => {
                     addToCart(book);
-                    if (book.noOfCopies > 0) {
-                      toast.success(`${book.title} added to cart!`);
-                    } else {
-                      toast.warning(`${book.title} added to cart(Note: Currently Out of Stock)`);
-                    }
+                    toast.success(`${book.title} added to cart!`);
+                    navigate('/checkout');
                   }}
-                  disabled={isInCart(book._id)}
+                  disabled={isInCart(book._id) || book.noOfCopies === 0}
                   className={`btn-primary add-to-cart-btn-detail ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
                   style={{
                     display: 'flex',
@@ -442,8 +416,8 @@ const BookDetail: React.FC = () => {
                   }}
                   title={isInCart(book._id) ? 'Already in cart' : 'Add to cart'}
                 >
-                  <ShoppingCart size={18} />
-                  {isInCart(book._id) ? 'In Cart ✓' : (book.noOfCopies === 0 ? 'Add to Cart (Out of Stock)' : 'Add to Cart')}
+                  <ShoppingCart size={16} />
+                  {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
                 </button>
               </div>
 
@@ -458,33 +432,48 @@ const BookDetail: React.FC = () => {
 
             </div>
 
-            {/* Shop with Confidence Section */}
-            <div className="confidence-section">
-              <h4 className="confidence-title">Shop with confidence</h4>
-              <ul className="confidence-list">
-                <li>
-                  <Truck size={18} className="confidence-icon" />
-                  <span>Delivered by <strong>BookStack</strong></span>
-                </li>
-                <li>
-                  <ShieldCheck size={18} className="confidence-icon" />
-                  <span>Sold by <strong>BookStack</strong> (Verified)</span>
-                </li>
-                {(!userMembership || userMembership.name !== 'Premium') && (
-                  <li>
-                    <Zap size={18} className="confidence-icon" style={{ color: '#eab308' }} />
-                    <span>Free delivery for <strong>Premium</strong> members</span>
-                  </li>
-                )}
-                {userMembership?.name === 'Premium' && (
-                  <li>
-                    <Zap size={18} className="confidence-icon" style={{ color: '#eab308' }} />
-                    <span style={{ color: '#eab308', fontWeight: 600 }}>Free delivery applied (Premium)</span>
-                  </li>
-                )}
-              </ul>
-            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Shop with Confidence Section - Moved outside */}
+      <div className="card confidence-card-wrapper" style={{ marginTop: '2rem' }}>
+        <div className="confidence-section" style={{ marginTop: 0, border: 'none', background: 'transparent', padding: 0 }}>
+          <h4 className="confidence-title" style={{ fontSize: '1.25rem', marginBottom: '1.25rem' }}>Shop with confidence</h4>
+          <ul className="confidence-list" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: '1rem' }}>
+            <li className="confidence-card">
+              <Truck size={24} className="confidence-icon" />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontWeight: 600 }}>Fast Delivery</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Delivered by BookStack</span>
+              </div>
+            </li>
+            <li className="confidence-card">
+              <ShieldCheck size={24} className="confidence-icon" />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontWeight: 600 }}>Verifier Seller</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sold by BookStack</span>
+              </div>
+            </li>
+            {(!userMembership || userMembership.name !== 'Premium') && (
+              <li className="confidence-card">
+                <Zap size={24} className="confidence-icon" style={{ color: '#eab308' }} />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 600 }}>Premium Delivery</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Free for Premium members</span>
+                </div>
+              </li>
+            )}
+            {userMembership?.name === 'Premium' && (
+              <li className="confidence-card" style={{ borderColor: '#eab308', background: 'rgba(234, 179, 8, 0.05)' }}>
+                <Zap size={24} className="confidence-icon" style={{ color: '#eab308' }} />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 600, color: '#eab308' }}>Premium Applied</span>
+                  <span style={{ fontSize: '0.8rem', color: '#eab308' }}>Free delivery included</span>
+                </div>
+              </li>
+            )}
+          </ul>
         </div>
       </div>
 

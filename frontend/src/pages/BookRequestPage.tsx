@@ -70,8 +70,10 @@ const BookRequestPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
             >
                 <header className="admin-header">
-                    <h1 className="admin-header-title">Request a Book</h1>
-                    <p className="admin-header-subtitle">Expand your horizons with new titles</p>
+                    <div className="admin-header-titles">
+                        <h1 className="admin-header-title">Request a Book</h1>
+                        <p className="admin-header-subtitle">Expand your horizons with new titles</p>
+                    </div>
                 </header>
 
                 <div className="locked-feature-card">
@@ -99,8 +101,10 @@ const BookRequestPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
         >
             <header className="admin-header">
-                <h1 className="admin-header-title">Request a Book</h1>
-                <p className="admin-header-subtitle">Can't find what you're looking for? Let us know!</p>
+                <div className="admin-header-titles">
+                    <h1 className="admin-header-title">Request a Book</h1>
+                    <p className="admin-header-subtitle">Can't find what you're looking for? Let us know!</p>
+                </div>
             </header>
 
             <div className="request-card">

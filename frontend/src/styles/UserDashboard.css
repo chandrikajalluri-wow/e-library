@@ -6,9 +6,10 @@
 
 .dashboard-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     margin-bottom: 2rem;
+    text-align: left;
 }
 
 .profile-link {
@@ -325,6 +326,7 @@
     font-size: 1.25rem;
     font-weight: 800;
     color: var(--text-primary);
+    text-align: left;
 }
 
 .badge-new {
@@ -456,4 +458,70 @@
     border-radius: 12px;
     font-weight: 800;
     transition: all 0.2s;
+}
+
+/* Readlist Tabs */
+.readlist-tabs {
+    display: flex;
+    gap: 0.5rem;
+    background: var(--bg-secondary);
+    padding: 0.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.tab-btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background: var(--card-bg);
+    color: var(--primary-color);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Status Badges */
+.status-active {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.status-completed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.check-btn {
+    transition: all 0.2s ease;
+}
+
+.check-btn:hover {
+    background: #10b981 !important;
+    color: white !important;
+    border-color: #10b981 !important;
+    transform: scale(1.1);
+}
+
+@media (max-width: 640px) {
+    .readlist-tabs {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .tab-btn {
+        flex: 1;
+        text-align: center;
+    }
 }

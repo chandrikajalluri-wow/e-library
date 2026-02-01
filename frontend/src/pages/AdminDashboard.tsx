@@ -39,7 +39,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [stats, setStats] = useState({
     totalBooks: 0,
     totalUsers: 0,
-    totalBorrows: 0,
+    totalReads: 0,
     activeBorrows: 0,
     overdueBooks: 0,
     pendingReturns: 0,
@@ -204,7 +204,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       const newStats = {
         totalBooks: booksData.total || 0,
         totalUsers: new Set(borrowsData.borrows.map((b: any) => b.user_id?._id)).size,
-        totalBorrows: borrowsData.total || 0,
+        totalReads: borrowsData.total || 0,
         activeBorrows: borrowsData.borrows.filter((b: any) =>
           [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED].includes(b.status)
         ).length,
@@ -544,7 +544,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   {activeTab === 'categories' && 'Manage Categories'}
                   {activeTab === 'requests' && 'Return Requests'}
                   {activeTab === 'user-requests' && 'Book Suggestions'}
-                  {activeTab === 'borrows' && 'Borrow History'}
+                  {activeTab === 'borrows' && 'Read History'}
                   {activeTab === 'logs' && 'User Activity Logs'}
                 </h1>
                 <p className="admin-header-subtitle">
@@ -593,8 +593,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
               </div>
               <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></div>
-                <span className="stats-label">Active Borrows</span>
-                <span className="stats-value stats-value-accent">{stats.activeBorrows}</span>
+                <span className="stats-label">Total Reads</span>
+                <span className="stats-value stats-value-accent">{stats.totalReads}</span>
               </div>
               <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
@@ -867,7 +867,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         {activeTab === 'borrows' && (
           <section className="card admin-table-section" ref={borrowsRef}>
             <div className="admin-table-header-box">
-              <h3 className="admin-table-title">Borrow History</h3>
+              <h3 className="admin-table-title">Read History</h3>
               <div className="admin-filter-group">
                 <div className="admin-filter-item">
                   <span className="admin-filter-label">Status</span>
@@ -921,7 +921,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
               )}
             </div>
             {!isDataLoading && borrows.length === 0 && (
-              <div className="admin-empty-state">No borrow history records found.</div>
+              <div className="admin-empty-state">No read history records found.</div>
             )}
             {borrowTotalPages > 1 && (
               <div className="pagination-controls">

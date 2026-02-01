@@ -20,7 +20,7 @@
 
 /* Avatar Card */
 .avatar-card {
-    text-align: center;
+    text-align: left;
 }
 
 .profile-sidebar-sticky {
@@ -31,7 +31,7 @@
 .avatar-upload-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 1.5rem;
 }
 
@@ -115,12 +115,13 @@
 
 .stats-row {
     display: flex;
-    justify-content: space-around;
+    justify-content: flex-start;
+    gap: 3rem;
     margin-bottom: 1.5rem;
 }
 
 .stat-box {
-    text-align: center;
+    text-align: left;
 }
 
 .stat-num {
@@ -296,7 +297,7 @@
     border: 1px dashed var(--secondary-color);
     padding: 1.5rem;
     border-radius: 12px;
-    text-align: center;
+    text-align: left;
 }
 
 .membership-upgrade-prompt p {
