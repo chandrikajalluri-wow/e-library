@@ -131,7 +131,7 @@ export const requestReturn = async (req: AuthRequest, res: Response) => {
                 });
         }
 
-        // No fine calculation needed for digital/fresh start model
+
 
 
         borrow.status = BorrowStatus.RETURN_REQUESTED;

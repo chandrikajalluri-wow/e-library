@@ -78,6 +78,16 @@ export const addAddress = async (addressData: any) => {
     return res.data;
 };
 
+export const updateAddress = async (id: string, addressData: any) => {
+    const res = await api.put(`${BASE_URL}/addresses/${id}`, addressData);
+    return res.data;
+};
+
+export const removeAddress = async (id: string) => {
+    const res = await api.delete(`${BASE_URL}/addresses/${id}`);
+    return res.data;
+};
+
 // Cart Management
 export const getCart = async () => {
     const res = await api.get(`${BASE_URL}/cart`);
@@ -103,5 +113,15 @@ export const getReadlist = async () => {
 // Check if user has access to book (either in readlist or purchased)
 export const checkBookAccess = async (bookId: string) => {
     const res = await api.get(`${BASE_URL}/book-access/${bookId}`);
+    return res.data;
+};
+
+export const markBookAsCompleted = async (bookId: string) => {
+    const res = await api.put(`${BASE_URL}/readlist/${bookId}/status`);
+    return res.data;
+};
+
+export const addToReadlist = async (bookId: string) => {
+    const res = await api.post(`${BASE_URL}/readlist`, { book_id: bookId });
     return res.data;
 };

@@ -7,6 +7,7 @@ import User from '../models/User';
 import Address from '../models/Address';
 import Membership from '../models/Membership';
 import Borrow from '../models/Borrow';
+import Readlist from '../models/Readlist';
 import { NotificationType, BorrowStatus, MembershipName, BookStatus, OrderStatus } from '../types/enums';
 import { sendNotification, notifySuperAdmins } from '../utils/notification';
 import { sendEmail } from '../utils/mailer';
@@ -96,11 +97,17 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
             await book.save();
         }
 
-        // Add items to user's readlist (no duplicate borrow records needed)
+        // Add items to user's readlist using standalone collection
         for (const item of items) {
-            await User.findByIdAndUpdate(req.user!._id, {
-                $addToSet: { readlist: item.book_id }
-            });
+            await Readlist.findOneAndUpdate(
+                { user_id: req.user!._id, book_id: item.book_id },
+                {
+                    status: 'active',
+                    addedAt: new Date(),
+                    // Purchases are permanent, so we don't set a dueDate
+                },
+                { upsert: true }
+            );
         }
 
         // Send notification

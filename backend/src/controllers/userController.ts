@@ -6,10 +6,13 @@ import Borrow from '../models/Borrow';
 import Wishlist from '../models/Wishlist';
 import BookRequest from '../models/BookRequest';
 import AuthToken from '../models/AuthToken';
+import Membership from '../models/Membership';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendEmail } from '../utils/mailer';
 import { BorrowStatus, MembershipName, UserTheme, RequestStatus } from '../types/enums';
 import Order from '../models/Order';
+import Readlist from '../models/Readlist';
+import Book from '../models/Book';
 
 export const getMe = async (req: AuthRequest, res: Response) => {
     try {
@@ -29,24 +32,17 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
-
 export const getDashboardStats = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user!._id;
 
-        const borrows = await Borrow.find({ user_id: userId });
         const wishlistCount = await Wishlist.countDocuments({ user_id: userId });
 
-        // Count books added to readlist this month
-        const user = await User.findById(userId);
-        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-
-        // For now, we'll count total readlist items as we don't track timestamps
-        // You can enhance this later by adding a readlistAddedAt field
-        const monthlyReadsCount = user?.readlist?.length || 0;
+        // Count books added to readlist 
+        const readlistCount = await Readlist.countDocuments({ user_id: userId });
 
         res.json({
-            borrowedCount: monthlyReadsCount, // Now represents readlist count
+            borrowedCount: readlistCount, // Now represents readlist count
             wishlistCount,
             streakCount: (req.user as any).streakCount || 0
         });
@@ -438,11 +434,77 @@ export const clearCartLocally = async (req: AuthRequest, res: Response) => {
 
 export const getReadlist = async (req: AuthRequest, res: Response) => {
     try {
-        const user = await User.findById(req.user!._id).populate('readlist');
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json(user.readlist || []);
+        const userId = req.user!._id;
+
+        // 1. Robust Migration: Check for legacy data using direct Mongo query (bypasses schema filtering)
+        const userDoc = await mongoose.connection.db.collection('users').findOne({ _id: new mongoose.Types.ObjectId(userId.toString()) });
+        const legacyReadlist = userDoc?.readlist;
+
+        if (Array.isArray(legacyReadlist) && legacyReadlist.length > 0) {
+            console.log(`Migrating ${legacyReadlist.length} legacy readlist items for user ${userId}`);
+
+            for (const item of legacyReadlist) {
+                try {
+                    // Item could be:
+                    // a) Just an ObjectId (legacy string format)
+                    // b) { book: ObjectId, ... } (newer embedded format)
+                    let bookId = null;
+                    let itemStatus = 'active';
+                    let addedAt = new Date();
+                    let completedAt = null;
+
+                    if (item && item.book) {
+                        bookId = item.book;
+                        itemStatus = item.status || 'active';
+                        addedAt = item.addedAt || addedAt;
+                        completedAt = item.completedAt;
+                    } else if (item) {
+                        bookId = item;
+                    }
+
+                    if (bookId && mongoose.Types.ObjectId.isValid(bookId.toString())) {
+                        // Use membership duration for dueDate if possible
+                        // For migration, we'll just set it to null or calculate 
+                        await Readlist.findOneAndUpdate(
+                            { user_id: userId, book_id: bookId },
+                            {
+                                status: itemStatus,
+                                addedAt: addedAt,
+                                completedAt: completedAt
+                            },
+                            { upsert: true }
+                        );
+                    }
+                } catch (migrateErr) {
+                    console.error('Migration error for item:', item, migrateErr);
+                }
+            }
+
+            // Clear legacy data once migrated
+            await mongoose.connection.db.collection('users').updateOne(
+                { _id: new mongoose.Types.ObjectId(userId.toString()) },
+                { $unset: { readlist: 1 } }
+            );
+            console.log(`Successfully completed migration for user ${userId}`);
+        }
+
+        // 2. Query the stabilized standalone Readlist collection
+        const readlistItems = await Readlist.find({ user_id: userId })
+            .populate('book_id')
+            .sort({ addedAt: -1 });
+
+        const formattedReadlist = readlistItems.map(item => ({
+            _id: item._id,
+            book: item.book_id,
+            status: item.status,
+            addedAt: item.addedAt,
+            dueDate: item.dueDate,
+            completedAt: item.completedAt
+        }));
+
+        res.json(formattedReadlist);
     } catch (err) {
-        console.error(err);
+        console.error('getReadlist error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -450,22 +512,21 @@ export const getReadlist = async (req: AuthRequest, res: Response) => {
 export const checkBookAccess = async (req: AuthRequest, res: Response) => {
     const { bookId } = req.params;
     try {
-        const user = await User.findById(req.user!._id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        const userId = req.user!._id;
 
-        // Check if book is in readlist
-        const inReadlist = user.readlist?.some((id: any) => id.toString() === bookId);
+        // Check in new Readlist collection
+        const inReadlist = await Readlist.exists({ user_id: userId, book_id: bookId });
 
         // Check if book has been purchased (exists in completed orders)
         const hasPurchased = await Order.exists({
-            user_id: user._id,
+            user_id: userId,
             'items.book_id': bookId,
             status: { $in: ['pending', 'shipped', 'delivered'] }
         });
 
-        const hasAccess = inReadlist || !!hasPurchased;
+        const hasAccess = !!inReadlist || !!hasPurchased;
 
-        res.json({ hasAccess, inReadlist, hasPurchased: !!hasPurchased });
+        res.json({ hasAccess, inReadlist: !!inReadlist, hasPurchased: !!hasPurchased });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -475,20 +536,98 @@ export const checkBookAccess = async (req: AuthRequest, res: Response) => {
 export const addToReadlist = async (req: AuthRequest, res: Response) => {
     const { book_id } = req.body;
     try {
-        const user = await User.findById(req.user!._id);
+        const userId = req.user!._id;
+
+        // 1. Get user with membership
+        let user = await User.findById(userId).populate('membership_id');
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        // Check if already in readlist
-        if (user.readlist?.some((id: any) => id.toString() === book_id)) {
+        let membership = user.membership_id as any;
+        if (!membership) {
+            const basicMembership = await Membership.findOne({ name: MembershipName.BASIC });
+            if (basicMembership) {
+                user.membership_id = basicMembership._id;
+                await user.save();
+                membership = basicMembership;
+            }
+        }
+
+        if (!membership) {
+            return res.status(400).json({ error: 'Membership plan not found' });
+        }
+
+        // 2. Fetch Book to check premium status
+        const book = await Book.findById(book_id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        // 3. Premium Check: Basic users cannot add Premium books to readlist
+        if (book.isPremium && membership.name === MembershipName.BASIC) {
+            return res.status(403).json({
+                error: `"${book.title}" is a Premium book. Please upgrade your membership to read it, or you can purchase it directly.`,
+                requiresUpgrade: true
+            });
+        }
+
+        // 4. Check current monthly readlist count
+        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const monthlyCount = await Readlist.countDocuments({
+            user_id: userId,
+            addedAt: { $gte: monthStart }
+        });
+
+        if (monthlyCount >= membership.borrowLimit) {
+            return res.status(400).json({
+                error: `You have reached your monthly limit of ${membership.borrowLimit} books. Wait until next month or upgrade your plan.`,
+            });
+        }
+
+        // 5. Check if already in readlist
+        const isAlreadyAdded = await Readlist.exists({ user_id: userId, book_id: book_id });
+
+        if (isAlreadyAdded) {
             return res.status(400).json({ error: 'Book already in your readlist' });
         }
 
-        // Add to readlist (no stock check or decrease)
-        if (!user.readlist) user.readlist = [];
-        user.readlist.push(book_id);
-        await user.save();
+        // 4. Calculate dueDate
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + (membership.borrowDuration || 14));
 
-        res.json({ message: 'Book added to readlist successfully', readlist: user.readlist });
+        const newEntry = new Readlist({
+            user_id: userId,
+            book_id: book_id,
+            status: 'active',
+            addedAt: new Date(),
+            dueDate: dueDate
+        });
+
+        await newEntry.save();
+
+        res.json({ message: 'Book added to readlist successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const markReadlistBookAsCompleted = async (req: AuthRequest, res: Response) => {
+    const { bookId } = req.params;
+    try {
+        const userId = req.user!._id;
+
+        const updated = await Readlist.findOneAndUpdate(
+            { user_id: userId, book_id: bookId },
+            {
+                status: 'completed',
+                completedAt: new Date()
+            },
+            { new: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ error: 'Book not found in readlist' });
+        }
+
+        res.json({ message: 'Book marked as completed' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });

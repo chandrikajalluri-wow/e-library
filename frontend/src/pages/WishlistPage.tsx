@@ -180,15 +180,15 @@ const WishlistPage: React.FC = () => {
 
             {
                 wishlist.length === 0 && (
-                    <div className="admin-empty-state" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-                        <div className="empty-state-icon-circle" style={{ width: '80px', height: '80px', background: 'rgba(var(--primary-rgb), 0.1)', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 1.5rem' }}>
+                    <div className="admin-empty-state" style={{ textAlign: 'left', padding: '4rem 0', alignItems: 'flex-start' }}>
+                        <div className="empty-state-icon-circle" style={{ width: '80px', height: '80px', background: 'rgba(var(--primary-rgb), 0.1)', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 0 1.5rem 0' }}>
                             <Bookmark size={40} color="var(--primary-color)" />
                         </div>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>Your wishlist is empty</h2>
-                        <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
+                        <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 0 1.5rem 0' }}>
                             You haven't saved any books yet. Start exploring our vast collection and find your next favorite read!
                         </p>
-                        <button onClick={() => navigate('/books')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}>
+                        <button onClick={() => navigate('/books')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0' }}>
                             <Search size={18} />
                             <span>Explore Books</span>
                         </button>

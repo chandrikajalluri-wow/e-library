@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type, ShoppingCart, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
+import { addToReadlist } from '../services/userService';
 
 import type { Book } from '../types';
 import { BookStatus } from '../types/enums';
@@ -183,6 +184,15 @@ const BookList: React.FC = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="compact-search-input"
           />
+          {search && (
+            <button
+              className="search-clear-btn"
+              onClick={() => setSearch('')}
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         <div className="action-buttons-group">
@@ -255,7 +265,7 @@ const BookList: React.FC = () => {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              transition={{ type: 'tween', duration: 0.3, ease: 'easeInOut' }}
               className="filter-sidebar"
             >
               <div className="sidebar-header">
@@ -442,42 +452,71 @@ const BookList: React.FC = () => {
                     {book.noOfCopies === 1 ? 'copy' : 'copies'} available
                   </span>
                 </div>
-                <div className="book-actions-row">
-                  {/* Premium check removed to allow adding to cart */}
+                <div className="book-actions-row" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <button
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      addToCart(book);
-                      if (book.noOfCopies > 0) {
-                        toast.success(`${book.title} added to cart!`);
-                      } else {
-                        toast.warning(`${book.title} added to cart (Note: Currently Out of Stock)`);
+                      if (!localStorage.getItem('token')) {
+                        toast.info('Please sign in to add books to your readlist');
+                        navigate('/login');
+                        return;
+                      }
+                      try {
+                        await addToReadlist(book._id);
+                        toast.success('Added to your readlist!');
+                        navigate('/dashboard');
+                      } catch (err: any) {
+                        if (err.response?.status === 403 && err.response?.data?.requiresUpgrade) {
+                          toast.info(err.response.data.error);
+                          navigate('/memberships');
+                        } else {
+                          toast.error(err.response?.data?.error || 'Failed to add to readlist');
+                        }
                       }
                     }}
-                    disabled={isInCart(book._id)}
-                    className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                    className="btn-primary book-action-btn"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '8px',
-                      flex: '0 0 auto',
-                      width: 'fit-content',
-                      padding: '0 1.5rem',
+                      gap: '6px',
+                      flex: '1',
+                      padding: '0.5rem 0.75rem',
                       fontSize: '0.8rem',
-                      marginLeft: 'auto'
+                      marginTop: '0.5rem',
+                      background: 'var(--accent-color)'
                     }}
                   >
-                    <ShoppingCart size={16} />
-                    {isInCart(book._id) ? 'In Cart ✓' : (book.noOfCopies === 0 ? 'Add to Cart (Out of Stock)' : 'Add to Cart')}
+                    <BookOpen size={16} />
+                    Add Readlist
                   </button>
-                  <Link
-                    to={`/books/${book._id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="btn-primary view-book-btn book-action-btn"
-                  >
-                    View
-                  </Link>
+
+                  {/* Only show Add to Cart if copies are available */}
+                  {book.noOfCopies > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(book);
+                        toast.success(`${book.title} added to cart!`);
+                        navigate('/borrow-cart');
+                      }}
+                      disabled={isInCart(book._id)}
+                      className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        flex: '1',
+                        padding: '0.5rem 0.75rem',
+                        fontSize: '0.8rem',
+                        marginTop: '0.5rem',
+                      }}
+                    >
+                      <ShoppingCart size={16} />
+                      {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Check, MapPin, X, Navigation, Wallet, ShoppingBag, Truck } from 'lucide-react';
-import { useBorrowCart } from '../context/BorrowCartContext';
-import { getAddresses, addAddress } from '../services/userService';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, Plus, Check, MapPin, X, Navigation, Wallet, ShoppingBag, Truck, Edit2, Trash2 } from 'lucide-react';
+import { useBorrowCart, type CartItem } from '../context/BorrowCartContext';
+import { getAddresses, addAddress, updateAddress, removeAddress } from '../services/userService';
+import { getMyMembership, type Membership } from '../services/membershipService';
+import { MembershipName } from '../types/enums';
 import { placeOrder } from '../services/orderService';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import Loader from '../components/Loader';
+import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/DeliveryAddress.css';
 
 interface Address {
@@ -21,15 +24,22 @@ interface Address {
 
 const DeliveryAddress: React.FC = () => {
     const navigate = useNavigate();
-    const { cartItems, clearCart } = useBorrowCart();
+    const location = useLocation();
+    const { cartItems: contextCartItems, clearCart } = useBorrowCart();
+    // Use items passed via state, or fall back to full cart
+    const cartItems = (location.state?.checkoutItems || contextCartItems) as CartItem[];
     const [addresses, setAddresses] = useState<Address[]>([]);
+    const [membership, setMembership] = useState<Membership | null>(null);
     const [selectedAddressId, setSelectedAddressId] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
+    const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
 
-    // New Address Form State
+    // New/Edit Address Form State
     const [newAddress, setNewAddress] = useState({
         street: '',
         city: '',
@@ -41,6 +51,7 @@ const DeliveryAddress: React.FC = () => {
 
     useEffect(() => {
         fetchAddresses();
+        fetchMembership();
     }, []);
 
     const fetchAddresses = async () => {
@@ -58,17 +69,69 @@ const DeliveryAddress: React.FC = () => {
         }
     };
 
+    const fetchMembership = async () => {
+        try {
+            const data = await getMyMembership();
+            setMembership(data);
+        } catch (error) {
+            console.error('Failed to fetch membership');
+        }
+    };
+
     const handleAddAddress = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const added = await addAddress(newAddress);
-            toast.success('Address added successfully');
-            setAddresses([...addresses, added]);
-            setSelectedAddressId(added._id);
+            if (editingAddressId) {
+                await updateAddress(editingAddressId, newAddress);
+                toast.success('Address updated successfully');
+            } else {
+                const added = await addAddress(newAddress);
+                toast.success('Address added successfully');
+                setSelectedAddressId(added._id);
+            }
+            fetchAddresses();
             setShowModal(false);
+            setEditingAddressId(null);
             setNewAddress({ street: '', city: '', state: '', zipCode: '', country: 'India', isDefault: false });
         } catch (error: any) {
-            toast.error(error.response?.data?.error || 'Failed to add address');
+            toast.error(error.response?.data?.error || 'Failed to save address');
+        }
+    };
+
+    const handleEditClick = (e: React.MouseEvent, address: Address) => {
+        e.stopPropagation();
+        setEditingAddressId(address._id);
+        setNewAddress({
+            street: address.street,
+            city: address.city,
+            state: address.state,
+            zipCode: address.zipCode,
+            country: address.country,
+            isDefault: address.isDefault
+        });
+        setShowModal(true);
+    };
+
+    const handleDeleteClick = (e: React.MouseEvent, addressId: string) => {
+        e.stopPropagation();
+        setAddressToDelete(addressId);
+    };
+
+    const confirmDeleteAddress = async () => {
+        if (!addressToDelete) return;
+        setIsDeleting(true);
+        try {
+            await removeAddress(addressToDelete);
+            toast.success('Address removed successfully');
+            fetchAddresses();
+            if (selectedAddressId === addressToDelete) {
+                setSelectedAddressId('');
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Failed to delete address');
+        } finally {
+            setIsDeleting(false);
+            setAddressToDelete(null);
         }
     };
 
@@ -137,7 +200,11 @@ const DeliveryAddress: React.FC = () => {
 
             await placeOrder(orderData);
             toast.success('🎉 Order placed successfully!');
-            clearCart();
+            // Only clear cart if we checked out the FULL cart (not single item)
+            // If single item, we might want to remove just that item, but for now we just don't clear the whole cart.
+            if (!location.state?.checkoutItems) {
+                clearCart();
+            }
             // In a real app, you might navigate to a success page
             navigate('/my-orders');
         } catch (error: any) {
@@ -150,7 +217,8 @@ const DeliveryAddress: React.FC = () => {
     const availableItems = cartItems.filter(item => item.book.noOfCopies > 0);
     const cartCount = availableItems.reduce((acc, item) => acc + item.quantity, 0);
     const subtotal = availableItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
-    const deliveryFee = subtotal > 50 ? 0 : 50;
+    const isPremium = membership?.name === 'premium' || membership?.name === MembershipName.PREMIUM;
+    const deliveryFee = subtotal > 0 && (subtotal >= 500 || isPremium) ? 0 : 50;
     const totalAmount = subtotal + deliveryFee;
 
     const containerVariants = {
@@ -241,6 +309,14 @@ const DeliveryAddress: React.FC = () => {
                                                     </p>
                                                     <span className="country-label">{address.country}</span>
                                                 </div>
+                                                <div className="address-actions">
+                                                    <button className="address-action-btn edit" onClick={(e) => handleEditClick(e, address)} title="Edit Address">
+                                                        <Edit2 size={14} />
+                                                    </button>
+                                                    <button className="address-action-btn delete" onClick={(e) => handleDeleteClick(e, address._id)} title="Delete Address">
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                                 <div className="selection-indicator">
                                                     {selectedAddressId === address._id ? <Check size={18} /> : <div className="radio-circle"></div>}
                                                 </div>
@@ -250,7 +326,11 @@ const DeliveryAddress: React.FC = () => {
                                 </AnimatePresence>
                             </div>
 
-                            <button className="add-address-premium-btn" onClick={() => setShowModal(true)}>
+                            <button className="add-address-premium-btn" onClick={() => {
+                                setEditingAddressId(null);
+                                setNewAddress({ street: '', city: '', state: '', zipCode: '', country: 'India', isDefault: false });
+                                setShowModal(true);
+                            }}>
                                 <Plus size={20} />
                                 <span>Add a New Delivery Address</span>
                             </button>
@@ -328,8 +408,8 @@ const DeliveryAddress: React.FC = () => {
                         >
                             <div className="modal-header-new">
                                 <div>
-                                    <h2>Add New Address</h2>
-                                    <p>Fill in where we should deliver your books</p>
+                                    <h2>{editingAddressId ? 'Edit Address' : 'Add New Address'}</h2>
+                                    <p>{editingAddressId ? 'Update your delivery location' : 'Fill in where we should deliver your books'}</p>
                                 </div>
                                 <button className="close-x-btn" onClick={() => setShowModal(false)}>
                                     <X size={20} />
@@ -421,11 +501,14 @@ const DeliveryAddress: React.FC = () => {
                                 </label>
 
                                 <div className="modal-footer-btns">
-                                    <button type="button" className="btn-secondary-modern" onClick={() => setShowModal(false)}>
+                                    <button type="button" className="btn-secondary-modern" onClick={() => {
+                                        setShowModal(false);
+                                        setEditingAddressId(null);
+                                    }}>
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn-primary-modern">
-                                        Save Address
+                                        {editingAddressId ? 'Update Address' : 'Save Address'}
                                     </button>
                                 </div>
                             </form>
@@ -433,6 +516,17 @@ const DeliveryAddress: React.FC = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <ConfirmationModal
+                isOpen={!!addressToDelete}
+                title="Delete Address"
+                message="Are you sure you want to remove this address? This action cannot be undone."
+                onConfirm={confirmDeleteAddress}
+                onCancel={() => setAddressToDelete(null)}
+                isLoading={isDeleting}
+                type="danger"
+                confirmText="Delete Address"
+            />
         </div>
     );
 };

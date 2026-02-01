@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ShoppingCart, Trash2, ChevronRight, Package, Truck, ArrowLeft, Plus, Minus, History, Sparkles } from 'lucide-react';
+import { ShoppingCart, Trash2, ChevronRight, Package, Truck, ArrowLeft, Plus, Minus, History, Sparkles, Zap } from 'lucide-react';
 import { useBorrowCart } from '../context/BorrowCartContext';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -81,11 +81,12 @@ const BorrowCart: React.FC = () => {
     // Calculate financial summary
     const subtotal = availableItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
     const FREE_SHIPPING_THRESHOLD = 500;
-    const deliveryFee = subtotal > 0 && subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 50;
+    const isPremium = userMembership?.name === 'premium' || userMembership?.name === 'Premium';
+    const deliveryFee = subtotal > 0 && (subtotal >= FREE_SHIPPING_THRESHOLD || isPremium) ? 0 : 50;
     const totalPrice = subtotal + deliveryFee;
     const progressToFree = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
-    const hasPremiumRestrictedItems = cartItems.some(item => item.book.isPremium && !userMembership?.canAccessPremiumBooks);
+
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -270,6 +271,17 @@ const BorrowCart: React.FC = () => {
                                                                     <Trash2 size={16} />
                                                                     <span>Remove</span>
                                                                 </button>
+
+                                                                {item.book.noOfCopies > 0 && (
+                                                                    <button
+                                                                        className="minimal-remove-btn"
+                                                                        style={{ marginLeft: '1rem', color: 'var(--primary-color)', borderColor: 'var(--primary-color)' }}
+                                                                        onClick={() => navigate('/checkout', { state: { checkoutItems: [item] } })}
+                                                                    >
+                                                                        <Zap size={16} />
+                                                                        <span>Buy Now</span>
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -319,7 +331,7 @@ const BorrowCart: React.FC = () => {
                                             </div>
                                         )}
                                         <div className="data-row">
-                                            <span className="label">Estimated Delivery</span>
+                                            <span className="label">Estimated Delivery charges</span>
                                             <span className={`value ${deliveryFee === 0 ? 'free-text' : ''}`}>
                                                 {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
                                             </span>
@@ -340,23 +352,12 @@ const BorrowCart: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {hasPremiumRestrictedItems && (
-                                        <div className="premium-restriction-warning" style={{ color: '#ef4444', backgroundColor: '#fef2f2', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem', border: '1px solid #fee2e2' }}>
-                                            <p style={{ margin: 0, fontWeight: 600 }}>Action Required</p>
-                                            <p style={{ margin: '0.25rem 0 0.75rem' }}>Your cart contains Premium books that require a Premium membership.</p>
-                                            <button
-                                                onClick={() => navigate('/memberships')}
-                                                style={{ width: '100%', padding: '0.5rem', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
-                                            >
-                                                Upgrade Now
-                                            </button>
-                                        </div>
-                                    )}
+
 
                                     <button
-                                        className={`premium-checkout-btn ${hasPremiumRestrictedItems ? 'disabled-checkout' : ''}`}
+                                        className="premium-checkout-btn"
                                         onClick={handleProceedToCheckout}
-                                        disabled={cartItems.length === 0 || hasPremiumRestrictedItems}
+                                        disabled={cartItems.length === 0}
                                     >
                                         <span>Proceed to Checkout</span>
                                         <ChevronRight size={20} />
@@ -379,46 +380,48 @@ const BorrowCart: React.FC = () => {
                 </AnimatePresence>
 
                 {/* Recommendation Sections */}
-                {!isLoadingSuggestions && (
-                    <motion.div
-                        className="cart-recommendations-wrapper"
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                    >
-                        {recommendations.length > 0 && (
-                            <section className="recommendation-section">
-                                <div className="section-header">
-                                    <Sparkles size={20} className="text-primary" />
-                                    <h2>Buy More, Save More</h2>
-                                    <span className="section-tag">Based on your interests</span>
-                                </div>
-                                <div className="horizontal-scroll-container">
-                                    {recommendations.map(book => (
-                                        <BookSuggestionCard key={book._id} book={book} />
-                                    ))}
-                                </div>
-                            </section>
-                        )}
+                {
+                    !isLoadingSuggestions && (
+                        <motion.div
+                            className="cart-recommendations-wrapper"
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                        >
+                            {recommendations.length > 0 && (
+                                <section className="recommendation-section">
+                                    <div className="section-header">
+                                        <Sparkles size={20} className="text-primary" />
+                                        <h2>Buy More, Save More</h2>
+                                        <span className="section-tag">Based on your interests</span>
+                                    </div>
+                                    <div className="horizontal-scroll-container">
+                                        {recommendations.map(book => (
+                                            <BookSuggestionCard key={book._id} book={book} />
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
 
-                        {buyAgain.length > 0 && (
-                            <section className="recommendation-section buy-again-section">
-                                <div className="section-header">
-                                    <History size={20} className="text-secondary" />
-                                    <h2>Buy Again</h2>
-                                    <span className="section-tag">Because you've read these</span>
-                                </div>
-                                <div className="horizontal-scroll-container">
-                                    {buyAgain.map(book => (
-                                        <BookSuggestionCard key={book._id} book={book} />
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-                    </motion.div>
-                )}
-            </div>
-        </motion.div>
+                            {buyAgain.length > 0 && (
+                                <section className="recommendation-section buy-again-section">
+                                    <div className="section-header">
+                                        <History size={20} className="text-secondary" />
+                                        <h2>Buy Again</h2>
+                                        <span className="section-tag">Because you've read these</span>
+                                    </div>
+                                    <div className="horizontal-scroll-container">
+                                        {buyAgain.map(book => (
+                                            <BookSuggestionCard key={book._id} book={book} />
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+                        </motion.div>
+                    )
+                }
+            </div >
+        </motion.div >
     );
 };
 

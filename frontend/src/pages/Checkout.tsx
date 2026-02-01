@@ -1,7 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Wallet, Check, Package, ShieldCheck, Truck, ShoppingBag } from 'lucide-react';
-import { useBorrowCart } from '../context/BorrowCartContext';
+import { useBorrowCart, type CartItem } from '../context/BorrowCartContext';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getMyMembership, type Membership } from '../services/membershipService';
@@ -10,7 +10,11 @@ import '../styles/Checkout.css';
 
 const Checkout: React.FC = () => {
     const navigate = useNavigate();
-    const { cartItems } = useBorrowCart();
+    const location = useLocation();
+    const { cartItems: contextCartItems } = useBorrowCart();
+
+    // Use items passed via state, or fall back to full cart
+    const cartItems = (location.state?.checkoutItems || contextCartItems) as CartItem[];
     const [membership, setMembership] = React.useState<Membership | null>(null);
 
     React.useEffect(() => {
@@ -32,7 +36,7 @@ const Checkout: React.FC = () => {
             navigate('/borrow-cart');
             return;
         }
-        navigate('/checkout/address');
+        navigate('/checkout/address', { state: { checkoutItems: availableItems } });
     };
 
     const availableItems = cartItems.filter(item => item.book.noOfCopies > 0);
@@ -40,7 +44,8 @@ const Checkout: React.FC = () => {
 
     // Calculate financial summary
     const subtotal = availableItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
-    const deliveryFee = subtotal > 0 && subtotal <= 50 ? 50 : 0;
+    const isPremium = membership?.name === 'premium' || membership?.name === MembershipName.PREMIUM;
+    const deliveryFee = subtotal > 0 && (subtotal >= 500 || isPremium) ? 0 : 50;
     const totalPrice = subtotal + deliveryFee;
 
     const hasOutOfStockItems = cartItems.some(item => item.book.noOfCopies <= 0);

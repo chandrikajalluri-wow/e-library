@@ -44,6 +44,28 @@
     margin-left: auto;
 }
 
+/* Force flex on admin-header for this page to allow right side badges */
+.orders-page-header .admin-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    flex-wrap: wrap !important;
+    gap: 1.5rem !important;
+}
+
+@media (max-width: 768px) {
+    .orders-page-header .admin-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+
+    .orders-summary-badges {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+
 .summary-badge {
     display: flex;
     align-items: center;

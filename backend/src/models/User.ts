@@ -37,7 +37,6 @@ export interface IUser extends Document {
     book_id: Types.ObjectId;
     quantity: number;
   }[];
-  readlist?: Types.ObjectId[];
   createdAt?: Date;
 }
 
@@ -80,7 +79,6 @@ const userSchema = new Schema<IUser>(
         quantity: { type: Number, default: 1 }
       }
     ],
-    readlist: [{ type: Schema.Types.ObjectId, ref: 'Book' }],
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

@@ -32,9 +32,9 @@ const SuperAdminDashboard: React.FC = () => {
         <div className="admin-layout" style={{ marginTop: '20px' }}>
             <main className="admin-main-content">
                 {/* Dashboard Title */}
-                <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <h2 className="admin-header-title">
+                <header className="admin-header">
+                    <div className="admin-header-titles">
+                        <h1 className="admin-header-title">
                             {activeTab === 'metrics' && 'Super Admin Dashboard'}
                             {activeTab === 'users' && 'User & Admin Management'}
                             {activeTab === 'books' && 'Library Collection'}
@@ -43,10 +43,10 @@ const SuperAdminDashboard: React.FC = () => {
                             {activeTab === 'queries' && 'User Queries'}
                             {activeTab === 'reported-reviews' && 'Review Reports'}
                             {activeTab === 'logs' && 'System Activity Logs'}
-                        </h2>
+                        </h1>
                         <p className="admin-header-subtitle">Welcome back, Super Administrator</p>
                     </div>
-                </div>
+                </header>
 
                 {activeTab === 'metrics' && metrics && (
                     <>

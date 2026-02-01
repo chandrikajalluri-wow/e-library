@@ -29,6 +29,7 @@ const Home: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
   const [isDowngradeModalOpen, setIsDowngradeModalOpen] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
   const isAuthenticated = !!localStorage.getItem('token');
 
   React.useEffect(() => {
@@ -41,20 +42,10 @@ const Home: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    if (isAuthenticated) {
-      const role = localStorage.getItem('role');
-      if (role === RoleName.USER) {
-        loadProfile();
-        loadCurrentMembership();
-      }
-    }
-
     const isAdmin = localStorage.getItem('role') === RoleName.ADMIN || localStorage.getItem('role') === RoleName.SUPER_ADMIN;
 
     if (!isAdmin) {
-      loadBooks();
-      loadMemberships();
-      loadCategories();
+      loadAllData();
     }
   }, [isAuthenticated]);
 
@@ -80,53 +71,72 @@ const Home: React.FC = () => {
     return () => observer.disconnect();
   }, [books, categories, memberships]);
 
-  const loadBooks = async () => {
+  // Parallel data loading for optimal performance
+  const loadAllData = async () => {
+    setIsLoading(true);
     try {
-      const data = await getBooks('limit=8&sort=-rating');
-      setBooks(data.books || data);
-    } catch (err) {
-      console.error('Failed to load books for carousel', err);
-    }
-  };
+      // Fetch public data in parallel
+      const publicDataPromises = [
+        getBooks('limit=8&sort=-rating').catch(err => {
+          console.error('Failed to load books for carousel', err);
+          return { books: [] };
+        }),
+        getMembershipPlans().catch(err => {
+          console.error('Failed to load memberships', err);
+          return [];
+        }),
+        getCategories().catch(err => {
+          console.error('Failed to load categories', err);
+          return [];
+        })
+      ];
 
-  const loadMemberships = async () => {
-    try {
-      const data = await getMembershipPlans();
-      setMemberships(data);
-    } catch (err) {
-      console.error('Failed to load memberships', err);
-    }
-  };
+      // Add authenticated user data if logged in
+      if (isAuthenticated) {
+        const role = localStorage.getItem('role');
+        if (role === RoleName.USER) {
+          publicDataPromises.push(
+            getProfile().catch(err => {
+              console.error('Failed to load profile', err);
+              return null;
+            }),
+            getMyMembership().catch(err => {
+              console.error('Failed to load current membership', err);
+              return null;
+            })
+          );
+        }
+      }
 
-  const loadCurrentMembership = async () => {
-    try {
-      const data = await getMyMembership();
-      setCurrentMembership(data);
-    } catch (err) {
-      console.error('Failed to load current membership', err);
-    }
-  };
+      const results = await Promise.all(publicDataPromises);
 
-  const loadCategories = async () => {
-    try {
-      const data = await getCategories();
-      setCategories(data);
-    } catch (err) {
-      console.error('Failed to load categories', err);
-    }
-  };
+      // Set data from parallel requests
+      const booksData = results[0];
+      setBooks(booksData.books || booksData || []);
+      setMemberships(results[1] || []);
+      setCategories(results[2] || []);
 
-  const loadProfile = async () => {
-    try {
-      const data = await getProfile();
+      // Handle authenticated user data
+      if (isAuthenticated && results.length > 3) {
+        const profileData = results[3];
+        if (profileData) {
+          if (profileData.role === RoleName.ADMIN) {
+            navigate('/admin-dashboard');
+            return;
+          } else if (profileData.role === RoleName.SUPER_ADMIN) {
+            navigate('/super-admin-dashboard');
+            return;
+          }
+        }
 
-      if (data.role === RoleName.ADMIN) {
-        navigate('/admin-dashboard');
-      } else if (data.role === RoleName.SUPER_ADMIN) {
-        navigate('/super-admin-dashboard');
+        if (results[4]) {
+          setCurrentMembership(results[4]);
+        }
       }
     } catch (err) {
-      console.error('Failed to load profile', err);
+      console.error('Failed to load data', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -169,8 +179,16 @@ const Home: React.FC = () => {
     }
   };
 
-  const handlePaymentSuccess = () => {
-    loadCurrentMembership();
+  const handlePaymentSuccess = async () => {
+    // Reload membership data after payment
+    if (isAuthenticated) {
+      try {
+        const data = await getMyMembership();
+        setCurrentMembership(data);
+      } catch (err) {
+        console.error('Failed to reload membership', err);
+      }
+    }
     setIsPaymentModalOpen(false);
     setSelectedMembership(null);
   };
@@ -350,16 +368,60 @@ const Home: React.FC = () => {
           </div>
 
           <div className="membership-plans-grid">
-            {memberships.map((membership) => (
-              <div key={membership._id} className="saas-reveal">
-                <MembershipCard
-                  membership={membership}
-                  currentMembership={currentMembership}
-                  isAuthenticated={isAuthenticated}
-                  onUpgrade={handleUpgrade}
-                />
-              </div>
-            ))}
+            {isLoading ? (
+              // Loading skeletons
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={`skeleton-${index}`} className="saas-reveal active">
+                  <div className="membership-card-skeleton" style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '16px',
+                    padding: '2rem',
+                    minHeight: '400px',
+                    animation: 'pulse 1.5s ease-in-out infinite'
+                  }}>
+                    <div style={{
+                      height: '24px',
+                      width: '60%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '4px',
+                      marginBottom: '1rem'
+                    }}></div>
+                    <div style={{
+                      height: '48px',
+                      width: '40%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '4px',
+                      marginBottom: '2rem'
+                    }}></div>
+                    <div style={{
+                      height: '16px',
+                      width: '80%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '4px',
+                      marginBottom: '0.5rem'
+                    }}></div>
+                    <div style={{
+                      height: '16px',
+                      width: '70%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '4px',
+                      marginBottom: '0.5rem'
+                    }}></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              memberships.map((membership) => (
+                <div key={membership._id} className="saas-reveal">
+                  <MembershipCard
+                    membership={membership}
+                    currentMembership={currentMembership}
+                    isAuthenticated={isAuthenticated}
+                    onUpgrade={handleUpgrade}
+                  />
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -373,56 +435,87 @@ const Home: React.FC = () => {
           </div>
 
           <div className="categories-grid">
-            {categories.slice(0, 7).map((category) => (
-              <div
-                key={category._id}
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    toast.info('Please sign in to explore categories');
-                    navigate('/login');
-                  } else {
-                    navigate(`/books?category=${category._id}`);
-                  }
-                }}
-                className="category-card saas-reveal"
-                data-category={category.name.toLowerCase().replace(/\s+/g, '-')}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="category-icon">
-                  {getCategoryIcon(category.name)}
+            {isLoading ? (
+              // Loading skeletons
+              Array.from({ length: 8 }).map((_, index) => (
+                <div key={`cat-skeleton-${index}`} className="category-card saas-reveal active">
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    marginBottom: '1rem',
+                    animation: 'pulse 1.5s ease-in-out infinite'
+                  }}></div>
+                  <div style={{
+                    height: '20px',
+                    width: '70%',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '4px',
+                    marginBottom: '0.5rem'
+                  }}></div>
+                  <div style={{
+                    height: '14px',
+                    width: '90%',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '4px'
+                  }}></div>
                 </div>
-                <h3>{category.name}</h3>
-                <p>{category.description || 'Explore this collection'}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <>
+                {categories.slice(0, 7).map((category) => (
+                  <div
+                    key={category._id}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        toast.info('Please sign in to explore categories');
+                        navigate('/login');
+                      } else {
+                        navigate(`/books?category=${category._id}`);
+                      }
+                    }}
+                    className="category-card saas-reveal"
+                    data-category={category.name.toLowerCase().replace(/\s+/g, '-')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="category-icon">
+                      {getCategoryIcon(category.name)}
+                    </div>
+                    <h3>{category.name}</h3>
+                    <p>{category.description || 'Explore this collection'}</p>
+                  </div>
+                ))}
 
-            {/* View All Card */}
-            <div
-              onClick={handleExplore}
-              className="category-card saas-reveal"
-              style={{
-                cursor: 'pointer',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%)',
-                borderColor: 'var(--saas-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center'
-              }}
-            >
-              <div
-                className="category-icon"
-                style={{
-                  background: 'var(--saas-primary)',
-                  marginBottom: '1rem',
-                  borderRadius: '50%'
-                }}
-              >
-                <ArrowRight width="32" height="32" />
-              </div>
-              <h3>View All</h3>
-              <p style={{ transform: 'none', opacity: 1 }}>Explore our full catalog</p>
-            </div>
+                {/* View All Card */}
+                <div
+                  onClick={handleExplore}
+                  className="category-card saas-reveal"
+                  style={{
+                    cursor: 'pointer',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%)',
+                    borderColor: 'var(--saas-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center'
+                  }}
+                >
+                  <div
+                    className="category-icon"
+                    style={{
+                      background: 'var(--saas-primary)',
+                      marginBottom: '1rem',
+                      borderRadius: '50%'
+                    }}
+                  >
+                    <ArrowRight width="32" height="32" />
+                  </div>
+                  <h3>View All</h3>
+                  <p style={{ transform: 'none', opacity: 1 }}>Explore our full catalog</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>

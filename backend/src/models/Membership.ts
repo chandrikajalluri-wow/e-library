@@ -37,4 +37,8 @@ const membershipSchema = new Schema<IMembership>(
     { timestamps: true }
 );
 
+// Add indexes for optimized queries
+membershipSchema.index({ price: 1 }); // For sorting by price in getAllMemberships
+membershipSchema.index({ name: 1 });  // For lookups by membership name
+
 export default mongoose.model<IMembership>('Membership', membershipSchema);

@@ -15,4 +15,8 @@ const categorySchema = new Schema<ICategory>({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Add indexes for optimized queries
+categorySchema.index({ name: 1 });      // For sorting by name in getAllCategories
+categorySchema.index({ addedBy: 1 });   // For filtering by admin in getAllCategories
+
 export default mongoose.model<ICategory>('Category', categorySchema);
