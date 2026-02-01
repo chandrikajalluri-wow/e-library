@@ -8,6 +8,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { maskProfanity } from '../utils/profanityFilter';
 import { notifySuperAdmins } from '../utils/notification';
 import ActivityLog from '../models/ActivityLog';
+import Readlist from '../models/Readlist';
 
 export const getReviewsForBook = async (req: Request, res: Response) => {
     try {
@@ -25,12 +26,7 @@ export const addReview = async (req: AuthRequest, res: Response) => {
     const { book_id, rating, comment } = req.body;
     try {
         // Check if user has access via readlist or purchase
-        const user = await User.findById(req.user!._id);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        const inReadlist = user.readlist?.some((id: any) => id.toString() === book_id);
+        const inReadlist = await Readlist.exists({ user_id: req.user!._id, book_id });
         const hasPurchased = await Order.exists({
             user_id: req.user!._id,
             'items.book_id': book_id,
