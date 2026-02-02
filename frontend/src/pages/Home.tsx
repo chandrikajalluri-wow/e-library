@@ -217,8 +217,13 @@ const Home: React.FC = () => {
           <div className="glow glow-1"></div>
           <div className="glow glow-2"></div>
         </div>
-        <div className="saas-container hero-grid">
-          <div className="hero-stack text-left">
+        <div className="saas-container hero-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', /* Explicit min-width for grid children */
+          gap: '0.5rem',
+          alignItems: 'center'
+        }}>
+          <div className="hero-stack text-left" style={{ minWidth: 0 }}>
             <div className="hero-badge saas-reveal">✨ Your Digital Lending Library</div>
             <h1 className="hero-main-title saas-reveal">
               The smartest way to <br />
@@ -238,7 +243,12 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          <div className="hero-carousel-container saas-reveal">
+          <div className="hero-carousel-container saas-reveal" style={{
+            width: '100%',
+            height: '450px',
+            display: 'flex',
+            justifyContent: 'flex-start'
+          }}>
             <div className="carousel-track">
               {books.length > 0 ? (
                 [...books, ...books].map((book, index) => (

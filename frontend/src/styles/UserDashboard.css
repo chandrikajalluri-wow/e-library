@@ -46,23 +46,52 @@
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
     margin-bottom: 2.5rem;
 }
 
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.25rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
 .stat-card {
-    padding: 1.25rem;
+    padding: 1.5rem;
     display: flex;
     align-items: center;
-    gap: 1.1rem;
+    gap: 1.25rem;
     border: 1.5px solid var(--border-color);
     background: var(--card-bg);
-    border-radius: 24px;
+    border-radius: 20px;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.stat-card:hover {
+    transform: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+    border-color: var(--border-color) !important;
+}
+
+
+
+@media (max-width: 640px) {
+    .stat-card {
+        padding: 1.25rem;
+        gap: 1rem;
+    }
 }
 
 
@@ -514,6 +543,29 @@
     transform: scale(1.1);
 }
 
+/* Compact Read Button */
+/* Compact Read Button - Force Override */
+.read-btn-compact {
+    padding: 6px 14px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    min-width: unset !important;
+    height: auto !important;
+    line-height: 1 !important;
+    transition: all 0.2s ease !important;
+}
+
+.read-btn-compact:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+}
+
+.read-btn-compact:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
     .readlist-tabs {
         width: 100%;
@@ -523,5 +575,11 @@
     .tab-btn {
         flex: 1;
         text-align: center;
+    }
+
+    .read-btn-compact {
+        padding: 0.3rem 0.6rem !important;
+        font-size: 0.7rem !important;
+        min-width: 60px;
     }
 }

@@ -462,10 +462,14 @@
 
 /* Empty State Premium */
 .empty-cart-premium {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    padding: 3rem 2rem;
+    padding: 6rem 2rem;
     max-width: 600px;
-    margin: 0 auto;
+    margin: 4rem auto;
 }
 
 .empty-visual {
@@ -512,7 +516,8 @@
     color: var(--text-secondary);
     font-size: 1.1rem;
     line-height: 1.6;
-    margin-bottom: 3rem;
+    margin: 0 auto 3rem auto;
+    max-width: 450px;
 }
 
 .premium-cta-btn {

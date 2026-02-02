@@ -108,12 +108,17 @@ const BookDetail: React.FC = () => {
     }
   };
 
+  const [hasAccess, setHasAccess] = useState(false);
+
   const checkAccessStatus = async (bookId: string) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
       const accessData = await checkBookAccess(bookId);
-      setHasBorrowed(accessData.hasAccess);
+      console.log(`[BookDetail] Access Debug for ${bookId}:`, accessData);
+      setHasAccess(accessData.hasAccess);
+      // setHasBorrowed is used for reviews - we want it true if they EVER had book
+      setHasBorrowed(accessData.inReadlist || accessData.hasBorrow || accessData.hasPurchased || accessData.isExpired);
     } catch (err) {
       console.error('Error checking access status:', err);
     }
@@ -388,37 +393,77 @@ const BookDetail: React.FC = () => {
           <div>
             <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <button
-                  onClick={handleAddToReadlist}
-                  disabled={isSubmitting}
-                  className="btn-primary readlist-btn"
-                  style={{ background: 'var(--accent-color)' }}
-                >
-                  <BookOpen size={18} />
-                  {isSubmitting ? 'Adding...' : 'Add to Readlist'}
-                </button>
+                {hasAccess ? (
+                  <button
+                    onClick={() => navigate(`/read/${book._id}`)}
+                    className="btn-primary readlist-btn"
+                    style={{ background: 'var(--success-color)', color: 'white' }}
+                  >
+                    <BookOpen size={18} />
+                    Read Book
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAddToReadlist}
+                    disabled={isSubmitting}
+                    className="btn-primary readlist-btn"
+                    style={{ background: 'var(--accent-color)' }}
+                  >
+                    <BookOpen size={18} />
+                    {isSubmitting ? 'Adding...' : 'Add to Readlist'}
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
                     addToCart(book);
                     toast.success(`${book.title} added to cart!`);
-                    navigate('/checkout');
                   }}
-                  disabled={isInCart(book._id) || book.noOfCopies === 0}
+                  disabled={isInCart(book._id)}
                   className={`btn-primary add-to-cart-btn-detail ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     width: 'fit-content',
-                    padding: '0.6rem 1.25rem',
+                    minWidth: '140px',
+                    height: '44px',
+                    padding: '0 1.25rem',
                     fontSize: '0.875rem'
                   }}
-                  title={isInCart(book._id) ? 'Already in cart' : 'Add to cart'}
+                  title={isInCart(book._id) ? 'Already in cart' : (book.noOfCopies === 0 ? 'Item out of stock, but you can add to verify later' : 'Add to cart')}
                 >
                   <ShoppingCart size={16} />
-                  {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
+                  {isInCart(book._id) ? 'In Cart' : (book.noOfCopies === 0 ? 'Add to Cart' : 'Add to Cart')}
                 </button>
+
+                {book.noOfCopies > 0 && (
+                  <button
+                    onClick={() => {
+                      if (!isInCart(book._id)) {
+                        addToCart(book);
+                      }
+                      navigate('/checkout');
+                    }}
+                    className="btn-primary buy-now-btn-detail"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 'fit-content',
+                      minWidth: '140px',
+                      height: '44px',
+                      padding: '0 1.25rem',
+                      fontSize: '0.875rem',
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      border: 'none'
+                    }}
+                    title="Proceed to checkout immediately"
+                  >
+                    <Zap size={16} fill="currentColor" />
+                    Buy Now
+                  </button>
+                )}
               </div>
 
               <button
@@ -478,56 +523,60 @@ const BookDetail: React.FC = () => {
       </div>
 
       {/* Author Section - Separate Card */}
-      {(book.author_image_url || book.author_description) && (
-        <div className="card author-card-wrapper" style={{ marginTop: '2rem' }}>
-          <div className="author-section">
-            <h3 className="author-section-title">About the Author</h3>
-            <div className="author-content">
-              {book.author_image_url && (
-                <img src={book.author_image_url} alt={book.author} className="author-image" />
-              )}
-              <div className="author-text">
-                <h4>{book.author}</h4>
-                <p>{book.author_description}</p>
+      {
+        (book.author_image_url || book.author_description) && (
+          <div className="card author-card-wrapper" style={{ marginTop: '2rem' }}>
+            <div className="author-section">
+              <h3 className="author-section-title">About the Author</h3>
+              <div className="author-content">
+                {book.author_image_url && (
+                  <img src={book.author_image_url} alt={book.author} className="author-image" />
+                )}
+                <div className="author-text">
+                  <h4>{book.author}</h4>
+                  <p>{book.author_description}</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Similar Books Section */}
-      {similarBooks.length > 0 && (
-        <div className="card similar-books-card-wrapper" style={{ marginTop: '2rem' }}>
-          <h3 className="section-title" style={{ marginBottom: '1.5rem', fontWeight: 700, fontSize: '1.25rem' }}>
-            Similar Books
-          </h3>
-          <div className="similar-books-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
-            {similarBooks.map((b) => (
-              <div
-                key={b._id}
-                className="similar-book-card"
-                onClick={() => {
-                  navigate(`/books/${b._id}`);
-                  window.scrollTo(0, 0);
-                }}
-                style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
-              >
-                <div className="similar-book-cover" style={{ height: '260px', borderRadius: '12px', overflow: 'hidden', marginBottom: '0.75rem', border: '1px solid var(--border-color)' }}>
-                  {b.cover_image_url ? (
-                    <img src={b.cover_image_url} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                      No Cover
-                    </div>
-                  )}
+      {
+        similarBooks.length > 0 && (
+          <div className="card similar-books-card-wrapper" style={{ marginTop: '2rem' }}>
+            <h3 className="section-title" style={{ marginBottom: '1.5rem', fontWeight: 700, fontSize: '1.25rem' }}>
+              Similar Books
+            </h3>
+            <div className="similar-books-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
+              {similarBooks.map((b) => (
+                <div
+                  key={b._id}
+                  className="similar-book-card"
+                  onClick={() => {
+                    navigate(`/books/${b._id}`);
+                    window.scrollTo(0, 0);
+                  }}
+                  style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                >
+                  <div className="similar-book-cover" style={{ height: '260px', borderRadius: '12px', overflow: 'hidden', marginBottom: '0.75rem', border: '1px solid var(--border-color)' }}>
+                    {b.cover_image_url ? (
+                      <img src={b.cover_image_url} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                        No Cover
+                      </div>
+                    )}
+                  </div>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</h4>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{b.author}</p>
                 </div>
-                <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</h4>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{b.author}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Reviews Section */}
       <div className="reviews-section-container">
@@ -671,7 +720,7 @@ const BookDetail: React.FC = () => {
         onClose={() => setIsReportModalOpen(false)}
         onReport={submitReport}
       />
-    </div>
+    </div >
   );
 };
 

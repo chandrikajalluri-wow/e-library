@@ -57,7 +57,6 @@ router.delete('/cart', auth, userController.clearCartLocally);
 // Readlist
 router.get('/readlist', auth, userController.getReadlist);
 router.post('/readlist', auth, userController.addToReadlist);
-router.put('/readlist/:bookId/status', auth, userController.markReadlistBookAsCompleted);
 
 // Book Access Check
 router.get('/book-access/:bookId', auth, userController.checkBookAccess);

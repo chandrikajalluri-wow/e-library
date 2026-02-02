@@ -72,7 +72,7 @@ const Signup: React.FC = () => {
       localStorage.setItem('userId', userId);
 
       toast.success('Welcome! Logged in with Google');
-      navigate('/books');
+      window.location.href = '/books';
     } catch (err: unknown) {
       const msg = (err as any)?.response?.data?.error || 'Google Login failed';
       toast.error(msg);

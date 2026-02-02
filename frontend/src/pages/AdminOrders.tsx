@@ -12,7 +12,6 @@ import Loader from '../components/Loader';
 import { exportOrdersToCSV } from '../utils/csvExport';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/AdminOrders.css';
-
 interface OrderItem {
     book_id: { title: string; cover_image_url: string };
     quantity: number;
@@ -183,8 +182,8 @@ const AdminOrders: React.FC = () => {
         <div className="admin-dashboard-container saas-reveal">
             <div className="admin-header">
                 <div>
-                    <h1>Order Management</h1>
-                    <p>Track, manage and export user orders</p>
+                    <h1 className='admin-header-title'>Order Management</h1>
+                    <p className='admin-header-subtitle'>Track, manage and export user orders</p>
                 </div>
                 <div className="admin-header-actions">
                     <button className="export-btn" onClick={handleExport}>

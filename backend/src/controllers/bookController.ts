@@ -5,11 +5,13 @@ import { s3Client } from '../utils/s3Service';
 import Book from '../models/Book';
 import User from '../models/User';
 import Borrow from '../models/Borrow';
+import Readlist from '../models/Readlist';
+import Order from '../models/Order';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadToS3, getS3FileStream } from '../utils/s3Service';
 import ActivityLog from '../models/ActivityLog';
 import { notifySuperAdmins, notifyAllUsers } from '../utils/notification';
-import { RoleName, BookStatus, BorrowStatus, MembershipName } from '../types/enums';
+import { RoleName, BookStatus, BorrowStatus, MembershipName, OrderStatus } from '../types/enums';
 
 export const getAllBooks = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -253,15 +255,48 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
 
 
         // Check premium access
+        const user = (req as any).user;
+        const userRole = (user?.role_id as any)?.name;
+        const userId = user?._id;
+
         if (book.isPremium) {
-            const user = await User.findById(req.user!._id).populate('role_id').populate('membership_id');
-            const userRole = (user?.role_id as any)?.name;
             const membership = user?.membership_id as any;
 
             if (userRole !== RoleName.ADMIN && userRole !== RoleName.SUPER_ADMIN && !membership?.canAccessPremiumBooks) {
                 return res.status(403).json({ error: 'This is a premium book. Upgrade to Premium membership to read this book.' });
             }
         }
+
+        // --- NEW ACCESS CHECK: DUE DATE & BORROWING STATUS ---
+        // Skip check for admins/super admins
+        if (userRole !== RoleName.ADMIN && userRole !== RoleName.SUPER_ADMIN) {
+            // 1. Check Borrow collection (Mostly for physical books via cart)
+            const activeBorrow = await Borrow.findOne({
+                user_id: userId,
+                book_id: bookId,
+                status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+            });
+
+            // 2. Check Readlist collection (Mostly for digital additions)
+            const readlistItem = await Readlist.findOne({
+                user_id: userId,
+                book_id: bookId,
+                status: 'active'
+            }).sort({ addedAt: -1 });
+
+            if (!activeBorrow && !readlistItem) {
+                return res.status(403).json({ error: 'You need to borrow this book before you can read it.' });
+            }
+
+            const now = new Date();
+            const hasValidBorrow = activeBorrow && activeBorrow.return_date && new Date(activeBorrow.return_date).getTime() > now.getTime();
+            const hasValidReadlist = readlistItem && readlistItem.dueDate && new Date(readlistItem.dueDate).getTime() > now.getTime();
+
+            if (!hasValidBorrow && !hasValidReadlist) {
+                return res.status(403).json({ error: 'Your borrowing period for this book has expired. Please renew access from the book details page.' });
+            }
+        }
+        // -----------------------------------------------------
 
 
         let key = '';

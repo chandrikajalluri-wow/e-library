@@ -97,18 +97,7 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
             await book.save();
         }
 
-        // Add items to user's readlist using standalone collection
-        for (const item of items) {
-            await Readlist.findOneAndUpdate(
-                { user_id: req.user!._id, book_id: item.book_id },
-                {
-                    status: 'active',
-                    addedAt: new Date(),
-                    // Purchases are permanent, so we don't set a dueDate
-                },
-                { upsert: true }
-            );
-        }
+        // Readlist addition moved to updateOrderStatus (DELIVERED status)
 
         // Send notification
         await sendNotification(
@@ -239,8 +228,20 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
                     { order_id: order._id },
                     { $set: { status: BorrowStatus.RETURNED, returned_date: new Date() } }
                 );
+                // Also remove permanent Readlist entries
+                await Readlist.deleteMany({
+                    user_id: order.user_id,
+                    book_id: { $in: order.items.map(i => i.book_id) },
+                    dueDate: null
+                });
             } else if (status === OrderStatus.CANCELLED) {
                 await Borrow.deleteMany({ order_id: order._id });
+                // Also remove permanent Readlist entries
+                await Readlist.deleteMany({
+                    user_id: order.user_id,
+                    book_id: { $in: order.items.map(i => i.book_id) },
+                    dueDate: null
+                });
             }
         }
 
@@ -251,6 +252,21 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
                 const isOverdue = borrow.return_date < new Date();
                 borrow.status = isOverdue ? BorrowStatus.OVERDUE : BorrowStatus.BORROWED;
                 await borrow.save();
+            }
+        }
+
+        if (status === OrderStatus.DELIVERED && previousStatus !== OrderStatus.DELIVERED) {
+            for (const item of order.items) {
+                await Readlist.findOneAndUpdate(
+                    { user_id: order.user_id, book_id: item.book_id },
+                    {
+                        status: 'active',
+                        addedAt: new Date(),
+                        // Purchases are permanent, so we don't set a dueDate
+                        $unset: { dueDate: 1 }
+                    },
+                    { upsert: true }
+                );
             }
         }
 

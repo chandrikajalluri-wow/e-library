@@ -14,8 +14,15 @@ const UserSidebar: React.FC = () => {
     };
 
     const confirmLogout = () => {
+        const userId = localStorage.getItem('userId');
         localStorage.removeItem('token');
         localStorage.removeItem('role');
+        localStorage.removeItem('userId');
+        if (userId) {
+            localStorage.removeItem(`borrowCart_${userId}`);
+        }
+        localStorage.removeItem('borrowCart');
+        localStorage.removeItem('readlist');
         toast.info('Logged out successfully');
         navigate('/');
     };

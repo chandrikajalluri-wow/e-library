@@ -116,10 +116,7 @@ export const checkBookAccess = async (bookId: string) => {
     return res.data;
 };
 
-export const markBookAsCompleted = async (bookId: string) => {
-    const res = await api.put(`${BASE_URL}/readlist/${bookId}/status`);
-    return res.data;
-};
+
 
 export const addToReadlist = async (bookId: string) => {
     const res = await api.post(`${BASE_URL}/readlist`, { book_id: bookId });

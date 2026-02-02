@@ -40,13 +40,13 @@ const Login: React.FC = () => {
 
       toast.success(`Welcome, ${email}!`);
 
-      // Role-based redirect
+      // Role-based redirect with reload to refresh all context states
       if (role === RoleName.SUPER_ADMIN) {
-        navigate('/super-admin-dashboard');
+        window.location.href = '/super-admin-dashboard';
       } else if (role === RoleName.ADMIN) {
-        navigate('/admin-dashboard'); //  admins go here
+        window.location.href = '/admin-dashboard';
       } else {
-        navigate('/books'); //  normal users go here
+        window.location.href = '/books';
       }
     } catch (err: unknown) {
       const msg =
@@ -74,11 +74,11 @@ const Login: React.FC = () => {
       toast.success('Welcome back!');
 
       if (role === RoleName.SUPER_ADMIN) {
-        navigate('/super-admin-dashboard');
+        window.location.href = '/super-admin-dashboard';
       } else if (role === RoleName.ADMIN) {
-        navigate('/admin-dashboard');
+        window.location.href = '/admin-dashboard';
       } else {
-        navigate('/books');
+        window.location.href = '/books';
       }
     } catch (err: unknown) {
       const msg = (err as any)?.response?.data?.error || 'Google Login failed';

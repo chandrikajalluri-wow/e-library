@@ -2,17 +2,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MembershipName } from '../types/enums';
-import { getDashboardStats, getReadlist, markBookAsCompleted } from '../services/userService';
+import { getDashboardStats, getReadlist } from '../services/userService';
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { getAnnouncements } from '../services/superAdminService';
 import { toast } from 'react-toastify';
-import { BookOpen, Flame, Heart, Check } from 'lucide-react';
+import { BookOpen, Flame, Heart } from 'lucide-react';
 import '../styles/UserDashboard.css';
 import '../styles/BookList.css';
 
 const UserDashboard: React.FC = () => {
   const [readlist, setReadlist] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0, streakCount: 0 });
   const [membership, setMembership] = useState<Membership | null>(null);
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -40,22 +39,6 @@ const UserDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  const handleMarkAsCompleted = async (e: React.MouseEvent, bookId: string) => {
-    e.stopPropagation();
-    try {
-      await markBookAsCompleted(bookId);
-      toast.success('Marked as completed!');
-      loadData(); // Reload to update lists
-    } catch (err) {
-      toast.error('Failed to update status');
-    }
-  };
-
-  const filteredReadlist = readlist.filter(item => {
-    if (activeTab === 'active') return item.status === 'active' || !item.status; // Default to active if undefined
-    return item.status === 'completed';
-  });
 
   const navigate = useNavigate();
 
@@ -157,28 +140,14 @@ const UserDashboard: React.FC = () => {
             <BookOpen size={24} className="text-primary-color" />
             <h2 style={{ margin: 0 }}>My Readlist</h2>
           </div>
-          <div className="readlist-tabs">
-            <button
-              className={`tab-btn ${activeTab === 'active' ? 'active' : ''}`}
-              onClick={() => setActiveTab('active')}
-            >
-              Active
-            </button>
-            <button
-              className={`tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
-              onClick={() => setActiveTab('completed')}
-            >
-              Completed
-            </button>
-          </div>
         </div>
         <div className="grid-books">
-          {filteredReadlist.length === 0 ? (
+          {readlist.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', textAlign: 'left', padding: '3rem 0', color: 'var(--text-secondary)' }}>
-              <p>No {activeTab} books in your readlist.</p>
+              <p>No books in your readlist.</p>
             </div>
           ) : (
-            filteredReadlist.map((item: any) => {
+            readlist.map((item: any) => {
               // Fallback: handle both new structure {book, status} and legacy structure {title, ...}
               const book = item.book || (item.title ? item : null);
               if (!book) return null;
@@ -226,38 +195,32 @@ const UserDashboard: React.FC = () => {
                       </div>
 
                       <div className="book-actions-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/read/${book._id}`);
-                          }}
-                          className="btn-primary book-action-btn"
-                          style={{ flex: 1, padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                        >
-                          Read
-                        </button>
-
-                        {item.status === 'active' && (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                           <button
-                            onClick={(e) => handleMarkAsCompleted(e, book._id)}
-                            className="btn-icon-circle check-btn"
-                            title="Mark as Completed"
-                            style={{
-                              width: '32px',
-                              height: '32px',
-                              borderRadius: '50%',
-                              border: '1px solid #ccc',
-                              background: 'white',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: 'pointer',
-                              color: '#10b981'
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!(item.status === 'active' && item.dueDate && new Date(item.dueDate) < new Date())) {
+                                navigate(`/read/${book._id}`);
+                              }
                             }}
+                            disabled={item.status === 'active' && item.dueDate && new Date(item.dueDate) < new Date()}
+                            className={`btn-primary ${item.status === 'active' && item.dueDate && new Date(item.dueDate) < new Date() ? 'btn-disabled' : ''}`}
+                            style={{
+                              padding: '6px 12px',
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              minWidth: 'auto',
+                              height: 'auto',
+                              borderRadius: '8px',
+                              lineHeight: '1',
+                              opacity: (item.status === 'active' && item.dueDate && new Date(item.dueDate) < new Date()) ? 0.6 : 1,
+                              cursor: (item.status === 'active' && item.dueDate && new Date(item.dueDate) < new Date()) ? 'not-allowed' : 'pointer'
+                            }}
+                            title={item.status === 'active' && item.dueDate && new Date(item.dueDate) < new Date() ? 'Access expired. Please renew from book details.' : 'Read Book'}
                           >
-                            <Check size={16} />
+                            {item.status === 'active' && item.dueDate && new Date(item.dueDate) < new Date() ? 'Expired' : 'Read'}
                           </button>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </div>

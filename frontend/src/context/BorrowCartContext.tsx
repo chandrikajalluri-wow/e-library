@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Book } from '../types';
 import { getCart, syncCart } from '../services/userService';
 
@@ -22,65 +22,77 @@ interface BorrowCartContextType {
 const BorrowCartContext = createContext<BorrowCartContextType | undefined>(undefined);
 
 export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const isInitialMount = useRef(true);
     const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    const storageKey = userId ? `borrowCart_${userId}` : 'borrowCart';
+
     const [cartItems, setCartItems] = useState<CartItem[]>(() => {
         try {
-            const savedCart = localStorage.getItem('borrowCart');
+            const savedCart = localStorage.getItem(storageKey);
             return savedCart ? JSON.parse(savedCart) : [];
         } catch (error) {
             console.error('Error loading cart from localStorage:', error);
             return [];
         }
     });
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Load cart from localStorage on initialization
+    // Mark as loaded once initialization is done (immediately or after remote fetch)
+    useEffect(() => {
+        if (!token) {
+            setIsLoaded(true);
+        }
+    }, [token]);
+
+    // Load cart from remote on login or refresh
     useEffect(() => {
         const fetchRemoteCart = async () => {
             if (token) {
                 try {
                     const remoteCart = await getCart();
-                    if (remoteCart && remoteCart.length > 0) {
-                        const formattedCart: CartItem[] = remoteCart.map((item: any) => ({
-                            book: item.book_id,
-                            quantity: item.quantity
-                        }));
-                        setCartItems(formattedCart);
-                    }
+                    const formattedCart: CartItem[] = (remoteCart || []).map((item: any) => ({
+                        book: item.book_id,
+                        quantity: item.quantity
+                    }));
+
+                    // Overwrite local with remote (remote is source of truth after login)
+                    setCartItems(formattedCart);
+                    setIsLoaded(true);
+
+                    // Update localStorage with remote data
+                    localStorage.setItem(storageKey, JSON.stringify(formattedCart));
                 } catch (error) {
                     console.error('Error fetching remote cart:', error);
+                    setIsLoaded(true);
                 }
             }
         };
         fetchRemoteCart();
-    }, [token]);
+    }, [token, storageKey]);
 
     // Save cart to localStorage and backend whenever it changes
     useEffect(() => {
+        if (!isLoaded) return;
+
         // Save to localStorage
         try {
-            localStorage.setItem('borrowCart', JSON.stringify(cartItems));
+            localStorage.setItem(storageKey, JSON.stringify(cartItems));
         } catch (error) {
             console.error('Error saving cart to localStorage:', error);
         }
 
-        // Sync to backend if logged in (skip initial mount to avoid overwriting remote cart with local on load)
-        const syncWithBackend = async () => {
-            if (token && !isInitialMount.current) {
+        // Sync to backend if logged in
+        if (token) {
+            const syncWithBackend = async () => {
                 try {
                     await syncCart(cartItems);
                 } catch (error) {
                     console.error('Error syncing cart with backend:', error);
                 }
-            }
-        };
-
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-        } else {
+            };
             syncWithBackend();
         }
-    }, [cartItems, token]);
+    }, [cartItems, token, isLoaded]);
 
     const addToCart = (book: Book) => {
         setCartItems((prevItems: CartItem[]) => {
