@@ -3,6 +3,8 @@ import { Request, Response } from 'express';
 import Borrow from '../models/Borrow';
 import Book from '../models/Book';
 import User from '../models/User';
+import Readlist from '../models/Readlist';
+import Order from '../models/Order';
 import Membership from '../models/Membership';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendNotification } from '../utils/notification';
@@ -264,29 +266,31 @@ export const updateReadingProgress = async (req: AuthRequest, res: Response) => 
         const { bookId } = req.params;
         const { last_page, bookmarks } = req.body;
 
+        const userId = req.user!._id;
+
         const borrow = await Borrow.findOne({
-            user_id: req.user!._id,
+            user_id: userId,
             book_id: bookId,
             status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
-        });
+        }).sort({ issued_date: -1 });
 
-        if (!borrow) {
-            return res.status(404).json({ error: 'Active borrow record not found' });
+        const readlistItem = await Readlist.findOne({
+            user_id: userId,
+            book_id: bookId,
+            status: 'active'
+        }).sort({ addedAt: -1 });
+
+        if (!borrow && !readlistItem) {
+            return res.status(404).json({ error: 'Active access record not found' });
         }
 
-        if (last_page !== undefined) borrow.last_page = last_page;
-        if (bookmarks !== undefined) borrow.bookmarks = bookmarks;
+        const record = borrow || readlistItem;
 
-        console.log('Updated borrow.bookmarks to:', borrow.bookmarks);
+        if (last_page !== undefined) record!.last_page = last_page;
+        if (bookmarks !== undefined) record!.bookmarks = bookmarks;
 
-        await borrow.save();
-        console.log('Borrow record saved successfully');
-
-        // Verify the save
-        const verifyBorrow = await Borrow.findById(borrow._id);
-        console.log('Verified bookmarks after save:', verifyBorrow?.bookmarks);
-
-        res.json({ message: 'Progress updated', last_page: borrow.last_page, bookmarks: borrow.bookmarks });
+        await record!.save();
+        res.json({ message: 'Progress updated', last_page: record!.last_page, bookmarks: record!.bookmarks });
     } catch (err) {
         console.error('Update progress error:', err);
         res.status(500).json({ error: 'Server error' });
@@ -297,19 +301,29 @@ export const getReadingProgress = async (req: AuthRequest, res: Response) => {
     try {
         const { bookId } = req.params;
 
+        const userId = req.user!._id;
+
         const borrow = await Borrow.findOne({
-            user_id: req.user!._id,
+            user_id: userId,
             book_id: bookId,
             status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
-        });
+        }).sort({ issued_date: -1 });
 
-        if (!borrow) {
-            return res.status(404).json({ error: 'Active borrow record not found' });
+        const readlistItem = await Readlist.findOne({
+            user_id: userId,
+            book_id: bookId,
+            status: 'active'
+        }).sort({ addedAt: -1 });
+
+        if (!borrow && !readlistItem) {
+            return res.status(404).json({ error: 'Active record not found' });
         }
 
+        const record = borrow || readlistItem;
+
         res.json({
-            last_page: borrow.last_page || 1,
-            bookmarks: borrow.bookmarks || []
+            last_page: record?.last_page || 1,
+            bookmarks: record?.bookmarks || []
         });
     } catch (err) {
         console.error('Get progress error:', err);

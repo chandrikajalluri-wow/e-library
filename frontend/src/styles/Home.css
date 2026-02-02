@@ -73,18 +73,23 @@
 }
 
 .hero-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
-  align-items: center;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  /* Strict 50/50 */
+  gap: 1rem !important;
+  /* Very tight gap */
+  align-items: center !important;
   position: relative;
   z-index: 7;
   margin-top: 2rem;
-  /* Removed padding-right to align carousel with edge/content below */
+  width: 100% !important;
 }
 
 .hero-stack {
   text-align: left;
+  width: 100% !important;
+  min-width: 0 !important;
+  /* Prevent overflow issues */
 }
 
 .hero-stack.text-left {
@@ -105,10 +110,11 @@
 }
 
 .hero-main-title {
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  font-weight: 900;
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+  /* Drastically reduced for fit */
+  font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -2px;
+  letter-spacing: -1px;
   margin-bottom: 1.5rem;
 }
 
@@ -125,8 +131,9 @@
   line-height: 1.6;
   margin-bottom: 3rem;
   max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+  /* Removed auto margins to align left with title */
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .hero-btns {
@@ -217,13 +224,18 @@
 .hero-stats-row {
   display: flex;
   justify-content: flex-start;
-  gap: 3rem;
+  flex-wrap: wrap;
+  /* Allow wrapping to prevent overlap */
+  gap: 2rem;
+  /* Reduced gap for better fit */
   margin-top: 4rem;
   padding: 1.5rem 2rem;
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   width: fit-content;
+  max-width: 100%;
+  /* Prevent overflow */
   border: 1px solid var(--saas-border);
 }
 
@@ -241,12 +253,18 @@
 /* Carousel Styles */
 .hero-carousel-container {
   position: relative;
-  height: 500px;
-  display: flex;
-  gap: 2rem;
+  height: 450px;
+  /* Slightly reduced height */
+  width: 100% !important;
+  /* Fill the grid column fluidly */
+  display: flex !important;
+  justify-content: flex-start !important;
+  /* Align Left (Next to Text) */
+  margin-left: 0 !important;
+  gap: 1.5rem;
   overflow: hidden;
   mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
-  transform: translateX(4rem);
+  transform: none;
 }
 
 .carousel-track {
@@ -459,11 +477,14 @@
 /* Animations moved to index.css */
 
 /* Responsive */
-@media (max-width: 992px) {
+@media (max-width: 480px) {
+
+  /* Only stack on very small screens */
   .hero-grid {
-    grid-template-columns: 1fr;
+    display: flex !important;
+    flex-direction: column !important;
     text-align: center;
-    gap: 3rem;
+    gap: 2rem;
   }
 
   .hero-stack.text-left {

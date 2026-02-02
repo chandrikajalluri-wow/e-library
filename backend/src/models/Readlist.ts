@@ -7,6 +7,8 @@ export interface IReadlist extends Document {
     addedAt: Date;
     dueDate?: Date;
     completedAt?: Date;
+    last_page: number;
+    bookmarks: number[];
 }
 
 const readlistSchema = new Schema<IReadlist>(
@@ -20,12 +22,14 @@ const readlistSchema = new Schema<IReadlist>(
         },
         addedAt: { type: Date, default: Date.now },
         dueDate: { type: Date },
-        completedAt: { type: Date }
+        completedAt: { type: Date },
+        last_page: { type: Number, default: 1 },
+        bookmarks: { type: [Number], default: [] }
     },
     { timestamps: true }
 );
 
-// Ensure a user can only have a book once in their readlist
-readlistSchema.index({ user_id: 1, book_id: 1 }, { unique: true });
+// allow multiple records for the same book over time
+readlistSchema.index({ user_id: 1, book_id: 1, addedAt: -1 });
 
 export default mongoose.model<IReadlist>('Readlist', readlistSchema);

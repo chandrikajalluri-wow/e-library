@@ -12,9 +12,17 @@
 }
 
 .admin-header h1 {
-    font-size: 2rem;
-    font-weight: 800;
-    margin-bottom: 0.25rem;
+    font-size: 2.75rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-color) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: left !important;
 }
 
 .admin-header p {
@@ -112,8 +120,7 @@
     padding: 0 1rem;
     height: 44px;
     border-radius: 12px;
-    flex: 1;
-    min-width: 250px;
+    flex: 0 1 350px;
     border: 1px solid transparent;
     transition: all 0.2s;
 }
@@ -144,8 +151,12 @@
 
 .filter-group {
     display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 0.75rem;
     align-items: center;
+    flex: 1;
+    justify-content: flex-end;
 }
 
 .filter-item {

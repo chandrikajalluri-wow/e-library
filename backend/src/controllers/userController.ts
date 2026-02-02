@@ -9,7 +9,7 @@ import AuthToken from '../models/AuthToken';
 import Membership from '../models/Membership';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendEmail } from '../utils/mailer';
-import { BorrowStatus, MembershipName, UserTheme, RequestStatus } from '../types/enums';
+import { BorrowStatus, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus } from '../types/enums';
 import Order from '../models/Order';
 import Readlist from '../models/Readlist';
 import Book from '../models/Book';
@@ -39,10 +39,14 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
         const wishlistCount = await Wishlist.countDocuments({ user_id: userId });
 
         // Count books added to readlist 
-        const readlistCount = await Readlist.countDocuments({ user_id: userId });
+        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const readlistCount = await Readlist.countDocuments({
+            user_id: userId,
+            addedAt: { $gte: monthStart }
+        });
 
         res.json({
-            borrowedCount: readlistCount, // Now represents readlist count
+            borrowedCount: readlistCount,
             wishlistCount,
             streakCount: (req.user as any).streakCount || 0
         });
@@ -493,7 +497,10 @@ export const getReadlist = async (req: AuthRequest, res: Response) => {
             .populate('book_id')
             .sort({ addedAt: -1 });
 
-        const formattedReadlist = readlistItems.map(item => ({
+        // 3. Keep all items, even expired ones (no auto-cleanup)
+        const validReadlistItems = readlistItems;
+
+        const formattedReadlist = validReadlistItems.map(item => ({
             _id: item._id,
             book: item.book_id,
             status: item.status,
@@ -514,19 +521,41 @@ export const checkBookAccess = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user!._id;
 
-        // Check in new Readlist collection
-        const inReadlist = await Readlist.exists({ user_id: userId, book_id: bookId });
+        const nowTime = new Date().getTime();
 
-        // Check if book has been purchased (exists in completed orders)
-        const hasPurchased = await Order.exists({
+        // 1. Get latest records
+        const readlistItem = await Readlist.findOne({
             user_id: userId,
-            'items.book_id': bookId,
-            status: { $in: ['pending', 'shipped', 'delivered'] }
+            book_id: bookId,
+            status: 'active'
+        }).sort({ addedAt: -1 });
+
+        const borrowRecord = await Borrow.findOne({
+            user_id: userId,
+            book_id: bookId,
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+        }).sort({ issued_date: -1 });
+
+        // 2. Validate Access (Strictly Borrow/Readlist based)
+        const hasValidBorrow = borrowRecord && borrowRecord.return_date && new Date(borrowRecord.return_date).getTime() > nowTime;
+        const hasValidReadlist = readlistItem && readlistItem.dueDate && new Date(readlistItem.dueDate).getTime() > nowTime;
+
+        // Access is granted ONLY if an active record is NOT expired
+        const hasAccess = !!hasValidBorrow || !!hasValidReadlist;
+
+        // Determination for UI feedback: show "Expired" if they HAVE a record but none are currently valid
+        const isExpired = (!!borrowRecord || !!readlistItem) && !hasValidBorrow && !hasValidReadlist;
+
+        const effectiveDueDate = (readlistItem?.dueDate || borrowRecord?.return_date) || null;
+
+        res.json({
+            hasAccess,
+            inReadlist: !!readlistItem,
+            hasBorrow: !!borrowRecord,
+            hasPurchased: false,
+            isExpired,
+            dueDate: effectiveDueDate
         });
-
-        const hasAccess = !!inReadlist || !!hasPurchased;
-
-        res.json({ hasAccess, inReadlist: !!inReadlist, hasPurchased: !!hasPurchased });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -538,30 +567,41 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user!._id;
 
+        console.log(`[addToReadlist] User: ${userId}, Book: ${book_id}`);
         // 1. Get user with membership
         let user = await User.findById(userId).populate('membership_id');
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!user) {
+            console.error(`[addToReadlist] User not found: ${userId}`);
+            return res.status(404).json({ error: 'User not found' });
+        }
 
         let membership = user.membership_id as any;
         if (!membership) {
+            console.log(`[addToReadlist] Membership missing, searching basic...`);
             const basicMembership = await Membership.findOne({ name: MembershipName.BASIC });
             if (basicMembership) {
                 user.membership_id = basicMembership._id;
                 await user.save();
                 membership = basicMembership;
+                console.log(`[addToReadlist] Assigned basic membership`);
             }
         }
 
         if (!membership) {
+            console.error(`[addToReadlist] No membership found and basic failed`);
             return res.status(400).json({ error: 'Membership plan not found' });
         }
 
         // 2. Fetch Book to check premium status
         const book = await Book.findById(book_id);
-        if (!book) return res.status(404).json({ error: 'Book not found' });
+        if (!book) {
+            console.error(`[addToReadlist] Book not found: ${book_id}`);
+            return res.status(404).json({ error: 'Book not found' });
+        }
 
-        // 3. Premium Check: Basic users cannot add Premium books to readlist
+        // 3. Premium Check
         if (book.isPremium && membership.name === MembershipName.BASIC) {
+            console.log(`[addToReadlist] Blocked premium book for basic user`);
             return res.status(403).json({
                 error: `"${book.title}" is a Premium book. Please upgrade your membership to read it, or you can purchase it directly.`,
                 requiresUpgrade: true
@@ -575,61 +615,60 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
             addedAt: { $gte: monthStart }
         });
 
-        if (monthlyCount >= membership.borrowLimit) {
+        const limit = membership.borrowLimit || 0;
+        console.log(`[addToReadlist] Monthly count: ${monthlyCount}, Limit: ${limit}`);
+        if (monthlyCount >= limit) {
             return res.status(400).json({
-                error: `You have reached your monthly limit of ${membership.borrowLimit} books. Wait until next month or upgrade your plan.`,
+                error: `You have reached your monthly limit of ${limit} books. Wait until next month or upgrade your plan.`,
             });
         }
 
-        // 5. Check if already in readlist
-        const isAlreadyAdded = await Readlist.exists({ user_id: userId, book_id: book_id });
+        // 5. Check if already in readlist and NOT expired
+        const existingEntry = await Readlist.findOne({ user_id: userId, book_id: book_id }).sort({ addedAt: -1 });
 
-        if (isAlreadyAdded) {
-            return res.status(400).json({ error: 'Book already in your readlist' });
+        if (existingEntry) {
+            const now = new Date();
+            const isReadlistActive = existingEntry.dueDate && new Date(existingEntry.dueDate) > now && existingEntry.status === 'active';
+            console.log(`[addToReadlist] Existing entry found. Active: ${isReadlistActive}`);
+            if (isReadlistActive) {
+                return res.status(400).json({ error: 'Book is already active in your readlist' });
+            }
+
+            // If expired, update the existing entry instead of creating a new one
+            const borrowDuration = membership.borrowDuration || 14;
+            const newDueDate = new Date();
+            newDueDate.setDate(newDueDate.getDate() + borrowDuration);
+
+            existingEntry.status = 'active';
+            existingEntry.addedAt = new Date();
+            existingEntry.dueDate = newDueDate;
+            await existingEntry.save();
+
+            console.log(`[addToReadlist] Renewed expired entry for ${book_id}`);
+            res.json({ message: 'Book added to readlist successfully' });
+        } else {
+            // 6. Create new entry if none exists
+            const borrowDuration = membership.borrowDuration || 14;
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + borrowDuration);
+
+            console.log(`[addToReadlist] Creating new entry with dueDate: ${dueDate}`);
+            const newEntry = new Readlist({
+                user_id: userId,
+                book_id: book_id,
+                status: 'active',
+                addedAt: new Date(),
+                dueDate: dueDate
+            });
+
+            await newEntry.save();
+            console.log(`[addToReadlist] Successfully added ${book_id}`);
+            res.json({ message: 'Book added to readlist successfully' });
         }
-
-        // 4. Calculate dueDate
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + (membership.borrowDuration || 14));
-
-        const newEntry = new Readlist({
-            user_id: userId,
-            book_id: book_id,
-            status: 'active',
-            addedAt: new Date(),
-            dueDate: dueDate
-        });
-
-        await newEntry.save();
-
-        res.json({ message: 'Book added to readlist successfully' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
+        console.error('addToReadlist error details:', err);
+        res.status(500).json({ error: 'Server error adding to readlist' });
     }
 };
 
-export const markReadlistBookAsCompleted = async (req: AuthRequest, res: Response) => {
-    const { bookId } = req.params;
-    try {
-        const userId = req.user!._id;
 
-        const updated = await Readlist.findOneAndUpdate(
-            { user_id: userId, book_id: bookId },
-            {
-                status: 'completed',
-                completedAt: new Date()
-            },
-            { new: true }
-        );
-
-        if (!updated) {
-            return res.status(404).json({ error: 'Book not found in readlist' });
-        }
-
-        res.json({ message: 'Book marked as completed' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-};

@@ -28,7 +28,7 @@
     justify-content: space-between;
     align-items: center;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
+    /* border-bottom: 1px solid var(--border-color); */
 }
 
 .admin-header-actions {
@@ -162,7 +162,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
+    align-items: center;
+    /* border-bottom: 1px solid var(--border-color); */
     background: rgba(99, 102, 241, 0.02);
 }
 
@@ -265,7 +266,6 @@
     align-items: center;
     margin-bottom: 3rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
 }
 
 .admin-stats-header .admin-table-title {
@@ -519,7 +519,7 @@
 .admin-table-header-box {
     padding: 2rem 2.5rem;
     background: var(--bg-color);
-    border-bottom: 2px solid var(--border-color);
+    /* border-bottom: 2px solid var(--border-color); */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -527,7 +527,7 @@
 
 [data-theme='dark'] .admin-table-header-box {
     background: var(--bg-color);
-    border-bottom: 2px solid var(--border-color);
+    /* border-bottom: 2px solid var(--border-color); */
 }
 
 .admin-table-title {
@@ -964,7 +964,7 @@ body.dark-mode .pagination-controls {
     align-items: flex-end;
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
+    /* border-bottom: 1px solid var(--border-color); */
 }
 
 .section-title {

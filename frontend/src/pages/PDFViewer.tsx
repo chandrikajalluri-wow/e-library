@@ -186,14 +186,19 @@ const PDFViewer: React.FC = () => {
 
             // Try to extract more detail from the proxy response
             let detailedError = err?.message || 'Unknown error';
+
+            // pdf.js errors might wrap the underlying HTTP error
+            if (err.name === 'PasswordException') {
+                detailedError = 'This PDF is password protected.';
+            } else if (err.name === 'UnknownErrorException' && err.message.includes('403')) {
+                detailedError = 'Access Denied: Your borrowing period may have expired or you haven\'t borrowed this book yet.';
+            }
+
             try {
                 // If it's a fetch or Axios error, it might have response data
                 const responseData = err?.response?.data;
                 if (responseData && responseData.error) {
                     detailedError = responseData.error;
-                    if (responseData.s3Key) {
-                        detailedError += ` (Key: ${responseData.s3Key})`;
-                    }
                 }
             } catch (e) {
                 console.log('Could not parse detailed error response');
@@ -201,12 +206,9 @@ const PDFViewer: React.FC = () => {
 
             console.error('Error details:', detailedError);
 
-            // Try fallback to iframe
-            console.log('Attempting fallback to iframe viewer...');
-            setUseFallback(true);
+            toast.error(`PDF Access Denied: ${detailedError}`);
+            navigate(-1);
             setLoading(false);
-
-            toast.error(`PDF Load Error: ${detailedError}`);
         }
     };
 
