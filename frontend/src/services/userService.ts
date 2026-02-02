@@ -45,6 +45,16 @@ export const updateBookRequestStatus = async (id: string, status: string) => {
     return res.data;
 };
 
+export const getAllReadlistEntries = async (queryParams: string = '') => {
+    const res = await api.get(`${BASE_URL}/admin/readlist?${queryParams}`);
+    return res.data;
+};
+
+export const getAdminDashboardStats = async (queryParams: string = '') => {
+    const res = await api.get(`${BASE_URL}/admin/dashboard-stats?${queryParams}`);
+    return res.data;
+};
+
 
 
 export const getSessions = async () => {

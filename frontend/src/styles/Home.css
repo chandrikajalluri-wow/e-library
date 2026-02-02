@@ -74,10 +74,8 @@
 
 .hero-grid {
   display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  /* Strict 50/50 */
-  gap: 1rem !important;
-  /* Very tight gap */
+  grid-template-columns: 1.1fr 0.9fr !important;
+  gap: 2rem !important;
   align-items: center !important;
   position: relative;
   z-index: 7;
@@ -253,13 +251,11 @@
 /* Carousel Styles */
 .hero-carousel-container {
   position: relative;
-  height: 450px;
-  /* Slightly reduced height */
+  height: 500px;
   width: 100% !important;
-  /* Fill the grid column fluidly */
   display: flex !important;
-  justify-content: flex-start !important;
-  /* Align Left (Next to Text) */
+  justify-content: center !important;
+  align-items: center !important;
   margin-left: 0 !important;
   gap: 1.5rem;
   overflow: hidden;

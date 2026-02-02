@@ -7,7 +7,7 @@ import Readlist from '../models/Readlist';
 import Order from '../models/Order';
 import Membership from '../models/Membership';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { sendNotification } from '../utils/notification';
+import { sendNotification, notifyAdmins } from '../utils/notification';
 import { MembershipName, BorrowStatus, BookStatus, NotificationType } from '../types/enums';
 import ActivityLog from '../models/ActivityLog';
 
@@ -97,9 +97,14 @@ export const issueBook = async (req: AuthRequest, res: Response) => {
 
         await sendNotification(
             NotificationType.BORROW,
-            `${user?.name || 'A user'} borrowed "${book.title}"`,
+            `You borrowed "${book.title}"`,
             req.user!._id as any,
             book._id as any
+        );
+
+        await notifyAdmins(
+            `${user?.name || 'A user'} borrowed "${book.title}"`,
+            NotificationType.BORROW
         );
 
         await User.findByIdAndUpdate(req.user!._id, {
@@ -144,9 +149,14 @@ export const requestReturn = async (req: AuthRequest, res: Response) => {
         const book = await Book.findById(borrow.book_id);
         await sendNotification(
             NotificationType.RETURN,
-            `${user?.name || 'A user'} requested to return "${book?.title}"`,
+            `Return request submitted for "${book?.title}"`,
             req.user!._id as any,
             borrow.book_id as any
+        );
+
+        await notifyAdmins(
+            `${user?.name || 'A user'} requested to return "${book?.title}"`,
+            NotificationType.RETURN
         );
 
         await ActivityLog.create({
@@ -460,9 +470,14 @@ export const checkoutCart = async (req: AuthRequest, res: Response) => {
         // Send notification
         await sendNotification(
             NotificationType.BORROW,
-            `${user?.name || 'A user'} checked out ${totalItemsToBorrow} book(s) from cart`,
+            `You checked out ${totalItemsToBorrow} book(s) from cart`,
             req.user!._id as any,
             null as any
+        );
+
+        await notifyAdmins(
+            `${user?.name || 'A user'} checked out ${totalItemsToBorrow} book(s) from cart`,
+            NotificationType.BORROW
         );
 
         // Create detailed description for Activity Log

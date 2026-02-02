@@ -39,6 +39,8 @@ export enum NotificationType {
     BORROW = 'borrow',
     RETURN = 'return',
     WISHLIST = 'wishlist',
+    ORDER = 'order',
+    BOOK_REQUEST = 'book_request',
     SYSTEM = 'system'
 }
 

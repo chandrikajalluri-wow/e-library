@@ -626,7 +626,6 @@ select:focus {
 .admin-main-content,
 .request-page {
   text-align: left !important;
-  display: block !important;
 }
 
 /* 2. Global Typography - Force Left Alignment for headers and text in main areas */

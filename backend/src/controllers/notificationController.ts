@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import Notification from '../models/Notification';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { RoleName } from '../types/enums';
+import { RoleName, NotificationType } from '../types/enums';
 
 export const getMyNotifications = async (req: AuthRequest, res: Response) => {
     try {
         const notifications = await Notification.find({ user_id: req.user!._id })
             .populate('book_id', 'title cover_image_url')
             .sort({ timestamp: -1 })
-            .limit(20);
+            .limit(50);
         res.json(notifications);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
@@ -43,7 +43,15 @@ export const markAllMyNotificationsAsRead = async (req: AuthRequest, res: Respon
 
 export const getAllNotifications = async (req: Request, res: Response) => {
     try {
-        const notifications = await Notification.find()
+        const adminRelevantTypes = [
+            NotificationType.BORROW,
+            NotificationType.RETURN,
+            NotificationType.WISHLIST,
+            NotificationType.ORDER,
+            NotificationType.BOOK_REQUEST
+        ];
+
+        const notifications = await Notification.find({ type: { $in: adminRelevantTypes } })
             .populate({
                 path: 'user_id',
                 select: 'name email role_id',
@@ -52,16 +60,16 @@ export const getAllNotifications = async (req: Request, res: Response) => {
                     select: 'name'
                 }
             })
-            .populate('book_id', 'title')
+            .populate('book_id', 'title cover_image_url')
             .sort({ timestamp: -1 })
             .limit(50);
 
-        const userNotifications = notifications.filter(notif => {
+        const userSideNotifications = notifications.filter(notif => {
             const user = notif.user_id as any;
             return user?.role_id?.name === RoleName.USER;
         });
 
-        res.json(userNotifications);
+        res.json(userSideNotifications);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }

@@ -219,9 +219,10 @@ const Home: React.FC = () => {
         </div>
         <div className="saas-container hero-grid" style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', /* Explicit min-width for grid children */
-          gap: '0.5rem',
-          alignItems: 'center'
+          gridTemplateColumns: '1.1fr 0.9fr',
+          gap: '2rem',
+          alignItems: 'center',
+          minHeight: '600px'
         }}>
           <div className="hero-stack text-left" style={{ minWidth: 0 }}>
             <div className="hero-badge saas-reveal">✨ Your Digital Lending Library</div>

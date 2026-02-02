@@ -1,17 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CircleSlash, RefreshCw } from 'lucide-react';
+import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers } from 'lucide-react';
 import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
-import { getAllBorrows } from '../services/borrowService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
-import { getAllBookRequests, updateBookRequestStatus, getProfile } from '../services/userService';
-import { getAllWishlists } from '../services/wishlistService';
+import { getAllBookRequests, updateBookRequestStatus, getProfile, getAllReadlistEntries, getAdminDashboardStats } from '../services/userService';
+
 import { getActivityLogs } from '../services/logService';
 import { getAdmins } from '../services/superAdminService';
-import { RoleName, BookStatus, BorrowStatus, RequestStatus, MembershipName } from '../types/enums';
-import type { Book, Category, Borrow, User } from '../types';
+import { RoleName, BookStatus, RequestStatus, MembershipName } from '../types/enums';
+import type { Book, Category, User } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/AdminDashboard.css';
 
@@ -25,10 +24,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const activeTab = searchParams.get('tab') || 'stats';
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [borrows, setBorrows] = useState<Borrow[]>([]);
+  const [readHistory, setReadHistory] = useState<any[]>([]);
   const [userRequests, setUserRequests] = useState<any[]>([]);
   const [orderReturns, setOrderReturns] = useState<any[]>([]);
-  const [borrowStatusFilter, setBorrowStatusFilter] = useState('all');
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [bookTypeFilter, setBookTypeFilter] = useState('all');
   const [allBooks, setAllBooks] = useState<Book[]>([]);
@@ -40,13 +38,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     totalBooks: 0,
     totalUsers: 0,
     totalReads: 0,
-    activeBorrows: 0,
-    overdueBooks: 0,
-    pendingReturns: 0,
+    activeReads: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+    completedOrders: 0,
     pendingSuggestions: 0,
-    mostBorrowedBook: 'N/A',
+    mostReadBook: 'N/A',
     mostWishlistedBook: 'N/A',
-    mostActiveUser: 'N/A'
+    mostActiveUser: 'N/A',
+    topBuyer: 'N/A'
   });
 
   const [newBook, setNewBook] = useState({
@@ -64,8 +65,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
   const [bookPage, setBookPage] = useState(1);
   const [bookTotalPages, setBookTotalPages] = useState(1);
-  const [borrowPage, setBorrowPage] = useState(1);
-  const [borrowTotalPages, setBorrowTotalPages] = useState(1);
+  const [readHistoryPage, setReadHistoryPage] = useState(1);
+  const [readHistoryTotalPages, setReadHistoryTotalPages] = useState(1);
+  const [showAddBookForm, setShowAddBookForm] = useState(false);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean; title: string; message: string; onConfirm: () => void;
@@ -100,19 +102,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   useEffect(() => {
     if (activeTab === 'books' && bookPage > 1) {
       inventoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (activeTab === 'borrows' && borrowPage > 1) {
+    } else if (activeTab === 'borrows' && readHistoryPage > 1) {
       borrowsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [bookPage, borrowPage, activeTab]);
+  }, [bookPage, readHistoryPage, activeTab]);
 
-  const fetchBorrows = async () => {
+  const fetchReadHistory = async () => {
     setIsDataLoading(true);
     try {
-      const data = await getAllBorrows(`page=${borrowPage}&limit=10&status=${borrowStatusFilter}&membership=${membershipFilter}`);
-      setBorrows(data.borrows);
-      setBorrowTotalPages(data.pages);
+      const profile = await getProfile();
+      const isSuperAdmin = profile.role === RoleName.SUPER_ADMIN;
+      const addedByParam = isSuperAdmin ? '' : `&addedBy=${profile._id}`;
+      const data = await getAllReadlistEntries(`page=${readHistoryPage}&limit=10&membership=${membershipFilter}${addedByParam}`);
+      setReadHistory(data.readlist);
+      setReadHistoryTotalPages(data.pages);
     } catch (err: unknown) {
       console.error(err);
     } finally {
@@ -182,43 +187,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     try {
       const profile = await getProfile();
       const isSuperAdmin = profile.role === RoleName.SUPER_ADMIN;
-      const addedByParam = isSuperAdmin ? '' : `&addedBy=${profile._id}`;
+      const addedByParam = isSuperAdmin ? '' : `addedBy=${profile._id}`;
 
-      const booksData = await getBooks(`limit=1000&showArchived=true${addedByParam}`);
-      const borrowsData = await getAllBorrows(`limit=1000${addedByParam}`);
-      const requestsData = await getAllBookRequests();
-      const wishlistData = await getAllWishlists();
-
-      const getMostFrequent = (arr: any[], keyExtractor: (item: any) => string | undefined): string => {
-        const counts: Record<string, number> = {};
-        arr.forEach((item) => {
-          const key = keyExtractor(item);
-          if (key) counts[key] = (counts[key] || 0) + 1;
-        });
-        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-        return sorted.length > 0 ? `${sorted[0][0]} (${sorted[0][1]})` : 'N/A';
-      };
-
-
-
-      const newStats = {
-        totalBooks: booksData.total || 0,
-        totalUsers: new Set(borrowsData.borrows.map((b: any) => b.user_id?._id)).size,
-        totalReads: borrowsData.total || 0,
-        activeBorrows: borrowsData.borrows.filter((b: any) =>
-          [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED].includes(b.status)
-        ).length,
-        overdueBooks: borrowsData.borrows.filter((b: any) => b.status === BorrowStatus.OVERDUE).length,
-        pendingReturns: borrowsData.borrows.filter((b: any) => b.status === BorrowStatus.RETURN_REQUESTED).length,
-        pendingSuggestions: requestsData.filter((r: any) => r.status === RequestStatus.PENDING).length,
-        mostBorrowedBook: getMostFrequent(borrowsData.borrows, (b: any) => b.book_id?.title),
-        mostWishlistedBook: getMostFrequent(wishlistData, (w: any) => w.book_id?.title),
-        mostActiveUser: getMostFrequent(borrowsData.borrows, (b: any) => b.user_id?.name),
-      };
-
-      setStats(newStats);
+      const data = await getAdminDashboardStats(addedByParam);
+      setStats(data);
     } catch (err) {
       console.error('Failed to fetch stats', err);
+      toast.error('Failed to update statistics');
     } finally {
       setIsStatsLoading(false);
     }
@@ -229,9 +204,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'borrows') fetchBorrows();
+    if (activeTab === 'borrows') fetchReadHistory();
     if (activeTab === 'requests') fetchOrderReturns();
-  }, [activeTab, borrowPage, borrowStatusFilter, membershipFilter]);
+  }, [activeTab, readHistoryPage, membershipFilter]);
 
   useEffect(() => {
     if (activeTab === 'books') fetchBooks();
@@ -255,7 +230,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
     // Reset page numbers when switching tabs
     setBookPage(1);
-    setBorrowPage(1);
+    setReadHistoryPage(1);
   }, [activeTab]);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -394,6 +369,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
           setCoverImageFile(null);
           setAuthorImageFile(null);
           setPdfFile(null);
+          setShowAddBookForm(false);
           fetchBooks();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         } catch (err: any) {
@@ -423,6 +399,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       addedBy: typeof book.addedBy === 'string' ? book.addedBy : (book.addedBy as any)?._id || '',
       rating: book.rating?.toString() || '0'
     } as any);
+    setShowAddBookForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -437,6 +414,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     setCoverImageFile(null);
     setAuthorImageFile(null);
     setPdfFile(null);
+    setShowAddBookForm(false);
   };
 
   const handleDeleteBook = (id: string) => {
@@ -552,7 +530,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 </p>
               </div>
               <div className="admin-header-actions">
-                {/* Header actions can be added here in the future if needed */}
+                {activeTab === 'books' && (
+                  <button
+                    onClick={() => setShowAddBookForm(!showAddBookForm)}
+                    className={`admin-refresh-stats-btn ${showAddBookForm ? 'admin-btn-negative' : 'admin-btn-positive'}`}
+                  >
+                    {showAddBookForm ? (
+                      <>
+                        <Minus size={18} />
+                        <span>Hide Form</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={18} />
+                        <span>Add New Book</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </header>
@@ -581,9 +576,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
               </button>
             </div>
             <div className="admin-stats-grid-container">
+              {/* Row 1: Core Metrics */}
               <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div>
-                <span className="stats-label">Total Volume</span>
+                <span className="stats-label">Total Books</span>
                 <span className="stats-value">{stats.totalBooks}</span>
               </div>
               <div className="card stats-card-content">
@@ -597,156 +593,324 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 <span className="stats-value stats-value-accent">{stats.totalReads}</span>
               </div>
               <div className="card stats-card-content">
-                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
-                <span className="stats-label">Overdue</span>
-                <span className="stats-value stats-value-danger">{stats.overdueBooks}</span>
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+                <span className="stats-label">Active Reads</span>
+                <span className="stats-value stats-value-success">{stats.activeReads}</span>
+              </div>
+
+              {/* Row 2: Order Metrics */}
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg></div>
+                <span className="stats-label">Total Orders</span>
+                <span className="stats-value">{stats.totalOrders}</span>
               </div>
               <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+                <span className="stats-label">Total Revenue</span>
+                <span className="stats-value stats-value-success">₹{stats.totalRevenue.toLocaleString()}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+                <span className="stats-label">Pending Orders</span>
+                <span className="stats-value stats-value-warning">{stats.pendingOrders}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+                <span className="stats-label">Completed Orders</span>
+                <span className="stats-value stats-value-success">{stats.completedOrders}</span>
+              </div>
+
+              {/* Row 3: Insights */}
+              <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>
-                <span className="stats-label">Pending Returns</span>
-                <span className="stats-value stats-value-warning">{stats.pendingReturns}</span>
+                <span className="stats-label">Pending Suggestions</span>
+                <span className="stats-value stats-value-warning">{stats.pendingSuggestions}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div>
+                <span className="stats-label">Most Read Book</span>
+                <div className="user-main-name" style={{ marginTop: '0.5rem' }}>{stats.mostReadBook}</div>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z"></path></svg></div>
+                <span className="stats-label">Most Wishlisted</span>
+                <div className="user-main-name" style={{ marginTop: '0.5rem' }}>{stats.mostWishlistedBook}</div>
               </div>
               <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg></div>
                 <span className="stats-label">Most Active User</span>
                 <div className="user-main-name" style={{ marginTop: '0.5rem' }}>{stats.mostActiveUser}</div>
               </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg></div>
+                <span className="stats-label">Top Buyer</span>
+                <div className="user-main-name" style={{ marginTop: '0.5rem' }}>{stats.topBuyer}</div>
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === 'books' && (
-          <div className="admin-section-grid">
+          <div className="admin-section-container saas-reveal">
             {currentUser?.role === 'super_admin' && (
-              <div style={{ gridColumn: '1 / -1', padding: '1rem', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                <span><strong>Super Admin View:</strong> You are viewing the global book collection. Use the form below to add books on behalf of other admins.</span>
+              <div className="admin-super-banner">
+                <div className="banner-icon-box">
+                  <BookOpen size={20} />
+                </div>
+                <span><strong>Super Admin View:</strong> You are viewing the global book collection. You can add or manage books for any administrator.</span>
               </div>
             )}
-            <section className="card admin-form-section">
-              <div className="admin-form-header">
-                <h3 className="admin-table-title" style={{ marginBottom: '2rem' }}>{editingBookId ? 'Edit Book Record' : 'Add New Book'}</h3>
-                {editingBookId && <button onClick={handleCancelEdit} className="admin-reminder-btn" style={{ marginBottom: '1.5rem' }}>Cancel Editing</button>}
-              </div>
-              <form onSubmit={handleCreateBook} className="admin-book-form">
-                <div className="form-group"><label>Title</label><input type="text" value={newBook.title} onChange={(e) => setNewBook({ ...newBook, title: e.target.value })} required /></div>
-                <div className="form-group"><label>Author</label><input type="text" value={newBook.author} onChange={(e) => setNewBook({ ...newBook, author: e.target.value })} required /></div>
-                <div className="form-group"><label>Category</label><select value={newBook.category_id} onChange={(e) => setNewBook({ ...newBook, category_id: e.target.value })} required><option value="">Select Category</option>{categories.map((c) => (<option key={c._id} value={c._id}>{c.name}</option>))}</select></div>
-                <div className="form-group"><label>ISBN (Required & Unique)</label><input type="text" value={newBook.isbn} onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })} required /></div>
-                <div className="form-group"><label>Genre</label><input type="text" value={newBook.genre} onChange={(e) => setNewBook({ ...newBook, genre: e.target.value })} /></div>
-                <div className="form-group"><label>Language</label><input type="text" value={newBook.language} onChange={(e) => setNewBook({ ...newBook, language: e.target.value })} /></div>
-                <div className="form-group"><label>Price (₹)</label><input type="number" value={newBook.price} onChange={(e) => setNewBook({ ...newBook, price: e.target.value })} /></div>
-                <div className="form-group"><label>Pages</label><input type="number" value={newBook.pages} onChange={(e) => setNewBook({ ...newBook, pages: e.target.value })} /></div>
-                <div className="form-group"><label>Published Year</label><input type="number" value={newBook.publishedYear} onChange={(e) => setNewBook({ ...newBook, publishedYear: e.target.value })} /></div>
-                <div className="form-group"><label>Copies</label><input type="number" value={newBook.noOfCopies} onChange={(e) => setNewBook({ ...newBook, noOfCopies: e.target.value })} required /></div>
-                <div className="form-group"><label>Status</label><select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value as any })} required><option value={BookStatus.AVAILABLE}>Available</option><option value={BookStatus.OUT_OF_STOCK}>Out of Stock</option><option value={BookStatus.DAMAGED}>Damaged</option></select></div>
-                <div className="form-group"><label>Rating (0-5)</label><input type="number" step="0.1" min="0" max="5" value={(newBook as any).rating} onChange={(e) => setNewBook({ ...newBook, rating: e.target.value } as any)} /></div>
-                <div className="form-group">
-                  <label>Cover Image</label>
-                  <input type="file" accept="image/*" onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)} className="admin-file-input" />
-                </div>
-                <div className="form-group">
-                  <label>Author's Photo</label>
-                  <input type="file" accept="image/*" onChange={(e) => setAuthorImageFile(e.target.files?.[0] || null)} className="admin-file-input" />
-                </div>
-                <div className="form-group">
-                  <label>Book PDF Content</label>
-                  <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} className="admin-file-input" />
-                </div>
-                <div className="form-group" style={{ gridColumn: 'span 3' }}><label>Book Description</label><textarea value={newBook.description} onChange={(e) => setNewBook({ ...newBook, description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
-                <div className="form-group" style={{ gridColumn: 'span 3' }}><label>About the Author</label><textarea value={newBook.author_description} onChange={(e) => setNewBook({ ...newBook, author_description: e.target.value })} rows={3} style={{ width: '100%', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} /></div>
-                <div className="form-group checkbox-group" style={{ gridColumn: 'span 3' }}><label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}><input type="checkbox" checked={newBook.isPremium} onChange={(e) => setNewBook({ ...newBook, isPremium: e.target.checked })} style={{ width: 'auto' }} />Mark as Premium Book</label></div>
 
-                {currentUser?.role === 'super_admin' && (
-                  <div className="form-group" style={{ gridColumn: 'span 3' }}>
-                    <label>Added By (On behalf of Admin)</label>
-                    <select
-                      value={(newBook as any).addedBy || ''}
-                      onChange={(e) => setNewBook({ ...newBook, addedBy: e.target.value } as any)}
-                      className="admin-filter-select"
-                    >
-                      <option value="">Myself (Super Admin)</option>
-                      {admins.map(admin => (
-                        <option key={admin._id} value={admin._id}>{admin.name} ({admin.email})</option>
-                      ))}
+            {showAddBookForm && (
+              <section className="card admin-form-section saas-reveal">
+                <div className="admin-form-header">
+                  <h3 className="admin-table-title">{editingBookId ? 'Edit Book Record' : 'Add New Book'}</h3>
+                  {editingBookId && (
+                    <button onClick={handleCancelEdit} className="admin-reminder-btn">
+                      Cancel Editing
+                    </button>
+                  )}
+                </div>
+                <form onSubmit={handleCreateBook} className="admin-book-form-grid">
+                  <div className="form-group"><label>Title</label><input type="text" value={newBook.title} onChange={(e) => setNewBook({ ...newBook, title: e.target.value })} placeholder="Enter book title" required /></div>
+                  <div className="form-group"><label>Author</label><input type="text" value={newBook.author} onChange={(e) => setNewBook({ ...newBook, author: e.target.value })} placeholder="Author name" required /></div>
+                  <div className="form-group">
+                    <label>Category</label>
+                    <select value={newBook.category_id} onChange={(e) => setNewBook({ ...newBook, category_id: e.target.value })} required>
+                      <option value="">Select Category</option>
+                      {categories.map((c) => (<option key={c._id} value={c._id}>{c.name}</option>))}
                     </select>
                   </div>
-                )}
-
-                <div style={{ gridColumn: 'span 3', display: 'flex', justifyContent: 'flex-start' }}>
-                  <button type="submit" className="admin-btn-edit" style={{ padding: '0.75rem 2rem', minWidth: '200px' }}>{editingBookId ? 'Update Record' : 'Add to Collection'}</button>
-                </div>
-              </form>
-            </section>
-            <section className="card admin-table-section" ref={inventoryRef}>
-              <div className="admin-table-header-box">
-                <h3 className="admin-table-title">Inventory</h3>
-                <div className="admin-filter-group">
-                  <div className="admin-filter-item">
-                    <span className="admin-filter-label">Search</span>
-                    <input type="text" placeholder="Title/Author..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="admin-search-input" />
-                  </div>
-                  <div className="admin-filter-item">
-                    <span className="admin-filter-label">Type</span>
-                    <select value={bookTypeFilter} onChange={(e) => setBookTypeFilter(e.target.value)} className="admin-filter-select">
-                      <option value="all">All Books</option>
-                      <option value="premium">Premium</option>
-                      <option value="normal">Free</option>
+                  <div className="form-group"><label>ISBN</label><input type="text" value={newBook.isbn} onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })} placeholder="Unique ISBN number" required /></div>
+                  <div className="form-group"><label>Genre</label><input type="text" value={newBook.genre} onChange={(e) => setNewBook({ ...newBook, genre: e.target.value })} placeholder="e.g. Fiction" /></div>
+                  <div className="form-group"><label>Language</label><input type="text" value={newBook.language} onChange={(e) => setNewBook({ ...newBook, language: e.target.value })} placeholder="e.g. English" /></div>
+                  <div className="form-group"><label>Price (₹)</label><input type="number" value={newBook.price} onChange={(e) => setNewBook({ ...newBook, price: e.target.value })} placeholder="0.00" /></div>
+                  <div className="form-group"><label>Pages</label><input type="number" value={newBook.pages} onChange={(e) => setNewBook({ ...newBook, pages: e.target.value })} placeholder="Number of pages" /></div>
+                  <div className="form-group"><label>Published Year</label><input type="number" value={newBook.publishedYear} onChange={(e) => setNewBook({ ...newBook, publishedYear: e.target.value })} placeholder="YYYY" /></div>
+                  <div className="form-group"><label>Copies</label><input type="number" value={newBook.noOfCopies} onChange={(e) => setNewBook({ ...newBook, noOfCopies: e.target.value })} placeholder="Quantity" required /></div>
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select value={newBook.status} onChange={(e) => setNewBook({ ...newBook, status: e.target.value as any })} required>
+                      <option value={BookStatus.AVAILABLE}>Available</option>
+                      <option value={BookStatus.OUT_OF_STOCK}>Out of Stock</option>
+                      <option value={BookStatus.DAMAGED}>Damaged</option>
                     </select>
+                  </div>
+                  <div className="form-group"><label>Rating (0-5)</label><input type="number" step="0.1" min="0" max="5" value={(newBook as any).rating} onChange={(e) => setNewBook({ ...newBook, rating: e.target.value } as any)} /></div>
+
+                  <div className="form-group file-group">
+                    <label>Cover Image</label>
+                    <div className="file-input-wrapper">
+                      <input type="file" accept="image/*" onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)} />
+                    </div>
+                  </div>
+                  <div className="form-group file-group">
+                    <label>Author's Photo</label>
+                    <div className="file-input-wrapper">
+                      <input type="file" accept="image/*" onChange={(e) => setAuthorImageFile(e.target.files?.[0] || null)} />
+                    </div>
+                  </div>
+                  <div className="form-group file-group">
+                    <label>Book PDF</label>
+                    <div className="file-input-wrapper">
+                      <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} />
+                    </div>
+                  </div>
+
+                  <div className="form-group full-width"><label>Book Description</label><textarea value={newBook.description} onChange={(e) => setNewBook({ ...newBook, description: e.target.value })} rows={3} placeholder="Write a short summary of the book..." /></div>
+                  <div className="form-group full-width"><label>About the Author</label><textarea value={newBook.author_description} onChange={(e) => setNewBook({ ...newBook, author_description: e.target.value })} rows={3} placeholder="Brief biography of the author..." /></div>
+
+                  <div className="form-group full-width checkbox-row">
+                    <label className="saas-checkbox">
+                      <input type="checkbox" checked={newBook.isPremium} onChange={(e) => setNewBook({ ...newBook, isPremium: e.target.checked })} />
+                      <span className="checkmark"></span>
+                      Mark as Premium Book
+                    </label>
+                  </div>
+
+                  {currentUser?.role === 'super_admin' && (
+                    <div className="form-group full-width">
+                      <label>Added By (On behalf of Admin)</label>
+                      <select
+                        value={(newBook as any).addedBy || ''}
+                        onChange={(e) => setNewBook({ ...newBook, addedBy: e.target.value } as any)}
+                        className="admin-filter-select"
+                      >
+                        <option value="">Myself (Super Admin)</option>
+                        {admins.map(admin => (
+                          <option key={admin._id} value={admin._id}>{admin.name} ({admin.email})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="form-actions-row">
+                    <button type="submit" className="admin-btn-execute">
+                      {editingBookId ? 'Update Book Record' : 'Save Book to Collection'}
+                    </button>
+                    {editingBookId && (
+                      <button type="button" onClick={handleCancelEdit} className="admin-btn-secondary">
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </section>
+            )}
+
+            <section className="inventory-section card" ref={inventoryRef}>
+              <div className="toolbar-header">
+                <div className="toolbar-title-box">
+                  <h3 className="admin-table-title">Inventory Management</h3>
+                  <span className="total-count-badge">{stats.totalBooks} Total Books</span>
+                </div>
+
+                <div className="admin-two-line-toolbar">
+                  {/* Row 1: Search */}
+                  <div className="toolbar-row">
+                    <div className="toolbar-search-box">
+                      <Search size={18} className="search-icon" />
+                      <input
+                        type="text"
+                        placeholder="Search by title, author, isbn..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 2: Filters */}
+                  <div className="toolbar-row toolbar-filters-row">
+                    <div className="filter-item-box">
+                      <Layers size={16} />
+                      <select value={bookTypeFilter} onChange={(e) => setBookTypeFilter(e.target.value)}>
+                        <option value="all">Everywhere</option>
+                        <option value="premium">Premium Only</option>
+                        <option value="normal">Free Books</option>
+                      </select>
+                    </div>
+                    <div className="filter-item-box">
+                      <Filter size={16} />
+                      <select onChange={() => {/* Add category filter logic if needed, currently fetchBooks uses bookTypeFilter */ }} className="admin-filter-select">
+                        <option value="all">All Categories</option>
+                        {categories.map(c => (
+                          <option key={c._id} value={c._id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="admin-table-wrapper">
+
+              <div className="admin-table-outer">
                 {isDataLoading ? (
-                  <div className="admin-loading-container">
+                  <div className="admin-loading-state">
                     <div className="spinner"></div>
-                    <p>Updating Collection...</p>
+                    <p>Fetching inventory...</p>
                   </div>
                 ) : (
-                  <table className="admin-table">
-                    <thead><tr><th>Book Details</th><th>Category</th><th>Added By</th><th>Rating</th><th>Copies</th><th>Status</th><th className="admin-actions-cell">Actions</th></tr></thead>
-                    <tbody>
-                      {allBooks.map((book) => (
-                        <tr key={book._id}>
-                          <td><div className="book-info-box"><span className="book-main-title">{book.title}</span><span className="book-sub-meta">by {book.author}</span>{book.isPremium && <span className="admin-premium-label">PREMIUM</span>}</div></td>
-                          <td>{typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}</td>
-                          <td><span className="admin-added-by">{(book.addedBy as any)?.name || 'N/A'}</span></td>
-                          <td><span className="rating-badge" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '4px 8px', borderRadius: '8px', width: 'fit-content', fontWeight: 600 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>{book.rating || 0}</span></td>
-                          <td style={{ fontWeight: 700 }}>{book.noOfCopies}</td>
-                          <td>
-                            <span className={`status-badge status-${book.status}`}>
-                              {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status}
-                            </span>
-                          </td>
-                          <td className="admin-actions-cell"><div className="admin-actions-flex"><button onClick={() => handleEditBook(book)} className="admin-btn-edit">Edit</button><button onClick={() => handleDeleteBook(book._id)} className="admin-btn-delete">Delete</button></div></td>
+                  <div className="admin-table-scroll">
+                    <table className="admin-premium-table">
+                      <thead>
+                        <tr>
+                          <th>Book Details</th>
+                          <th>Category</th>
+                          <th>Added By</th>
+                          <th>Rating</th>
+                          <th>Stock</th>
+                          <th>Status</th>
+                          <th className="actions-header">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {allBooks.map((book) => (
+                          <tr key={book._id} className="admin-table-row">
+                            <td className="book-cell">
+                              <div className="book-meta-info">
+                                <span className="book-title-primary">{book.title}</span>
+                                <span className="book-author-secondary">by {book.author}</span>
+                                {book.isPremium && (
+                                  <div className="premium-tag-mini">
+                                    <span>PREMIUM</span>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              <div className="category-info-only">
+                                <span className="category-text">
+                                  {typeof book.category_id === 'string' ? book.category_id : book.category_id?.name}
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="added-by-info">
+                                <span className="admin-name">{(book.addedBy as any)?.name || 'N/A'}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="rating-pill-box">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                                <span>{book.rating || 0}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="stock-info">
+                                <span className={`stock-count ${book.noOfCopies <= 2 ? 'low-stock' : ''}`}>
+                                  {book.noOfCopies}
+                                </span>
+                                <span className="stock-label">Copies</span>
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`saas-status-badge status-${book.status.toLowerCase().replace(' ', '-')}`}>
+                                {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status}
+                              </span>
+                            </td>
+                            <td className="actions-cell">
+                              <div className="actions-button-group">
+                                <button onClick={() => handleEditBook(book)} className="btn-action-icon btn-edit-icon" title="Edit Book">
+                                  Edit
+                                </button>
+                                <button onClick={() => handleDeleteBook(book._id)} className="btn-action-icon btn-delete-icon" title="Delete Book">
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {!isDataLoading && allBooks.length === 0 && (
+                  <div className="admin-nothing-found">
+                    <Search size={40} />
+                    <p>No books found matching your criteria.</p>
+                  </div>
                 )}
               </div>
-              {!isDataLoading && allBooks.length === 0 && (
-                <div className="admin-empty-state">No books found matching your criteria.</div>
-              )}
+
               {bookTotalPages > 1 && (
-                <div className="pagination-controls">
+                <div className="saas-pagination">
                   <button
                     disabled={bookPage === 1}
                     onClick={() => setBookPage(prev => prev - 1)}
-                    className={`admin-reminder-btn ${bookPage === 1 ? 'disabled-with-stop' : ''}`}
+                    className="pagination-btn"
                   >
-                    <span className="btn-text">Previous</span>
-                    <CircleSlash size={16} className="stop-icon" />
+                    Previous
                   </button>
-                  <span className="page-info">Page {bookPage} of {bookTotalPages}</span>
+                  <div className="pagination-numbers">
+                    Page <strong>{bookPage}</strong> of {bookTotalPages}
+                  </div>
                   <button
                     disabled={bookPage === bookTotalPages}
                     onClick={() => setBookPage(prev => prev + 1)}
-                    className={`admin-btn-edit ${bookPage === bookTotalPages ? 'disabled-with-stop' : ''}`}
-                    style={{ padding: '0.45rem 1.5rem' }}
+                    className="pagination-btn"
                   >
-                    <span className="btn-text">Next</span>
-                    <CircleSlash size={16} className="stop-icon" />
+                    Next
                   </button>
                 </div>
               )}
@@ -864,20 +1028,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
           </section>
         )}
 
+
         {activeTab === 'borrows' && (
           <section className="card admin-table-section" ref={borrowsRef}>
             <div className="admin-table-header-box">
               <h3 className="admin-table-title">Read History</h3>
               <div className="admin-filter-group">
-                <div className="admin-filter-item">
-                  <span className="admin-filter-label">Status</span>
-                  <select value={borrowStatusFilter} onChange={(e) => setBorrowStatusFilter(e.target.value)} className="admin-filter-select">
-                    <option value="all">All Records</option>
-                    <option value="borrowed">Borrowed</option>
-                    <option value="returned">Returned</option>
-                    <option value="overdue">Overdue</option>
-                  </select>
-                </div>
                 <div className="admin-filter-item">
                   <span className="admin-filter-label">Tier</span>
                   <select value={membershipFilter} onChange={(e) => setMembershipFilter(e.target.value)} className="admin-filter-select">
@@ -896,48 +1052,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 </div>
               ) : (
                 <table className="admin-table">
-                  <thead><tr><th>Borrower</th><th>Book</th><th>Dates</th><th>Status</th></tr></thead>
-                  <tbody>{borrows.map(b => {
-                    const membershipName = (b.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
+                  <thead><tr><th>Reader</th><th>Book</th><th>Dates</th><th>Status</th></tr></thead>
+                  <tbody>{readHistory.map((r: any) => {
+                    const membershipName = (r.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
                     const isPremiumUser = membershipName.toLowerCase().includes(MembershipName.PREMIUM.toLowerCase());
 
                     return (
-                      <tr key={b._id}>
+                      <tr key={r._id}>
                         <td>
                           <div className="user-info-box">
-                            <span className="user-main-name">{b.user_id?.name}</span>
+                            <span className="user-main-name">{r.user_id?.name}</span>
                             <span className={`membership-pill ${isPremiumUser ? 'membership-premium' : ''}`}>
                               {membershipName}
                             </span>
                           </div>
                         </td>
-                        <td><div className="book-info-box"><span className="book-main-title">{b.book_id?.title}</span></div></td>
-                        <td><div className="book-info-box"><div>Issued: {b.issued_date ? new Date(b.issued_date).toLocaleDateString() : 'N/A'}</div><div>Due: {b.return_date ? new Date(b.return_date).toLocaleDateString() : 'N/A'}</div></div></td>
-                        <td><span className={`status-badge status-${b.status}`}>{b.status.replace(/_/g, ' ')}</span></td>
+                        <td><div className="book-info-box"><span className="book-main-title">{r.book_id?.title}</span></div></td>
+                        <td><div className="book-info-box"><div>Started: {r.addedAt ? new Date(r.addedAt).toLocaleDateString() : 'N/A'}</div><div>Due: {r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'N/A'}</div></div></td>
+                        <td><span className={`status-badge status-${r.status}`}>{r.status}</span></td>
                       </tr>
                     );
                   })}</tbody>
                 </table>
               )}
             </div>
-            {!isDataLoading && borrows.length === 0 && (
+            {!isDataLoading && readHistory.length === 0 && (
               <div className="admin-empty-state">No read history records found.</div>
             )}
-            {borrowTotalPages > 1 && (
+            {readHistoryTotalPages > 1 && (
               <div className="pagination-controls">
                 <button
-                  disabled={borrowPage === 1}
-                  onClick={() => setBorrowPage(prev => prev - 1)}
-                  className={`admin-reminder-btn ${borrowPage === 1 ? 'disabled-with-stop' : ''}`}
+                  disabled={readHistoryPage === 1}
+                  onClick={() => setReadHistoryPage((prev: number) => prev - 1)}
+                  className={`admin-reminder-btn ${readHistoryPage === 1 ? 'disabled-with-stop' : ''}`}
                 >
                   <span className="btn-text">Previous</span>
                   <CircleSlash size={16} className="stop-icon" />
                 </button>
-                <span className="page-info">Page {borrowPage} of {borrowTotalPages}</span>
+                <span className="page-info">Page {readHistoryPage} of {readHistoryTotalPages}</span>
                 <button
-                  disabled={borrowPage === borrowTotalPages}
-                  onClick={() => setBorrowPage(prev => prev + 1)}
-                  className={`admin-btn-edit ${borrowPage === borrowTotalPages ? 'disabled-with-stop' : ''}`}
+                  disabled={readHistoryPage === readHistoryTotalPages}
+                  onClick={() => setReadHistoryPage((prev: number) => prev + 1)}
+                  className={`admin-btn-edit ${readHistoryPage === readHistoryTotalPages ? 'disabled-with-stop' : ''}`}
                   style={{ padding: '0.45rem 1.5rem' }}
                 >
                   <span className="btn-text">Next</span>
