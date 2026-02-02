@@ -58,6 +58,12 @@ router.delete('/cart', auth, userController.clearCartLocally);
 router.get('/readlist', auth, userController.getReadlist);
 router.post('/readlist', auth, userController.addToReadlist);
 
+// ADMIN: Get All Readlist Entries (Read History)
+router.get('/admin/readlist', auth, checkRole([RoleName.ADMIN]), userController.getAllReadlistEntries);
+
+// ADMIN: Dashboard Stats
+router.get('/admin/dashboard-stats', auth, checkRole([RoleName.ADMIN]), userController.getAdminDashboardStats);
+
 // Book Access Check
 router.get('/book-access/:bookId', auth, userController.checkBookAccess);
 

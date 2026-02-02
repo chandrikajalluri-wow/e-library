@@ -25,13 +25,17 @@
     text-align: left !important;
 }
 
-.admin-header p {
-    color: var(--text-secondary);
+.admin-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 0.5rem;
 }
 
-.admin-header-actions {
-    display: flex;
-    gap: 1rem;
+.admin-header p {
+    color: var(--text-secondary);
+    margin: 0;
 }
 
 .export-btn {
@@ -100,29 +104,32 @@
 
 .filters-toolbar {
     background: var(--card-bg);
-    padding: 0.75rem 1rem;
-    border-radius: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    padding: 1.25rem !important;
+    border-radius: 20px;
+    display: flex !important;
+    flex-direction: column !important;
+    /* Move to two-line layout */
+    align-items: stretch !important;
+    margin-bottom: 2rem;
+    gap: 1.25rem !important;
     border: 1px solid var(--border-color);
-    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    width: 100% !important;
 }
 
 .search-box {
-    display: flex;
-    align-items: center;
+    display: flex !important;
+    align-items: center !important;
     gap: 0.75rem;
     background: var(--bg-color);
-    padding: 0 1rem;
-    height: 44px;
-    border-radius: 12px;
-    flex: 0 1 350px;
+    padding: 0 1.25rem;
+    height: 48px;
+    border-radius: 14px;
+    width: 100% !important;
+    /* Take full width on the first line */
+    max-width: 100% !important;
     border: 1px solid transparent;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .search-box svg {
@@ -150,25 +157,32 @@
 }
 
 .filter-group {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    align-items: center;
-    flex: 1;
-    justify-content: flex-end;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    /* Allow wrapping on small screens if needed */
+    gap: 0.75rem !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    /* Align filters to the start */
+    margin: 0 !important;
+    width: 100% !important;
 }
 
 .filter-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.4rem;
     background: var(--bg-color);
-    padding: 0 0.85rem;
-    height: 44px;
-    border-radius: 12px;
+    padding: 0 0.75rem !important;
+    height: 42px !important;
+    /* Slightly more compact */
+    border-radius: 12px !important;
     border: 1px solid transparent;
     transition: all 0.2s;
+    min-width: fit-content !important;
+    width: auto !important;
 }
 
 .filter-item:hover {
@@ -704,6 +718,12 @@
     .filters-toolbar {
         flex-direction: column;
         align-items: stretch;
+        gap: 1rem;
+    }
+
+    .filter-group {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .order-body {

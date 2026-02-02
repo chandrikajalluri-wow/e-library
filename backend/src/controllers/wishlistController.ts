@@ -5,7 +5,8 @@ import Borrow from '../models/Borrow';
 import User from '../models/User';
 import Book from '../models/Book';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { sendNotification } from '../utils/notification';
+import { sendNotification, notifyAdmins } from '../utils/notification';
+import { NotificationType } from '../types/enums';
 
 export const getMyWishlist = async (req: AuthRequest, res: Response) => {
     try {
@@ -62,10 +63,15 @@ export const addToWishlist = async (req: AuthRequest, res: Response) => {
         const user = await User.findById(req.user!._id);
         const book = await Book.findById(book_id);
         await sendNotification(
-            'wishlist',
-            `${user?.name || 'A user'} wishlisted "${book?.title}"`,
+            NotificationType.WISHLIST,
+            `You wishlisted "${book?.title}"`,
             req.user!._id as any,
             book_id as any
+        );
+
+        await notifyAdmins(
+            `${user?.name || 'A user'} wishlisted "${book?.title}"`,
+            NotificationType.WISHLIST
         );
 
         res.status(201).json(item);

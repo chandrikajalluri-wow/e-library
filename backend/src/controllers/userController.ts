@@ -8,11 +8,12 @@ import BookRequest from '../models/BookRequest';
 import AuthToken from '../models/AuthToken';
 import Membership from '../models/Membership';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { sendEmail } from '../utils/mailer';
-import { BorrowStatus, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus } from '../types/enums';
+import Book from '../models/Book';
 import Order from '../models/Order';
 import Readlist from '../models/Readlist';
-import Book from '../models/Book';
+import { sendEmail } from '../utils/mailer';
+import { sendNotification, notifyAdmins } from '../utils/notification';
+import { NotificationType, BorrowStatus, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus } from '../types/enums';
 
 export const getMe = async (req: AuthRequest, res: Response) => {
     try {
@@ -204,6 +205,20 @@ export const requestBook = async (req: AuthRequest, res: Response) => {
         });
 
         await newRequest.save();
+
+        // Notify User
+        await sendNotification(
+            NotificationType.BOOK_REQUEST,
+            `Your request for "${title}" has been submitted.`,
+            req.user!._id as any
+        );
+
+        // Notify Admins
+        await notifyAdmins(
+            `New Book Request: ${user.name} suggested "${title}" by ${author}`,
+            NotificationType.BOOK_REQUEST
+        );
+
         res.status(201).json({
             message: 'Book request submitted successfully',
             request: newRequest,
@@ -456,12 +471,15 @@ export const getReadlist = async (req: AuthRequest, res: Response) => {
                     let itemStatus = 'active';
                     let addedAt = new Date();
                     let completedAt = null;
+                    let dueDate = null;
 
                     if (item && item.book) {
                         bookId = item.book;
                         itemStatus = item.status || 'active';
                         addedAt = item.addedAt || addedAt;
                         completedAt = item.completedAt;
+                        // Recover dueDate if missing
+                        dueDate = item.dueDate || (new Date(new Date(addedAt).getTime() + (14 * 24 * 60 * 60 * 1000)));
                     } else if (item) {
                         bookId = item;
                     }
@@ -474,7 +492,8 @@ export const getReadlist = async (req: AuthRequest, res: Response) => {
                             {
                                 status: itemStatus,
                                 addedAt: addedAt,
-                                completedAt: completedAt
+                                completedAt: completedAt,
+                                dueDate: dueDate
                             },
                             { upsert: true }
                         );
@@ -558,6 +577,147 @@ export const checkBookAccess = async (req: AuthRequest, res: Response) => {
         });
     } catch (err) {
         console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getAdminDashboardStats = async (req: AuthRequest, res: Response) => {
+    try {
+        const { addedBy } = req.query;
+
+        // 1. Total Books 
+        const bookQuery: any = {};
+        if (addedBy) bookQuery.addedBy = addedBy;
+        const totalBooks = await Book.countDocuments(bookQuery);
+
+        // 2. Total Users (Count all non-deleted registered users)
+        const totalUsers = await User.countDocuments({ isDeleted: false });
+
+        // 3. Reads Stats
+        let readlistQuery: any = {};
+        if (addedBy) {
+            const adminBooks = await Book.find({ addedBy }).select('_id');
+            const bookIds = adminBooks.map(b => b._id);
+            readlistQuery.book_id = { $in: bookIds };
+        }
+
+        const totalReads = await Readlist.countDocuments(readlistQuery);
+        const activeReads = await Readlist.countDocuments({ ...readlistQuery, status: 'active' });
+
+        // 4. Order Stats
+        // Revenue should sum totalAmount from ALL orders as per user request
+        const orders = await Order.find({});
+        const totalOrders = orders.length;
+        const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+        const completedStatuses = ['delivered', 'completed'];
+        const pendingStatuses = ['pending', 'processing', 'shipped'];
+
+        const completedOrders = orders.filter(o => completedStatuses.includes(o.status)).length;
+        const pendingOrders = orders.filter(o => pendingStatuses.includes(o.status)).length;
+
+        // 5. Suggestions (Total pending book requests)
+        const pendingSuggestions = await BookRequest.countDocuments({ status: RequestStatus.PENDING });
+
+        // 6. Insights via Aggregation
+        const getMostFrequent = async (Model: any, field: string, filter: any = {}) => {
+            const result = await Model.aggregate([
+                { $match: filter },
+                { $group: { _id: `$${field}`, count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 1 }
+            ]);
+            return result.length > 0 ? result[0] : null;
+        };
+
+        const mostReadMatch = await getMostFrequent(Readlist, 'book_id', readlistQuery);
+        const mostWishlistedMatch = await getMostFrequent(Wishlist, 'book_id');
+        const mostActiveMatch = await getMostFrequent(Readlist, 'user_id', readlistQuery);
+        const topBuyerMatch = await getMostFrequent(Order, 'user_id');
+
+        // Resolve IDs to human readable strings
+        const mostReadBook = mostReadMatch ?
+            (await Book.findById(mostReadMatch._id).select('title'))?.title + ` (${mostReadMatch.count})` || 'N/A' : 'N/A';
+        const mostWishlistedBook = mostWishlistedMatch ?
+            (await Book.findById(mostWishlistedMatch._id).select('title'))?.title + ` (${mostWishlistedMatch.count})` || 'N/A' : 'N/A';
+        const mostActiveUser = mostActiveMatch ?
+            (await User.findById(mostActiveMatch._id).select('name'))?.name + ` (${mostActiveMatch.count})` || 'N/A' : 'N/A';
+        const topBuyer = topBuyerMatch ?
+            (await User.findById(topBuyerMatch._id).select('name'))?.name + ` (${topBuyerMatch.count})` || 'N/A' : 'N/A';
+
+        res.json({
+            totalBooks,
+            totalUsers,
+            totalReads,
+            activeReads,
+            totalOrders,
+            totalRevenue,
+            pendingOrders,
+            completedOrders,
+            pendingSuggestions,
+            mostReadBook,
+            mostWishlistedBook,
+            mostActiveUser,
+            topBuyer
+        });
+
+    } catch (err) {
+        console.error('getAdminDashboardStats error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const getAllReadlistEntries = async (req: AuthRequest, res: Response) => {
+    try {
+        const { membership, page = 1, limit = 10, addedBy } = req.query;
+        const parsedPage = parseInt(page as string) || 1;
+        const parsedLimit = parseInt(limit as string) || 10;
+        const skip = (parsedPage - 1) * parsedLimit;
+
+        const query: any = {};
+
+        // Filter by admin's books if addedBy is specified
+        if (addedBy) {
+            const adminBooks = await Book.find({ addedBy }).select('_id');
+            query.book_id = { $in: adminBooks.map((b: any) => b._id) };
+        }
+
+        // Filter by membership tier
+        if (membership && membership !== 'all') {
+            const targetMembership = await Membership.findOne({ name: new RegExp(membership as string, 'i') });
+            if (targetMembership) {
+                const users = await User.find({ membership_id: targetMembership._id }).select('_id');
+                query.user_id = { $in: users.map((u: any) => u._id) };
+            } else if (membership === MembershipName.BASIC) {
+                const users = await User.find({ membership_id: { $exists: false } }).select('_id');
+                query.user_id = { $in: users.map((u: any) => u._id) };
+            }
+        }
+
+        const readlistEntries = await Readlist.find(query)
+            .populate({
+                path: 'user_id',
+                select: 'name email membership_id',
+                populate: {
+                    path: 'membership_id',
+                    select: 'name displayName'
+                }
+            })
+            .populate('book_id', 'title')
+            .sort({ addedAt: -1 })
+            .skip(skip)
+            .limit(parsedLimit);
+
+        const total = await Readlist.countDocuments(query);
+
+        res.json({
+            readlist: readlistEntries,
+            total,
+            page: parsedPage,
+            pages: Math.ceil(total / parsedLimit),
+        });
+    } catch (err) {
+        console.error('getAllReadlistEntries error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 };

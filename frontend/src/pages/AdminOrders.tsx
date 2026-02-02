@@ -182,14 +182,14 @@ const AdminOrders: React.FC = () => {
         <div className="admin-dashboard-container saas-reveal">
             <div className="admin-header">
                 <div>
-                    <h1 className='admin-header-title'>Order Management</h1>
+                    <div className="admin-title-row">
+                        <h1 className='admin-header-title'>Order Management</h1>
+                        <button className="export-btn" onClick={handleExport}>
+                            <Download size={18} />
+                            <span>Export CSV</span>
+                        </button>
+                    </div>
                     <p className='admin-header-subtitle'>Track, manage and export user orders</p>
-                </div>
-                <div className="admin-header-actions">
-                    <button className="export-btn" onClick={handleExport}>
-                        <Download size={18} />
-                        <span>Export CSV</span>
-                    </button>
                 </div>
             </div>
 

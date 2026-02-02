@@ -9,7 +9,7 @@ import Membership from '../models/Membership';
 import Borrow from '../models/Borrow';
 import Readlist from '../models/Readlist';
 import { NotificationType, BorrowStatus, MembershipName, BookStatus, OrderStatus } from '../types/enums';
-import { sendNotification, notifySuperAdmins } from '../utils/notification';
+import { sendNotification, notifySuperAdmins, notifyAdmins } from '../utils/notification';
 import { sendEmail } from '../utils/mailer';
 import { RoleName } from '../types/enums';
 
@@ -99,12 +99,18 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
 
         // Readlist addition moved to updateOrderStatus (DELIVERED status)
 
-        // Send notification
+        // Send notification to user
         await sendNotification(
-            NotificationType.BORROW,
+            NotificationType.ORDER,
             `Order confirmed: ${totalItemsInOrder} book(s) will be delivered to ${address.city}`,
             req.user!._id as any,
             null as any
+        );
+
+        // Notify Admins
+        await notifyAdmins(
+            `New Order: ${user.name} placed order #${newOrder._id.toString().slice(-8).toUpperCase()} for ${totalItemsInOrder} item(s)`,
+            NotificationType.ORDER
         );
 
         res.status(201).json({
@@ -256,14 +262,19 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         }
 
         if (status === OrderStatus.DELIVERED && previousStatus !== OrderStatus.DELIVERED) {
+            const user = await User.findById(order.user_id).populate('membership_id');
+            const membership = user?.membership_id as any;
+            const borrowDuration = membership?.borrowDuration || 14;
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + borrowDuration);
+
             for (const item of order.items) {
                 await Readlist.findOneAndUpdate(
                     { user_id: order.user_id, book_id: item.book_id },
                     {
                         status: 'active',
                         addedAt: new Date(),
-                        // Purchases are permanent, so we don't set a dueDate
-                        $unset: { dueDate: 1 }
+                        dueDate: dueDate // Apply membership-based duration
                     },
                     { upsert: true }
                 );
