@@ -32,10 +32,10 @@ router.put('/change-password', auth, userController.changePassword);
 router.post('/book-requests', auth, userController.requestBook);
 
 // ADMIN: Get All Book Requests
-router.get('/admin/book-requests', auth, checkRole([RoleName.ADMIN]), userController.getAllBookRequests);
+router.get('/admin/book-requests', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userController.getAllBookRequests);
 
 // ADMIN: Update Book Request Status
-router.put('/admin/book-requests/:id', auth, checkRole([RoleName.ADMIN]), userController.updateBookRequestStatus);
+router.put('/admin/book-requests/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userController.updateBookRequestStatus);
 
 
 
@@ -59,10 +59,10 @@ router.get('/readlist', auth, userController.getReadlist);
 router.post('/readlist', auth, userController.addToReadlist);
 
 // ADMIN: Get All Readlist Entries (Read History)
-router.get('/admin/readlist', auth, checkRole([RoleName.ADMIN]), userController.getAllReadlistEntries);
+router.get('/admin/readlist', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userController.getAllReadlistEntries);
 
 // ADMIN: Dashboard Stats
-router.get('/admin/dashboard-stats', auth, checkRole([RoleName.ADMIN]), userController.getAdminDashboardStats);
+router.get('/admin/dashboard-stats', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userController.getAdminDashboardStats);
 
 // Book Access Check
 router.get('/book-access/:bookId', auth, userController.checkBookAccess);

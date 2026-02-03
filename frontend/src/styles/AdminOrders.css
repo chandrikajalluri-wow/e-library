@@ -24,7 +24,8 @@
 .admin-title-row {
     display: flex;
     align-items: center;
-    gap: 35rem;
+    justify-content: space-between;
+    width: 100%;
     margin-bottom: 0.5rem;
 }
 
@@ -75,13 +76,6 @@
     gap: 1.25rem;
     box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04);
     border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.08);
-    border-color: var(--primary-color);
 }
 
 .stat-icon {
@@ -174,11 +168,13 @@
 }
 
 .filter-group {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1.25rem;
+    flex-wrap: nowrap !important;
     align-items: center;
-    flex-shrink: 0;
+    width: 100%;
+    overflow-x: auto;
 }
 
 .filter-item {

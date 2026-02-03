@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers } from 'lucide-react';
+import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText } from 'lucide-react';
 import { createBook, getBooks, updateBook, deleteBook, checkBookDeletionSafety } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
@@ -68,6 +68,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [readHistoryPage, setReadHistoryPage] = useState(1);
   const [readHistoryTotalPages, setReadHistoryTotalPages] = useState(1);
   const [showAddBookForm, setShowAddBookForm] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean; title: string; message: string; onConfirm: () => void;
@@ -93,6 +95,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       if (profile.role === RoleName.SUPER_ADMIN) {
         const adminList = await getAdmins();
         setAdmins(adminList);
+        // Also fetch global stats for Super Admin context
+        fetchStats();
       }
     } catch (err: unknown) {
       console.error(err);
@@ -112,10 +116,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchReadHistory = async () => {
     setIsDataLoading(true);
     try {
-      const profile = await getProfile();
-      const isSuperAdmin = profile.role === RoleName.SUPER_ADMIN;
-      const addedByParam = isSuperAdmin ? '' : `&addedBy=${profile._id}`;
-      const data = await getAllReadlistEntries(`page=${readHistoryPage}&limit=10&membership=${membershipFilter}${addedByParam}`);
+      const data = await getAllReadlistEntries(`page=${readHistoryPage}&limit=10&membership=${membershipFilter}`);
       setReadHistory(data.readlist);
       setReadHistoryTotalPages(data.pages);
     } catch (err: unknown) {
@@ -182,11 +183,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchStats = async () => {
     setIsStatsLoading(true);
     try {
-      const profile = await getProfile();
-      const isSuperAdmin = profile.role === RoleName.SUPER_ADMIN;
-      const addedByParam = isSuperAdmin ? '' : `addedBy=${profile._id}`;
-
-      const data = await getAdminDashboardStats(addedByParam);
+      const data = await getAdminDashboardStats();
       setStats(data);
     } catch (err) {
       console.error('Failed to fetch stats', err);
@@ -523,9 +520,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   return (
     <div className="admin-layout">
       <main className="admin-main-content">
-        {!hideHeader && (
-          <header className="admin-header">
-            <div className="admin-header-flex">
+        <header className="admin-header">
+          {(activeTab === 'books' || activeTab === 'categories') && currentUser?.role === 'super_admin' && (
+            <div className="admin-super-banner" style={{ margin: '0 0 1.5rem 0', borderRadius: '16px' }}>
+              <div className="banner-icon-box">
+                <BookOpen size={20} />
+              </div>
+              {activeTab === 'books' ? (
+                <span><strong>Super Admin View:</strong> You are viewing the global book collection. You can add or manage books for any administrator.</span>
+              ) : (
+                <span><strong>Super Admin View:</strong> You are managing the global category architecture. Changes applied here affect the entire platform.</span>
+              )}
+            </div>
+          )}
+          <div className="admin-header-flex">
+            {!hideHeader && (
               <div className="admin-header-titles">
                 <h1 className="admin-header-title">
                   {activeTab === 'stats' && 'Dashboard Overview'}
@@ -540,29 +549,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   Welcome back, {currentUser?.role === RoleName.SUPER_ADMIN ? 'Super Administrator' : 'Administrator'}
                 </p>
               </div>
-              <div className="admin-header-actions">
-                {activeTab === 'books' && (
-                  <button
-                    onClick={() => setShowAddBookForm(!showAddBookForm)}
-                    className={`admin-refresh-stats-btn ${showAddBookForm ? 'admin-btn-negative' : 'admin-btn-positive'}`}
-                  >
-                    {showAddBookForm ? (
-                      <>
-                        <Minus size={18} />
-                        <span>Hide Form</span>
-                      </>
-                    ) : (
-                      <>
-                        <Plus size={18} />
-                        <span>Add New Book</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
+            )}
+            <div className={`admin-header-actions ${hideHeader ? 'actions-standalone' : ''}`}>
+              {activeTab === 'books' && (
+                <button
+                  onClick={() => setShowAddBookForm(!showAddBookForm)}
+                  className={`admin-refresh-stats-btn ${showAddBookForm ? 'admin-btn-negative' : 'admin-btn-positive'}`}
+                >
+                  {showAddBookForm ? (
+                    <>
+                      <Minus size={18} />
+                      <span>Hide Form</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={18} />
+                      <span>Add New Book</span>
+                    </>
+                  )}
+                </button>
+              )}
+              {activeTab === 'categories' && (
+                <button
+                  onClick={() => setShowCategoryForm(!showCategoryForm)}
+                  className={`admin-refresh-stats-btn ${showCategoryForm ? 'admin-btn-negative' : 'admin-btn-positive'}`}
+                >
+                  {showCategoryForm ? (
+                    <>
+                      <Minus size={18} />
+                      <span>Hide Form</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={18} />
+                      <span>Add Category</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
-          </header>
-        )}
+          </div>
+        </header>
 
         {activeTab === 'stats' && (
           <div className="admin-stats-container">
@@ -663,14 +690,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
         {activeTab === 'books' && (
           <div className="admin-section-container saas-reveal">
-            {currentUser?.role === 'super_admin' && (
-              <div className="admin-super-banner">
-                <div className="banner-icon-box">
-                  <BookOpen size={20} />
-                </div>
-                <span><strong>Super Admin View:</strong> You are viewing the global book collection. You can add or manage books for any administrator.</span>
-              </div>
-            )}
 
             {showAddBookForm && (
               <section className="card admin-form-section saas-reveal">
@@ -930,37 +949,121 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         )}
 
         {activeTab === 'categories' && (
-          <div className="admin-categories-layout">
-            <section className="card admin-form-section">
-              <h3 className="admin-table-title" style={{ marginBottom: '2rem' }}>{editingCategoryId ? 'Edit Category' : 'Create Category'}</h3>
-              <form onSubmit={handleCreateCategory}>
-                <div className="form-group"><label>Name</label><input type="text" value={newCategory.name} onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })} required /></div>
-                <div className="form-group"><label>Description</label><textarea className="admin-textarea" value={newCategory.description} onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })} rows={5} /></div>
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}><button type="submit" className="admin-btn-edit" style={{ flex: 1 }}>{editingCategoryId ? 'Save' : 'Create'}</button>{editingCategoryId && <button type="button" onClick={handleCancelCategoryEdit} className="admin-reminder-btn">Cancel</button>}</div>
-              </form>
-            </section>
-            <section className="admin-categories-list-section">
-              <div className="admin-table-header-box" style={{ borderRadius: '24px 24px 0 0', borderBottom: 'none' }}><h3 className="admin-table-title">Existing Categories</h3></div>
-              <div className="admin-categories-grid" style={{
-                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem',
-                padding: '1.5rem', background: 'rgba(99, 102, 241, 0.02)', border: '1px solid var(--border-color)', borderRadius: '0 0 24px 24px'
-              }}>
-                {categories.map((c) => (
-                  <div key={c._id} className="admin-category-card">
-                    <div className="category-header">
-                      <span className="category-name">{c.name}</span>
-                      <div className="admin-actions-flex">
-                        <button onClick={() => handleEditCategory(c)} className="admin-btn-edit" style={{ padding: '0.4rem 0.8rem' }}>Edit</button>
-                        {currentUser?.role === RoleName.SUPER_ADMIN && (
-                          <button onClick={() => handleDeleteCategory(c)} className="admin-btn-delete" style={{ padding: '0.4rem 0.8rem' }}>Delete</button>
-                        )}
-                      </div>
+          <div className={`admin-categories-split-layout ${showCategoryForm ? 'form-open' : ''} saas-reveal`}>
+            {showCategoryForm && (
+              <aside className="category-sidebar-panel saas-reveal-left">
+                <div className="card admin-form-section sticky-form">
+                  <div className="admin-form-header">
+                    <div className="form-header-title">
+                      <h3 className="admin-table-title">{editingCategoryId ? 'Edit Record' : 'Create New'}</h3>
+                      <p className="form-subtitle">Category Architecture</p>
                     </div>
-                    <p className="category-desc">{c.description || 'No description provided.'}</p>
+                    <button onClick={() => { handleCancelCategoryEdit(); setShowCategoryForm(false); }} className="admin-btn-close-mini">
+                      <Minus size={16} />
+                    </button>
                   </div>
-                ))}
+                  <form onSubmit={handleCreateCategory} className="admin-category-form-premium">
+                    <div className="form-group-premium">
+                      <label><div className="label-icon"><Tag size={14} /></div> Category Name</label>
+                      <input
+                        type="text"
+                        value={newCategory.name}
+                        onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                        placeholder="e.g. History & Politics"
+                        className="premium-input"
+                        required
+                      />
+                    </div>
+                    <div className="form-group-premium">
+                      <label><div className="label-icon"><FileText size={14} /></div> Description</label>
+                      <textarea
+                        className="premium-textarea"
+                        value={newCategory.description}
+                        onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                        rows={6}
+                        placeholder="Provide details about this library category..."
+                      />
+                    </div>
+                    <div className="category-form-actions-premium">
+                      <button type="submit" className="admin-btn-generate full-width">
+                        {editingCategoryId ? 'Update Category' : 'Save Category'}
+                      </button>
+                      {editingCategoryId && (
+                        <button type="button" onClick={handleCancelCategoryEdit} className="admin-btn-dim full-width">
+                          Cancel Modification
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+              </aside>
+            )}
+
+            <div className="category-main-view">
+              <div className="admin-section-header">
+                <div className="admin-search-wrapper premium-search-box">
+                  <div className="search-icon-inside">
+                    <Search size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search by category name..."
+                    value={categorySearch}
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                    className="admin-search-input-premium"
+                  />
+                </div>
               </div>
-            </section>
+
+              <section className="admin-categories-list-section">
+                <div className="admin-categories-grid-premium">
+                  {categories
+                    .filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                    .map((c) => (
+                      <div key={c._id} className={`category-orb-card ${editingCategoryId === c._id ? 'is-editing' : ''}`}>
+                        <div className="orb-card-glow"></div>
+                        <div className="orb-card-content">
+                          <div className="orb-header">
+                            <div className="orb-icon-container">
+                              <Layers size={22} />
+                            </div>
+                            <div className="orb-stats">
+                              <span className="count-num">{(c as any).bookCount || 0}</span>
+                              <span className="count-label">Items</span>
+                            </div>
+                          </div>
+
+                          <div className="orb-body">
+                            <h4 className="orb-title">{c.name}</h4>
+                            <p className="orb-description">{c.description || 'No description provided.'}</p>
+                          </div>
+
+                          <div className="orb-footer">
+                            <button onClick={() => {
+                              handleEditCategory(c);
+                              setShowCategoryForm(true);
+                            }} className="orb-action-btn edit-orb">
+                              Modify
+                            </button>
+                            {currentUser?.role === RoleName.SUPER_ADMIN && (
+                              <button onClick={() => handleDeleteCategory(c)} className="orb-action-btn delete-orb">
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                {!isDataLoading && categories.filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase())).length === 0 && (
+                  <div className="admin-nothing-found">
+                    <Search size={40} />
+                    <p>No categories match "{categorySearch}"</p>
+                  </div>
+                )}
+              </section>
+            </div>
           </div>
         )}
 

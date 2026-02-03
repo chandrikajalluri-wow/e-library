@@ -22,7 +22,19 @@ export const getAllCategories = async (req: any, res: Response) => {
         }
 
         const categories = await Category.find(query).sort({ name: 1 });
-        res.json(categories);
+
+        // Enhance categories with book count
+        const categoriesWithStats = await Promise.all(
+            categories.map(async (cat) => {
+                const bookCount = await Book.countDocuments({ category_id: cat._id });
+                return {
+                    ...cat.toObject(),
+                    bookCount
+                };
+            })
+        );
+
+        res.json(categoriesWithStats);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });

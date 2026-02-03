@@ -304,9 +304,9 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         }).save();
 
         const userRole = (req.user!.role_id as any).name;
-        if (userRole === RoleName.ADMIN) {
-            await notifySuperAdmins(`Admin ${req.user!.name} updated order #${order._id} status to ${status.toUpperCase()}`);
-        }
+        // if (userRole === RoleName.ADMIN) {
+        //     await notifySuperAdmins(`Admin ${req.user!.name} updated order #${order._id} status to ${status.toUpperCase()}`);
+        // }
 
         // Send Email Notification
         const user = order.user_id as any;
@@ -521,7 +521,7 @@ export const requestReturnOrder = async (req: AuthRequest, res: Response) => {
         );
 
         // Notify Admins
-        await notifySuperAdmins(`New Return Request for Order #${order._id.toString().slice(-8).toUpperCase()} from ${req.user!.name}`);
+        // await notifySuperAdmins(`New Return Request for Order #${order._id.toString().slice(-8).toUpperCase()} from ${req.user!.name}`);
 
         // Notify User
         await sendNotification(

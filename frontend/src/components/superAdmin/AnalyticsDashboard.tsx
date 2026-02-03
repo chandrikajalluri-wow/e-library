@@ -9,7 +9,7 @@ interface AnalyticsDashboardProps {
     data: {
         userDistribution: { _id: string; count: number }[];
         bookDistribution: { _id: string; count: number }[];
-        borrowTrends: { _id: number; month: string; count: number }[];
+        readlistTrends: { _id: number; month: string; count: number }[];
         orderTrends: { _id: number; month: string; count: number; revenue: number }[];
     };
 }
@@ -20,7 +20,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
     // Prepare data for charts with defensive checks
     const userData = (data.userDistribution || []).map(item => ({ name: item._id, value: item.count }));
     const bookData = (data.bookDistribution || []).map(item => ({ name: item._id, value: item.count }));
-    const borrowData = (data.borrowTrends || []).map(item => ({ name: item.month, borrows: item.count }));
+    const readlistData = (data.readlistTrends || []).map(item => ({ name: item.month, reads: item.count }));
     const orderData = (data.orderTrends || []).map(item => ({
         name: item.month,
         orders: item.count,
@@ -89,13 +89,13 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
 
             {/* Trends Bar Charts Section */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                {/* Borrow Trends */}
+                {/* Readlist Trends */}
                 <div className="card stats-card-content" style={{ padding: '1.5rem', display: 'block' }}>
-                    <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Borrow Trends (Last 6 Months)</h3>
+                    <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Readlist Trends (Last 6 Months)</h3>
                     <div style={{ height: '300px' }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
-                                data={borrowData}
+                                data={readlistData}
                                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" />
@@ -103,7 +103,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
                                 <YAxis />
                                 <Tooltip />
                                 <Legend />
-                                <Bar dataKey="borrows" fill="#8884d8" name="Books Borrowed" />
+                                <Bar dataKey="reads" fill="#8884d8" name="Books Added to Readlist" />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

@@ -113,6 +113,9 @@ const UserNavbar: React.FC = () => {
     const currentPath = location.pathname + (location.search || '');
     const isMoreActive = currentPath.includes('tab=user-requests') ||
         currentPath.includes('tab=borrows') ||
+        currentPath.includes('tab=announcements') ||
+        currentPath.includes('tab=queries') ||
+        currentPath.includes('tab=reported-reviews') ||
         currentPath.includes('tab=logs');
 
     return (
@@ -183,11 +186,11 @@ const UserNavbar: React.FC = () => {
                             {/* More Actions Dropdown */}
                             <div className="nav-more-dropdown-container">
                                 <button
-                                    className={`nav-icon-link nav-more-trigger ${isMoreOpen ? 'active' : ''} ${isMoreActive ? 'active-link' : ''}`}
+                                    className={`nav-more-trigger ${isMoreOpen ? 'active' : ''} ${isMoreActive ? 'active-link' : ''}`}
                                     onClick={() => setIsMoreOpen(!isMoreOpen)}
                                 >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-                                    <span className="icon-label">More <svg className={`chevron-icon-inline ${isMoreOpen ? 'open' : ''}`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span>
+                                    <span className="icon-label">More</span>
+                                    <svg className={`chevron-icon-inline ${isMoreOpen ? 'open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                                 </button>
 
                                 {isMoreOpen && (
@@ -219,10 +222,42 @@ const UserNavbar: React.FC = () => {
                             <NavIcon to="/super-admin-dashboard?tab=users" label="Users" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>} />
                             <NavIcon to="/super-admin-dashboard?tab=books" label="Books" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>} />
                             <NavIcon to="/super-admin-dashboard?tab=categories" label="Category" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>} />
-                            <NavIcon to="/super-admin-dashboard?tab=announcements" label="Announcements" icon={<Megaphone size={20} />} />
-                            <NavIcon to="/super-admin-dashboard?tab=queries" label="Queries" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>} />
-                            <NavIcon to="/super-admin-dashboard?tab=reported-reviews" label="Reports" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>} />
-                            <NavIcon to="/super-admin-dashboard?tab=logs" label="System" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>} />
+
+                            {/* More Actions Dropdown for Super Admin */}
+                            <div className="nav-more-dropdown-container">
+                                <button
+                                    className={`nav-more-trigger ${isMoreOpen ? 'active' : ''} ${isMoreActive ? 'active-link' : ''}`}
+                                    onClick={() => setIsMoreOpen(!isMoreOpen)}
+                                >
+                                    <span className="icon-label">More</span>
+                                    <svg className={`chevron-icon-inline ${isMoreOpen ? 'open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                </button>
+
+                                {isMoreOpen && (
+                                    <div className="profile-dropdown-menu nav-more-dropdown-menu">
+                                        <DropdownItem
+                                            to="/super-admin-dashboard?tab=announcements"
+                                            label="Announcements"
+                                            icon={<Megaphone size={16} />}
+                                        />
+                                        <DropdownItem
+                                            to="/super-admin-dashboard?tab=queries"
+                                            label="Queries"
+                                            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>}
+                                        />
+                                        <DropdownItem
+                                            to="/super-admin-dashboard?tab=reported-reviews"
+                                            label="Reports"
+                                            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>}
+                                        />
+                                        <DropdownItem
+                                            to="/super-admin-dashboard?tab=logs"
+                                            label="System Logs"
+                                            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>}
+                                        />
+                                    </div>
+                                )}
+                            </div>
                         </>
                     )}
 
@@ -304,7 +339,7 @@ const UserNavbar: React.FC = () => {
                 type="warning"
                 confirmText="Sign Out"
             />
-        </nav>
+        </nav >
     );
 };
 

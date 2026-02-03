@@ -25,8 +25,8 @@ export const sendNotification = async (
 
 export const notifyAdmins = async (message: string, type: 'system' | 'borrow' | 'return' | 'order' | 'book_request' | 'wishlist' = 'system') => {
     try {
-        // Find both Admin and Super Admin roles
-        const roles = await Role.find({ name: { $in: [RoleName.ADMIN, RoleName.SUPER_ADMIN] } });
+        // Find only Admin role (exclude Super Admin to reduce noise)
+        const roles = await Role.find({ name: RoleName.ADMIN });
         const roleIds = roles.map(r => r._id);
 
         const admins = await User.find({ role_id: { $in: roleIds } });

@@ -69,6 +69,7 @@ export const TargetPage = {
     HOME: 'HOME',
     BOOKS: 'BOOKS',
     DASHBOARD: 'DASHBOARD',
-    PROFILE: 'PROFILE'
+    PROFILE: 'PROFILE',
+    ADMIN_PANEL: 'ADMIN_PANEL'
 } as const;
 export type TargetPage = typeof TargetPage[keyof typeof TargetPage];
