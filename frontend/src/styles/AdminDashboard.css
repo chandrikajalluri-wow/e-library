@@ -1148,60 +1148,137 @@ body.dark-mode .pagination-controls {
 .toolbar-search-box {
     position: relative;
     width: 100%;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toolbar-search-box:focus-within {
+    transform: scale(1.005);
 }
 
 .toolbar-search-box .search-icon {
     position: absolute;
-    left: 1.25rem;
+    left: 1.5rem;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-secondary);
     pointer-events: none;
+    transition: all 0.3s;
+    z-index: 10;
+}
+
+.toolbar-search-box:focus-within .search-icon {
+    color: var(--primary-color);
+    transform: translateY(-50%) scale(1.1);
 }
 
 .toolbar-search-box input {
     width: 100%;
-    height: 52px;
-    padding: 0 1rem 0 3.5rem !important;
-    background: var(--card-bg) !important;
+    height: 56px;
+    padding: 0 1.5rem 0 4rem !important;
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(12px);
     border: 1px solid var(--border-color) !important;
-    border-radius: 14px !important;
-    font-size: 1rem !important;
-    font-weight: 500 !important;
-    transition: all 0.3s;
+    border-radius: 18px !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme='dark'] .toolbar-search-box input {
+    background: rgba(30, 41, 59, 0.5) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .toolbar-search-box input:focus {
+    background: var(--card-bg) !important;
     border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.08), 0 10px 25px -10px rgba(99, 102, 241, 0.15) !important;
+    outline: none !important;
+}
+
+.toolbar-search-box input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+    transition: all 0.3s;
+}
+
+.toolbar-search-box input:focus::placeholder {
+    opacity: 0.4;
+    padding-left: 0.25rem;
 }
 
 .toolbar-filters-row {
     display: flex;
-    gap: 1rem;
+    gap: 1.25rem;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .filter-item-box {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    background: var(--card-bg);
+    gap: 0.85rem;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
     border: 1px solid var(--border-color);
-    padding: 0 1rem;
-    height: 46px;
-    border-radius: 12px;
+    padding: 0 1.25rem;
+    height: 50px;
+    border-radius: 14px;
     color: var(--text-secondary);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+    cursor: pointer;
+    position: relative;
+}
+
+[data-theme='dark'] .filter-item-box {
+    background: rgba(30, 41, 59, 0.4);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.filter-item-box:hover {
+    border-color: var(--primary-color);
+    background: var(--card-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px -5px rgba(99, 102, 241, 0.15);
+}
+
+.filter-item-box svg {
+    color: var(--text-secondary);
+    transition: color 0.3s;
+    flex-shrink: 0;
+}
+
+.filter-item-box:hover svg {
+    color: var(--primary-color);
 }
 
 .filter-item-box select {
     background: transparent;
     border: none;
     color: var(--text-primary);
-    font-weight: 650;
-    font-size: 0.9rem;
+    font-weight: 700;
+    font-size: 0.95rem;
     cursor: pointer;
-    padding-right: 1.5rem;
+    padding-right: 1.75rem;
+    height: 100%;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 14px;
+    letter-spacing: -0.25px;
+}
+
+.filter-item-box select option {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    padding: 1rem;
+    font-weight: 600;
 }
 
 /* Premium Table Styling */

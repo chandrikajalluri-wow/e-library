@@ -115,14 +115,24 @@ const MembershipPlans: React.FC = () => {
                                 <td>₹99</td>
                             </tr>
                             <tr>
-                                <td>Books Limit</td>
+                                <td>Reading Limit</td>
                                 <td>3 books</td>
                                 <td>10 books</td>
                             </tr>
                             <tr>
-                                <td>Borrow Period</td>
+                                <td>Reading Period</td>
                                 <td>7 days</td>
                                 <td>21 days</td>
+                            </tr>
+                            <tr>
+                                <td>Delivery Time</td>
+                                <td>3-4 Days</td>
+                                <td>24 Hours</td>
+                            </tr>
+                            <tr>
+                                <td>Delivery Fee</td>
+                                <td>₹50 (Free over ₹500)</td>
+                                <td>FREE</td>
                             </tr>
                             <tr>
                                 <td>Request New Books</td>

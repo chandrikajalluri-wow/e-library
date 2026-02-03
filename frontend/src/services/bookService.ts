@@ -44,3 +44,8 @@ export const deleteBook = async (id: string): Promise<unknown> => {
   return res.data;
 };
 
+export const checkBookDeletionSafety = async (id: string): Promise<{ canDelete: boolean; reason?: string }> => {
+  const res = await api.get(`${BASE_URL}/${id}/delete-check`);
+  return res.data;
+};
+

@@ -47,6 +47,9 @@ router.put(
 // Delete Book (Admin/Super Admin only)
 router.delete('/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), bookController.deleteBook);
 
+// Check Deletion Safety
+router.get('/:id/delete-check', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), bookController.checkDeletionSafety);
+
 // View Book PDF (Proxied through backend for CORS)
 router.get('/:id/view', auth, bookController.viewBookPdf);
 

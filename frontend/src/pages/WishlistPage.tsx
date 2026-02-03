@@ -81,14 +81,13 @@ const WishlistPage: React.FC = () => {
 
     return (
         <div className="wishlist-page dashboard-container saas-reveal">
-            <div className="back-to-catalog-container" style={{ margin: '1.5rem 0 1.5rem 0' }}>
+            <div className="back-to-catalog-container">
                 <button
                     onClick={() => navigate('/books')}
-                    className="btn-secondary back-to-catalog-link"
-                    style={{ background: 'transparent', padding: '0.8rem 0.2' }}
+                    className="back-to-catalog-link"
                 >
                     <ArrowLeft size={18} />
-                    <span style={{ fontWeight: 700 }}>Back to Library</span>
+                    <span>Back to Library</span>
                 </button>
             </div>
 

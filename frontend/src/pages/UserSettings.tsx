@@ -10,13 +10,12 @@ import {
 import { toast } from "react-toastify";
 import { Mail, Phone as PhoneIcon, ShieldCheck } from 'lucide-react';
 import Loader from "../components/Loader";
-import ThemeToggle from "../components/ThemeToggle";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 import ConfirmationModal from "../components/ConfirmationModal";
 import "../styles/UserSettings.css";
 import "../styles/UserProfile.css"; // Reuse some basic form styles
 
-type SettingsTab = 'profile' | 'account' | 'appearance' | 'security' | 'sessions' | 'danger-zone';
+type SettingsTab = 'profile' | 'account' | 'security' | 'sessions' | 'danger-zone';
 
 const UserSettings: React.FC = () => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
@@ -163,11 +162,6 @@ const UserSettings: React.FC = () => {
                             label="Account"
                             icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>}
                         />
-                        <SidebarItem
-                            tab="appearance"
-                            label="Appearance"
-                            icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>}
-                        />
 
                         <div className="sidebar-divider"></div>
 
@@ -278,21 +272,6 @@ const UserSettings: React.FC = () => {
                         </div>
                     )}
 
-                    {activeTab === 'appearance' && (
-                        <div className="settings-card saas-reveal">
-                            <div className="settings-card-header">
-                                <h2>Appearance</h2>
-                                <p>Customize how Bookstack looks on your device.</p>
-                            </div>
-                            <div className="preference-item">
-                                <label style={{ display: 'block', marginBottom: '1rem', fontWeight: 600 }}>Theme preference</label>
-                                <div className="theme-toggle-wrapper" style={{ padding: '1rem', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                                    <ThemeToggle />
-                                    <span style={{ marginLeft: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Toggle between Light and Dark mode</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     {activeTab === 'security' && (
                         <div className="settings-card saas-reveal">

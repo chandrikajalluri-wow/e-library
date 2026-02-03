@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers } from 'lucide-react';
-import { createBook, getBooks, updateBook, deleteBook } from '../services/bookService';
+import { createBook, getBooks, updateBook, deleteBook, checkBookDeletionSafety } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
 import { getAllBookRequests, updateBookRequestStatus, getProfile, getAllReadlistEntries, getAdminDashboardStats } from '../services/userService';
@@ -154,11 +154,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchBooks = async () => {
     setIsDataLoading(true);
     try {
-      const profile = await getProfile();
-      const isSuperAdmin = profile.role === RoleName.SUPER_ADMIN;
-      const addedByParam = isSuperAdmin ? '' : `&addedBy=${profile._id}`;
       const isPremiumParam = bookTypeFilter === 'all' ? '' : (bookTypeFilter === MembershipName.PREMIUM.toLowerCase() ? '&isPremium=true' : '&isPremium=false');
-      const data = await getBooks(`page=${bookPage}&limit=10&showArchived=true&search=${searchTerm}${isPremiumParam}${addedByParam}`);
+      const data = await getBooks(`page=${bookPage}&limit=10&showArchived=true&search=${searchTerm}${isPremiumParam}`);
       setAllBooks(data.books);
       setBookTotalPages(data.pages);
     } catch (err) {
@@ -417,11 +414,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     setShowAddBookForm(false);
   };
 
-  const handleDeleteBook = (id: string) => {
+  const handleDeleteBook = async (id: string) => {
     const book = allBooks.find(b => b._id === id);
-    if (book && book.status === BookStatus.OUT_OF_STOCK) {
-      toast.error(`Cannot delete "${book.title}" because it is currently issued.`);
-      return;
+    if (book) {
+      if (book.status === BookStatus.OUT_OF_STOCK) {
+        toast.error(`Cannot delete "${book.title}" because it is currently issued.`);
+        return;
+      }
+
+      try {
+        const safetyCheck = await checkBookDeletionSafety(id);
+        if (!safetyCheck.canDelete) {
+          toast.error(safetyCheck.reason || `Cannot delete "${book.title}" as it is currently in use.`);
+          return;
+        }
+      } catch (err) {
+        console.error('Safety check failed', err);
+        // On error, we proceed to modal and let final delete handle it
+      }
     }
 
     setConfirmModal({
@@ -434,9 +444,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
           toast.success('Book deleted');
           fetchBooks();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
-        } catch (err) {
-          toast.error('Failed to delete book');
-          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        } catch (err: any) {
+          const errMsg = err.response?.data?.error || 'Failed to delete book';
+          toast.error(errMsg);
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         }
       }
     });
@@ -784,7 +795,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     <div className="filter-item-box">
                       <Layers size={16} />
                       <select value={bookTypeFilter} onChange={(e) => setBookTypeFilter(e.target.value)}>
-                        <option value="all">Everywhere</option>
+                        <option value="all">All Books</option>
                         <option value="premium">Premium Only</option>
                         <option value="normal">Free Books</option>
                       </select>

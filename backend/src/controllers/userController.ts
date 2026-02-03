@@ -13,7 +13,7 @@ import Order from '../models/Order';
 import Readlist from '../models/Readlist';
 import { sendEmail } from '../utils/mailer';
 import { sendNotification, notifyAdmins } from '../utils/notification';
-import { NotificationType, BorrowStatus, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus } from '../types/enums';
+import { NotificationType, BorrowStatus, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus, BookStatus } from '../types/enums';
 
 export const getMe = async (req: AuthRequest, res: Response) => {
     try {
@@ -585,24 +585,31 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
     try {
         const { addedBy } = req.query;
 
-        // 1. Total Books 
-        const bookQuery: any = {};
-        if (addedBy) bookQuery.addedBy = addedBy;
-        const totalBooks = await Book.countDocuments(bookQuery);
+        // 1. Total Books (Always count all non-archived books for dashboard context)
+        const totalBooks = await Book.countDocuments({ status: { $ne: BookStatus.ARCHIVED } });
 
         // 2. Total Users (Count all non-deleted registered users)
         const totalUsers = await User.countDocuments({ isDeleted: false });
 
         // 3. Reads Stats
         let readlistQuery: any = {};
+        let borrowQuery: any = {};
         if (addedBy) {
             const adminBooks = await Book.find({ addedBy }).select('_id');
             const bookIds = adminBooks.map(b => b._id);
             readlistQuery.book_id = { $in: bookIds };
+            borrowQuery.book_id = { $in: bookIds };
         }
 
-        const totalReads = await Readlist.countDocuments(readlistQuery);
-        const activeReads = await Readlist.countDocuments({ ...readlistQuery, status: 'active' });
+        const [statsReadlist, statsBorrow, activeReadlistCount, activeBorrowCount] = await Promise.all([
+            Readlist.countDocuments(readlistQuery),
+            Borrow.countDocuments(borrowQuery),
+            Readlist.countDocuments({ ...readlistQuery, status: 'active' }),
+            Borrow.countDocuments({ ...borrowQuery, status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE] } })
+        ]);
+
+        const totalReads = statsReadlist + statsBorrow;
+        const activeReads = activeReadlistCount + activeBorrowCount;
 
         // 4. Order Stats
         // Revenue should sum totalAmount from ALL orders as per user request

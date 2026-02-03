@@ -260,10 +260,16 @@ const AdminOrderDetailsPage: React.FC = () => {
                             {order.items.map((item, idx) => (
                                 <div className="item-row" key={idx}>
                                     <div className="item-info col-item">
-                                        <img src={item.book_id.cover_image_url} alt="" className="table-img" />
+                                        <img
+                                            src={item.book_id?.cover_image_url || 'https://via.placeholder.com/150?text=NA'}
+                                            alt={item.book_id?.title || 'Book'}
+                                            className="table-img"
+                                        />
                                         <div className="item-meta">
-                                            <span className="item-title">{item.book_id.title}</span>
-                                            <span className="item-id">ID: {item.book_id._id.slice(-6).toUpperCase()}</span>
+                                            <span className="item-title">{item.book_id?.title || 'Deleted Book'}</span>
+                                            <span className="item-id">
+                                                ID: {item.book_id?._id ? item.book_id._id.slice(-6).toUpperCase() : 'N/A'}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="col-qty">

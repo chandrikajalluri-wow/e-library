@@ -7,35 +7,32 @@
 .admin-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
 }
 
-.admin-header h1 {
-    font-size: 2.75rem;
-    font-weight: 900;
+.admin-header-title {
+    font-size: 2.5rem;
+    font-weight: 950;
     color: var(--text-primary);
     margin: 0;
-    letter-spacing: -0.04em;
-    line-height: 1.1;
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-color) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-align: left !important;
+    letter-spacing: -1.5px;
+    line-height: 1;
 }
 
 .admin-title-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
+    gap: 35rem;
     margin-bottom: 0.5rem;
 }
 
-.admin-header p {
+.admin-header-subtitle {
+    margin-top: 0.75rem;
     color: var(--text-secondary);
-    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 .export-btn {
@@ -65,18 +62,26 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
 }
 
 .stat-card {
     background: var(--card-bg);
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
     border-radius: 20px;
     display: flex;
-    align-items: center;
-    gap: 1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04);
     border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary-color);
 }
 
 .stat-icon {
@@ -86,132 +91,162 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    background: rgba(99, 102, 241, 0.06);
+    color: var(--primary-color);
 }
 
 .stat-card h3 {
-    font-size: 1.5rem;
-    font-weight: 800;
+    font-size: 2rem;
+    font-weight: 950;
     margin: 0;
     color: var(--text-primary);
+    letter-spacing: -1px;
+    line-height: 1;
 }
 
 .stat-card p {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
 }
 
 .filters-toolbar {
-    background: var(--card-bg);
-    padding: 1.25rem !important;
+    background: var(--bg-color);
+    padding: 1.5rem;
     border-radius: 20px;
-    display: flex !important;
-    flex-direction: column !important;
-    /* Move to two-line layout */
-    align-items: stretch !important;
-    margin-bottom: 2rem;
-    gap: 1.25rem !important;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 2.5rem;
+    gap: 1.5rem;
     border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    width: 100% !important;
 }
 
 .search-box {
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.75rem;
-    background: var(--bg-color);
-    padding: 0 1.25rem;
-    height: 48px;
-    border-radius: 14px;
-    width: 100% !important;
-    /* Take full width on the first line */
-    max-width: 100% !important;
-    border: 1px solid transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    width: 100%;
 }
 
 .search-box svg {
-    flex-shrink: 0;
+    position: absolute;
+    left: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
     color: var(--text-secondary);
+    z-index: 10;
+    pointer-events: none;
+    transition: all 0.3s;
+}
+
+.search-box:focus-within svg {
+    color: var(--primary-color);
+    transform: translateY(-50%) scale(1.1);
 }
 
 .search-box input {
-    background: transparent;
-    border: none;
-    outline: none;
-    width: auto !important;
-    flex: 1;
-    font-size: 0.9rem;
-    height: 100%;
-    color: var(--text-primary);
+    width: 100%;
+    height: 56px !important;
+    padding: 0 1.5rem 0 4rem !important;
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color) !important;
+    border-radius: 18px !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.03);
     margin-bottom: 0 !important;
-    padding: 0 !important;
 }
 
-.search-box:focus-within {
-    border-color: var(--border-color);
-    background: var(--card-bg);
-    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+[data-theme='dark'] .search-box input {
+    background: rgba(30, 41, 59, 0.5) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.search-box input:focus {
+    background: var(--card-bg) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.08), 0 10px 25px -10px rgba(99, 102, 241, 0.15) !important;
 }
 
 .filter-group {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    /* Allow wrapping on small screens if needed */
-    gap: 0.75rem !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    /* Align filters to the start */
-    margin: 0 !important;
-    width: 100% !important;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
 }
 
 .filter-item {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 0.4rem;
-    background: var(--bg-color);
-    padding: 0 0.75rem !important;
-    height: 42px !important;
-    /* Slightly more compact */
-    border-radius: 12px !important;
-    border: 1px solid transparent;
-    transition: all 0.2s;
-    min-width: fit-content !important;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-color);
+    padding: 0 1.25rem !important;
+    height: 50px !important;
+    border-radius: 14px !important;
+    color: var(--text-secondary);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+    cursor: pointer;
+    position: relative;
     width: auto !important;
+    margin: 0 !important;
+}
+
+[data-theme='dark'] .filter-item {
+    background: rgba(30, 41, 59, 0.4);
+    border-color: rgba(255, 255, 255, 0.06);
 }
 
 .filter-item:hover {
-    border-color: var(--border-color);
+    border-color: var(--primary-color);
     background: var(--card-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px -5px rgba(99, 102, 241, 0.15);
 }
 
 .filter-item svg {
-    flex-shrink: 0;
     color: var(--text-secondary);
+    transition: color 0.3s;
+    flex-shrink: 0;
+}
+
+.filter-item:hover svg {
+    color: var(--primary-color);
 }
 
 .filter-item select {
     background: transparent;
     border: none;
-    outline: none;
-    font-size: 0.85rem;
-    font-weight: 700;
     color: var(--text-primary);
+    font-weight: 700;
+    font-size: 0.95rem;
     cursor: pointer;
+    padding-right: 1.75rem !important;
     height: 100%;
-    padding: 0 0.5rem 0 0 !important;
-    width: auto !important;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 14px;
+    letter-spacing: -0.25px;
     margin-bottom: 0 !important;
 }
 
 .filter-item select option {
-    background-color: var(--card-bg);
+    background: var(--card-bg);
     color: var(--text-primary);
+    padding: 1rem;
+    font-weight: 600;
 }
 
 .date-filter {

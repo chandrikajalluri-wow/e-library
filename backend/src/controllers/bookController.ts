@@ -143,8 +143,8 @@ export const createBook = async (req: AuthRequest, res: Response, next: NextFunc
             await notifySuperAdmins(`Admin ${req.user!.name} added a new book: ${book.title}`);
         }
 
-        // Notify all users about the new book
-        await notifyAllUsers(`New Addition: "${book.title}" is now available!`, 'system', book._id);
+        // Notify all users about the new book (Targeting only regular users)
+        await notifyAllUsers(`New Addition: "${book.title}" is now available!`, 'system', book._id, RoleName.USER);
 
         res.status(201).json(book);
     } catch (err) {
@@ -212,6 +212,28 @@ export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunc
         if (activeBorrow) {
             return res.status(400).json({
                 error: 'Cannot delete book because it is currently borrowed by a user.'
+            });
+        }
+
+        const activeReadlist = await Readlist.findOne({
+            book_id: req.params.id,
+            status: 'active'
+        });
+
+        if (activeReadlist) {
+            return res.status(400).json({
+                error: 'Cannot delete book because it is currently in a user\'s active readlist.'
+            });
+        }
+
+        const activeOrder = await Order.findOne({
+            'items.book_id': req.params.id,
+            status: { $in: ['pending', 'processing', 'shipped'] }
+        });
+
+        if (activeOrder) {
+            return res.status(400).json({
+                error: 'Cannot delete book because it is part of an active order checkout.'
             });
         }
 
@@ -496,6 +518,52 @@ export const getRecommendedBooks = async (req: AuthRequest, res: Response, next:
 
         res.json(recommendations);
     } catch (err) {
+        next(err);
+    }
+};
+
+export const checkDeletionSafety = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const bookId = req.params.id;
+    try {
+        const activeBorrow = await Borrow.findOne({
+            book_id: bookId,
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+        });
+
+        if (activeBorrow) {
+            return res.json({
+                canDelete: false,
+                reason: 'This book is currently borrowed by a user.'
+            });
+        }
+
+        const activeReadlist = await Readlist.findOne({
+            book_id: bookId,
+            status: 'active'
+        });
+
+        if (activeReadlist) {
+            return res.json({
+                canDelete: false,
+                reason: 'This book is currently in a user\'s active readlist.'
+            });
+        }
+
+        const activeOrder = await Order.findOne({
+            'items.book_id': bookId,
+            status: { $in: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.SHIPPED] }
+        });
+
+        if (activeOrder) {
+            return res.json({
+                canDelete: false,
+                reason: 'This book is part of an active order checkout.'
+            });
+        }
+
+        res.json({ canDelete: true });
+    } catch (err) {
+        console.error('[checkDeletionSafety] Error:', err);
         next(err);
     }
 };

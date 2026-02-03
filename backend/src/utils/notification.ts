@@ -68,13 +68,22 @@ export const notifySuperAdmins = async (message: string, type: 'system' | 'borro
     }
 };
 
-export const notifyAllUsers = async (message: string, type: 'system' | 'borrow' | 'return' | 'wishlist' = 'system', book_id?: string | Types.ObjectId) => {
+export const notifyAllUsers = async (
+    message: string,
+    type: 'system' | 'borrow' | 'return' | 'wishlist' = 'system',
+    book_id?: string | Types.ObjectId,
+    targetRole?: RoleName
+) => {
     try {
-        // Find all users with RoleName.USER
-        // We assume 'User' role is for standard users. Assuming we want to notify ALL registered users including admins?
-        // Usually "Users" means everyone.
+        const query: any = {};
+        if (targetRole) {
+            const role = await Role.findOne({ name: targetRole });
+            if (role) {
+                query.role_id = role._id;
+            }
+        }
 
-        const users = await User.find().select('_id');
+        const users = await User.find(query).select('_id');
 
         if (users.length === 0) return;
 
