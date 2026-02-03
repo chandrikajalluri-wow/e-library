@@ -6,7 +6,7 @@ interface OrderItem {
     book_id: {
         title: string;
         price: number;
-    };
+    } | null;
     quantity: number;
     priceAtOrder: number;
 }
@@ -73,7 +73,7 @@ export const generateInvoice = (order: OrderData) => {
     // Table of Items
     const tableData = order.items.map((item, index) => [
         index + 1,
-        item.book_id.title,
+        item.book_id?.title || 'Deleted Book',
         `x ${item.quantity}`,
         `INR ${item.priceAtOrder.toFixed(2)}`,
         `INR ${(item.priceAtOrder * item.quantity).toFixed(2)}`

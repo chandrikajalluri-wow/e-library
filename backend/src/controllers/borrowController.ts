@@ -300,6 +300,7 @@ export const updateReadingProgress = async (req: AuthRequest, res: Response) => 
         if (bookmarks !== undefined) record!.bookmarks = bookmarks;
 
         await record!.save();
+
         res.json({ message: 'Progress updated', last_page: record!.last_page, bookmarks: record!.bookmarks });
     } catch (err) {
         console.error('Update progress error:', err);

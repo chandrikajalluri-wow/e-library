@@ -66,6 +66,7 @@ export type AnnouncementType = typeof AnnouncementType[keyof typeof Announcement
 
 export const TargetPage = {
     ALL: 'ALL',
+    USER: 'USER',
     HOME: 'HOME',
     BOOKS: 'BOOKS',
     DASHBOARD: 'DASHBOARD',

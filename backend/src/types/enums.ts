@@ -76,6 +76,7 @@ export enum AnnouncementType {
 
 export enum TargetPage {
     ALL = 'ALL',
+    USER = 'USER',
     HOME = 'HOME',
     BOOKS = 'BOOKS',
     DASHBOARD = 'DASHBOARD',

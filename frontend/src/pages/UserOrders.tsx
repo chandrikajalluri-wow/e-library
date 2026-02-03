@@ -10,7 +10,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/UserOrders.css';
 
 interface OrderItem {
-    book_id: { title: string; cover_image_url: string; price: number; author: string };
+    book_id: { title: string; cover_image_url: string; price: number; author: string } | null;
     quantity: number;
     priceAtOrder: number;
 }
@@ -208,8 +208,8 @@ const UserOrders: React.FC = () => {
 
                                         <div className="books-preview-strip">
                                             {order.items.map((item, idx) => (
-                                                <div key={idx} className="preview-book-thumb" title={item.book_id.title}>
-                                                    <img src={item.book_id.cover_image_url} alt={item.book_id.title} />
+                                                <div key={idx} className="preview-book-thumb" title={item.book_id?.title || 'Deleted Book'}>
+                                                    <img src={item.book_id?.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={item.book_id?.title || 'Deleted Book'} />
                                                     {item.quantity > 1 && <span className="qty-overlay">x{item.quantity}</span>}
                                                 </div>
                                             ))}
