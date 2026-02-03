@@ -5,7 +5,7 @@ export interface IAnnouncement extends Document {
     content: string;
     author: Types.ObjectId;
     type: 'INFO' | 'OFFER' | 'GREETING' | 'MAINTENANCE' | 'WARNING';
-    targetPage: 'ALL' | 'HOME' | 'BOOKS' | 'DASHBOARD' | 'PROFILE' | 'ADMIN_PANEL';
+    targetPage: 'ALL' | 'USER' | 'HOME' | 'BOOKS' | 'DASHBOARD' | 'PROFILE' | 'ADMIN_PANEL';
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -23,7 +23,7 @@ const announcementSchema = new Schema<IAnnouncement>(
         },
         targetPage: {
             type: String,
-            enum: ['ALL', 'HOME', 'BOOKS', 'DASHBOARD', 'PROFILE', 'ADMIN_PANEL'],
+            enum: ['ALL', 'USER', 'HOME', 'BOOKS', 'DASHBOARD', 'PROFILE', 'ADMIN_PANEL'],
             default: 'ALL'
         },
         isActive: { type: Boolean, default: true },

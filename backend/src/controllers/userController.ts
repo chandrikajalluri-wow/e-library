@@ -11,6 +11,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import Book from '../models/Book';
 import Order from '../models/Order';
 import Readlist from '../models/Readlist';
+import ActivityLog from '../models/ActivityLog';
 import { sendEmail } from '../utils/mailer';
 import { sendNotification, notifyAdmins } from '../utils/notification';
 import { NotificationType, BorrowStatus, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus, BookStatus } from '../types/enums';
@@ -516,8 +517,8 @@ export const getReadlist = async (req: AuthRequest, res: Response) => {
             .populate('book_id')
             .sort({ addedAt: -1 });
 
-        // 3. Keep all items, even expired ones (no auto-cleanup)
-        const validReadlistItems = readlistItems;
+        // 3. Keep all items, even expired ones, but filter out deleted books
+        const validReadlistItems = readlistItems.filter(item => item.book_id !== null);
 
         const formattedReadlist = validReadlistItems.map(item => ({
             _id: item._id,
@@ -771,7 +772,24 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
         }
 
         // 4. Check current monthly readlist count
-        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        let monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+        if (user.membershipStartDate && membership.name === MembershipName.PREMIUM) {
+            const start = new Date(user.membershipStartDate);
+            const now = new Date();
+
+            // Create a date for the current year/month but with the original start day
+            let currentCycleStart = new Date(now.getFullYear(), now.getMonth(), start.getDate());
+
+            // If that date hasn't happened yet this month, go back one month
+            if (currentCycleStart > now) {
+                currentCycleStart = new Date(now.getFullYear(), now.getMonth() - 1, start.getDate());
+            }
+
+            monthStart = currentCycleStart;
+            console.log(`[addToReadlist] Premium Cycle Start: ${monthStart.toISOString()}`);
+        }
+
         const monthlyCount = await Readlist.countDocuments({
             user_id: userId,
             addedAt: { $gte: monthStart }
@@ -806,6 +824,18 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
             existingEntry.dueDate = newDueDate;
             await existingEntry.save();
 
+            try {
+                await ActivityLog.create({
+                    user_id: userId,
+                    action: 'ADD_TO_READLIST',
+                    description: `Renewed/Added book to readlist: ${book?.title || 'Unknown'}`,
+                    book_id: book_id as any,
+                    timestamp: new Date()
+                });
+            } catch (logErr) {
+                console.error('Failed to log readlist renewal:', logErr);
+            }
+
             console.log(`[addToReadlist] Renewed expired entry for ${book_id}`);
             res.json({ message: 'Book added to readlist successfully' });
         } else {
@@ -824,6 +854,19 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
             });
 
             await newEntry.save();
+
+            try {
+                await ActivityLog.create({
+                    user_id: userId,
+                    action: 'ADD_TO_READLIST',
+                    description: `Added book to readlist: ${book?.title || 'Unknown'}`,
+                    book_id: book_id as any,
+                    timestamp: new Date()
+                });
+            } catch (logErr) {
+                console.error('Failed to log new readlist entry:', logErr);
+            }
+
             console.log(`[addToReadlist] Successfully added ${book_id}`);
             res.json({ message: 'Book added to readlist successfully' });
         }

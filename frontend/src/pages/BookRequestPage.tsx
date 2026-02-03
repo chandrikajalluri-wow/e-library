@@ -65,7 +65,7 @@ const BookRequestPage: React.FC = () => {
     if (membership?.name === MembershipName.BASIC) {
         return (
             <motion.div
-                className="request-page"
+                className="request-page centered-locked-view"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
             >

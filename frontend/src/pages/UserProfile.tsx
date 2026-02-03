@@ -319,7 +319,7 @@ const UserProfile: React.FC = () => {
                     </div>
                   </div>
 
-                  {user.membership_id?.name !== MembershipName.BASIC && (
+                  {user.membership_id?.name && user.membership_id.name !== MembershipName.BASIC && (
                     <div className="membership-dates-footer">
                       <div className="date-item">
                         <label>Member Since</label>
@@ -335,7 +335,7 @@ const UserProfile: React.FC = () => {
                   )}
                 </div>
 
-                {user.membership_id?.name !== 'basic' && (
+                {user.membership_id?.name && user.membership_id.name !== MembershipName.BASIC && (
                   <div className="membership-actions-premium">
                     {(() => {
                       const expiryDate = user.membershipExpiryDate ? new Date(user.membershipExpiryDate) : null;

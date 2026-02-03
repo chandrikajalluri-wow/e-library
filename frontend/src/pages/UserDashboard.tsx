@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDashboardStats, getReadlist, getProfile } from '../services/userService';
 import { getMyMembership, type Membership } from '../services/membershipService';
-import { getAnnouncements } from '../services/superAdminService';
+import { MembershipName } from '../types/enums';
+
+
 import { toast } from 'react-toastify';
 import { BookOpen, Flame, Heart, Bookmark, ArrowRight, Zap } from 'lucide-react';
 import '../styles/UserDashboard.css';
@@ -13,7 +15,7 @@ const UserDashboard: React.FC = () => {
   const [readlist, setReadlist] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0, streakCount: 0 });
   const [membership, setMembership] = useState<Membership | null>(null);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,17 +37,13 @@ const UserDashboard: React.FC = () => {
       const results = await Promise.allSettled([
         getReadlist(),
         getDashboardStats(),
-        getMyMembership(),
-        getAnnouncements()
+        getMyMembership()
       ]);
 
       if (results[0].status === 'fulfilled') setReadlist(Array.isArray(results[0].value) ? results[0].value : []);
       if (results[1].status === 'fulfilled') setStats(results[1].value);
       if (results[2].status === 'fulfilled') setMembership(results[2].value);
-      if (results[3].status === 'fulfilled') {
-        const aData = results[3].value;
-        setAnnouncements(Array.isArray(aData) ? aData : []);
-      }
+
 
     } catch (err) {
       console.error(err);
@@ -87,7 +85,7 @@ const UserDashboard: React.FC = () => {
             <span className="hero-stat-label">Day Streak</span>
           </div>
           <div className="hero-stat-item">
-            <span className="hero-stat-value">{readlist.length}</span>
+            <span className="hero-stat-value">{readlist.filter(item => item.book || item.title).length}</span>
             <span className="hero-stat-label">Active Reads</span>
           </div>
         </div>
@@ -153,7 +151,7 @@ const UserDashboard: React.FC = () => {
               )}
             </div>
             <button onClick={() => navigate('/memberships')} className="upgrade-link-btn" style={{ marginTop: '1.25rem', width: '100%' }}>
-              Upgrade Plan
+              {membership?.name === MembershipName.PREMIUM ? 'View Plans' : 'Upgrade Plan'}
             </button>
           </div>
         </div>
@@ -175,31 +173,7 @@ const UserDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Announcements Section */}
-      {announcements.length > 0 && (
-        <section>
-          <h2 className="modern-section-title">
-            <Zap size={24} className="title-icon" />
-            Announcements
-          </h2>
-          <div className="announcements-swiper">
-            {announcements.slice(0, 3).map((ann: any) => (
-              <div key={ann._id} className="modern-announcement-card">
-                <span className="ann-tag">Latest Updates</span>
-                <div className="ann-content">
-                  <h3>{ann.title}</h3>
-                  <p>{ann.content}</p>
-                </div>
-                <div className="ann-footer">
-                  <span className="ann-date">
-                    {new Date(ann.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+
 
       {/* Readlist Section */}
       <section style={{ marginTop: '0', paddingTop: '0' }}>
@@ -210,8 +184,7 @@ const UserDashboard: React.FC = () => {
           </h2>
           <button
             onClick={() => loadData()}
-            style={{ background: 'transparent', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
-          >
+            style={{ background: 'transparent', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}          >
             ↻ Sync Data
           </button>
         </div>

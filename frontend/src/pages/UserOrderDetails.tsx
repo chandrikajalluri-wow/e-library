@@ -31,7 +31,7 @@ interface OrderDetails {
             cover_image_url: string;
             price: number;
             author?: string;
-        };
+        } | null;
         quantity: number;
         priceAtOrder: number;
     }[];
@@ -201,11 +201,11 @@ const UserOrderDetails: React.FC = () => {
                                 {order.items.map((item, idx) => (
                                     <div key={idx} className="order-item-row-premium">
                                         <div className="item-img-box">
-                                            <img src={item.book_id.cover_image_url} alt={item.book_id.title} />
+                                            <img src={item.book_id?.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={item.book_id?.title || 'Deleted Book'} />
                                         </div>
                                         <div className="item-text-info">
                                             <div className="title-row">
-                                                <h4>{item.book_id.title}</h4>
+                                                <h4>{item.book_id?.title || 'Deleted Book'}</h4>
                                                 <span className="unit-price">₹{item.priceAtOrder.toFixed(2)}</span>
                                             </div>
                                             <div className="quantity-row">

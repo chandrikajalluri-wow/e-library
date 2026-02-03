@@ -92,11 +92,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       const profile = await getProfile();
       setCurrentUser(profile);
 
+      // Fetch stats for all admins so header counts are accurate
+      fetchStats();
+
       if (profile.role === RoleName.SUPER_ADMIN) {
         const adminList = await getAdmins();
         setAdmins(adminList);
-        // Also fetch global stats for Super Admin context
-        fetchStats();
       }
     } catch (err: unknown) {
       console.error(err);

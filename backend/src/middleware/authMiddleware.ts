@@ -37,6 +37,12 @@ export const auth = async (
         return res.status(401).json({ error: 'Account has been deleted' });
       }
 
+      // Session Revocation Check
+      const isSessionActive = user.activeSessions?.some(session => session.token === token);
+      if (!isSessionActive) {
+        return res.status(401).json({ error: 'Session has been revoked or expired. Please login again.' });
+      }
+
       req.user = user;
       next();
     } catch (error) {

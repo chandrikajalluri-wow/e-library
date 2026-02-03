@@ -109,13 +109,13 @@
 
 .filters-toolbar {
     background: var(--bg-color);
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    margin-bottom: 2.5rem;
-    gap: 1.5rem;
+    margin-bottom: 2rem;
+    gap: 1rem;
     border: 1px solid var(--border-color);
 }
 
@@ -194,6 +194,7 @@
     position: relative;
     width: auto !important;
     margin: 0 !important;
+    justify-content: flex-start;
 }
 
 [data-theme='dark'] .filter-item {
@@ -212,6 +213,7 @@
     color: var(--text-secondary);
     transition: color 0.3s;
     flex-shrink: 0;
+    margin: 0 !important;
 }
 
 .filter-item:hover svg {
@@ -225,9 +227,11 @@
     font-weight: 700;
     font-size: 0.95rem;
     cursor: pointer;
-    padding-right: 1.75rem !important;
+    padding: 0 1.75rem 0 0 !important;
     height: 100%;
     outline: none;
+    display: block;
+    line-height: normal;
     appearance: none;
     -webkit-appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -236,6 +240,7 @@
     background-size: 14px;
     letter-spacing: -0.25px;
     margin-bottom: 0 !important;
+    margin-top: 0 !important;
 }
 
 .filter-item select option {

@@ -45,6 +45,8 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ targetPage }) =
             if (annTarget === TargetPage.BOOKS && path.includes('/books')) return true;
             if (annTarget === TargetPage.DASHBOARD && (path.includes('/dashboard') || path.includes('/admin-dashboard'))) return true;
             if (annTarget === TargetPage.PROFILE && path.includes('/profile')) return true;
+            // Target all user-facing pages (non-admin)
+            if (annTarget === TargetPage.USER && !path.includes('/admin')) return true;
             // Expanded admin panel check to includes '/admin' to cover /admin/orders etc.
             if (annTarget === TargetPage.ADMIN_PANEL && (path.includes('/admin-dashboard') || path.includes('/admin'))) return true;
 
