@@ -13,7 +13,7 @@ export const auth = async (
   res: Response,
   next: NextFunction
 ) => {
-  let token;
+  let token: string | undefined;
 
   if (
     req.headers.authorization &&
