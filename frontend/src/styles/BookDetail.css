@@ -1,9 +1,29 @@
-.back-to-catalog {
-    margin-bottom: 1rem;
+.book-detail-back-nav {
+    padding: 2rem 0 1.5rem;
 }
 
-.book-detail-back-nav {
-    padding: 2rem 1.5rem 0;
+.back-to-catalog-premium {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.back-to-catalog-premium:hover {
+    transform: translateX(-5px);
+    background: var(--bg-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
 }
 
 .book-detail-card {

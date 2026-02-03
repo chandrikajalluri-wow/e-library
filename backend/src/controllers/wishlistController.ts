@@ -69,11 +69,6 @@ export const addToWishlist = async (req: AuthRequest, res: Response) => {
             book_id as any
         );
 
-        await notifyAdmins(
-            `${user?.name || 'A user'} wishlisted "${book?.title}"`,
-            NotificationType.WISHLIST
-        );
-
         res.status(201).json(item);
     } catch (err) {
         console.log(err);

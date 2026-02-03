@@ -5,7 +5,7 @@ import { getDashboardStats, getReadlist, getProfile } from '../services/userServ
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { getAnnouncements } from '../services/superAdminService';
 import { toast } from 'react-toastify';
-import { BookOpen, Flame, Heart, Bookmark, Ghost, ArrowRight, Zap } from 'lucide-react';
+import { BookOpen, Flame, Heart, Bookmark, ArrowRight, Zap } from 'lucide-react';
 import '../styles/UserDashboard.css';
 import '../styles/BookList.css';
 
@@ -64,6 +64,8 @@ const UserDashboard: React.FC = () => {
     return "Good Evening";
   };
 
+  const [showMembershipDetails, setShowMembershipDetails] = useState(false);
+
   return (
     <div className="dashboard-wrapper dashboard-container">
       <div className="back-to-catalog-container">
@@ -114,8 +116,44 @@ const UserDashboard: React.FC = () => {
                 style={{ width: `${Math.min((stats.borrowedCount / (membership?.borrowLimit || 3)) * 100, 100)}%` }}
               ></div>
             </div>
-            <button onClick={() => navigate('/memberships')} className="upgrade-link-btn" style={{ marginTop: '1.5rem', width: '100%' }}>
-              Manage Membership
+            <div className="membership-details-action" style={{ marginTop: '1rem' }}>
+              <button
+                onClick={() => setShowMembershipDetails(!showMembershipDetails)}
+                className="details-toggle-btn"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--primary-color)',
+                  fontSize: '0.85rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0'
+                }}
+              >
+                {showMembershipDetails ? 'Hide Plan Details' : 'View Plan Details'}
+                <ArrowRight size={14} style={{ transform: showMembershipDetails ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.3s ease' }} />
+              </button>
+
+              {showMembershipDetails && (
+                <div className="membership-features-mini-list" style={{ marginTop: '0.75rem', animation: 'fadeIn 0.3s ease' }}>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {membership?.features?.map((feature, i) => (
+                      <li key={i} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ width: '6px', height: '6px', background: 'var(--primary-color)', borderRadius: '50%' }}></div>
+                        {feature}
+                      </li>
+                    )) || (
+                        <li style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard library access included.</li>
+                      )}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <button onClick={() => navigate('/memberships')} className="upgrade-link-btn" style={{ marginTop: '1.25rem', width: '100%' }}>
+              Upgrade Plan
             </button>
           </div>
         </div>
@@ -180,13 +218,40 @@ const UserDashboard: React.FC = () => {
 
         <div className="grid-books">
           {readlist.length === 0 ? (
-            <div className="empty-readlist-state">
-              <Ghost size={64} className="empty-state-icon" />
-              <h2>Your library is quiet...</h2>
-              <p>Adventure awaits! Find your next favorite book in our extensive catalog.</p>
-              <button onClick={() => navigate('/books')} className="read-btn-premium">
-                Explore Catalog
-              </button>
+            <div className="empty-discovery-zone saas-reveal">
+              <div className="discovery-visual-content">
+                <div className="floating-icons-container">
+                  <div className="float-icon icon-1"><BookOpen size={40} /></div>
+                  <div className="float-icon icon-2"><Heart size={30} /></div>
+                  <div className="float-icon icon-3"><Zap size={35} /></div>
+                </div>
+                <div className="discovery-text">
+                  <h2>Your library is quiet...</h2>
+                  <p>Adventure, knowledge, and mystery are just a click away. Start your reading journey today.</p>
+                </div>
+              </div>
+
+              <div className="discovery-chips-container">
+                <p className="chips-label">Quick Discovery</p>
+                <div className="discovery-chips">
+                  {['Fantasy', 'Technology', 'Business', 'Romance', 'Sci-Fi'].map((cat) => (
+                    <button
+                      key={cat}
+                      className="discovery-chip"
+                      onClick={() => navigate(`/books?search=${cat}`)}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="discovery-actions">
+                <button onClick={() => navigate('/books')} className="explore-catalog-btn">
+                  Explore Full Catalog
+                  <ArrowRight size={18} />
+                </button>
+              </div>
             </div>
           ) : (
             readlist.map((item: any) => {

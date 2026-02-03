@@ -426,12 +426,18 @@ const AdminOrders: React.FC = () => {
 
                                     <div className="order-footer">
                                         <div className="order-items-preview">
-                                            {order.items.map((item, idx) => (
-                                                <div key={idx} className="preview-item" title={item.book_id.title}>
-                                                    <img src={item.book_id.cover_image_url} alt="Cover" />
-                                                    <span className="qty-badge">x{item.quantity}</span>
-                                                </div>
-                                            ))}
+                                            {order.items.map((item, idx) => {
+                                                const book = item.book_id;
+                                                const title = book?.title || 'Deleted Book';
+                                                const cover = book?.cover_image_url || 'https://via.placeholder.com/150?text=NA';
+
+                                                return (
+                                                    <div key={idx} className="preview-item" title={title}>
+                                                        <img src={cover} alt={title} />
+                                                        <span className="qty-badge">x{item.quantity}</span>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                         <div className="card-actions">
                                             <button className="quick-view-btn">View Details</button>

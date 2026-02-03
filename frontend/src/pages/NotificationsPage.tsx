@@ -42,14 +42,19 @@ const NotificationsPage: React.FC = () => {
         }
     };
 
+    const role = localStorage.getItem('role');
+    const isAdmin = role === 'admin' || role === 'super_admin';
+
     if (loading) return <Loader />;
 
     return (
         <div className="notifications-page dashboard-container saas-reveal">
             <header className="admin-header">
                 <div className="admin-header-titles">
-                    <h1 className="admin-header-title">Notifications</h1>
-                    <p className="admin-header-subtitle">Stay updated with your library activities</p>
+                    <h1 className="admin-header-title">{isAdmin ? 'Admin Activity Control' : 'Notifications'}</h1>
+                    <p className="admin-header-subtitle">
+                        {isAdmin ? 'Monitor and manage user activities and requests' : 'Stay updated with your library activities'}
+                    </p>
                 </div>
                 {notifications.some(n => !n.is_read) && (
                     <button className="btn-secondary mark-all-read-btn" onClick={handleMarkAllRead}>
@@ -61,40 +66,49 @@ const NotificationsPage: React.FC = () => {
             <div className="notifications-container card">
                 {notifications.length > 0 ? (
                     <div className="notifications-list-full">
-                        {notifications.map((notif) => (
-                            <div
-                                key={notif._id}
-                                className={`notif-full-item ${notif.is_read ? 'read' : 'unread'}`}
-                                onClick={() => !notif.is_read && handleMarkRead(notif._id)}
-                            >
-                                <div className="notif-full-icon">
-                                    {notif.type === 'borrow' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v10.5M4 19.5H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5.5"></path></svg>}
-                                    {notif.type === 'return' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>}
-                                    {notif.type === 'wishlist' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z"></path></svg>}
-                                    {notif.type === 'fine' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>}
-                                    {notif.type === 'order' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>}
-                                    {notif.type === 'book_request' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>}
-                                    {notif.type === 'system' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>}
-                                </div>
-                                <div className="notif-full-content">
-                                    <div className="notif-full-main">
-                                        <p className="notif-full-message">{notif.message}</p>
-                                        <span className="notif-full-time">
-                                            {formatDistanceToNow(new Date(notif.timestamp), { addSuffix: true })}
-                                        </span>
+                        {notifications.map((notif) => {
+                            const isActionRequired = isAdmin && (notif.type === 'return' || notif.type === 'book_request' || notif.type === 'order');
+
+                            return (
+                                <div
+                                    key={notif._id}
+                                    className={`notif-full-item ${notif.is_read ? 'read' : 'unread'} ${isActionRequired ? 'action-required-full' : ''}`}
+                                    onClick={() => !notif.is_read && handleMarkRead(notif._id)}
+                                >
+                                    <div className="notif-full-icon">
+                                        {notif.type === 'borrow' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v10.5M4 19.5H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5.5"></path></svg>}
+                                        {notif.type === 'return' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>}
+                                        {notif.type === 'wishlist' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z"></path></svg>}
+                                        {notif.type === 'fine' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>}
+                                        {notif.type === 'order' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>}
+                                        {notif.type === 'book_request' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>}
+                                        {notif.type === 'system' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>}
                                     </div>
-                                    {notif.book_id && (
-                                        <div className="notif-book-info">
-                                            <p className="notif-book-text">Related Book: <strong>{notif.book_id.title}</strong></p>
-                                            <Link to={`/books/${notif.book_id._id || notif.book_id}`} className="view-book-btn">
-                                                View Book
-                                            </Link>
+                                    <div className="notif-full-content">
+                                        <div className="notif-full-main">
+                                            {isActionRequired && (
+                                                <span className="action-tag" style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+                                                    ACTION REQUIRED
+                                                </span>
+                                            )}
+                                            <p className="notif-full-message">{notif.message}</p>
+                                            <span className="notif-full-time">
+                                                {formatDistanceToNow(new Date(notif.timestamp), { addSuffix: true })}
+                                            </span>
                                         </div>
-                                    )}
+                                        {notif.book_id && (
+                                            <div className="notif-book-info">
+                                                <p className="notif-book-text">Related Book: <strong>{notif.book_id.title}</strong></p>
+                                                <Link to={`/books/${notif.book_id._id || notif.book_id}`} className="view-book-btn">
+                                                    View Book
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {!notif.is_read && <div className="unread-pulse"></div>}
                                 </div>
-                                {!notif.is_read && <div className="unread-pulse"></div>}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="empty-notifications">
@@ -104,11 +118,17 @@ const NotificationsPage: React.FC = () => {
                                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                             </svg>
                         </div>
-                        <h2>No notifications yet</h2>
-                        <p className="empty-text">We'll notify you when something important happens.</p>
-                        <Link to="/books" className="btn-primary explore-books-btn">
-                            Explore Books
-                        </Link>
+                        <h2>{isAdmin ? 'All caught up!' : 'No notifications yet'}</h2>
+                        <p className="empty-text">
+                            {isAdmin
+                                ? 'There are no recent user activities or pending requests.'
+                                : "We'll notify you when something important happens."}
+                        </p>
+                        {!isAdmin && (
+                            <Link to="/books" className="btn-primary explore-books-btn">
+                                Explore Books
+                            </Link>
+                        )}
                     </div>
                 )}
             </div>

@@ -21,9 +21,11 @@ const memberships = [
         hasRecommendations: false,
         description: 'Perfect for casual readers',
         features: [
-            'Borrow up to 3 books',
-            '7 days borrowing period',
+            'Read up to 3 books',
+            '7 days reading period',
             'Access to standard collection',
+            '3-4 Days Delivery',
+            'No recommendations',
             'Email notifications'
         ]
     },
@@ -39,11 +41,11 @@ const memberships = [
         hasRecommendations: true,
         description: 'Ultimate reading experience',
         features: [
-            'Borrow up to 10 books',
-            '21 days borrowing period',
+            'Read up to 10 books',
+            '21 days reading period',
             'Access to premium collection',
+            'FREE 24-Hour Delivery',
             'Request new books',
-            'Renew borrowed books',
             'Personalized recommendations',
             'Priority support'
         ]

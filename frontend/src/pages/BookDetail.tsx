@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBook, getSimilarBooks } from '../services/bookService';
-import { Heart, ShoppingCart, ThumbsUp, ThumbsDown, Zap, Truck, ShieldCheck, BookOpen, Flag } from 'lucide-react';
+import { Heart, ShoppingCart, ThumbsUp, ThumbsDown, Zap, Truck, ShieldCheck, BookOpen, Flag, ArrowLeft } from 'lucide-react';
 import { addToWishlist, removeFromWishlist, getWishlist } from '../services/wishlistService';
 import { getBookReviews, addReview, likeReview, dislikeReview, updateReview, reportReview } from '../services/reviewService';
 import { getMyMembership, type Membership } from '../services/membershipService';
@@ -344,9 +344,10 @@ const BookDetail: React.FC = () => {
       <div className="book-detail-back-nav">
         <button
           onClick={() => navigate(-1)}
-          className="btn-secondary back-to-catalog"
+          className="back-to-catalog-premium"
         >
-          &larr; Back to Catalog
+          <ArrowLeft size={18} />
+          Back to Catalog
         </button>
       </div>
       <div className="card book-detail-card">

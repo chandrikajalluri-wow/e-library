@@ -152,7 +152,7 @@ const Checkout: React.FC = () => {
                                                 <span className="item-author-label">by {item.book.author}</span>
                                                 <div className="item-meta-row">
                                                     <span className="item-qty-badge">Qty: {item.quantity}</span>
-                                                    {item.book.noOfCopies > 0 && <span className="item-price-each">₹{item.book.price.toFixed(2)} ea</span>}
+                                                    {item.book.noOfCopies > 0 && <span className="item-price-each">₹{item.book.price.toFixed(2)}</span>}
                                                 </div>
                                             </div>
                                             <div className="item-total-price-box">

@@ -13,6 +13,21 @@ import "../styles/UserProfile.css";
 import type { Category, Membership } from "../types";
 import PaymentModal from "../components/PaymentModal";
 import CancellationModal from "../components/CancellationModal";
+import { useNavigate } from 'react-router-dom';
+import {
+  Camera,
+  Trophy,
+  Mail,
+  Phone,
+  ArrowLeft,
+  Zap,
+  BookOpen,
+  BadgeCheck,
+  Target,
+  Calendar,
+  ChevronRight,
+  Lock
+} from 'lucide-react';
 
 const UserProfile: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -30,6 +45,7 @@ const UserProfile: React.FC = () => {
   const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false);
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [isProcessingCancellation, setIsProcessingCancellation] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadProfile();
@@ -130,29 +146,32 @@ const UserProfile: React.FC = () => {
 
   if (!user) return <Loader />;
 
-  return (
-    <div className="profile-container dashboard-container">
-      <header className="admin-header">
-        <div className="admin-header-titles">
-          <h1 className="admin-header-title">User Profile</h1>
-          <p className="admin-header-subtitle">Manage your personal information and reading goals</p>
-        </div>
-      </header>
+  const isPremium = user.membership_id?.name === MembershipName.PREMIUM;
 
+  return (
+    <div className="profile-container dashboard-container saas-reveal">
+      <div className="back-to-catalog-container" style={{ maxWidth: '1280px', margin: '0 auto 1.5rem auto', padding: '0 2rem' }}>
+        <button onClick={() => navigate('/books')} className="back-to-catalog-link">
+          <ArrowLeft size={18} />
+          Back to Catalog
+        </button>
+      </div>
       <div className="profile-main-grid">
         <div className="profile-side">
           <div className="profile-sidebar-sticky">
             <div className="card profile-card avatar-card">
               <div className="avatar-upload-container">
-                <div className="profile-avatar-large">
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="User Avatar" />
-                  ) : (
-                    <div className="avatar-placeholder">{user.name.charAt(0)}</div>
-                  )}
+                <div className={`profile-avatar-large ${isPremium ? 'premium-glow' : ''}`}>
+                  <div className="profile-avatar-item">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="User Avatar" />
+                    ) : (
+                      <div className="avatar-placeholder">{user.name.charAt(0)}</div>
+                    )}
+                  </div>
                   {isEditing && (
                     <label htmlFor="avatar-input" className="avatar-edit-overlay">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+                      <Camera size={20} />
                     </label>
                   )}
                 </div>
@@ -166,11 +185,18 @@ const UserProfile: React.FC = () => {
                   />
                 )}
               </div>
-              <h3 className="profile-user-name">{user.name}</h3>
-              <p className="profile-user-email">{user.email}</p>
+              <div className="profile-identity">
+                <h3 className="profile-user-name">
+                  {user.name}
+                  {isPremium && <BadgeCheck size={18} className="verified-icon" />}
+                </h3>
+                <p className="profile-user-email"><Mail size={14} /> {user.email}</p>
+                {user.phone && <p className="profile-user-phone"><Phone size={14} /> {user.phone}</p>}
+              </div>
 
               <div className="membership-status-badge">
                 <span className={`badge-plan ${user.membership_id?.name || 'basic'}`}>
+                  {isPremium && <Zap size={14} fill="currentColor" />}
                   {user.membership_id?.displayName || 'Basic'} Plan
                 </span>
               </div>
@@ -182,26 +208,24 @@ const UserProfile: React.FC = () => {
               )}
             </div>
 
-            <div className="card profile-card stats-mini-card">
-              <h4 className="mini-card-title">Reading Velocity</h4>
-              <div className="stats-row">
-                <div className="stat-box">
-                  <span className="stat-num">{user.booksRead || 0}</span>
-                  <span className="stat-lab">Read</span>
+            <div className="card profile-card quick-stats-card">
+              <h4 className="mini-card-title">Activity Snapshot</h4>
+              <div className="quick-stats-grid">
+                <div className="q-stat">
+                  <BookOpen size={20} className="q-icon" />
+                  <div className="q-info">
+                    <span className="q-value">{user.booksRead || 0}</span>
+                    <span className="q-label">Books Read</span>
+                  </div>
                 </div>
-                <div className="stat-box">
-                  <span className="stat-num">{user.readingTarget || 0}</span>
-                  <span className="stat-lab">Target</span>
+                <div className="q-stat">
+                  <Target size={20} className="q-icon" />
+                  <div className="q-info">
+                    <span className="q-value">{user.readingTarget || 0}</span>
+                    <span className="q-label">Yearly Goal</span>
+                  </div>
                 </div>
               </div>
-              {user.readingTarget > 0 && (
-                <div className="reading-progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${Math.min((user.booksRead / user.readingTarget) * 100, 100)}%` }}
-                  ></div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -209,10 +233,46 @@ const UserProfile: React.FC = () => {
         <div className="profile-content">
           {!isEditing ? (
             <>
-              <div className="card profile-card">
-                <h2 className="profile-section-title">Reading Preferences</h2>
+              {/* Reading Progress Card */}
+              <div className="card profile-card goal-progress-card">
+                <div className="goal-header">
+                  <div className="goal-title-group">
+                    <Trophy size={24} className="goal-icon" />
+                    <div>
+                      <h2 className="profile-section-title">Reading Goal 2026</h2>
+                      <p className="goal-subtitle">You are doing great! Keep it up.</p>
+                    </div>
+                  </div>
+                  <div className="goal-percentage">
+                    {user.readingTarget > 0
+                      ? `${Math.round((user.booksRead / user.readingTarget) * 100)}%`
+                      : '0%'}
+                  </div>
+                </div>
+
+                <div className="reading-progress-container">
+                  <div className="progress-stats-labels">
+                    <span>{user.booksRead || 0} books completed</span>
+                    <span>Target: {user.readingTarget || 0} books</span>
+                  </div>
+                  <div className="modern-progress-track">
+                    <div
+                      className={`modern-progress-fill ${isPremium ? 'premium-gradient' : ''}`}
+                      style={{ width: `${Math.min((user.booksRead / user.readingTarget) * 100, 100)}%` }}
+                    >
+                      <div className="progress-shimmer"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card profile-card categories-card">
+                <div className="card-header-flex">
+                  <h2 className="profile-section-title">Reading Preferences</h2>
+                  {!isPremium && <div className="premium-lock-tag"><Lock size={12} /> Premium Only</div>}
+                </div>
                 <div className="profile-info-grid">
-                  <div className="info-item">
+                  <div className="info-item full-width">
                     <label>Favorite Genres</label>
                     <div className="genre-tags-display">
                       {user.favoriteGenres && user.favoriteGenres.length > 0 ? (
@@ -221,7 +281,7 @@ const UserProfile: React.FC = () => {
                           return cat ? <span key={gId} className="genre-tag">{cat.name}</span> : null;
                         })
                       ) : (
-                        <p>Not set</p>
+                        <p className="not-set-text">{isPremium ? "No genres selected yet." : "Upgrade to Premium to unlock."}</p>
                       )}
                     </div>
                   </div>
@@ -229,31 +289,54 @@ const UserProfile: React.FC = () => {
               </div>
 
               <div className="card profile-card membership-details-card">
-                <h2 className="profile-section-title">Membership Details</h2>
-                <div className="profile-info-grid">
-                  <div className="info-item">
+                <div className="card-header-flex">
+                  <h2 className="profile-section-title">Membership Status</h2>
+                </div>
+
+                <div className="membership-info-grid">
+                  <div className="m-info-box main-plan">
                     <label>Current Plan</label>
-                    <p className="highlight-text">{user.membership_id?.displayName || 'Basic'}</p>
+                    <div className="plan-display-group">
+                      <p className="highlight-text">{user.membership_id?.displayName || 'Basic'}</p>
+                      {isPremium && <span className="active-glow">Active</span>}
+                    </div>
+                  </div>
+
+                  <div className="m-info-mini-grid">
+                    <div className="m-mini-box">
+                      <div className="m-mini-icon"><BookOpen size={16} /></div>
+                      <div className="m-mini-text">
+                        <label>Monthly Limit</label>
+                        <p>{user.membership_id?.borrowLimit || 3} Books</p>
+                      </div>
+                    </div>
+                    <div className="m-mini-box">
+                      <div className="m-mini-icon"><Calendar size={16} /></div>
+                      <div className="m-mini-text">
+                        <label>Due Duration</label>
+                        <p>{user.membership_id?.borrowDuration || 7} Days</p>
+                      </div>
+                    </div>
                   </div>
 
                   {user.membership_id?.name !== MembershipName.BASIC && (
-                    <>
-                      <div className="info-item">
+                    <div className="membership-dates-footer">
+                      <div className="date-item">
                         <label>Member Since</label>
                         <p>{user.membershipStartDate ? new Date(user.membershipStartDate).toLocaleDateString() : 'N/A'}</p>
                       </div>
-                      <div className="info-item">
-                        <label>Expires On</label>
+                      <div className="date-item">
+                        <label>Valid Until</label>
                         <p className={user.membershipExpiryDate && new Date(user.membershipExpiryDate) < new Date() ? 'text-danger' : ''}>
                           {user.membershipExpiryDate ? new Date(user.membershipExpiryDate).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
 
                 {user.membership_id?.name !== 'basic' && (
-                  <div className="membership-actions">
+                  <div className="membership-actions-premium">
                     {(() => {
                       const expiryDate = user.membershipExpiryDate ? new Date(user.membershipExpiryDate) : null;
                       const daysUntilExpiry = expiryDate
@@ -263,21 +346,22 @@ const UserProfile: React.FC = () => {
                       const canRenew = daysUntilExpiry !== null && daysUntilExpiry <= 7;
 
                       return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div className="m-actions-wrap">
                           {canRenew ? (
                             <button
-                              className="btn-secondary renew-btn"
+                              className="btn-premium-action renew"
                               onClick={() => setIsRenewalModalOpen(true)}
                             >
                               Renew Membership
                             </button>
                           ) : (
-                            <p className="text-muted text-small" style={{ fontSize: '0.85rem', margin: 0 }}>
-                              Renewal available 7 days before expiry
-                            </p>
+                            <div className="renewal-info-tag">
+                              <Calendar size={14} />
+                              <span>Renewal opens 7 days before expiry</span>
+                            </div>
                           )}
                           <button
-                            className="btn-danger-outline cancel-btn"
+                            className="btn-text-danger"
                             onClick={() => setIsCancellationModalOpen(true)}
                           >
                             Cancel Membership
@@ -289,8 +373,15 @@ const UserProfile: React.FC = () => {
                 )}
 
                 {user.membership_id?.name === MembershipName.BASIC && (
-                  <div className="upgrade-prompt-mini">
-                    <p>Upgrade to Premium to unlock more features!</p>
+                  <div className="upgrade-premium-banner">
+                    <div className="u-content">
+                      <Zap size={24} className="u-icon" />
+                      <div>
+                        <h4>Unlock Premium Potential</h4>
+                        <p>Unlimited genres, personalized AI recs, and higher limits.</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={20} />
                   </div>
                 )}
               </div>
@@ -299,86 +390,38 @@ const UserProfile: React.FC = () => {
             <form onSubmit={handleUpdateProfile} className="profile-form-main">
               <div className="card profile-card">
                 <h2 className="profile-section-title">General Information</h2>
-                <div className="form-group">
-                  <label>Full Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Phone Number</label>
-                  <input
-                    type="tel"
-                    placeholder="+91 00000 00000"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label>Full Name</label>
+                    <input
+                      type="text"
+                      className="premium-input"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone Number</label>
+                    <input
+                      type="tel"
+                      className="premium-input"
+                      placeholder="+91 00000 00000"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="card profile-card">
-                <h2 className="profile-section-title">Favorite Genres (Max 3)</h2>
-                {user.membership_id?.name === MembershipName.PREMIUM ? (
-                  <div className="genre-selection-wrapper">
-                    <div className="genre-dropdown-container">
-                      <select
-                        className="genre-select-dropdown"
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            handleGenreToggle(e.target.value);
-                            e.target.value = ""; // Reset dropdown
-                          }
-                        }}
-                        disabled={formData.favoriteGenres.length >= 3}
-                      >
-                        <option value="">Select a genre...</option>
-                        {categories
-                          .filter(cat => !formData.favoriteGenres.includes(cat._id))
-                          .map(cat => (
-                            <option key={cat._id} value={cat._id}>
-                              {cat.name}
-                            </option>
-                          ))}
-                      </select>
-                      {formData.favoriteGenres.length >= 3 && (
-                        <p className="limit-msg text-muted">Limit reached (3 max)</p>
-                      )}
-                    </div>
-
-                    <div className="selected-genres-tags">
-                      {formData.favoriteGenres.map(gId => {
-                        const cat = categories.find(c => c._id === gId);
-                        if (!cat) return null;
-                        return (
-                          <div key={gId} className="genre-tag-removable">
-                            <span>{cat.name}</span>
-                            <button
-                              type="button"
-                              className="remove-genre-btn"
-                              onClick={() => handleGenreToggle(gId)}
-                              aria-label={`Remove ${cat.name}`}
-                            >
-                              &times;
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="membership-upgrade-prompt">
-                    <p>Upgrade to <strong>Premium</strong> to select your favorite genres and get personalized recommendations!</p>
-                  </div>
-                )}
-
-                <div className="form-group-row" style={{ marginTop: '2rem' }}>
+                <h2 className="profile-section-title">Reading Goals & Preferences</h2>
+                <div className="form-grid-2">
                   <div className="form-group">
                     <label>Books Read</label>
                     <input
                       type="number"
+                      className="premium-input"
                       value={formData.booksRead}
                       onChange={(e) => setFormData({ ...formData, booksRead: parseInt(e.target.value) || 0 })}
                     />
@@ -387,16 +430,70 @@ const UserProfile: React.FC = () => {
                     <label>Reading Target (Yearly)</label>
                     <input
                       type="number"
+                      className="premium-input"
                       value={formData.readingTarget}
                       onChange={(e) => setFormData({ ...formData, readingTarget: parseInt(e.target.value) || 0 })}
                     />
                   </div>
                 </div>
-              </div>
 
-              <div className="profile-form-actions">
-                <button type="submit" className="btn-primary">Save Profile</button>
-                <button type="button" className="btn-secondary" onClick={() => setIsEditing(false)}>Cancel</button>
+                <div className="genre-edit-section" style={{ marginTop: '2rem' }}>
+                  <label className="form-label-large">Favorite Genres (Max 3)</label>
+                  {isPremium ? (
+                    <div className="genre-selection-wrapper">
+                      <div className="genre-dropdown-container">
+                        <select
+                          className="genre-select-dropdown premium-select"
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handleGenreToggle(e.target.value);
+                              e.target.value = ""; // Reset dropdown
+                            }
+                          }}
+                          disabled={formData.favoriteGenres.length >= 3}
+                        >
+                          <option value="">Select a genre...</option>
+                          {categories
+                            .filter(cat => !formData.favoriteGenres.includes(cat._id))
+                            .map(cat => (
+                              <option key={cat._id} value={cat._id}>
+                                {cat.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+
+                      <div className="selected-genres-tags">
+                        {formData.favoriteGenres.map(gId => {
+                          const cat = categories.find(c => c._id === gId);
+                          if (!cat) return null;
+                          return (
+                            <div key={gId} className="genre-tag-removable">
+                              <span>{cat.name}</span>
+                              <button
+                                type="button"
+                                className="remove-genre-btn"
+                                onClick={() => handleGenreToggle(gId)}
+                                aria-label={`Remove ${cat.name}`}
+                              >
+                                &times;
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="membership-upgrade-prompt">
+                      <p>Upgrade to <strong>Premium</strong> to select your favorite genres and get personalized recommendations!</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="profile-form-actions-container">
+                  <button type="submit" className="btn-save-profile">Save Changes</button>
+                  <button type="button" className="btn-cancel-profile" onClick={() => setIsEditing(false)}>Cancel</button>
+                </div>
               </div>
             </form>
           )}

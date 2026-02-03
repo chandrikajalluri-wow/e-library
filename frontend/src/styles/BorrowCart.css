@@ -23,17 +23,26 @@
 .back-btn-minimal {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    background: transparent;
+    gap: 0.75rem;
+    background: var(--card-bg);
     color: var(--text-secondary);
-    font-size: 0.9rem;
-    padding: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0.6rem 1.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
     margin-bottom: 1rem;
-    transition: color 0.3s;
 }
 
 .back-btn-minimal:hover {
     color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+    transform: translateX(-5px);
+    box-shadow: 0 6px 15px rgba(99, 102, 241, 0.1);
 }
 
 .cart-title-main {
@@ -308,7 +317,6 @@
 
 .truck-free {
     color: var(--accent-color);
-    animation: bounce 2s infinite;
 }
 
 @keyframes bounce {
