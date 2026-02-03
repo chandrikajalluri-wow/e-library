@@ -41,6 +41,7 @@ interface OrderDetails {
         state: string;
         zipCode: string;
         country: string;
+        phoneNumber?: string;
     };
     totalAmount: number;
     deliveryFee: number;
@@ -242,6 +243,10 @@ const UserOrderDetails: React.FC = () => {
                                 <span className="city-line">{order.address_id?.city}, {order.address_id?.state}</span>
                                 <span className="zip-line">{order.address_id?.zipCode}</span>
                                 <span className="country-line">{order.address_id?.country}</span>
+                                <div className="address-phone-row" style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Phone size={14} />
+                                    <span>{order.address_id?.phoneNumber}</span>
+                                </div>
                             </div>
                         </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Plus, Check, MapPin, X, Navigation, Wallet, ShoppingBag, Truck, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Check, MapPin, X, Navigation, Wallet, ShoppingBag, Truck, Edit2, Trash2, Phone } from 'lucide-react';
 import { useBorrowCart, type CartItem } from '../context/BorrowCartContext';
 import { getAddresses, addAddress, updateAddress, removeAddress } from '../services/userService';
 import { getMyMembership, type Membership } from '../services/membershipService';
@@ -19,6 +19,7 @@ interface Address {
     state: string;
     zipCode: string;
     country: string;
+    phoneNumber: string;
     isDefault: boolean;
 }
 
@@ -46,6 +47,7 @@ const DeliveryAddress: React.FC = () => {
         state: '',
         zipCode: '',
         country: 'India',
+        phoneNumber: '',
         isDefault: false
     });
 
@@ -92,7 +94,7 @@ const DeliveryAddress: React.FC = () => {
             fetchAddresses();
             setShowModal(false);
             setEditingAddressId(null);
-            setNewAddress({ street: '', city: '', state: '', zipCode: '', country: 'India', isDefault: false });
+            setNewAddress({ street: '', city: '', state: '', zipCode: '', country: 'India', phoneNumber: '', isDefault: false });
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Failed to save address');
         }
@@ -107,6 +109,7 @@ const DeliveryAddress: React.FC = () => {
             state: address.state,
             zipCode: address.zipCode,
             country: address.country,
+            phoneNumber: address.phoneNumber,
             isDefault: address.isDefault
         });
         setShowModal(true);
@@ -308,6 +311,10 @@ const DeliveryAddress: React.FC = () => {
                                                         {address.street}, {address.city}, {address.state} - {address.zipCode}
                                                     </p>
                                                     <span className="country-label">{address.country}</span>
+                                                    <div className="address-phone-display">
+                                                        <Phone size={12} />
+                                                        <span>{address.phoneNumber}</span>
+                                                    </div>
                                                 </div>
                                                 <div className="address-actions">
                                                     <button className="address-action-btn edit" onClick={(e) => handleEditClick(e, address)} title="Edit Address">
@@ -328,7 +335,7 @@ const DeliveryAddress: React.FC = () => {
 
                             <button className="add-address-premium-btn" onClick={() => {
                                 setEditingAddressId(null);
-                                setNewAddress({ street: '', city: '', state: '', zipCode: '', country: 'India', isDefault: false });
+                                setNewAddress({ street: '', city: '', state: '', zipCode: '', country: 'India', phoneNumber: '', isDefault: false });
                                 setShowModal(true);
                             }}>
                                 <Plus size={20} />
@@ -442,6 +449,17 @@ const DeliveryAddress: React.FC = () => {
                                         required
                                         value={newAddress.street}
                                         onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="form-group-new">
+                                    <label>Phone Number</label>
+                                    <input
+                                        type="tel"
+                                        placeholder="e.g. +91 9876543210"
+                                        required
+                                        value={newAddress.phoneNumber}
+                                        onChange={(e) => setNewAddress({ ...newAddress, phoneNumber: e.target.value })}
                                     />
                                 </div>
 
