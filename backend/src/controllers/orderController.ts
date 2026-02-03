@@ -369,7 +369,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
         const order = await Order.findById(id)
-            .populate('user_id', 'name email')
+            .populate('user_id', 'name email phone')
             .populate('items.book_id', 'title cover_image_url price')
             .populate('address_id');
 

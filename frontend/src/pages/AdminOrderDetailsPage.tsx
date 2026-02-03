@@ -28,6 +28,7 @@ interface OrderDetails {
         state: string;
         zipCode: string;
         country: string;
+        phoneNumber?: string;
     };
     totalAmount: number;
     deliveryFee: number;
@@ -201,7 +202,9 @@ const AdminOrderDetailsPage: React.FC = () => {
                             </div>
                             <div className="info-row row-center">
                                 <Phone size={14} className="icon-sub" />
-                                <span className="value-sub">{order.user_id?.phone || 'Not provided'}</span>
+                                <span className="value-sub">
+                                    {order.address_id?.phoneNumber || order.user_id?.phone || 'Not provided'}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -215,7 +218,8 @@ const AdminOrderDetailsPage: React.FC = () => {
                             <p className="address-text">
                                 {order.address_id?.street},<br />
                                 {order.address_id?.city}, {order.address_id?.state},<br />
-                                {order.address_id?.zipCode}, {order.address_id?.country}
+                                {order.address_id?.zipCode}, {order.address_id?.country}<br />
+                                <strong>Phone:</strong> {order.address_id?.phoneNumber || 'N/A'}
                             </p>
                         </div>
                     </div>

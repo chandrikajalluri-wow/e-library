@@ -12,9 +12,9 @@ export const getAddresses = async (req: AuthRequest, res: Response) => {
 };
 
 export const addAddress = async (req: AuthRequest, res: Response) => {
-    const { street, city, state, zipCode, country, isDefault } = req.body;
+    const { street, city, state, zipCode, country, phoneNumber, isDefault } = req.body;
     try {
-        if (!street || !city || !state || !zipCode || !country) {
+        if (!street || !city || !state || !zipCode || !country || !phoneNumber) {
             return res.status(400).json({ error: 'All address fields are required' });
         }
 
@@ -30,6 +30,7 @@ export const addAddress = async (req: AuthRequest, res: Response) => {
             state,
             zipCode,
             country,
+            phoneNumber,
             isDefault: !!isDefault
         });
 
@@ -42,7 +43,7 @@ export const addAddress = async (req: AuthRequest, res: Response) => {
 
 export const updateAddress = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
-    const { street, city, state, zipCode, country, isDefault } = req.body;
+    const { street, city, state, zipCode, country, phoneNumber, isDefault } = req.body;
     try {
         const address = await Address.findOne({ _id: id, user_id: req.user!._id });
         if (!address) {
@@ -59,6 +60,7 @@ export const updateAddress = async (req: AuthRequest, res: Response) => {
         address.state = state || address.state;
         address.zipCode = zipCode || address.zipCode;
         address.country = country || address.country;
+        address.phoneNumber = phoneNumber || address.phoneNumber;
         address.isDefault = isDefault !== undefined ? !!isDefault : address.isDefault;
 
         await address.save();
