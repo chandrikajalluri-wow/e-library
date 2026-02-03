@@ -4,7 +4,11 @@ import { getAnnouncements } from '../services/superAdminService';
 import { AnnouncementType, TargetPage } from '../types/enums';
 import { X } from 'lucide-react';
 
-const AnnouncementBanner: React.FC = () => {
+interface AnnouncementBannerProps {
+    targetPage?: string;
+}
+
+const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ targetPage }) => {
     const location = useLocation();
     const [announcements, setAnnouncements] = useState<any[]>([]);
     const [visibleAnnouncements, setVisibleAnnouncements] = useState<any[]>([]);
@@ -12,18 +16,6 @@ const AnnouncementBanner: React.FC = () => {
     useEffect(() => {
         const fetchAnnouncements = async () => {
             try {
-                // Determine if we can use the same service or need a public one.
-                // Assuming getAnnouncements is usable by users (checked controller, it is public if not protected by middleware, checking middleware...)
-                // Wait, superAdminService might be protected. 
-                // However, for now we will try to use it. If it fails due to 403, we might need a public endpoint.
-                // Re-checking controller: superAdminController methods usually protected by @Protect and @Authorize in routes.
-                // If so, users can't see this.
-                // Users need a way to fetch announcements.
-                // I should probably check if there is a public route or user route. 
-                // If not, I should use a new service/endpoint.
-                // For this implementation, I will assume I need to fetch them. 
-                // If `getAnnouncements` fails for users, I will need to fix the backend route permission. 
-                // Let's use the service for now.
                 const data = await getAnnouncements();
                 setAnnouncements(data);
             } catch (err) {
@@ -35,19 +27,26 @@ const AnnouncementBanner: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        // Filter announcements based on current path
+        // Filter announcements based on current path or explicit targetPage prop
         const filtered = announcements.filter(ann => {
             if (!ann.isActive) return false;
 
-            const target = ann.targetPage;
-            if (!target || target === TargetPage.ALL) return true;
+            const annTarget = ann.targetPage;
+            if (!annTarget || annTarget === TargetPage.ALL) return true;
+
+            // If a specific targetPage prop is passed, check if it matches the announcement's target
+            if (targetPage) {
+                return annTarget === targetPage;
+            }
 
             const path = location.pathname;
 
-            if (target === TargetPage.HOME && path === '/') return true;
-            if (target === TargetPage.BOOKS && path.includes('/books')) return true;
-            if (target === TargetPage.DASHBOARD && (path.includes('/dashboard') || path.includes('/admin-dashboard'))) return true;
-            if (target === TargetPage.PROFILE && path.includes('/profile')) return true;
+            if (annTarget === TargetPage.HOME && path === '/') return true;
+            if (annTarget === TargetPage.BOOKS && path.includes('/books')) return true;
+            if (annTarget === TargetPage.DASHBOARD && (path.includes('/dashboard') || path.includes('/admin-dashboard'))) return true;
+            if (annTarget === TargetPage.PROFILE && path.includes('/profile')) return true;
+            // Expanded admin panel check to includes '/admin' to cover /admin/orders etc.
+            if (annTarget === TargetPage.ADMIN_PANEL && (path.includes('/admin-dashboard') || path.includes('/admin'))) return true;
 
             return false;
         });

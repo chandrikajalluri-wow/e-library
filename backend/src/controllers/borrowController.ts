@@ -103,7 +103,7 @@ export const issueBook = async (req: AuthRequest, res: Response) => {
         );
 
         await notifyAdmins(
-            `${user?.name || 'A user'} borrowed "${book.title}"`,
+            `${user?.name || 'A user'} started reading "${book.title}"`,
             NotificationType.BORROW
         );
 
@@ -476,7 +476,7 @@ export const checkoutCart = async (req: AuthRequest, res: Response) => {
         );
 
         await notifyAdmins(
-            `${user?.name || 'A user'} checked out ${totalItemsToBorrow} book(s) from cart`,
+            `${user?.name || 'A user'} started reading ${totalItemsToBorrow} book(s) from cart`,
             NotificationType.BORROW
         );
 

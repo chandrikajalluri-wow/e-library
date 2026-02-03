@@ -83,18 +83,23 @@ const App: React.FC = () => {
 
           <Route element={<ProtectedRoute allowedRoles={[RoleName.USER]} />}>
             <Route element={<UserLayout />}>
-              {/* User Routes */}
               <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/my-orders" element={<UserOrders />} />
               <Route path="/orders/:orderId" element={<UserOrderDetails />} />
               <Route path="/settings" element={<UserSettings />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
               <Route path="/borrow-cart" element={<BorrowCart />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/address" element={<DeliveryAddress />} />
+            </Route>
+          </Route>
+
+          {/* Shared Routes */}
+          <Route element={<ProtectedRoute allowedRoles={[RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN]} />}>
+            <Route element={<UserLayout />}>
+              <Route path="/notifications" element={<NotificationsPage />} />
             </Route>
           </Route>
 

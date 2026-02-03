@@ -56,6 +56,10 @@ const SuperAdminDashboard: React.FC = () => {
                                 <span className="stats-value">{metrics.users}</span>
                             </div>
                             <div className="card stats-card-content">
+                                <span className="stats-label">Total Books</span>
+                                <span className="stats-value stats-value-info">{metrics.totalBooks}</span>
+                            </div>
+                            <div className="card stats-card-content">
                                 <span className="stats-label">Admins</span>
                                 <span className="stats-value stats-value-accent">{metrics.admins}</span>
                             </div>
@@ -78,10 +82,10 @@ const SuperAdminDashboard: React.FC = () => {
 
                 {activeTab === 'users' && <UserAdminManagement hideTitle={true} />}
                 {(activeTab === 'books' || activeTab === 'categories') && <AdminDashboard hideHeader={true} />}
-                {activeTab === 'announcements' && <Announcements hideTitle={true} />}
-                {activeTab === 'queries' && <ContactQueries hideTitle={true} />}
-                {activeTab === 'reported-reviews' && <ReportedReviews hideTitle={true} />}
-                {activeTab === 'logs' && <SystemLogs hideTitle={true} />}
+                {activeTab === 'announcements' && <Announcements />}
+                {activeTab === 'queries' && <ContactQueries />}
+                {activeTab === 'reported-reviews' && <ReportedReviews />}
+                {activeTab === 'logs' && <SystemLogs />}
             </main>
         </div>
     );

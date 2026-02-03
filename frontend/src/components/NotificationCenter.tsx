@@ -133,11 +133,13 @@ const NotificationCenter: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="notification-footer">
-                        <Link to="/notifications" onClick={() => setIsOpen(false)}>
-                            View all notifications
-                        </Link>
-                    </div>
+                    {!isAdmin && (
+                        <div className="notification-footer">
+                            <Link to="/notifications" onClick={() => setIsOpen(false)}>
+                                View all notifications
+                            </Link>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

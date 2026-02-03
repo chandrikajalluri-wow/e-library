@@ -9,6 +9,7 @@ import Announcement from '../models/Announcement';
 import Notification from '../models/Notification';
 import Order from '../models/Order';
 import Contact from '../models/Contact';
+import Readlist from '../models/Readlist';
 import { RoleName, ActivityAction, NotificationType } from '../types/enums';
 import { sendEmail } from '../utils/mailer';
 
@@ -231,7 +232,7 @@ export const getSystemLogs = async (req: Request, res: Response) => {
 
         const adminLogs = logs.filter(log => {
             const user = log.user_id as any;
-            return user?.role_id?.name === RoleName.ADMIN;
+            return [RoleName.ADMIN, RoleName.SUPER_ADMIN].includes(user?.role_id?.name);
         });
 
         res.json(adminLogs);
@@ -244,7 +245,10 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
     try {
         const userCount = await User.countDocuments();
         const adminCount = await User.countDocuments({ role_id: await Role.findOne({ name: RoleName.ADMIN }).then(r => r?._id) });
+        const bookCount = await Book.countDocuments();
         const logCount = await ActivityLog.countDocuments();
+
+        console.log(`[getUsageMetrics] Users: ${userCount}, Admins: ${adminCount}, Books: ${bookCount}`);
 
         // User Distribution by Role
         const userDistribution = await User.aggregate([
@@ -284,20 +288,20 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
             }
         ]);
 
-        // Borrow Trends (Last 6 Months)
+        // Readlist Trends (Last 6 Months)
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-        const borrowTrends = await Borrow.aggregate([
+        const readlistTrends = await Readlist.aggregate([
             {
                 $match: {
-                    issued_date: { $gte: sixMonthsAgo }
+                    addedAt: { $gte: sixMonthsAgo }
                 }
             },
             {
                 $group: {
-                    _id: { $month: '$issued_date' },
-                    month: { $first: { $dateToString: { format: "%Y-%m", date: "$issued_date" } } },
+                    _id: { $month: '$addedAt' },
+                    month: { $first: { $dateToString: { format: "%Y-%m", date: "$addedAt" } } },
                     count: { $sum: 1 }
                 }
             },
@@ -329,15 +333,16 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
         const totalRevenue = revenueResult[0]?.total || 0;
 
         res.json({
-            version: '2026-01-28-v1', // Debug version tag
+            version: '2026-02-03-v1', // Updated debug version tag
             users: userCount,
             admins: adminCount,
+            totalBooks: bookCount,
             totalActivity: logCount,
             totalOrders,
             totalRevenue,
             userDistribution,
             bookDistribution,
-            borrowTrends,
+            readlistTrends,
             orderTrends
         });
     } catch (err) {

@@ -592,14 +592,9 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
         const totalUsers = await User.countDocuments({ isDeleted: false });
 
         // 3. Reads Stats
+        // Removed addedBy filtering to show global platform stats to all admins
         let readlistQuery: any = {};
         let borrowQuery: any = {};
-        if (addedBy) {
-            const adminBooks = await Book.find({ addedBy }).select('_id');
-            const bookIds = adminBooks.map(b => b._id);
-            readlistQuery.book_id = { $in: bookIds };
-            borrowQuery.book_id = { $in: bookIds };
-        }
 
         const [statsReadlist, statsBorrow, activeReadlistCount, activeBorrowCount] = await Promise.all([
             Readlist.countDocuments(readlistQuery),
@@ -637,9 +632,9 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
             return result.length > 0 ? result[0] : null;
         };
 
-        const mostReadMatch = await getMostFrequent(Readlist, 'book_id', readlistQuery);
+        const mostReadMatch = await getMostFrequent(Readlist, 'book_id');
         const mostWishlistedMatch = await getMostFrequent(Wishlist, 'book_id');
-        const mostActiveMatch = await getMostFrequent(Readlist, 'user_id', readlistQuery);
+        const mostActiveMatch = await getMostFrequent(Readlist, 'user_id');
         const topBuyerMatch = await getMostFrequent(Order, 'user_id');
 
         // Resolve IDs to human readable strings

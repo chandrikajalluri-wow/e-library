@@ -200,7 +200,7 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 200px;
+    width: 240px;
     background: var(--card-bg);
     border-radius: 14px;
     box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
@@ -223,20 +223,25 @@
 }
 
 .menu-header {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.7rem;
     font-weight: 800;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0.5rem;
+    text-align: left;
 }
 
 .status-option {
     width: 100% !important;
     display: flex;
     align-items: center;
+    justify-content: flex-start !important;
+    text-align: left !important;
     gap: 0.75rem;
-    padding: 0.6rem 0.75rem;
+    padding: 0.6rem 1rem;
     border-radius: 10px;
     background: transparent;
     border: none;
@@ -579,11 +584,24 @@
     gap: 0.2rem;
 }
 
+/* Force left alignment for all cols as requested */
+.col-item,
+.col-qty,
+.col-price,
+.col-total {
+    text-align: left !important;
+    justify-content: flex-start !important;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .item-title {
     font-weight: 700;
     color: var(--text-primary);
     font-size: 0.95rem;
     line-height: 1.2;
+    text-align: left;
 }
 
 .item-id {

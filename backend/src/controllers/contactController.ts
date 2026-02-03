@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendEmail } from '../utils/mailer';
 import Contact from '../models/Contact';
+import { notifySuperAdmins } from '../utils/notification';
 
 export const submitContactForm = async (req: Request, res: Response) => {
     const { name, email, message } = req.body;
@@ -20,6 +21,12 @@ export const submitContactForm = async (req: Request, res: Response) => {
         const adminSubject = 'New Contact Us Submission - BookStack';
         const adminText = `New message from ${name} (${email}):\n\n${message}`;
         await sendEmail(process.env.EMAIL_USER!, adminSubject, adminText);
+
+        // Notify Super Admins
+        await notifySuperAdmins(
+            `New Query Received: ${message.substring(0, 30)}${message.length > 30 ? '...' : ''} from ${name}`,
+            'system' as any
+        );
 
         res.json({ message: 'Message sent successfully. An automated response has been sent to your email.' });
     } catch (err) {
