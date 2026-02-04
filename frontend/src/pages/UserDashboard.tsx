@@ -8,6 +8,7 @@ import { MembershipName } from '../types/enums';
 
 import { toast } from 'react-toastify';
 import { BookOpen, Flame, Heart, Bookmark, ArrowRight, Zap } from 'lucide-react';
+import Loader from '../components/Loader';
 import '../styles/UserDashboard.css';
 import '../styles/BookList.css';
 
@@ -63,6 +64,10 @@ const UserDashboard: React.FC = () => {
   };
 
   const [showMembershipDetails, setShowMembershipDetails] = useState(false);
+
+  if (isLoading) {
+    return <Loader />;
+  }
 
   return (
     <div className="dashboard-wrapper dashboard-container">
