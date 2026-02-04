@@ -123,7 +123,8 @@
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
-.notification-loading-state {
+.notification-loading-state,
+.admin-loading-state {
     padding: 2rem;
     text-align: center;
     color: var(--text-secondary);
@@ -131,7 +132,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: center;
+    gap: 1rem;
+    min-height: 400px;
+    width: 100%;
 }
 
 .admin-notification-panel {

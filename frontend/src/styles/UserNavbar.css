@@ -347,21 +347,23 @@
 .mobile-streak-navbar-wrapper {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    background: rgba(244, 63, 94, 0.05);
-    /* Very subtle rose background */
-    padding: 2px 4px;
-    border-radius: 50px;
-    border: 1px solid rgba(244, 63, 94, 0.1);
+    gap: 1rem;
+    background: transparent;
+    padding: 0;
+    border: none;
 }
 
 .mobile-nav-streak {
     margin: 0 !important;
-    padding: 4px 8px !important;
+    padding: 2px 8px !important;
     font-size: 0.75rem !important;
-    background: transparent !important;
-    border: none !important;
+    background: rgba(244, 63, 94, 0.05) !important;
+    border: 1px solid rgba(244, 63, 94, 0.1) !important;
+    border-radius: 50px !important;
     box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
 .mobile-nav-streak .streak-icon {
@@ -587,6 +589,10 @@
 @media (max-width: 480px) {
     .nav-wrapper {
         padding: 0 1rem;
+    }
+
+    .mobile-nav-streak {
+        display: none !important;
     }
 }
 

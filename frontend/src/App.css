@@ -43,3 +43,8 @@
     padding: 1rem;
   }
 }
+
+/* Toast Notification Override */
+.Toastify__toast-container {
+  z-index: 20000 !important;
+}
