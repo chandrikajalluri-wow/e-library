@@ -12,6 +12,7 @@ import { getAdmins } from '../services/superAdminService';
 import { RoleName, BookStatus, RequestStatus, MembershipName } from '../types/enums';
 import type { Book, Category, User } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
+import Loader from '../components/Loader';
 import '../styles/AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -80,12 +81,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [isStatsLoading, setIsStatsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const inventoryRef = useRef<HTMLDivElement>(null);
   const borrowsRef = useRef<HTMLDivElement>(null);
 
   const fetchCommonData = async () => {
     try {
+      setIsInitialLoading(true);
       const cats = await getCategories();
       setCategories(cats);
 
@@ -101,6 +104,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       }
     } catch (err: unknown) {
       console.error(err);
+    } finally {
+      setIsInitialLoading(false);
     }
   };
 
@@ -512,6 +517,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       }
     });
   };
+
+  if (isInitialLoading) {
+    return <Loader />;
+  }
 
   return (
     <div className="admin-layout">

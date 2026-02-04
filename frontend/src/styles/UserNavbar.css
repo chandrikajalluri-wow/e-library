@@ -418,6 +418,28 @@
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         z-index: 1000;
         animation: menuSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+        /* SCROLLER IMPLEMENTATION */
+        max-height: 80vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary-color) transparent;
+    }
+
+    /* Custom scrollbar for webkit */
+    .nav-actions-icons::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .nav-actions-icons::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .nav-actions-icons::-webkit-scrollbar-thumb {
+        background-color: var(--primary-color);
+        border-radius: 20px;
+        border: 3px solid transparent;
     }
 
     @keyframes menuSlideDown {

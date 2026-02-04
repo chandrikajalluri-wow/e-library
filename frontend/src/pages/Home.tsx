@@ -252,7 +252,7 @@ const Home: React.FC = () => {
           }}>
             <div className="carousel-track">
               {books.length > 0 ? (
-                [...books, ...books].map((book, index) => (
+                [...books.slice(0, Math.ceil(books.length / 2)), ...books.slice(0, Math.ceil(books.length / 2))].map((book, index) => (
                   <div key={`${book._id}-${index}`} className="carousel-item">
                     <img
                       src={book.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'}
@@ -275,7 +275,7 @@ const Home: React.FC = () => {
             </div>
             <div className="carousel-track track-2">
               {books.length > 0 ? (
-                [...books, ...books].reverse().map((book, index) => (
+                [...books.slice(Math.ceil(books.length / 2)), ...books.slice(Math.ceil(books.length / 2))].map((book, index) => (
                   <div key={`${book._id}-rev-${index}`} className="carousel-item">
                     <img
                       src={book.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'}
