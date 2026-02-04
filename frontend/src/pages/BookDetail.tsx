@@ -139,14 +139,14 @@ const BookDetail: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        toast.error('Please login to add to readlist');
+        toast.error('Please login to add to library');
         navigate('/login');
         return;
       }
       setIsSubmitting(true);
       await addToReadlist(book._id);
       setHasBorrowed(true);
-      toast.success('Added to your readlist! Happy reading.');
+      toast.success('Saved to your Library! Happy reading.');
       // Refresh access status
       checkAccessStatus(book._id);
       navigate('/dashboard');
@@ -155,7 +155,7 @@ const BookDetail: React.FC = () => {
         toast.info(err.response.data.error);
         navigate('/memberships');
       } else {
-        toast.error(err.response?.data?.error || 'Failed to add to readlist');
+        toast.error(err.response?.data?.error || 'Failed to save to library');
       }
     } finally {
       setIsSubmitting(false);

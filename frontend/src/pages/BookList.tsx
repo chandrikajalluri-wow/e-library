@@ -457,20 +457,20 @@ const BookList: React.FC = () => {
                     onClick={async (e) => {
                       e.stopPropagation();
                       if (!localStorage.getItem('token')) {
-                        toast.info('Please sign in to add books to your readlist');
+                        toast.info('Please sign in to add books to your library');
                         navigate('/login');
                         return;
                       }
                       try {
                         await addToReadlist(book._id);
-                        toast.success('Added to your readlist!');
+                        toast.success('Saved to your library!');
                         navigate('/dashboard');
                       } catch (err: any) {
                         if (err.response?.status === 403 && err.response?.data?.requiresUpgrade) {
                           toast.info(err.response.data.error);
                           navigate('/memberships');
                         } else {
-                          toast.error(err.response?.data?.error || 'Failed to add to readlist');
+                          toast.error(err.response?.data?.error || 'Failed to save to library');
                         }
                       }
                     }}
@@ -488,7 +488,7 @@ const BookList: React.FC = () => {
                     }}
                   >
                     <BookOpen size={16} />
-                    Add Readlist
+                    Save to Library
                   </button>
 
                   {/* Only show Add to Cart if copies are available */}
