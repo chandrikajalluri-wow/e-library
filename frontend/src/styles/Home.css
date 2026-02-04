@@ -477,13 +477,13 @@
 
 /* Responsive */
 @media (max-width: 992px) {
-  .hero-grid {
+  .saas-theme .hero-grid {
     grid-template-columns: 1fr !important;
     text-align: center !important;
     gap: 1.5rem !important;
   }
 
-  .hero-stack.text-left {
+  .saas-theme .hero-stack.text-left {
     text-align: center !important;
     display: flex !important;
     flex-direction: column !important;
@@ -491,28 +491,31 @@
     margin: 0 auto !important;
   }
 
-  .hero-main-title {
+  /* Specificity boost to beat index.css global overrides */
+  .saas-theme .hero-main-title,
+  .saas-theme .hero-stack h1.hero-main-title {
     text-align: center !important;
     width: 100% !important;
   }
 
-  .hero-description {
+  .saas-theme .hero-description,
+  .saas-theme .hero-stack p.hero-description {
     margin: 1.5rem auto 3rem !important;
     text-align: center !important;
     width: 100% !important;
   }
 
-  .hero-btns {
+  .saas-theme .hero-btns {
     justify-content: center !important;
     width: 100% !important;
   }
 
-  .hero-stats-row {
+  .saas-theme .hero-stats-row {
     justify-content: center !important;
     margin: 3rem auto 0 !important;
   }
 
-  .hero-carousel-container {
+  .saas-theme .hero-carousel-container {
     height: 400px;
     margin-top: 2rem;
     justify-content: center !important;
