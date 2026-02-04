@@ -170,12 +170,36 @@
 }
 
 .chevron-icon {
-    transition: transform 0.3s;
-    opacity: 0.6;
+    transition: transform 0.2s;
+    color: var(--text-secondary);
 }
 
 .chevron-icon.open {
     transform: rotate(180deg);
+}
+
+/* Admin Sign Out Button */
+.admin-signout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+}
+
+.admin-signout-btn:hover {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+}
+
+.admin-signout-btn svg {
+    width: 20px;
+    height: 20px;
 }
 
 .profile-dropdown-menu {
@@ -272,26 +296,250 @@
     color: var(--primary-color);
 }
 
+.mobile-only {
+    display: none !important;
+}
+
+.desktop-only {
+    display: flex !important;
+}
+
+/* Cart Badge Styling */
+.cart-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    border: 2px solid var(--bg-color);
+    animation: badgePulse 2s infinite ease-in-out;
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* Mobile Action Center */
+.mobile-action-center {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mobile-action-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.mobile-action-btn:hover {
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.mobile-action-btn .cart-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Tooltip behavior or simplified mobile view */
-@media (max-width: 768px) {
-    .nav-wrapper {
-        padding: 0 1rem;
+/* Hamburger Menu Styles */
+.hamburger-menu-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.hamburger-menu-btn:hover {
+    background: rgba(99, 102, 241, 0.08);
+}
+
+@media (max-width: 992px) {
+    .mobile-action-center {
+        display: flex;
+        order: 3;
     }
 
-    .saas-logo span {
-        display: none;
+    .desktop-only {
+        display: none !important;
     }
 
-    .nav-icon-link {
-        padding: 0.5rem;
-    }
-
-    .icon-label {
-        display: none;
+    .hamburger-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .nav-actions-icons {
-        gap: 0.25rem;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+        flex-direction: column;
+        padding: 1.5rem;
+        gap: 1rem;
+        display: none;
+        /* Hide by default */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        animation: menuSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes menuSlideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .nav-actions-icons.mobile-show {
+        display: flex;
+    }
+
+    .nav-icon-link {
+        width: 100%;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 0.8rem 1rem;
+        border-radius: 12px;
+        background: transparent;
+    }
+
+    .icon-label {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 0;
+    }
+
+    /* Integrated Actions footer in mobile menu */
+    .mobile-integrated-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .streak-menu-item {
+        cursor: default;
+        background: transparent !important;
+    }
+
+    .streak-menu-item:hover {
+        background: transparent !important;
+    }
+
+    .sign-out-mobile {
+        color: #ef4444 !important;
+        border: none;
+        background: transparent;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .sign-out-mobile:hover {
+        background: rgba(239, 68, 68, 0.08) !important;
+    }
+
+    .mobile-notification-row {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        width: 100%;
+    }
+
+    .mobile-notification-row .notification-center-container {
+        pointer-events: auto;
+    }
+
+    .cart-icon-wrapper {
+        position: relative;
+    }
+
+    .nav-cart-link .cart-badge {
+        top: -8px;
+        right: -8px;
+    }
+
+    .user-profile-dropdown-container {
+        width: 100%;
+        margin-left: 0;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        justify-content: space-between;
+    }
+
+    .saas-logo {
+        flex: 1;
+    }
+
+    .nav-more-dropdown-container {
+        display: none !important;
+    }
+
+    .mobile-only {
+        display: flex !important;
+    }
+
+    .cart-badge {
+        top: -4px;
+        right: -4px;
+        font-size: 0.65rem;
+        min-width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-wrapper {
+        padding: 0 1rem;
     }
 }
 

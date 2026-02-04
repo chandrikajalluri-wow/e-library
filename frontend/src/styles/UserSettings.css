@@ -255,6 +255,92 @@
     .sidebar-divider {
         display: none;
     }
+
+    .settings-content-area {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .settings-container {
+        padding: 1rem;
+    }
+
+    .settings-card {
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+
+    .profile-preview-section {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    .profile-avatar-large {
+        width: 70px;
+        height: 70px;
+        font-size: 1.75rem;
+    }
+
+    .account-info-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.25rem;
+    }
+
+    .banner-icon-box {
+        width: 48px;
+        height: 48px;
+    }
+
+    .danger-action-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .btn-danger-outline {
+        width: 100%;
+    }
+
+    .session-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .revoke-session-btn {
+        width: 100%;
+    }
+
+    .settings-form {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-container {
+        padding: 0.75rem;
+    }
+
+    .settings-card {
+        padding: 1rem;
+    }
+
+    .settings-card-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .profile-preview-section {
+        padding: 1rem;
+    }
+
+    .sidebar-item {
+        font-size: 0.85rem;
+        padding: 0.75rem 1rem;
+    }
 }
 
 /* Profile Preview Section */

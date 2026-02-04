@@ -104,7 +104,7 @@ export const updateCategory = async (req: any, res: Response) => {
 
 export const deleteCategory = async (req: any, res: Response) => {
     try {
-        const bookCount = await Book.countDocuments({ category: req.params.id });
+        const bookCount = await Book.countDocuments({ category_id: req.params.id });
         if (bookCount > 0) {
             return res.status(400).json({
                 error: 'Cannot delete category because there are books assigned to it.'

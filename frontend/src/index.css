@@ -568,6 +568,14 @@ select:focus {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+
+  .nav-wrapper,
+  .dashboard-container {
+    padding: 0 2rem;
+  }
+}
+
 @media (max-width: 768px) {
   .auth-container {
     margin: 2rem 1rem;
@@ -575,13 +583,22 @@ select:focus {
   }
 
   .dashboard-container {
-    padding: 1rem;
+    padding: 1.25rem 1rem;
   }
 
   .navbar {
     padding: 1rem;
     flex-wrap: wrap;
     gap: 1rem;
+  }
+
+  .admin-header {
+    margin-bottom: 2rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+
+  .admin-header-title {
+    font-size: 2rem !important;
   }
 
   h1 {
@@ -600,14 +617,20 @@ select:focus {
 @media (max-width: 480px) {
   .auth-container {
     margin: 1rem;
-    padding: 1rem;
+    padding: 1.25rem;
   }
 
   .btn-primary,
   .btn-secondary,
   .btn-danger {
     padding: 0.75rem 1rem;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
+    width: 100%;
+    /* Many buttons should fill width on tiny screens */
+  }
+
+  .admin-header-title {
+    font-size: 1.75rem !important;
   }
 }
 

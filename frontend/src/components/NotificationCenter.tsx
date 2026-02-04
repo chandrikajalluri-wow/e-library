@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { RoleName } from '../types/enums';
 import '../styles/NotificationCenter.css';
 
-const NotificationCenter: React.FC = () => {
+const NotificationCenter: React.FC<{ showLabel?: boolean }> = ({ showLabel }) => {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -73,15 +73,18 @@ const NotificationCenter: React.FC = () => {
     return (
         <div className="notification-center-container" ref={dropdownRef}>
             <button
-                className={`notification-trigger ${isOpen ? 'active' : ''}`}
+                className={`notification-trigger ${isOpen ? 'active' : ''} ${showLabel ? 'with-label' : ''}`}
                 onClick={() => setIsOpen(!isOpen)}
                 title="Notifications"
             >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                </svg>
-                {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
+                <div className="notification-icon-wrapper">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                    </svg>
+                    {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
+                </div>
+                {showLabel && <span className="icon-label">Notifications</span>}
             </button>
 
             {isOpen && (

@@ -271,13 +271,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   };
 
   const handleDeleteCategory = (cat: Category) => {
-    const hasBooks = allBooks.some(b => {
-      const catId = typeof b.category_id === 'string' ? b.category_id : b.category_id?._id;
-      return catId === cat._id;
-    });
-
-    if (hasBooks) {
-      toast.error(`Cannot delete category "${cat.name}" because it contains books.`);
+    if (cat.bookCount && cat.bookCount > 0) {
+      toast.error(`Cannot delete category "${cat.name}" because it contains ${cat.bookCount} books.`);
       return;
     }
 
