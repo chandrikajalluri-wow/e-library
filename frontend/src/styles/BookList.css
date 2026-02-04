@@ -165,6 +165,9 @@
     color: var(--text-primary);
     font-size: 1rem;
     line-height: normal;
+    padding: 0 1.25rem 0 3rem;
+    padding-top: 13px;
+    padding-bottom: 13px;
     transition: all 0.2s ease;
     box-sizing: border-box;
 }
@@ -506,8 +509,10 @@
 
 @media (max-width: 768px) {
     .filter-sidebar {
-        width: 100%;
+        width: 100vw;
         /* Full width on mobile/small-tablet */
+        left: 0;
+        right: 0;
     }
 
     .sidebar-header {
@@ -683,11 +688,24 @@
     }
 
     .action-buttons-group {
-        flex-direction: column;
+        flex-direction: row;
+        gap: 0.5rem;
     }
 
     .action-btn {
+        width: auto;
+        flex: 1;
+        padding: 0 0.75rem;
+        justify-content: center;
+    }
+
+    .sort-dropdown-container {
+        flex: 1;
+    }
+
+    .sort-trigger {
         width: 100%;
+        justify-content: center;
     }
 
     .pagination-container {

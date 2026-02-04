@@ -30,6 +30,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [orderReturns, setOrderReturns] = useState<any[]>([]);
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [bookTypeFilter, setBookTypeFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
@@ -162,7 +163,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     setIsDataLoading(true);
     try {
       const isPremiumParam = bookTypeFilter === 'all' ? '' : (bookTypeFilter === MembershipName.PREMIUM.toLowerCase() ? '&isPremium=true' : '&isPremium=false');
-      const data = await getBooks(`page=${bookPage}&limit=10&showArchived=true&search=${searchTerm}${isPremiumParam}`);
+      const categoryParam = categoryFilter === 'all' ? '' : `&category=${categoryFilter}`;
+      const data = await getBooks(`page=${bookPage}&limit=10&showArchived=true&search=${searchTerm}${isPremiumParam}${categoryParam}`);
       setAllBooks(data.books);
       setBookTotalPages(data.pages);
     } catch (err) {
@@ -210,7 +212,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
   useEffect(() => {
     if (activeTab === 'books') fetchBooks();
-  }, [activeTab, bookPage, bookTypeFilter]);
+  }, [activeTab, bookPage, bookTypeFilter, categoryFilter]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -826,7 +828,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     </div>
                     <div className="filter-item-box">
                       <Filter size={16} />
-                      <select onChange={() => {/* Add category filter logic if needed, currently fetchBooks uses bookTypeFilter */ }} className="admin-filter-select">
+                      <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="admin-filter-select">
                         <option value="all">All Categories</option>
                         {categories.map(c => (
                           <option key={c._id} value={c._id}>{c.name}</option>
