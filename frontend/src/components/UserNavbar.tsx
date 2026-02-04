@@ -135,12 +135,20 @@ const UserNavbar: React.FC = () => {
                 {/* Mobile Top Actions (Visible only on mobile/tablet) */}
                 <div className="mobile-only mobile-action-center">
                     {role === RoleName.USER && (
-                        <Link to="/borrow-cart" className="mobile-action-btn" onClick={closeAll}>
-                            <div className="cart-icon-wrapper">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-                                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-                            </div>
-                        </Link>
+                        <div className="mobile-streak-navbar-wrapper">
+                            <Link to="/borrow-cart" className="mobile-action-btn" onClick={closeAll}>
+                                <div className="cart-icon-wrapper">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                                    {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                                </div>
+                            </Link>
+                            {userProfile?.streakCount > 0 && (
+                                <div className="streak-display mobile-nav-streak" title={`${userProfile.streakCount} Day Streak!`}>
+                                    <Flame size={16} className="streak-icon" fill="currentColor" />
+                                    <span>{userProfile.streakCount}</span>
+                                </div>
+                            )}
+                        </div>
                     )}
                     {localStorage.getItem('token') && (
                         <div className="mobile-action-btn">
@@ -194,10 +202,6 @@ const UserNavbar: React.FC = () => {
                                 </div>
                                 <span className="icon-label">Cart</span>
                             </Link>
-                            <div className="nav-icon-link mobile-only streak-menu-item">
-                                <Flame size={20} color="#fb7185" fill="#fb7185" />
-                                <span className="icon-label">{userProfile?.streakCount || 0} Streak</span>
-                            </div>
                         </>
                     )}
 

@@ -344,6 +344,31 @@
     gap: 0.5rem;
 }
 
+.mobile-streak-navbar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(244, 63, 94, 0.05);
+    /* Very subtle rose background */
+    padding: 2px 4px;
+    border-radius: 50px;
+    border: 1px solid rgba(244, 63, 94, 0.1);
+}
+
+.mobile-nav-streak {
+    margin: 0 !important;
+    padding: 4px 8px !important;
+    font-size: 0.75rem !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.mobile-nav-streak .streak-icon {
+    width: 14px;
+    height: 14px;
+}
+
 .mobile-action-btn {
     position: relative;
     display: flex;
