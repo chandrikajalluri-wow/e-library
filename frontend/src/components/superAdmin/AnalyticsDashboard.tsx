@@ -28,13 +28,13 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
     }));
 
     return (
-        <div className="analytics-container" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="analytics-page-container">
 
             {/* Pie Charts Section */}
-            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+            <div className="analytics-row flex-row">
 
                 {/* User Distribution */}
-                <div className="card stats-card-content" style={{ flex: 1, minWidth: '300px', padding: '1.5rem', display: 'block' }}>
+                <div className="card stats-card-content analytics-card">
                     <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>User Distribution</h3>
                     <div style={{ height: '300px' }}>
                         <ResponsiveContainer width="100%" height="100%">
@@ -60,7 +60,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
                 </div>
 
                 {/* Book Categories */}
-                <div className="card stats-card-content" style={{ flex: 1, minWidth: '300px', padding: '1.5rem', display: 'block' }}>
+                <div className="card stats-card-content analytics-card">
                     <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Book Categories</h3>
                     <div style={{ height: '300px' }}>
                         <ResponsiveContainer width="100%" height="100%">
@@ -88,9 +88,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
             </div>
 
             {/* Trends Bar Charts Section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div className="analytics-row-stack">
                 {/* Readlist Trends */}
-                <div className="card stats-card-content" style={{ padding: '1.5rem', display: 'block' }}>
+                <div className="card stats-card-content analytics-card-full">
                     <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Readlist Trends (Last 6 Months)</h3>
                     <div style={{ height: '300px' }}>
                         <ResponsiveContainer width="100%" height="100%">
@@ -110,7 +110,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
                 </div>
 
                 {/* Order & Revenue Trends */}
-                <div className="card stats-card-content" style={{ padding: '1.5rem', display: 'block' }}>
+                <div className="card stats-card-content analytics-card-full">
                     <h3 className="stats-label" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Order & Revenue Trends (Last 6 Months)</h3>
                     <div style={{ height: '350px' }}>
                         <ResponsiveContainer width="100%" height="100%">

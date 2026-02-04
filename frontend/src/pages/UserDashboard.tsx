@@ -180,7 +180,7 @@ const UserDashboard: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 className="modern-section-title" style={{ marginBottom: 0 }}>
             <Bookmark size={24} className="title-icon" />
-            My Readlist
+            My Library
           </h2>
           <button
             onClick={() => loadData()}

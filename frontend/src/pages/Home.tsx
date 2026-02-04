@@ -225,13 +225,13 @@ const Home: React.FC = () => {
           minHeight: '600px'
         }}>
           <div className="hero-stack text-left" style={{ minWidth: 0 }}>
-            <div className="hero-badge saas-reveal">✨ Your Digital Lending Library</div>
+            <div className="hero-badge saas-reveal">✨ Your Modern Digital Sanctuary</div>
             <h1 className="hero-main-title saas-reveal">
-              The smartest way to <br />
-              <span className="gradient-highlight">Borrow & Read.</span>
+              Read Smart. Read Anytime. <br />
+              <span className="gradient-highlight">From Shelves to Screens, Powering Performance.</span>
             </h1>
             <p className="hero-description saas-reveal">
-              Bookstack is a premium e-library that brings thousands of verified books to your fingertips. Join our community of readers and start exploring today.
+              Bookstack is a premium digital destination designed for the modern reader. Explore a curated world of knowledge instantly, and order physical copies of your favorites for a lifetime on your shelf.
             </p>
             <div className="hero-btns saas-reveal">
               <button onClick={handleExplore} className="btn-vibrant">Browse Library</button>

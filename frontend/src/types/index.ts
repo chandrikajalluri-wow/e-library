@@ -4,6 +4,7 @@ export interface Category {
   _id: string;
   name: string;
   description?: string;
+  bookCount?: number;
   addedBy?: string;
   createdAt?: string;
   updatedAt?: string;

@@ -205,6 +205,34 @@
     background: rgba(245, 158, 11, 0.06);
 }
 
+/* Responsive Mobile Adjustments */
+@media (max-width: 992px) {
+    .notification-dropdown {
+        position: fixed;
+        top: 80px;
+        left: 1rem;
+        right: 1rem;
+        width: auto;
+        max-width: none;
+        max-height: calc(100vh - 100px);
+        z-index: 1100;
+        /* Higher than hamburger menu (1000) */
+        animation: menuSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .notification-list {
+        max-height: calc(100vh - 200px);
+    }
+}
+
+@media (max-width: 480px) {
+    .notification-dropdown {
+        top: 70px;
+        left: 0.5rem;
+        right: 0.5rem;
+    }
+}
+
 /* Scrollbar for notification list */
 .notification-list::-webkit-scrollbar {
     width: 4px;
@@ -217,4 +245,37 @@
 .notification-list::-webkit-scrollbar-thumb {
     background: var(--border-color);
     border-radius: 4px;
+}
+
+.notification-trigger.with-label {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.8rem 1rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    justify-content: flex-start;
+}
+
+.notification-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-trigger.with-label .icon-label {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+}
+
+.notification-trigger.with-label:hover {
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 12px;
 }

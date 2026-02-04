@@ -41,6 +41,9 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ targetPage }) =
 
             const path = location.pathname;
 
+            // Don't show any announcements on Super Admin pages
+            if (path.includes('/super-admin')) return false;
+
             if (annTarget === TargetPage.HOME && path === '/') return true;
             if (annTarget === TargetPage.BOOKS && path.includes('/books')) return true;
             if (annTarget === TargetPage.DASHBOARD && (path.includes('/dashboard') || path.includes('/admin-dashboard'))) return true;

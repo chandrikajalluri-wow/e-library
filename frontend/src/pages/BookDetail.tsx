@@ -411,7 +411,7 @@ const BookDetail: React.FC = () => {
                     style={{ background: 'var(--accent-color)' }}
                   >
                     <BookOpen size={18} />
-                    {isSubmitting ? 'Adding...' : 'Add to Readlist'}
+                    {isSubmitting ? 'Saving...' : 'Save to Library'}
                   </button>
                 )}
 

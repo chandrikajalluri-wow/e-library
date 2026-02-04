@@ -2678,14 +2678,132 @@ body.dark-mode .report-reason-item {
     transform: translateY(-2px);
 }
 
-@media (max-width: 1100px) {
-    .admin-categories-split-layout {
-        flex-direction: column;
+@media (max-width: 1200px) {
+    .admin-categories-layout {
+        grid-template-columns: 1fr;
     }
 
-    .category-sidebar-panel {
+    .admin-stats-grid-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-main-content {
+        padding: 1.5rem 1rem;
+    }
+
+    .admin-header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+
+    .admin-header-actions {
         width: 100%;
-        position: static;
+        justify-content: space-between;
+    }
+
+    .admin-stats-grid-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .admin-table-header-box {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+
+    .admin-filter-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .admin-notification-panel {
+        width: calc(100vw - 2rem);
+        right: -1rem;
+        position: fixed;
+        left: 1rem;
+        top: 80px;
+    }
+
+    .actions-button-group {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-header-title {
+        font-size: 1.5rem;
+    }
+
+    .stats-card-content {
+        padding: 1.5rem;
+    }
+
+    .stats-value {
+        font-size: 2rem;
+    }
+
+    .admin-form-section {
+        padding: 1.5rem;
+    }
+
+    .admin-table-title {
+        font-size: 1.25rem;
+    }
+
+    .admin-search-input,
+    .admin-filter-select {
+        min-width: 100%;
+    }
+}
+
+/* --- Analytics Page Specifics --- */
+.analytics-page-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.analytics-row {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.analytics-card {
+    flex: 1;
+    min-width: 300px;
+    padding: 1.5rem;
+    display: block !important;
+}
+
+.analytics-row-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.analytics-card-full {
+    padding: 1.5rem;
+    display: block !important;
+}
+
+@media (max-width: 768px) {
+    .analytics-card {
+        min-width: 100%;
+    }
+
+    .analytics-row {
+        gap: 1rem;
+    }
+
+    .analytics-page-container {
+        gap: 1rem;
     }
 }
 

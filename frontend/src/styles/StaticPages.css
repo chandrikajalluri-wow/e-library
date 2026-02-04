@@ -161,11 +161,48 @@
 
 @media (max-width: 768px) {
     .static-content-wrapper {
-        padding: 6rem 1rem 4rem;
+        padding: 4rem 1rem 3rem;
+    }
+
+    .static-hero {
+        margin-bottom: 2rem;
+    }
+
+    .static-title-h1 {
+        font-size: 2.25rem;
+        letter-spacing: -1px;
     }
 
     .about-intro-card,
     .policy-card {
-        padding: 2rem;
+        padding: 2rem 1.5rem;
+        border-radius: 20px;
+    }
+
+    .mission-card {
+        padding: 2rem 1.5rem;
+        border-radius: 20px;
+    }
+
+    .mission-card-title {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .static-content-wrapper {
+        padding: 3rem 1rem 2rem;
+    }
+
+    .static-title-h1 {
+        font-size: 1.85rem;
+    }
+
+    .about-stat-item {
+        padding: 1.5rem;
+    }
+
+    .stat-number {
+        font-size: 2rem;
     }
 }
