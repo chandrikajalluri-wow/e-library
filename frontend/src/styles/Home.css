@@ -479,30 +479,43 @@
 @media (max-width: 992px) {
   .hero-grid {
     grid-template-columns: 1fr !important;
-    text-align: center;
+    text-align: center !important;
+    gap: 1.5rem !important;
   }
 
   .hero-stack.text-left {
-    text-align: center;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    margin: 0 auto !important;
+  }
+
+  .hero-main-title {
+    text-align: center !important;
+    width: 100% !important;
   }
 
   .hero-description {
-    margin-left: auto;
-    margin-right: auto;
+    margin: 1.5rem auto 3rem !important;
+    text-align: center !important;
+    width: 100% !important;
   }
 
   .hero-btns {
-    justify-content: center;
+    justify-content: center !important;
+    width: 100% !important;
   }
 
   .hero-stats-row {
-    justify-content: center;
-    margin: 3rem auto 0;
+    justify-content: center !important;
+    margin: 3rem auto 0 !important;
   }
 
   .hero-carousel-container {
     height: 400px;
     margin-top: 2rem;
+    justify-content: center !important;
   }
 }
 
