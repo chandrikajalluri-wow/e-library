@@ -282,6 +282,10 @@ const Home: React.FC = () => {
                       alt={book.title}
                       className="carousel-book-cover"
                     />
+                    <div className="book-card-glass">
+                      <h4>{book.title}</h4>
+                      <p>{book.author}</p>
+                    </div>
                   </div>
                 ))
               ) : (
