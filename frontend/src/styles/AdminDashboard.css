@@ -1982,6 +1982,12 @@ body.dark-mode .report-reason-item {
     .section-title {
         font-size: 1.5rem;
     }
+
+    /* Book Form Grid Adjustment */
+    .admin-book-form-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1rem;
+    }
 }
 
 /* Mobile landscape and below (768px) */
@@ -2140,6 +2146,30 @@ body.dark-mode .report-reason-item {
     .admin-section-header {
         margin-bottom: 1.5rem;
         padding-bottom: 1rem;
+    }
+
+    /* Book Form Stacking */
+    .admin-book-form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem;
+    }
+
+    .form-group.full-width,
+    .form-group.checkbox-row,
+    .file-group {
+        grid-column: span 1 !important;
+    }
+
+    .form-actions-row {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 2rem 0;
+    }
+
+    .admin-btn-execute,
+    .admin-btn-secondary {
+        width: 100%;
+        padding: 1rem;
     }
 }
 
