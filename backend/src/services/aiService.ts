@@ -22,25 +22,40 @@ export const generateBookContent = async (
 
         /**
          * Using direct REST API instead of SDK to access v1 API
-         * This allows us to use gemini-1.5-flash which is the current stable model
+         * This allows us to use gemini-2.5-flash which is the current stable model
          * 
          * The SDK uses v1beta which has deprecated model names
          * Direct REST API gives us access to v1 with current models
          */
-        const model = 'gemini-1.5-flash';
+        const model = 'gemini-2.5-flash';
         const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;
 
-        const prompt = `You are a library content assistant. Generate concise content for a book.
+        const prompt = `You are a knowledgeable library content assistant. Generate compelling content for this book:
 
 Book Title: "${title}"
 Author: "${author}"
 
-Provide the following in JSON format:
-1. description: A compelling book description (MAXIMUM 50 words)
-2. authorBio: Author biography (MAXIMUM 50 words)
-3. summary: Optional brief summary (MAXIMUM 50 words)
+INSTRUCTIONS:
+1. If you recognize this book and author, provide ACCURATE factual information about the actual book
+2. If you're uncertain or the book is lesser-known, generate professional, engaging content that:
+   - Reflects what the title and author name suggest about the book's genre/theme
+   - Sounds authentic and appropriate for a library catalog
+   - Is helpful to potential readers
+3. Ensure the author name in your response matches "${author}" exactly
+4. DO NOT refuse to generate content - always provide helpful information
+5. Keep responses concise and professional
 
-CRITICAL: Each field must be 50 words or less. Be concise and engaging.
+Provide the following in JSON format:
+1. description: An engaging book description that captures the likely plot, themes, or subject matter (MAXIMUM 50 words)
+2. authorBio: Author biography with background and writing style. If unknown, create a professional bio appropriate for the genre (MAXIMUM 50 words)
+3. summary: A brief summary of the book's main content (MAXIMUM 50 words)
+
+REQUIREMENTS:
+- Each field must be 50 words or less
+- Be engaging and professional
+- Make content appropriate for "${title}" by ${author}
+- Use factual information when available, otherwise generate plausible content
+- Always provide complete responses - never refuse or say "no information available"
 
 Return ONLY valid JSON with these exact keys: description, authorBio, summary`;
 

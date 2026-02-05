@@ -1233,7 +1233,7 @@ body.dark-mode .pagination-controls {
     background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(8px);
     border: 1px solid var(--border-color);
-    padding: 0 1.25rem;
+    padding: 0.75rem 1.25rem;
     height: 50px;
     border-radius: 14px;
     color: var(--text-secondary);
@@ -1270,7 +1270,7 @@ body.dark-mode .pagination-controls {
 
 .filter-item-box select {
     background: transparent;
-    border: none;
+    border: none !important;
     color: var(--text-primary);
     font-weight: 700;
     font-size: 0.95rem;
@@ -1293,7 +1293,7 @@ body.dark-mode .pagination-controls {
 .filter-item-box select option {
     background: var(--card-bg);
     color: var(--text-primary);
-    padding: 1rem;
+    padding: 1rem 1rem !important;
     font-weight: 600;
 }
 
@@ -1478,6 +1478,16 @@ body.dark-mode .pagination-controls {
     background: var(--border-color);
     color: var(--text-primary);
 }
+
+.export-csv-btn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem !important;
+    height: 50px;
+}
+
 
 /* Pagination */
 .saas-pagination {
