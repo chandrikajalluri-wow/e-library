@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { generateBookContent } from '../services/aiService';
+import { generateBookContent, explainBook } from '../services/aiService';
 
 export const generateBookContentController = async (req: Request, res: Response) => {
     try {
@@ -30,6 +30,30 @@ export const generateBookContentController = async (req: Request, res: Response)
         console.error('AI Controller Error:', error);
         res.status(500).json({
             error: error.message || 'Failed to generate book content'
+        });
+    }
+};
+
+export const explainBookController = async (req: Request, res: Response) => {
+    try {
+        const { title, author, description } = req.body;
+
+        if (!title || !author) {
+            return res.status(400).json({
+                error: 'Book title and author are required'
+            });
+        }
+
+        const explanation = await explainBook(title, author, description || '');
+
+        res.status(200).json({
+            success: true,
+            data: explanation
+        });
+    } catch (error: any) {
+        console.error('AI Controller Error:', error);
+        res.status(500).json({
+            error: error.message || 'Failed to generate book explanation'
         });
     }
 };

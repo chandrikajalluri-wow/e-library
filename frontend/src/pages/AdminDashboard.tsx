@@ -617,7 +617,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   ) : (
                     <>
                       <Plus size={18} />
-                      <span>Add New Book</span>
+                      <span>{editingBookId ? 'Edit Book' : 'Add New Book'}</span>
                     </>
                   )}
                 </button>
@@ -748,11 +748,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
               <section className="card admin-form-section saas-reveal">
                 <div className="admin-form-header">
                   <h3 className="admin-table-title">{editingBookId ? 'Edit Book Record' : 'Add New Book'}</h3>
-                  {editingBookId && (
-                    <button onClick={handleCancelEdit} className="admin-reminder-btn">
-                      Cancel Editing
-                    </button>
-                  )}
+
                 </div>
                 <form onSubmit={handleCreateBook} className="admin-book-form-grid">
                   <div className="form-group"><label>Title</label><input type="text" value={newBook.title} onChange={(e) => setNewBook({ ...newBook, title: e.target.value })} placeholder="Enter book title" required /></div>
@@ -781,6 +777,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   </div>
                   <div className="form-group"><label>Rating (0-5)</label><input type="number" step="0.1" min="0" max="5" value={(newBook as any).rating} onChange={(e) => setNewBook({ ...newBook, rating: e.target.value } as any)} /></div>
 
+                  <div className="form-group file-group">
+                    <label>Cover Image</label>
+                    <div className="file-input-wrapper">
+                      <input type="file" accept="image/*" onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)} />
+                    </div>
+                  </div>
+                  <div className="form-group file-group">
+                    <label>Author's Photo</label>
+                    <div className="file-input-wrapper">
+                      <input type="file" accept="image/*" onChange={(e) => setAuthorImageFile(e.target.files?.[0] || null)} />
+                    </div>
+                  </div>
+                  <div className="form-group file-group">
+                    <label>Book PDF</label>
+                    <div className="file-input-wrapper">
+                      <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} />
+                    </div>
+                  </div>
+
                   {/* AI Generation Button */}
                   <div className="form-group full-width ai-generate-section">
                     <button
@@ -806,25 +821,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     <p className="ai-helper-text">
                       ✨ Let AI generate book description and author biography based on title and author name
                     </p>
-                  </div>
-
-                  <div className="form-group file-group">
-                    <label>Cover Image</label>
-                    <div className="file-input-wrapper">
-                      <input type="file" accept="image/*" onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)} />
-                    </div>
-                  </div>
-                  <div className="form-group file-group">
-                    <label>Author's Photo</label>
-                    <div className="file-input-wrapper">
-                      <input type="file" accept="image/*" onChange={(e) => setAuthorImageFile(e.target.files?.[0] || null)} />
-                    </div>
-                  </div>
-                  <div className="form-group file-group">
-                    <label>Book PDF</label>
-                    <div className="file-input-wrapper">
-                      <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} />
-                    </div>
                   </div>
 
                   <div className="form-group full-width"><label>Book Description</label><textarea value={newBook.description} onChange={(e) => setNewBook({ ...newBook, description: e.target.value })} rows={3} placeholder="Write a short summary of the book..." /></div>
