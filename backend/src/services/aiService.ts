@@ -132,6 +132,60 @@ Return ONLY valid JSON with these exact keys: description, authorBio, summary`;
             throw new Error(error.response.data.error.message);
         }
 
+
         throw new Error(error.message || 'Failed to generate content with AI');
+    }
+};
+
+export const explainBook = async (
+    title: string,
+    author: string,
+    description: string
+): Promise<{ explanation: string }> => {
+    try {
+        // Validate API key
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error('GEMINI_API_KEY is not set in environment variables');
+        }
+
+        console.log('[AI Service] Explaining book:', title, 'by', author);
+
+        const model = 'gemini-2.5-flash';
+        const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;
+
+        const prompt = `Act as a passionate librarian. Explain why "${title}" by ${author} is worth reading. 
+        
+Use the provided description for context: "${description}".
+
+Focus on key themes, writing style, and unique appeal. 
+
+CRITICAL: Keep it engaging, warm, and under 150 words. Do not just summarize the plot. Tell me WHY I should read it.`;
+
+        const response = await axios.post(
+            apiUrl,
+            {
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }]
+            },
+            {
+                params: { key: apiKey },
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
+
+        const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) {
+            throw new Error('Invalid response from AI service');
+        }
+
+        return { explanation: text.trim() };
+
+    } catch (error: any) {
+        console.error('[AI Service] Explain Book Error:', error.response?.data || error.message);
+        throw new Error('Failed to get book explanation from AI');
     }
 };

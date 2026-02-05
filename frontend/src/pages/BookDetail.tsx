@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBook, getSimilarBooks } from '../services/bookService';
-import { Heart, ShoppingCart, ThumbsUp, ThumbsDown, Zap, Truck, ShieldCheck, BookOpen, Flag, ArrowLeft } from 'lucide-react';
+import { Heart, ShoppingCart, ThumbsUp, ThumbsDown, Zap, Truck, ShieldCheck, BookOpen, Flag, ArrowLeft, Sparkles, Bot } from 'lucide-react';
 import { addToWishlist, removeFromWishlist, getWishlist } from '../services/wishlistService';
 import { getBookReviews, addReview, likeReview, dislikeReview, updateReview, reportReview } from '../services/reviewService';
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { getProfile, checkBookAccess, addToReadlist } from '../services/userService';
+import { explainBook } from '../services/aiService';
 import { RoleName, BookStatus } from '../types/enums';
 import type { User } from '../types';
 import { toast } from 'react-toastify';
@@ -31,6 +32,8 @@ const BookDetail: React.FC = () => {
   const [similarBooks, setSimilarBooks] = useState<any[]>([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportingReviewId, setReportingReviewId] = useState<string | null>(null);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [isExplaining, setIsExplaining] = useState(false);
   const currentUserId = localStorage.getItem('userId');
 
   const ensureHttps = (url: string) => {
@@ -334,6 +337,19 @@ const BookDetail: React.FC = () => {
     }
   };
 
+  const handleAskAI = async () => {
+    if (!book) return;
+    setIsExplaining(true);
+    try {
+      const data = await explainBook(book.title, book.author, book.description);
+      setExplanation(data.explanation);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsExplaining(false);
+    }
+  };
+
 
 
 
@@ -390,19 +406,58 @@ const BookDetail: React.FC = () => {
 
           <p className="book-description-p">{book.description}</p>
 
+          {/* AI Assistant Section */}
+          <div className="ai-assistant-section">
+            {!explanation && !isExplaining && (
+              <button onClick={handleAskAI} className="ask-ai-btn">
+                <Sparkles size={18} />
+                Ask AI About This Book
+              </button>
+            )}
+
+            {isExplaining && (
+              <div className="ai-loading">
+                <div className="spinner-mini"></div>
+                <span>Asking the librarian...</span>
+              </div>
+            )}
+
+            {explanation && (
+              <div className="ai-explanation-card">
+                <div className="ai-header">
+                  <Bot size={20} className="ai-icon" />
+                  <h4>Librarian's Insight</h4>
+                </div>
+                <p>{explanation}</p>
+              </div>
+            )}
+          </div>
+
 
           <div>
-            <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 {hasAccess ? (
-                  <button
-                    onClick={() => navigate(`/read/${book._id}`)}
-                    className="btn-primary readlist-btn"
-                    style={{ background: 'var(--success-color)', color: 'white' }}
-                  >
-                    <BookOpen size={18} />
-                    Read Book
-                  </button>
+                  book.file_url ? (
+                    <button
+                      onClick={() => navigate(`/read/${book._id}`)}
+                      className="btn-primary readlist-btn"
+                      style={{ background: 'var(--success-color)', color: 'white' }}
+                    >
+                      <BookOpen size={18} />
+                      Read Book
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="btn-primary readlist-btn disabled-btn"
+                      style={{ background: 'var(--text-secondary)', color: 'white', cursor: 'not-allowed', opacity: 0.7 }}
+                      title="No PDF available for this book"
+                    >
+                      <BookOpen size={18} />
+                      Not Available to Read Online
+                    </button>
+                  )
                 ) : (
                   <button
                     onClick={handleAddToReadlist}
@@ -497,7 +552,7 @@ const BookDetail: React.FC = () => {
             <li className="confidence-card">
               <ShieldCheck size={24} className="confidence-icon" />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontWeight: 600 }}>Verifier Seller</span>
+                <span style={{ fontWeight: 600 }}>Verified Seller</span>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sold by BookStack</span>
               </div>
             </li>

@@ -23,3 +23,22 @@ export const generateBookContent = async (
         );
     }
 };
+
+export const explainBook = async (
+    title: string,
+    author: string,
+    description: string
+): Promise<{ explanation: string }> => {
+    try {
+        const response = await api.post(
+            '/ai/explain-book',
+            { title, author, description }
+        );
+
+        return response.data.data;
+    } catch (error: any) {
+        throw new Error(
+            error.response?.data?.error || 'Failed to get explanation from AI'
+        );
+    }
+};
