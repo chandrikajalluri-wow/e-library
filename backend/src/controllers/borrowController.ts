@@ -281,13 +281,13 @@ export const updateReadingProgress = async (req: AuthRequest, res: Response) => 
         const borrow = await Borrow.findOne({
             user_id: userId,
             book_id: bookId,
-            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED, BorrowStatus.RETURNED] }
         }).sort({ issued_date: -1 });
 
         const readlistItem = await Readlist.findOne({
             user_id: userId,
             book_id: bookId,
-            status: 'active'
+            status: { $in: ['active', 'completed'] }
         }).sort({ addedAt: -1 });
 
         if (!borrow && !readlistItem) {
@@ -298,6 +298,19 @@ export const updateReadingProgress = async (req: AuthRequest, res: Response) => 
 
         if (last_page !== undefined) record!.last_page = last_page;
         if (bookmarks !== undefined) record!.bookmarks = bookmarks;
+
+        // Handle marking as completed
+        if (req.body.status === 'completed') {
+            record!.status = 'completed' as any;
+            if (borrow) {
+                // If it's a Borrow record, setting it to completed is handled by return logic,
+                // but we allow manual completion for the reading history tracking.
+                (record as any).returned_at = new Date();
+                record!.status = BorrowStatus.RETURNED;
+            } else {
+                (record as any).completedAt = new Date();
+            }
+        }
 
         await record!.save();
 
@@ -317,13 +330,13 @@ export const getReadingProgress = async (req: AuthRequest, res: Response) => {
         const borrow = await Borrow.findOne({
             user_id: userId,
             book_id: bookId,
-            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED, BorrowStatus.RETURNED] }
         }).sort({ issued_date: -1 });
 
         const readlistItem = await Readlist.findOne({
             user_id: userId,
             book_id: bookId,
-            status: 'active'
+            status: { $in: ['active', 'completed'] }
         }).sort({ addedAt: -1 });
 
         if (!borrow && !readlistItem) {
@@ -334,7 +347,8 @@ export const getReadingProgress = async (req: AuthRequest, res: Response) => {
 
         res.json({
             last_page: record?.last_page || 1,
-            bookmarks: record?.bookmarks || []
+            bookmarks: record?.bookmarks || [],
+            status: record?.status
         });
     } catch (err) {
         console.error('Get progress error:', err);

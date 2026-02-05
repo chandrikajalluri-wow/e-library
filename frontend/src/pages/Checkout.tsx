@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Wallet, Check, Package, ShieldCheck, Truck, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Wallet, Check, Package, Truck, ShoppingBag, X } from 'lucide-react';
 import { useBorrowCart, type CartItem } from '../context/BorrowCartContext';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,8 @@ const Checkout: React.FC = () => {
     // Use items passed via state, or fall back to full cart
     const cartItems = (location.state?.checkoutItems || contextCartItems) as CartItem[];
     const [membership, setMembership] = React.useState<Membership | null>(null);
+    const [isAgreed, setIsAgreed] = React.useState(false);
+    const [showTermsModal, setShowTermsModal] = React.useState(false);
 
     React.useEffect(() => {
         loadMembership();
@@ -169,10 +171,7 @@ const Checkout: React.FC = () => {
                             </div>
 
                             <div className="trust-badges-checkout">
-                                <div className="trust-item">
-                                    <ShieldCheck size={18} />
-                                    <span>Secure SSL Encrypted</span>
-                                </div>
+
                                 <div className="trust-item">
                                     <Truck size={18} />
                                     <span>Safe Delivery</span>
@@ -223,22 +222,163 @@ const Checkout: React.FC = () => {
                                     </div>
                                 </div>
 
+                                <div className="terms-acceptance-container">
+                                    <label className="terms-checkbox-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={isAgreed}
+                                            onChange={(e) => setIsAgreed(e.target.checked)}
+                                        />
+                                        <span className="terms-text">
+                                            I agree to the <button type="button" className="terms-link-btn" onClick={() => setShowTermsModal(true)}>Terms & Conditions</button>
+                                        </span>
+                                    </label>
+                                </div>
+
                                 <button
                                     className="premium-checkout-confirm-btn"
                                     onClick={handleContinue}
+                                    disabled={!isAgreed}
                                 >
                                     Continue to Address
                                     <ArrowLeft size={18} className="rotate-180" />
                                 </button>
 
-                                <p className="legal-notice">
-                                    I agree to the Terms & Conditions of E-library marketplace.
+                                <p className="legal-notice-small">
+                                    Secure 256-bit encrypted checkout
                                 </p>
                             </motion.div>
                         </aside>
                     </div>
                 </motion.div>
             </div>
+
+            {/* Terms and Conditions Modal */}
+            <AnimatePresence>
+                {showTermsModal && (
+                    <motion.div
+                        className="modal-overlay-new"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            className="modal-content-premium terms-modal"
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        >
+                            <div className="modal-header-new">
+                                <div>
+                                    <h2>Terms & Conditions</h2>
+                                    <p>Please read our library policies carefully</p>
+                                </div>
+                                <button className="close-x-btn" onClick={() => setShowTermsModal(false)}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="terms-content-scroller">
+                                <div className="terms-intro">
+                                    <p><strong>Welcome to Bookstack Library</strong></p>
+                                    <p>By creating an account, browsing books, buying books, reading PDFs, or using any feature, you agree to follow these Terms & Conditions.</p>
+                                </div>
+
+                                <section className="terms-section">
+                                    <h3>1. Account & User Responsibilities</h3>
+                                    <ul>
+                                        <li>You must provide accurate information during signup.</li>
+                                        <li>You are responsible for keeping your login credentials secure.</li>
+                                        <li>You must not use the platform for illegal, harmful, or abusive activities.</li>
+                                        <li>You cannot create multiple accounts to exploit membership plans or offers.</li>
+                                    </ul>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>2. Content & Copyright</h3>
+                                    <ul>
+                                        <li>All book content, descriptions, metadata, and images belong to their respective authors or publishers.</li>
+                                        <li>Users must not copy, redistribute, or modify protected content.</li>
+                                        <li>AI-generated descriptions are for internal use and may not always be 100% accurate.</li>
+                                    </ul>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>3. Orders, Checkout & Delivery</h3>
+                                    <ul>
+                                        <li>Users must provide valid delivery information.</li>
+                                        <li>Users can track order status: Processing → Shipped → Delivered → Canceled.</li>
+                                        <li>Delivery timelines may vary based on location and availability.</li>
+                                        <li>False claims, invalid addresses, or abusive behavior may lead to account suspension.</li>
+                                    </ul>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>4. Email Notifications</h3>
+                                    <p>You agree to receive transactional emails such as:</p>
+                                    <ul>
+                                        <li>Due date reminders</li>
+                                        <li>Return approvals & Order updates</li>
+                                        <li>Account-related alerts</li>
+                                    </ul>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>5. Privacy & Data Usage</h3>
+                                    <ul>
+                                        <li>We collect only necessary information (name, email, membership, history).</li>
+                                        <li>Passwords are encrypted and stored securely.</li>
+                                        <li>We do not sell your personal data to third parties.</li>
+                                        <li>Cookies may be used for login sessions and offline reading.</li>
+                                    </ul>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>6. Prohibited Activities</h3>
+                                    <p>You are not allowed to:</p>
+                                    <ul>
+                                        <li>Hack or attempt to bypass system restrictions.</li>
+                                        <li>Download files using automated tools.</li>
+                                        <li>Share login details with others or abuse the borrowing system.</li>
+                                        <li>Upload harmful files or impersonate others.</li>
+                                    </ul>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>7. Service Changes</h3>
+                                    <p>We may update features, membership benefits, borrowing rules, or remove content at our discretion. You will be notified of important changes.</p>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>8. Limitation of Liability</h3>
+                                    <p>We are not responsible for loss of offline files due to device resets, incorrect AI descriptions, or issues caused by third-party services.</p>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>9. Account Deletion</h3>
+                                    <p>Users can delete their account anytime. Deleted accounts cannot be recovered. We reserve the right to delete accounts that violate these rules.</p>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>10. Governing Law</h3>
+                                    <p>These terms are governed by Indian laws.</p>
+                                </section>
+
+                                <section className="terms-section">
+                                    <h3>11. Contact Us</h3>
+                                    <p>For support or inquiries: <strong>chandrika6300@gmail.com</strong></p>
+                                </section>
+                            </div>
+
+                            <div className="modal-footer-btns single-footer-btn">
+                                <button className="btn-primary-modern" onClick={() => setShowTermsModal(false)}>
+                                    I Understand
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

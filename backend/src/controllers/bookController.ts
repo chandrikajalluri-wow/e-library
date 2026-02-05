@@ -23,7 +23,8 @@ export const getAllBooks = async (req: Request, res: Response, next: NextFunctio
         }
 
         if (language) {
-            query.language = { $regex: new RegExp(`^${language}$`, 'i') };
+            const languages = (language as string).split(',').map(lang => new RegExp(`^${lang.trim()}$`, 'i'));
+            query.language = { $in: languages };
         }
 
         if (search) {
@@ -296,14 +297,14 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
             const activeBorrow = await Borrow.findOne({
                 user_id: userId,
                 book_id: bookId,
-                status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
+                status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED, BorrowStatus.RETURNED] }
             });
 
             // 2. Check Readlist collection (Mostly for digital additions)
             const readlistItem = await Readlist.findOne({
                 user_id: userId,
                 book_id: bookId,
-                status: 'active'
+                status: { $in: ['active', 'completed'] }
             }).sort({ addedAt: -1 });
 
             if (!activeBorrow && !readlistItem) {

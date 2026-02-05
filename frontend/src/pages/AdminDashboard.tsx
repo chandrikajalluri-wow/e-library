@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText } from 'lucide-react';
+import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download } from 'lucide-react';
 import { createBook, getBooks, updateBook, deleteBook, checkBookDeletionSafety } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
@@ -9,6 +9,8 @@ import { getAllBookRequests, updateBookRequestStatus, getProfile, getAllReadlist
 
 import { getActivityLogs } from '../services/logService';
 import { getAdmins } from '../services/superAdminService';
+import { generateBookContent } from '../services/aiService';
+import { exportBooksToCSV } from '../utils/csvExport';
 import { RoleName, BookStatus, RequestStatus, MembershipName } from '../types/enums';
 import type { Book, Category, User } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -72,6 +74,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [showAddBookForm, setShowAddBookForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean; title: string; message: string; onConfirm: () => void;
@@ -234,6 +237,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     setBookPage(1);
     setReadHistoryPage(1);
   }, [activeTab]);
+
+  const handleGenerateWithAI = async () => {
+    if (!newBook.title || !newBook.author) {
+      toast.error('Please enter both book title and author name first');
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      const generatedContent = await generateBookContent(newBook.title, newBook.author);
+
+      setNewBook({
+        ...newBook,
+        description: generatedContent.description,
+        author_description: generatedContent.authorBio
+      });
+
+      toast.success('AI content generated successfully!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to generate content with AI');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -451,6 +478,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         }
       }
     });
+  };
+
+  const handleExportBooks = async () => {
+    try {
+      toast.info('Preparing export...');
+      // Fetch ALL books without pagination
+      const data = await getBooks('showArchived=true&limit=10000');
+
+      if (!data.books || data.books.length === 0) {
+        toast.info('No books to export');
+        return;
+      }
+
+      exportBooksToCSV(data.books);
+      toast.success(`Exported ${data.books.length} books successfully`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export books');
+    }
   };
 
 
@@ -735,6 +781,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   </div>
                   <div className="form-group"><label>Rating (0-5)</label><input type="number" step="0.1" min="0" max="5" value={(newBook as any).rating} onChange={(e) => setNewBook({ ...newBook, rating: e.target.value } as any)} /></div>
 
+                  {/* AI Generation Button */}
+                  <div className="form-group full-width ai-generate-section">
+                    <button
+                      type="button"
+                      onClick={handleGenerateWithAI}
+                      disabled={isGeneratingAI || !newBook.title || !newBook.author}
+                      className="admin-btn-generate ai-generate-btn"
+                    >
+                      {isGeneratingAI ? (
+                        <>
+                          <div className="spinner-mini"></div>
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                          </svg>
+                          <span>Generate with AI</span>
+                        </>
+                      )}
+                    </button>
+                    <p className="ai-helper-text">
+                      ✨ Let AI generate book description and author biography based on title and author name
+                    </p>
+                  </div>
+
                   <div className="form-group file-group">
                     <label>Cover Image</label>
                     <div className="file-input-wrapper">
@@ -835,6 +908,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                         ))}
                       </select>
                     </div>
+                    <button onClick={handleExportBooks} className="admin-btn-secondary export-csv-btn">
+                      <Download size={18} />
+                      Export CSV
+                    </button>
                   </div>
                 </div>
               </div>
@@ -930,342 +1007,355 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 )}
               </div>
 
-              {bookTotalPages > 1 && (
-                <div className="saas-pagination">
-                  <button
-                    disabled={bookPage === 1}
-                    onClick={() => setBookPage(prev => prev - 1)}
-                    className="pagination-btn"
-                  >
-                    Previous
-                  </button>
-                  <div className="pagination-numbers">
-                    Page <strong>{bookPage}</strong> of {bookTotalPages}
+              {
+                bookTotalPages > 1 && (
+                  <div className="saas-pagination">
+                    <button
+                      disabled={bookPage === 1}
+                      onClick={() => setBookPage(prev => prev - 1)}
+                      className="pagination-btn"
+                    >
+                      Previous
+                    </button>
+                    <div className="pagination-numbers">
+                      Page <strong>{bookPage}</strong> of {bookTotalPages}
+                    </div>
+                    <button
+                      disabled={bookPage === bookTotalPages}
+                      onClick={() => setBookPage(prev => prev + 1)}
+                      className="pagination-btn"
+                    >
+                      Next
+                    </button>
                   </div>
+                )
+              }
+            </section >
+          </div >
+        )
+        }
+
+        {
+          activeTab === 'categories' && (
+            <div className={`admin-categories-split-layout ${showCategoryForm ? 'form-open' : ''} saas-reveal`}>
+              {showCategoryForm && (
+                <aside className="category-sidebar-panel saas-reveal-left">
+                  <div className="card admin-form-section sticky-form">
+                    <div className="admin-form-header">
+                      <div className="form-header-title">
+                        <h3 className="admin-table-title">{editingCategoryId ? 'Edit Record' : 'Create New'}</h3>
+                        <p className="form-subtitle">Category Architecture</p>
+                      </div>
+                      <button onClick={() => { handleCancelCategoryEdit(); setShowCategoryForm(false); }} className="admin-btn-close-mini">
+                        <Minus size={16} />
+                      </button>
+                    </div>
+                    <form onSubmit={handleCreateCategory} className="admin-category-form-premium">
+                      <div className="form-group-premium">
+                        <label><div className="label-icon"><Tag size={14} /></div> Category Name</label>
+                        <input
+                          type="text"
+                          value={newCategory.name}
+                          onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                          placeholder="e.g. History & Politics"
+                          className="premium-input"
+                          required
+                        />
+                      </div>
+                      <div className="form-group-premium">
+                        <label><div className="label-icon"><FileText size={14} /></div> Description</label>
+                        <textarea
+                          className="premium-textarea"
+                          value={newCategory.description}
+                          onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                          rows={6}
+                          placeholder="Provide details about this library category..."
+                        />
+                      </div>
+                      <div className="category-form-actions-premium">
+                        <button type="submit" className="admin-btn-generate full-width">
+                          {editingCategoryId ? 'Update Category' : 'Save Category'}
+                        </button>
+                        {editingCategoryId && (
+                          <button type="button" onClick={handleCancelCategoryEdit} className="admin-btn-dim full-width">
+                            Cancel Modification
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+                </aside>
+              )}
+
+              <div className="category-main-view">
+                <div className="admin-section-header">
+                  <div className="admin-search-wrapper premium-search-box">
+                    <div className="search-icon-inside">
+                      <Search size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search by category name..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="admin-search-input-premium"
+                    />
+                  </div>
+                </div>
+
+                <section className="admin-categories-list-section">
+                  <div className="admin-categories-grid-premium">
+                    {categories
+                      .filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                      .map((c) => (
+                        <div key={c._id} className={`category-orb-card ${editingCategoryId === c._id ? 'is-editing' : ''}`}>
+                          <div className="orb-card-glow"></div>
+                          <div className="orb-card-content">
+                            <div className="orb-header">
+                              <div className="orb-icon-container">
+                                <Layers size={22} />
+                              </div>
+                              <div className="orb-stats">
+                                <span className="count-num">{(c as any).bookCount || 0}</span>
+                                <span className="count-label">Items</span>
+                              </div>
+                            </div>
+
+                            <div className="orb-body">
+                              <h4 className="orb-title">{c.name}</h4>
+                              <p className="orb-description">{c.description || 'No description provided.'}</p>
+                            </div>
+
+                            <div className="orb-footer">
+                              <button onClick={() => {
+                                handleEditCategory(c);
+                                setShowCategoryForm(true);
+                              }} className="orb-action-btn edit-orb">
+                                Modify
+                              </button>
+                              {currentUser?.role === RoleName.SUPER_ADMIN && (
+                                <button onClick={() => handleDeleteCategory(c)} className="orb-action-btn delete-orb">
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+
+                  {!isDataLoading && categories.filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase())).length === 0 && (
+                    <div className="admin-nothing-found">
+                      <Search size={40} />
+                      <p>No categories match "{categorySearch}"</p>
+                    </div>
+                  )}
+                </section>
+              </div>
+            </div>
+          )
+        }
+
+        {
+          activeTab === 'requests' && (
+            <section className="card admin-table-section">
+              <div className="admin-table-header-box"><h3 className="admin-table-title">Order Return Requests</h3></div>
+              <div className="admin-table-wrapper">
+                {isDataLoading ? (
+                  <div className="admin-loading-container">
+                    <div className="spinner"></div>
+                    <p>Fetching Return Requests...</p>
+                  </div>
+                ) : (
+                  <table className="admin-table">
+                    <thead><tr><th>Customer</th><th>Order ID</th><th>Items</th><th>Total</th><th>Return Reason</th><th className="admin-actions-cell">Action</th></tr></thead>
+                    <tbody>{orderReturns.map(order => (
+                      <tr key={order._id}>
+                        <td>
+                          <div className="user-info-box">
+                            <span className="user-main-name">{order.user_id?.name || 'Unknown'}</span>
+                            <span className="user-sub-email">{order.user_id?.email}</span>
+                          </div>
+                        </td>
+                        <td><span className="book-main-title">#{order._id.slice(-8).toUpperCase()}</span></td>
+                        <td><span className="book-sub-meta">{order.items?.length || 0} items</span></td>
+                        <td><span className="admin-fine-amount">₹{order.totalAmount?.toFixed(2)}</span></td>
+                        <td><div className="book-info-box"><span className="book-sub-meta">{order.returnReason || 'No reason provided'}</span></div></td>
+                        <td className="admin-actions-cell">
+                          <div className="admin-actions-flex">
+                            <button onClick={() => handleApproveOrderReturn(order._id)} className="admin-btn-edit">Approve</button>
+                            <button onClick={() => handleDeclineOrderReturn(order._id)} className="admin-btn-delete">Decline</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                )}
+              </div>
+              {!isDataLoading && orderReturns.length === 0 && <div className="admin-empty-state">No pending order returns.</div>}
+            </section>
+          )
+        }
+
+
+        {
+          activeTab === 'user-requests' && (
+            <section className="card admin-table-section">
+              <div className="admin-table-header-box"><h3 className="admin-table-title">Book Suggestions</h3></div>
+              <div className="admin-table-wrapper">
+                {isDataLoading ? (
+                  <div className="admin-loading-container">
+                    <div className="spinner"></div>
+                    <p>Loading Suggestions...</p>
+                  </div>
+                ) : (
+                  <table className="admin-table">
+                    <thead><tr><th>User</th><th>Book Details</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
+                    <tbody>{userRequests.map(req => (
+                      <tr key={req._id}>
+                        <td>
+                          <div className="user-info-box">
+                            <span className="user-main-name">{req.user_id?.name || 'Unknown'}</span>
+                            <span className="user-sub-email">{req.user_id?.email}</span>
+                            <span className={`membership-pill ${((req.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
+                              {(req.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
+                            </span>
+                          </div>
+                        </td>
+                        <td><div className="book-info-box"><span className="book-main-title">{req.title}</span><span className="book-sub-meta">by {req.author}</span></div></td>
+                        <td><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
+                        <td className="admin-actions-cell">{req.status === RequestStatus.PENDING ? (<div className="admin-actions-flex"><button onClick={() => handleBookRequestStatus(req._id, RequestStatus.APPROVED)} className="admin-btn-edit">Approve</button><button onClick={() => handleBookRequestStatus(req._id, RequestStatus.REJECTED)} className="admin-btn-delete">Reject</button></div>) : <span className="admin-processed-text">Processed</span>}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                )}
+              </div>
+              {!isDataLoading && userRequests.length === 0 && <div className="admin-empty-state">No suggestions yet.</div>}
+            </section>
+          )
+        }
+
+
+        {
+          activeTab === 'borrows' && (
+            <section className="card admin-table-section" ref={borrowsRef}>
+              <div className="admin-table-header-box">
+                <h3 className="admin-table-title">Read History</h3>
+                <div className="admin-filter-group">
+                  <div className="admin-filter-item">
+                    <span className="admin-filter-label">Tier</span>
+                    <select value={membershipFilter} onChange={(e) => setMembershipFilter(e.target.value)} className="admin-filter-select">
+                      <option value="all">All Tiers</option>
+                      <option value={MembershipName.BASIC.toLowerCase()}>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</option>
+                      <option value={MembershipName.PREMIUM.toLowerCase()}>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="admin-table-wrapper">
+                {isDataLoading ? (
+                  <div className="admin-loading-container">
+                    <div className="spinner"></div>
+                    <p>Processing Records...</p>
+                  </div>
+                ) : (
+                  <table className="admin-table">
+                    <thead><tr><th>Reader</th><th>Book</th><th>Dates</th><th>Status</th></tr></thead>
+                    <tbody>{readHistory.map((r: any) => {
+                      const membershipName = (r.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
+                      const isPremiumUser = membershipName.toLowerCase().includes(MembershipName.PREMIUM.toLowerCase());
+
+                      return (
+                        <tr key={r._id}>
+                          <td>
+                            <div className="user-info-box">
+                              <span className="user-main-name">{r.user_id?.name}</span>
+                              <span className={`membership-pill ${isPremiumUser ? 'membership-premium' : ''}`}>
+                                {membershipName}
+                              </span>
+                            </div>
+                          </td>
+                          <td><div className="book-info-box"><span className="book-main-title">{r.book_id?.title}</span></div></td>
+                          <td><div className="book-info-box"><div>Started: {r.addedAt ? new Date(r.addedAt).toLocaleDateString() : 'N/A'}</div><div>Due: {r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'N/A'}</div></div></td>
+                          <td><span className={`status-badge status-${r.status}`}>{r.status}</span></td>
+                        </tr>
+                      );
+                    })}</tbody>
+                  </table>
+                )}
+              </div>
+              {!isDataLoading && readHistory.length === 0 && (
+                <div className="admin-empty-state">No read history records found.</div>
+              )}
+              {readHistoryTotalPages > 1 && (
+                <div className="pagination-controls">
                   <button
-                    disabled={bookPage === bookTotalPages}
-                    onClick={() => setBookPage(prev => prev + 1)}
-                    className="pagination-btn"
+                    disabled={readHistoryPage === 1}
+                    onClick={() => setReadHistoryPage((prev: number) => prev - 1)}
+                    className={`admin-reminder-btn ${readHistoryPage === 1 ? 'disabled-with-stop' : ''}`}
                   >
-                    Next
+                    <span className="btn-text">Previous</span>
+                    <CircleSlash size={16} className="stop-icon" />
+                  </button>
+                  <span className="page-info">Page {readHistoryPage} of {readHistoryTotalPages}</span>
+                  <button
+                    disabled={readHistoryPage === readHistoryTotalPages}
+                    onClick={() => setReadHistoryPage((prev: number) => prev + 1)}
+                    className={`admin-btn-edit ${readHistoryPage === readHistoryTotalPages ? 'disabled-with-stop' : ''}`}
+                    style={{ padding: '0.45rem 1.5rem' }}
+                  >
+                    <span className="btn-text">Next</span>
+                    <CircleSlash size={16} className="stop-icon" />
                   </button>
                 </div>
               )}
             </section>
-          </div>
-        )}
+          )
+        }
 
-        {activeTab === 'categories' && (
-          <div className={`admin-categories-split-layout ${showCategoryForm ? 'form-open' : ''} saas-reveal`}>
-            {showCategoryForm && (
-              <aside className="category-sidebar-panel saas-reveal-left">
-                <div className="card admin-form-section sticky-form">
-                  <div className="admin-form-header">
-                    <div className="form-header-title">
-                      <h3 className="admin-table-title">{editingCategoryId ? 'Edit Record' : 'Create New'}</h3>
-                      <p className="form-subtitle">Category Architecture</p>
-                    </div>
-                    <button onClick={() => { handleCancelCategoryEdit(); setShowCategoryForm(false); }} className="admin-btn-close-mini">
-                      <Minus size={16} />
-                    </button>
+        {
+          activeTab === 'logs' && (
+            <section className="card admin-table-section">
+              <div className="admin-table-header-box"><h3 className="admin-table-title">User Activity Logs</h3></div>
+              <div className="admin-table-wrapper">
+                {isDataLoading ? (
+                  <div className="admin-loading-container">
+                    <div className="spinner"></div>
+                    <p>Loading User Logs...</p>
                   </div>
-                  <form onSubmit={handleCreateCategory} className="admin-category-form-premium">
-                    <div className="form-group-premium">
-                      <label><div className="label-icon"><Tag size={14} /></div> Category Name</label>
-                      <input
-                        type="text"
-                        value={newCategory.name}
-                        onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                        placeholder="e.g. History & Politics"
-                        className="premium-input"
-                        required
-                      />
-                    </div>
-                    <div className="form-group-premium">
-                      <label><div className="label-icon"><FileText size={14} /></div> Description</label>
-                      <textarea
-                        className="premium-textarea"
-                        value={newCategory.description}
-                        onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
-                        rows={6}
-                        placeholder="Provide details about this library category..."
-                      />
-                    </div>
-                    <div className="category-form-actions-premium">
-                      <button type="submit" className="admin-btn-generate full-width">
-                        {editingCategoryId ? 'Update Category' : 'Save Category'}
-                      </button>
-                      {editingCategoryId && (
-                        <button type="button" onClick={handleCancelCategoryEdit} className="admin-btn-dim full-width">
-                          Cancel Modification
-                        </button>
-                      )}
-                    </div>
-                  </form>
-                </div>
-              </aside>
-            )}
-
-            <div className="category-main-view">
-              <div className="admin-section-header">
-                <div className="admin-search-wrapper premium-search-box">
-                  <div className="search-icon-inside">
-                    <Search size={18} />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search by category name..."
-                    value={categorySearch}
-                    onChange={(e) => setCategorySearch(e.target.value)}
-                    className="admin-search-input-premium"
-                  />
-                </div>
-              </div>
-
-              <section className="admin-categories-list-section">
-                <div className="admin-categories-grid-premium">
-                  {categories
-                    .filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
-                    .map((c) => (
-                      <div key={c._id} className={`category-orb-card ${editingCategoryId === c._id ? 'is-editing' : ''}`}>
-                        <div className="orb-card-glow"></div>
-                        <div className="orb-card-content">
-                          <div className="orb-header">
-                            <div className="orb-icon-container">
-                              <Layers size={22} />
-                            </div>
-                            <div className="orb-stats">
-                              <span className="count-num">{(c as any).bookCount || 0}</span>
-                              <span className="count-label">Items</span>
-                            </div>
-                          </div>
-
-                          <div className="orb-body">
-                            <h4 className="orb-title">{c.name}</h4>
-                            <p className="orb-description">{c.description || 'No description provided.'}</p>
-                          </div>
-
-                          <div className="orb-footer">
-                            <button onClick={() => {
-                              handleEditCategory(c);
-                              setShowCategoryForm(true);
-                            }} className="orb-action-btn edit-orb">
-                              Modify
-                            </button>
-                            {currentUser?.role === RoleName.SUPER_ADMIN && (
-                              <button onClick={() => handleDeleteCategory(c)} className="orb-action-btn delete-orb">
-                                Remove
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-
-                {!isDataLoading && categories.filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase())).length === 0 && (
-                  <div className="admin-nothing-found">
-                    <Search size={40} />
-                    <p>No categories match "{categorySearch}"</p>
-                  </div>
-                )}
-              </section>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'requests' && (
-          <section className="card admin-table-section">
-            <div className="admin-table-header-box"><h3 className="admin-table-title">Order Return Requests</h3></div>
-            <div className="admin-table-wrapper">
-              {isDataLoading ? (
-                <div className="admin-loading-container">
-                  <div className="spinner"></div>
-                  <p>Fetching Return Requests...</p>
-                </div>
-              ) : (
-                <table className="admin-table">
-                  <thead><tr><th>Customer</th><th>Order ID</th><th>Items</th><th>Total</th><th>Return Reason</th><th className="admin-actions-cell">Action</th></tr></thead>
-                  <tbody>{orderReturns.map(order => (
-                    <tr key={order._id}>
-                      <td>
-                        <div className="user-info-box">
-                          <span className="user-main-name">{order.user_id?.name || 'Unknown'}</span>
-                          <span className="user-sub-email">{order.user_id?.email}</span>
-                        </div>
-                      </td>
-                      <td><span className="book-main-title">#{order._id.slice(-8).toUpperCase()}</span></td>
-                      <td><span className="book-sub-meta">{order.items?.length || 0} items</span></td>
-                      <td><span className="admin-fine-amount">₹{order.totalAmount?.toFixed(2)}</span></td>
-                      <td><div className="book-info-box"><span className="book-sub-meta">{order.returnReason || 'No reason provided'}</span></div></td>
-                      <td className="admin-actions-cell">
-                        <div className="admin-actions-flex">
-                          <button onClick={() => handleApproveOrderReturn(order._id)} className="admin-btn-edit">Approve</button>
-                          <button onClick={() => handleDeclineOrderReturn(order._id)} className="admin-btn-delete">Decline</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              )}
-            </div>
-            {!isDataLoading && orderReturns.length === 0 && <div className="admin-empty-state">No pending order returns.</div>}
-          </section>
-        )}
-
-
-        {activeTab === 'user-requests' && (
-          <section className="card admin-table-section">
-            <div className="admin-table-header-box"><h3 className="admin-table-title">Book Suggestions</h3></div>
-            <div className="admin-table-wrapper">
-              {isDataLoading ? (
-                <div className="admin-loading-container">
-                  <div className="spinner"></div>
-                  <p>Loading Suggestions...</p>
-                </div>
-              ) : (
-                <table className="admin-table">
-                  <thead><tr><th>User</th><th>Book Details</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
-                  <tbody>{userRequests.map(req => (
-                    <tr key={req._id}>
-                      <td>
-                        <div className="user-info-box">
-                          <span className="user-main-name">{req.user_id?.name || 'Unknown'}</span>
-                          <span className="user-sub-email">{req.user_id?.email}</span>
-                          <span className={`membership-pill ${((req.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
-                            {(req.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
-                          </span>
-                        </div>
-                      </td>
-                      <td><div className="book-info-box"><span className="book-main-title">{req.title}</span><span className="book-sub-meta">by {req.author}</span></div></td>
-                      <td><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
-                      <td className="admin-actions-cell">{req.status === RequestStatus.PENDING ? (<div className="admin-actions-flex"><button onClick={() => handleBookRequestStatus(req._id, RequestStatus.APPROVED)} className="admin-btn-edit">Approve</button><button onClick={() => handleBookRequestStatus(req._id, RequestStatus.REJECTED)} className="admin-btn-delete">Reject</button></div>) : <span className="admin-processed-text">Processed</span>}</td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              )}
-            </div>
-            {!isDataLoading && userRequests.length === 0 && <div className="admin-empty-state">No suggestions yet.</div>}
-          </section>
-        )}
-
-
-        {activeTab === 'borrows' && (
-          <section className="card admin-table-section" ref={borrowsRef}>
-            <div className="admin-table-header-box">
-              <h3 className="admin-table-title">Read History</h3>
-              <div className="admin-filter-group">
-                <div className="admin-filter-item">
-                  <span className="admin-filter-label">Tier</span>
-                  <select value={membershipFilter} onChange={(e) => setMembershipFilter(e.target.value)} className="admin-filter-select">
-                    <option value="all">All Tiers</option>
-                    <option value={MembershipName.BASIC.toLowerCase()}>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</option>
-                    <option value={MembershipName.PREMIUM.toLowerCase()}>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div className="admin-table-wrapper">
-              {isDataLoading ? (
-                <div className="admin-loading-container">
-                  <div className="spinner"></div>
-                  <p>Processing Records...</p>
-                </div>
-              ) : (
-                <table className="admin-table">
-                  <thead><tr><th>Reader</th><th>Book</th><th>Dates</th><th>Status</th></tr></thead>
-                  <tbody>{readHistory.map((r: any) => {
-                    const membershipName = (r.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1);
-                    const isPremiumUser = membershipName.toLowerCase().includes(MembershipName.PREMIUM.toLowerCase());
-
-                    return (
-                      <tr key={r._id}>
+                ) : (
+                  <table className="admin-table">
+                    <thead><tr><th>User</th><th>Action</th><th>Timestamp</th></tr></thead>
+                    <tbody>{logs.map(log => (
+                      <tr key={log._id}>
                         <td>
                           <div className="user-info-box">
-                            <span className="user-main-name">{r.user_id?.name}</span>
-                            <span className={`membership-pill ${isPremiumUser ? 'membership-premium' : ''}`}>
-                              {membershipName}
+                            <span className="user-main-name">{log.user_id?.name}</span>
+                            <span className="user-sub-email">{log.user_id?.email}</span>
+                            <span className={`membership-pill ${((log.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
+                              {(log.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
                             </span>
                           </div>
                         </td>
-                        <td><div className="book-info-box"><span className="book-main-title">{r.book_id?.title}</span></div></td>
-                        <td><div className="book-info-box"><div>Started: {r.addedAt ? new Date(r.addedAt).toLocaleDateString() : 'N/A'}</div><div>Due: {r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'N/A'}</div></div></td>
-                        <td><span className={`status-badge status-${r.status}`}>{r.status}</span></td>
+                        <td><span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{log.action}</span></td>
+                        <td><span className="book-sub-meta">{new Date(log.timestamp).toLocaleString()}</span></td>
                       </tr>
-                    );
-                  })}</tbody>
-                </table>
-              )}
-            </div>
-            {!isDataLoading && readHistory.length === 0 && (
-              <div className="admin-empty-state">No read history records found.</div>
-            )}
-            {readHistoryTotalPages > 1 && (
-              <div className="pagination-controls">
-                <button
-                  disabled={readHistoryPage === 1}
-                  onClick={() => setReadHistoryPage((prev: number) => prev - 1)}
-                  className={`admin-reminder-btn ${readHistoryPage === 1 ? 'disabled-with-stop' : ''}`}
-                >
-                  <span className="btn-text">Previous</span>
-                  <CircleSlash size={16} className="stop-icon" />
-                </button>
-                <span className="page-info">Page {readHistoryPage} of {readHistoryTotalPages}</span>
-                <button
-                  disabled={readHistoryPage === readHistoryTotalPages}
-                  onClick={() => setReadHistoryPage((prev: number) => prev + 1)}
-                  className={`admin-btn-edit ${readHistoryPage === readHistoryTotalPages ? 'disabled-with-stop' : ''}`}
-                  style={{ padding: '0.45rem 1.5rem' }}
-                >
-                  <span className="btn-text">Next</span>
-                  <CircleSlash size={16} className="stop-icon" />
-                </button>
+                    ))}</tbody>
+                  </table>
+                )}
               </div>
-            )}
-          </section>
-        )}
-
-        {activeTab === 'logs' && (
-          <section className="card admin-table-section">
-            <div className="admin-table-header-box"><h3 className="admin-table-title">User Activity Logs</h3></div>
-            <div className="admin-table-wrapper">
-              {isDataLoading ? (
-                <div className="admin-loading-container">
-                  <div className="spinner"></div>
-                  <p>Loading User Logs...</p>
-                </div>
-              ) : (
-                <table className="admin-table">
-                  <thead><tr><th>User</th><th>Action</th><th>Timestamp</th></tr></thead>
-                  <tbody>{logs.map(log => (
-                    <tr key={log._id}>
-                      <td>
-                        <div className="user-info-box">
-                          <span className="user-main-name">{log.user_id?.name}</span>
-                          <span className="user-sub-email">{log.user_id?.email}</span>
-                          <span className={`membership-pill ${((log.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
-                            {(log.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
-                          </span>
-                        </div>
-                      </td>
-                      <td><span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{log.action}</span></td>
-                      <td><span className="book-sub-meta">{new Date(log.timestamp).toLocaleString()}</span></td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              )}
-            </div>
-            {!isDataLoading && logs.length === 0 && <div className="admin-empty-state">No logs found.</div>}
-          </section>
-        )}
-      </main>
+              {!isDataLoading && logs.length === 0 && <div className="admin-empty-state">No logs found.</div>}
+            </section>
+          )
+        }
+      </main >
 
       <ConfirmationModal
         isOpen={confirmModal.isOpen} title={confirmModal.title} message={confirmModal.message}
         type={confirmModal.type} isLoading={confirmModal.isLoading} onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
-    </div>
+    </div >
   );
 };
 

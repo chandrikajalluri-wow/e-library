@@ -18,6 +18,7 @@ const UserDashboard: React.FC = () => {
   const [membership, setMembership] = useState<Membership | null>(null);
 
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'reading' | 'completed'>('reading');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -194,8 +195,27 @@ const UserDashboard: React.FC = () => {
           </button>
         </div>
 
+        <div className="library-tabs-container">
+          <button
+            className={`library-tab ${activeTab === 'reading' ? 'active' : ''}`}
+            onClick={() => setActiveTab('reading')}
+          >
+            Reading
+          </button>
+          <button
+            className={`library-tab ${activeTab === 'completed' ? 'active' : ''}`}
+            onClick={() => setActiveTab('completed')}
+          >
+            Completed
+          </button>
+        </div>
+
         <div className="grid-books">
-          {readlist.length === 0 ? (
+          {readlist.filter(item => {
+            if (activeTab === 'reading') return item.status === 'active';
+            if (activeTab === 'completed') return item.status === 'completed';
+            return true;
+          }).length === 0 ? (
             <div className="empty-discovery-zone saas-reveal">
               <div className="discovery-visual-content">
                 <div className="floating-icons-container">
@@ -232,53 +252,62 @@ const UserDashboard: React.FC = () => {
               </div>
             </div>
           ) : (
-            readlist.map((item: any) => {
-              const book = item.book || (item.title ? item : null);
-              if (!book) return null;
-              const isExpired = item.status === 'active' && item.dueDate && new Date(item.dueDate) < new Date();
+            readlist
+              .filter(item => {
+                if (activeTab === 'reading') return item.status === 'active';
+                if (activeTab === 'completed') return item.status === 'completed';
+                return true;
+              })
+              .map((item: any) => {
+                const book = item.book || (item.title ? item : null);
+                if (!book) return null;
+                const isDateExpired = item.dueDate && new Date(item.dueDate) < new Date();
+                const isExpired = item.status === 'active' && isDateExpired;
 
-              return (
-                <div
-                  key={book._id}
-                  className="modern-book-card"
-                >
-                  <div className="card-image-wrap" onClick={() => navigate(`/books/${book._id}`)} style={{ cursor: 'pointer' }}>
-                    <div className="status-overlay">
-                      <span className={`status-label ${isExpired ? 'expired' : item.status}`}>
-                        {isExpired ? 'Expired' : item.status}
-                      </span>
-                    </div>
-                    {book.cover_image_url ? (
-                      <img src={book.cover_image_url} alt={book.title} loading="lazy" />
-                    ) : (
-                      <div className="no-image-placeholder">No Image</div>
-                    )}
-                  </div>
-
-                  <div className="card-details-box">
-                    <span className="card-category">{book.category_id?.name || 'Literature'}</span>
-                    <h3 className="card-title">{book.title}</h3>
-                    <p className="card-author">by {book.author}</p>
-
-                    <div className="card-footer">
-                      <div className="due-info">
-                        <span className="due-label">{item.status === 'completed' ? 'Finished On' : (item.dueDate ? 'Ends On' : 'Access')}</span>
-                        <span className="due-date">
-                          {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'Active Access'}
+                return (
+                  <div
+                    key={book._id}
+                    className="modern-book-card"
+                  >
+                    <div className="card-image-wrap" onClick={() => navigate(`/books/${book._id}`)} style={{ cursor: 'pointer' }}>
+                      <div className="status-overlay">
+                        <span className={`status-label ${isExpired ? 'expired' : item.status}`}>
+                          {isExpired ? 'Expired' : item.status}
                         </span>
                       </div>
-                      <button
-                        onClick={() => navigate(`/read/${book._id}`)}
-                        disabled={isExpired}
-                        className="read-btn-premium"
-                      >
-                        {isExpired ? 'Renew' : 'Read'}
-                      </button>
+                      {book.cover_image_url ? (
+                        <img src={book.cover_image_url} alt={book.title} loading="lazy" />
+                      ) : (
+                        <div className="no-image-placeholder">No Image</div>
+                      )}
+                    </div>
+
+                    <div className="card-details-box">
+                      <span className="card-category">{book.category_id?.name || 'Literature'}</span>
+                      <h3 className="card-title">{book.title}</h3>
+                      <p className="card-author">by {book.author}</p>
+
+                      <div className="card-footer">
+                        <div className="due-info">
+                          <span className="due-label">{item.status === 'completed' ? 'Finished On' : (item.dueDate ? 'Ends On' : 'Access')}</span>
+                          <span className="due-date">
+                            {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'Active Access'}
+                          </span>
+                        </div>
+                        {!(item.status === 'completed' && isDateExpired) && (
+                          <button
+                            onClick={() => navigate(`/read/${book._id}`)}
+                            disabled={isExpired}
+                            className="read-btn-premium"
+                          >
+                            {isExpired ? 'Renew' : (item.status === 'completed' ? 'Read Again' : 'Read')}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })
           )}
         </div>
       </section>

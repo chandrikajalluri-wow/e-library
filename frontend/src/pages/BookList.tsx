@@ -31,26 +31,26 @@ const BookList: React.FC = () => {
   const [personalizedRecs, setPersonalizedRecs] = useState<Book[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(categoryParam);
+  const [selectedCategory, setSelectedCategory] = useState<string[]>(categoryParam ? categoryParam.split(',') : []);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState('all'); // 'all', 'premium', 'free'
-  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState(''); // Default empty for placeholder
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
   // Pending filter states for sidebar (not applied until "Apply" is clicked)
-  const [pendingCategory, setPendingCategory] = useState(selectedCategory);
-  const [pendingLanguage, setPendingLanguage] = useState(selectedLanguage);
+  const [pendingCategory, setPendingCategory] = useState<string[]>(selectedCategory);
+  const [pendingLanguage, setPendingLanguage] = useState<string[]>(selectedLanguage);
   const [pendingFilterType, setPendingFilterType] = useState(filterType);
 
-  const languages = ['English', 'Hindi', 'Spanish', 'French', 'German', 'Bengali', 'Tamil', 'Arabic', 'Chinese', 'Japanese'];
+  const languages = ['English', 'Spanish', 'French', 'German'];
 
   // Sync state with URL parameter
   useEffect(() => {
-    setSelectedCategory(categoryParam);
+    setSelectedCategory(categoryParam ? categoryParam.split(',') : []);
   }, [categoryParam]);
 
   useEffect(() => {
@@ -69,9 +69,10 @@ const BookList: React.FC = () => {
     setPage(1);
 
     // Update URL if category changed from dropdown
-    if (selectedCategory !== categoryParam) {
-      if (selectedCategory) {
-        setSearchParams({ category: selectedCategory });
+    const categoryQuery = selectedCategory.join(',');
+    if (categoryQuery !== categoryParam) {
+      if (categoryQuery) {
+        setSearchParams({ category: categoryQuery });
       } else {
         setSearchParams({});
       }
@@ -116,10 +117,10 @@ const BookList: React.FC = () => {
       setLoading(true);
       // Build query string
       let query = `search=${search}&page=${page}&limit=10&sort=${sortOrder || '-createdAt'}`;
-      if (selectedCategory) query += `&category=${selectedCategory}`;
+      if (selectedCategory.length > 0) query += `&category=${selectedCategory.join(',')}`;
       if (filterType === 'premium') query += `&isPremium=true`;
       if (filterType === 'free') query += `&isPremium=false`;
-      if (selectedLanguage) query += `&language=${selectedLanguage}`;
+      if (selectedLanguage.length > 0) query += `&language=${selectedLanguage.join(',')}`;
 
       const data = await getBooks(query);
 
@@ -138,14 +139,15 @@ const BookList: React.FC = () => {
   };
 
   const activeFiltersCount =
-    (selectedCategory ? 1 : 0) +
+    selectedCategory.length +
     (filterType !== 'all' ? 1 : 0) +
-    (selectedLanguage ? 1 : 0);
+    selectedLanguage.length;
 
   const resetFilters = () => {
-    setPendingCategory('');
-    setPendingLanguage('');
+    setPendingCategory([]);
+    setPendingLanguage([]);
     setPendingFilterType('all');
+    setSearch('');
   };
 
   const applyFilters = () => {
@@ -157,10 +159,26 @@ const BookList: React.FC = () => {
   };
 
   const handleOpenFilters = () => {
-    setPendingCategory(selectedCategory);
-    setPendingLanguage(selectedLanguage);
+    setPendingCategory([...selectedCategory]);
+    setPendingLanguage([...selectedLanguage]);
     setPendingFilterType(filterType);
     setIsFilterOpen(true);
+  };
+
+  const togglePendingCategory = (categoryId: string) => {
+    setPendingCategory(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  const togglePendingLanguage = (lang: string) => {
+    setPendingLanguage(prev =>
+      prev.includes(lang)
+        ? prev.filter(l => l !== lang)
+        : [...prev, lang]
+    );
   };
 
   const sortOptions = [
@@ -280,19 +298,24 @@ const BookList: React.FC = () => {
 
               <div className="sidebar-content">
                 <div className="filter-group">
-                  <h4>Category</h4>
+                  <div className="filter-group-header">
+                    <h4>Categories</h4>
+                    {pendingCategory.length > 0 && (
+                      <button className="clear-group-btn" onClick={() => setPendingCategory([])}>Clear</button>
+                    )}
+                  </div>
                   <div className="filter-options-grid">
                     <button
-                      className={`filter-chip ${!pendingCategory ? 'active' : ''}`}
-                      onClick={() => setPendingCategory('')}
+                      className={`filter-chip ${pendingCategory.length === 0 ? 'active' : ''}`}
+                      onClick={() => setPendingCategory([])}
                     >
                       All
                     </button>
                     {categories.map((cat) => (
                       <button
                         key={cat._id}
-                        className={`filter-chip ${pendingCategory === cat._id ? 'active' : ''}`}
-                        onClick={() => setPendingCategory(cat._id)}
+                        className={`filter-chip ${pendingCategory.includes(cat._id) ? 'active' : ''}`}
+                        onClick={() => togglePendingCategory(cat._id)}
                       >
                         {cat.name}
                       </button>
@@ -301,19 +324,24 @@ const BookList: React.FC = () => {
                 </div>
 
                 <div className="filter-group">
-                  <h4>Language</h4>
+                  <div className="filter-group-header">
+                    <h4>Languages</h4>
+                    {pendingLanguage.length > 0 && (
+                      <button className="clear-group-btn" onClick={() => setPendingLanguage([])}>Clear</button>
+                    )}
+                  </div>
                   <div className="filter-options-grid">
                     <button
-                      className={`filter-chip ${!pendingLanguage ? 'active' : ''}`}
-                      onClick={() => setPendingLanguage('')}
+                      className={`filter-chip ${pendingLanguage.length === 0 ? 'active' : ''}`}
+                      onClick={() => setPendingLanguage([])}
                     >
                       All
                     </button>
                     {languages.map((lang) => (
                       <button
                         key={lang}
-                        className={`filter-chip ${pendingLanguage === lang ? 'active' : ''}`}
-                        onClick={() => setPendingLanguage(lang)}
+                        className={`filter-chip ${pendingLanguage.includes(lang) ? 'active' : ''}`}
+                        onClick={() => togglePendingLanguage(lang)}
                       >
                         {lang}
                       </button>
@@ -322,7 +350,12 @@ const BookList: React.FC = () => {
                 </div>
 
                 <div className="filter-group">
-                  <h4>Access Level</h4>
+                  <div className="filter-group-header">
+                    <h4>Access Level</h4>
+                    {pendingFilterType !== 'all' && (
+                      <button className="clear-group-btn" onClick={() => setPendingFilterType('all')}>Clear</button>
+                    )}
+                  </div>
                   <div className="access-toggle-group">
                     <button
                       className={`access-btn ${pendingFilterType === 'all' ? 'active' : ''}`}
@@ -361,7 +394,7 @@ const BookList: React.FC = () => {
       </AnimatePresence>
 
       {/* Top Recommendations Section */}
-      {!search && !selectedCategory && recommendations.length > 0 && (
+      {!search && selectedCategory.length === 0 && selectedLanguage.length === 0 && recommendations.length > 0 && (
         <section className="recommendations-section">
           <h2 className="section-title-h2">Top Recommendations</h2>
           <div className="recommendations-grid">
@@ -382,7 +415,7 @@ const BookList: React.FC = () => {
       )}
 
       {/* Personalized Recommendations Section */}
-      {!search && !selectedCategory && personalizedRecs.length > 0 && (
+      {!search && selectedCategory.length === 0 && selectedLanguage.length === 0 && personalizedRecs.length > 0 && (
         <section className="recommendations-section personalized-section">
           <h2 className="section-title-h2">Recommended for You</h2>
           <div className="recommendations-grid">
@@ -402,7 +435,9 @@ const BookList: React.FC = () => {
         </section>
       )}
 
-      <h2 ref={searchSectionRef} className="section-title-h2">{search || selectedCategory || filterType !== 'all' ? 'Search Results' : 'All Books'}</h2>
+      <h2 ref={searchSectionRef} className="section-title-h2">
+        {search || selectedCategory.length > 0 || selectedLanguage.length > 0 || filterType !== 'all' ? 'Search Results' : 'All Books'}
+      </h2>
 
       <div className="grid-books">
         {books.map((book) => (
@@ -491,32 +526,29 @@ const BookList: React.FC = () => {
                     Save to Library
                   </button>
 
-                  {/* Only show Add to Cart if copies are available */}
-                  {book.noOfCopies > 0 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(book);
-                        toast.success(`${book.title} added to cart!`);
-                        navigate('/borrow-cart');
-                      }}
-                      disabled={isInCart(book._id)}
-                      className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        flex: '1',
-                        padding: '0.5rem 0.75rem',
-                        fontSize: '0.8rem',
-                        marginTop: '0.5rem',
-                      }}
-                    >
-                      <ShoppingCart size={16} />
-                      {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(book);
+                      toast.success(`${book.title} added to cart!`);
+                      navigate('/borrow-cart');
+                    }}
+                    disabled={isInCart(book._id)}
+                    className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      flex: '1',
+                      padding: '0.5rem 0.75rem',
+                      fontSize: '0.8rem',
+                      marginTop: '0.5rem',
+                    }}
+                  >
+                    <ShoppingCart size={16} />
+                    {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
+                  </button>
                 </div>
               </div>
             </div>

@@ -21,7 +21,7 @@ const memberships = [
         hasRecommendations: false,
         description: 'Perfect for casual readers',
         features: [
-            'Read up to 3 books',
+            'Read up to 3 books/month',
             '7 days reading period',
             'Access to standard collection',
             '3-4 Days Delivery',
@@ -41,10 +41,10 @@ const memberships = [
         hasRecommendations: true,
         description: 'Ultimate reading experience',
         features: [
-            'Read up to 10 books',
+            'Read up to 10 books/month',
             '21 days reading period',
             'Access to premium collection',
-            'FREE 24-Hour Delivery',
+            '24-Hour Delivery',
             'Request new books',
             'Personalized recommendations',
             'Priority support'
@@ -69,9 +69,9 @@ async function seedMemberships() {
         const basicMembership = createdMemberships.find(m => m.name === MembershipName.BASIC);
 
         if (basicMembership) {
-            // Update all users without a membership to basic
+            // Update all users to basic membership to ensure IDs are valid after re-seeding
             const result = await User.updateMany(
-                { membership_id: { $exists: false } },
+                {},
                 { $set: { membership_id: basicMembership._id } }
             );
             console.log(`Updated ${result.modifiedCount} users to Basic membership`);

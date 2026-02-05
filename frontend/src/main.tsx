@@ -10,14 +10,25 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
+if (!clientId || clientId.includes('your_google_client_id_here')) {
+  console.error('GOOGLE CLIENT ID is missing. Please set VITE_GOOGLE_CLIENT_ID in your .env file.');
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={clientId}>
+    {clientId && !clientId.includes('your_google_client_id_here') ? (
+      <GoogleOAuthProvider clientId={clientId}>
+        <BorrowCartProvider>
+          <App />
+          <ToastContainer position="top-right" autoClose={3000} />
+        </BorrowCartProvider>
+      </GoogleOAuthProvider>
+    ) : (
       <BorrowCartProvider>
         <App />
         <ToastContainer position="top-right" autoClose={3000} />
       </BorrowCartProvider>
-    </GoogleOAuthProvider>
+    )}
   </React.StrictMode>
 );
 

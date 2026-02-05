@@ -1233,7 +1233,7 @@ body.dark-mode .pagination-controls {
     background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(8px);
     border: 1px solid var(--border-color);
-    padding: 0 1.25rem;
+    padding: 0.75rem 1.25rem;
     height: 50px;
     border-radius: 14px;
     color: var(--text-secondary);
@@ -1270,7 +1270,7 @@ body.dark-mode .pagination-controls {
 
 .filter-item-box select {
     background: transparent;
-    border: none;
+    border: none !important;
     color: var(--text-primary);
     font-weight: 700;
     font-size: 0.95rem;
@@ -1293,7 +1293,7 @@ body.dark-mode .pagination-controls {
 .filter-item-box select option {
     background: var(--card-bg);
     color: var(--text-primary);
-    padding: 1rem;
+    padding: 1rem 1rem !important;
     font-weight: 600;
 }
 
@@ -1478,6 +1478,16 @@ body.dark-mode .pagination-controls {
     background: var(--border-color);
     color: var(--text-primary);
 }
+
+.export-csv-btn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem !important;
+    height: 50px;
+}
+
 
 /* Pagination */
 .saas-pagination {
@@ -2853,4 +2863,98 @@ body.dark-mode .report-reason-item {
     color: white !important;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px -2px rgba(239, 68, 68, 0.3);
+}
+
+/* AI Generation Button Styling */
+.ai-generate-section {
+    margin: 2rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(139, 92, 246, 0.03));
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+.ai-generate-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white !important;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 1rem 2rem;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-generate-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.ai-generate-btn:hover:not(:disabled)::before {
+    left: 100%;
+}
+
+.ai-generate-btn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px -4px rgba(99, 102, 241, 0.4);
+}
+
+.ai-generate-btn:active:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.ai-generate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.ai-generate-btn svg {
+    flex-shrink: 0;
+}
+
+.ai-generate-btn .spinner-mini {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.ai-helper-text {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-align: center;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+[data-theme='dark'] .ai-generate-section {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+    border-color: rgba(99, 102, 241, 0.2);
 }
