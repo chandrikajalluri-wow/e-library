@@ -28,6 +28,11 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         const userObj: any = user.toObject();
         userObj.role = (user.role_id as any)?.name;
 
+        // Calculate automated books read count
+        const completedReadlist = await Readlist.countDocuments({ user_id: req.user!._id, status: 'completed' });
+        const returnedBorrows = await Borrow.countDocuments({ user_id: req.user!._id, status: BorrowStatus.RETURNED });
+        userObj.booksRead = completedReadlist + returnedBorrows;
+
         res.json(userObj);
     } catch (err) {
         console.error(err);
@@ -47,10 +52,15 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
             addedAt: { $gte: monthStart }
         });
 
+        // Calculate automated books read count
+        const completedReadlist = await Readlist.countDocuments({ user_id: userId, status: 'completed' });
+        const returnedBorrows = await Borrow.countDocuments({ user_id: userId, status: BorrowStatus.RETURNED });
+
         res.json({
             borrowedCount: readlistCount,
             wishlistCount,
-            streakCount: (req.user as any).streakCount || 0
+            streakCount: (req.user as any).streakCount || 0,
+            booksRead: completedReadlist + returnedBorrows
         });
     } catch (err) {
         console.error(err);
@@ -79,7 +89,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
             }
             user.favoriteGenres = genresArray;
         }
-        if (booksRead !== undefined) user.booksRead = Number(booksRead);
         if (readingTarget !== undefined) user.readingTarget = Number(readingTarget);
 
         if (req.file) {
@@ -96,7 +105,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
                 phone: user.phone,
                 profileImage: user.profileImage,
                 favoriteGenres: user.favoriteGenres,
-                booksRead: user.booksRead,
                 readingTarget: user.readingTarget,
                 membershipStartDate: user.membershipStartDate,
                 membershipExpiryDate: user.membershipExpiryDate,

@@ -360,7 +360,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
+    /* Reduced from 2rem */
 }
 
 .premium-lock-tag {
@@ -375,34 +376,70 @@
     gap: 0.5rem;
 }
 
+.profile-info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.automated-count-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    background: var(--bg-hover);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.field-hint {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
 .genre-tags-display {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
+    margin-top: 1rem;
+    /* Added space between label and tags */
 }
 
 .genre-tag {
     background: rgba(99, 102, 241, 0.08);
     color: var(--primary-color);
-    padding: 0.6rem 1.25rem;
-    border-radius: 100px;
-    font-size: 0.9rem;
+    padding: 0.6rem 1.1rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
     font-weight: 700;
-    border: 1px solid rgba(99, 102, 241, 0.1);
-    transition: all 0.2s ease;
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: normal;
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    text-align: center;
 }
 
 .genre-tag:hover {
-    background: var(--primary-color);
-    color: white;
+    background: rgba(99, 102, 241, 0.12);
+    border-color: var(--primary-color);
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
 }
 
 .not-set-text {
     color: var(--text-secondary);
     font-style: italic;
     font-size: 0.95rem;
+    padding: 0.5rem 0;
 }
 
 /* Membership Details Card */
@@ -538,28 +575,31 @@
 .genre-tag-removable {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    background: rgba(99, 102, 241, 0.1);
+    justify-content: space-between;
+    gap: 0.75rem;
+    background: rgba(99, 102, 241, 0.06);
     color: var(--primary-color);
-    padding: 0.5rem 1rem;
-    border-radius: 100px;
-    font-size: 0.9rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
     font-weight: 700;
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.15);
     transition: all 0.2s ease;
+    min-height: 40px;
+    max-width: 100%;
 }
 
 .genre-tag-removable:hover {
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(99, 102, 241, 0.1);
     border-color: var(--primary-color);
     transform: translateY(-1px);
 }
 
 .selected-genres-tags {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 0.75rem;
-    margin-top: 1rem;
+    margin-top: 1.25rem;
 }
 
 .remove-genre-btn {

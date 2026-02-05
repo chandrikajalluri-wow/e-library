@@ -114,7 +114,6 @@ const UserProfile: React.FC = () => {
       data.append("name", formData.name);
       data.append("phone", formData.phone);
       data.append("favoriteGenres", JSON.stringify(formData.favoriteGenres));
-      data.append("booksRead", formData.booksRead.toString());
       data.append("readingTarget", formData.readingTarget.toString());
       if (profileImage) {
         data.append("profileImage", profileImage);
@@ -418,13 +417,12 @@ const UserProfile: React.FC = () => {
                 <h2 className="profile-section-title">Reading Goals & Preferences</h2>
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label>Books Read</label>
-                    <input
-                      type="number"
-                      className="premium-input"
-                      value={formData.booksRead}
-                      onChange={(e) => setFormData({ ...formData, booksRead: parseInt(e.target.value) || 0 })}
-                    />
+                    <label>Books Read (Automated)</label>
+                    <div className="automated-count-display">
+                      <BookOpen size={16} />
+                      <span>{formData.booksRead}</span>
+                    </div>
+                    <p className="field-hint">Calculated from finished/returned books.</p>
                   </div>
                   <div className="form-group">
                     <label>Reading Target (Yearly)</label>

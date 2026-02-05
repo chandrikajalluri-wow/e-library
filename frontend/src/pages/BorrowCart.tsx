@@ -12,12 +12,43 @@ import '../styles/BorrowCart.css';
 
 const BorrowCart: React.FC = () => {
     const navigate = useNavigate();
-    const { cartItems, removeFromCart, increaseQty, decreaseQty, addToCart, isInCart } = useBorrowCart();
+    const { cartItems, removeFromCart, increaseQty, decreaseQty, addToCart, isInCart, clearCart } = useBorrowCart();
 
     const [recommendations, setRecommendations] = useState<Book[]>([]);
     const [buyAgain, setBuyAgain] = useState<Book[]>([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
     const [userMembership, setUserMembership] = useState<Membership | null>(null);
+    const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+    const [isAllSelected, setIsAllSelected] = useState(true);
+
+    // Initialize/Update selection when cartItems change (usually on first load or manual add)
+    useEffect(() => {
+        if (selectedItemIds.length === 0 && cartItems.length > 0) {
+            setSelectedItemIds(cartItems.map(item => item.book._id));
+            setIsAllSelected(true);
+        }
+    }, [cartItems]);
+
+    const toggleItemSelection = (bookId: string) => {
+        setSelectedItemIds(prev => {
+            const newSelection = prev.includes(bookId)
+                ? prev.filter(id => id !== bookId)
+                : [...prev, bookId];
+
+            setIsAllSelected(newSelection.length === cartItems.length);
+            return newSelection;
+        });
+    };
+
+    const toggleAllSelection = () => {
+        if (isAllSelected) {
+            setSelectedItemIds([]);
+            setIsAllSelected(false);
+        } else {
+            setSelectedItemIds(cartItems.map(item => item.book._id));
+            setIsAllSelected(true);
+        }
+    };
 
     useEffect(() => {
         const fetchSuggestions = async () => {
@@ -30,7 +61,6 @@ const BorrowCart: React.FC = () => {
 
                 setRecommendations(recData.slice(0, 10));
 
-                // Process buy again books: flatten items from all orders and remove duplicates
                 const historicalBooks: Book[] = [];
                 const seenIds = new Set();
 
@@ -39,7 +69,7 @@ const BorrowCart: React.FC = () => {
                         if (item.book_id && !seenIds.has(item.book_id._id)) {
                             historicalBooks.push({
                                 ...item.book_id,
-                                price: item.book_id.price || item.priceAtOrder // Fallback to priceAtOrder if book price missing
+                                price: item.book_id.price || item.priceAtOrder
                             });
                             seenIds.add(item.book_id._id);
                         }
@@ -68,18 +98,26 @@ const BorrowCart: React.FC = () => {
     };
 
     const handleProceedToCheckout = () => {
-        if (availableItems.length === 0) {
-            toast.error('No items available for checkout');
+        if (selectedOutOfStockItems.length > 0) {
+            toast.error('Please deselect out of stock items to proceed');
             return;
         }
-        navigate('/checkout');
+        if (selectedCartItems.length === 0) {
+            toast.error('Please select at least one item');
+            return;
+        }
+        navigate('/checkout', { state: { checkoutItems: selectedCartItems } });
     };
 
-    const availableItems = cartItems.filter(item => item.book.noOfCopies > 0);
-    const totalItems = availableItems.reduce((acc, item) => acc + item.quantity, 0);
+    // Derived selections
+    const selectedCartItems = cartItems.filter(item => selectedItemIds.includes(item.book._id));
+    const selectedOutOfStockItems = selectedCartItems.filter(item => item.book.noOfCopies <= 0);
+    const hasSelectedOutOfStock = selectedOutOfStockItems.length > 0;
 
-    // Calculate financial summary
-    const subtotal = availableItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
+    // Summary based on SELECTED items
+    const totalItems = selectedCartItems.reduce((acc, item) => acc + item.quantity, 0);
+    const subtotal = selectedCartItems.reduce((acc, item) => acc + (item.book.price * item.quantity), 0);
+
     const FREE_SHIPPING_THRESHOLD = 500;
     const isPremium = userMembership?.name === 'premium' || userMembership?.name === 'Premium';
     const deliveryFee = subtotal > 0 && (subtotal >= FREE_SHIPPING_THRESHOLD || isPremium) ? 0 : 50;
@@ -158,7 +196,7 @@ const BorrowCart: React.FC = () => {
                     <h1 className="cart-title-main">My Shopping Cart</h1>
                     <div className="cart-item-count-badge">
                         <ShoppingCart size={18} />
-                        <span>{totalItems} {totalItems === 1 ? 'Book' : 'Books'}</span>
+                        <span>{selectedItemIds.length}/{cartItems.length} Selected</span>
                     </div>
                 </header>
 
@@ -198,20 +236,47 @@ const BorrowCart: React.FC = () => {
                         <div key="content" className="cart-main-grid">
                             <div className="cart-content-left">
                                 <div className="cart-items-card">
-                                    <div className="card-header-minimal">
-                                        <Package size={20} />
-                                        <h3>Shipping Items</h3>
+                                    <div className="card-header-minimal" style={{ justifyContent: 'space-between' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <Package size={20} />
+                                            <h3>Shipping Items</h3>
+                                        </div>
+                                        <div className="header-actions-group">
+                                            <label className="select-all-container">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isAllSelected}
+                                                    onChange={toggleAllSelection}
+                                                />
+                                                <span>Select All</span>
+                                            </label>
+                                            <div className="v-divider"></div>
+                                            <button className="clear-all-btn" onClick={() => {
+                                                clearCart();
+                                                toast.info('Cart cleared');
+                                            }}>
+                                                <Trash2 size={16} />
+                                                <span>Clear All</span>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="cart-items-stack">
                                         <AnimatePresence>
                                             {cartItems.map((item) => (
                                                 <motion.div
                                                     key={item.book._id}
-                                                    className="premium-cart-item"
+                                                    className={`premium-cart-item ${selectedItemIds.includes(item.book._id) ? 'selected' : ''}`}
                                                     variants={itemVariants}
                                                     exit="exit"
                                                     layout
                                                 >
+                                                    <div className="item-checkbox-wrapper">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedItemIds.includes(item.book._id)}
+                                                            onChange={() => toggleItemSelection(item.book._id)}
+                                                        />
+                                                    </div>
                                                     <div className="item-image-wrapper">
                                                         <img
                                                             src={item.book.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'}
@@ -293,87 +358,113 @@ const BorrowCart: React.FC = () => {
                             </div>
 
                             <aside className="cart-sidebar-right">
-                                <motion.div
-                                    className="price-summary-card"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.3 }}
-                                >
-                                    <h2 className="summary-title-alt">Order Summary</h2>
-
-                                    {/* Shipping Progress */}
-                                    <div className="shipping-progress-section">
-                                        <div className="progress-labels">
-                                            <div className="progress-status">
-                                                <Truck size={16} className={deliveryFee === 0 ? 'truck-free' : ''} />
-                                                <span>{deliveryFee === 0 ? 'Free delivery unlocked!' : 'Delivery'}</span>
-                                            </div>
-                                            {deliveryFee > 0 && <span className="needed-amount">₹{(FREE_SHIPPING_THRESHOLD - subtotal).toFixed(0)} more for FREE</span>}
-                                        </div>
-                                        <div className="progress-track">
-                                            <motion.div
-                                                className="progress-fill"
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${progressToFree}%` }}
-                                                transition={{ duration: 1, ease: "easeOut" }}
-                                            ></motion.div>
-                                        </div>
-                                    </div>
-
-                                    <div className="summary-data-list">
-                                        <div className="data-row">
-                                            <span className="label">Subtotal ({totalItems} items)</span>
-                                            <span className="value">₹{subtotal.toFixed(2)}</span>
-                                        </div>
-                                        {cartItems.some(i => i.book.noOfCopies <= 0) && (
-                                            <div className="data-row" style={{ fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--danger-color)' }}>
-                                                <span>* Out of stock items excluded</span>
-                                            </div>
-                                        )}
-                                        <div className="data-row">
-                                            <span className="label">Estimated Delivery charges</span>
-                                            <span className={`value ${deliveryFee === 0 ? 'free-text' : ''}`}>
-                                                {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
-                                            </span>
-                                        </div>
-                                        <div className="data-row discount-row">
-                                            <span className="label">Discount</span>
-                                            <span className="value">-₹0.00</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="total-divider"></div>
-
-                                    <div className="total-payable-row">
-                                        <span className="total-label">Total Payable</span>
-                                        <div className="total-amount-group">
-                                            <span className="currency">₹</span>
-                                            <span className="amount">{totalPrice.toFixed(2)}</span>
-                                        </div>
-                                    </div>
-
-
-
-                                    <button
-                                        className="premium-checkout-btn"
-                                        onClick={handleProceedToCheckout}
-                                        disabled={cartItems.length === 0}
+                                {hasSelectedOutOfStock ? (
+                                    <motion.div
+                                        className="out-of-stock-warning"
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        style={{
+                                            padding: '1.5rem',
+                                            background: 'rgba(239, 68, 68, 0.05)',
+                                            border: '1px solid var(--danger-color)',
+                                            borderRadius: '16px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '1rem'
+                                        }}
                                     >
-                                        <span>Proceed to Checkout</span>
-                                        <ChevronRight size={20} />
-                                    </button>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--danger-color)' }}>
+                                            <Zap size={24} />
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Checkout Restricted</h3>
+                                        </div>
+                                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                            Some items in your cart are currently <strong>out of stock</strong>.
+                                            Please remove these items to proceed with your order.
+                                        </p>
+                                        <button
+                                            onClick={() => navigate('/books')}
+                                            className="btn-link"
+                                            style={{ alignSelf: 'flex-start', color: 'var(--primary-color)', fontSize: '0.9rem', fontWeight: 600, padding: 0 }}
+                                        >
+                                            Find alternative books
+                                        </button>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        className="price-summary-card"
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.3 }}
+                                    >
+                                        <h2 className="summary-title-alt">Order Summary</h2>
 
-                                    <div className="trust-badges">
-                                        <div className="badge">
-                                            <div className="badge-dot"></div>
-                                            <span>Secure Checkout</span>
+                                        {/* Shipping Progress */}
+                                        <div className="shipping-progress-section">
+                                            <div className="progress-labels">
+                                                <div className="progress-status">
+                                                    <Truck size={16} className={deliveryFee === 0 ? 'truck-free' : ''} />
+                                                    <span>{deliveryFee === 0 ? 'Free delivery unlocked!' : 'Delivery'}</span>
+                                                </div>
+                                                {deliveryFee > 0 && <span className="needed-amount">₹{(FREE_SHIPPING_THRESHOLD - subtotal).toFixed(0)} more for FREE</span>}
+                                            </div>
+                                            <div className="progress-track">
+                                                <motion.div
+                                                    className="progress-fill"
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${progressToFree}%` }}
+                                                    transition={{ duration: 1, ease: "easeOut" }}
+                                                ></motion.div>
+                                            </div>
                                         </div>
-                                        <div className="badge">
-                                            <div className="badge-dot"></div>
-                                            <span>Easy Returns</span>
+
+                                        <div className="summary-data-list">
+                                            <div className="data-row">
+                                                <span className="label">Subtotal ({totalItems} items)</span>
+                                                <span className="value">₹{subtotal.toFixed(2)}</span>
+                                            </div>
+                                            <div className="data-row">
+                                                <span className="label">Estimated Delivery charges</span>
+                                                <span className={`value ${deliveryFee === 0 ? 'free-text' : ''}`}>
+                                                    {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
+                                                </span>
+                                            </div>
+                                            <div className="data-row discount-row">
+                                                <span className="label">Discount</span>
+                                                <span className="value">-₹0.00</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                </motion.div>
+
+                                        <div className="total-divider"></div>
+
+                                        <div className="total-payable-row">
+                                            <span className="total-label">Total Payable</span>
+                                            <div className="total-amount-group">
+                                                <span className="currency">₹</span>
+                                                <span className="amount">{totalPrice.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            className="premium-checkout-btn"
+                                            onClick={handleProceedToCheckout}
+                                            disabled={cartItems.length === 0}
+                                        >
+                                            <span>Proceed to Checkout</span>
+                                            <ChevronRight size={20} />
+                                        </button>
+
+                                        <div className="trust-badges">
+                                            <div className="badge">
+                                                <div className="badge-dot"></div>
+                                                <span>Secure Checkout</span>
+                                            </div>
+                                            <div className="badge">
+                                                <div className="badge-dot"></div>
+                                                <span>Easy Returns</span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
                             </aside>
                         </div>
                     )}
@@ -392,7 +483,7 @@ const BorrowCart: React.FC = () => {
                                 <section className="recommendation-section">
                                     <div className="section-header">
                                         <Sparkles size={20} className="text-primary" />
-                                        <h2>Buy More, Save More</h2>
+                                        <h2>Buy More</h2>
                                         <span className="section-tag">Based on your interests</span>
                                     </div>
                                     <div className="horizontal-scroll-container">

@@ -29,8 +29,8 @@ router.delete('/review/:id', auth, checkRole([RoleName.SUPER_ADMIN, RoleName.ADM
 
 // --- Announcements ---
 
-// Get all announcements
-router.get('/announcements', auth, superAdminController.getAllAnnouncements);
+// Get all announcements (Public so banners can show for guests/users)
+router.get('/announcements', superAdminController.getAllAnnouncements);
 
 // Create Announcement
 router.post('/announcements', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.createAnnouncement);

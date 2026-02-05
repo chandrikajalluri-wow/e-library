@@ -38,8 +38,12 @@ export const auth = async (
       }
 
       // Session Revocation Check
-      const isSessionActive = user.activeSessions?.some(session => session.token === token);
+      const isSessionActive = user.activeSessions && user.activeSessions.length > 0
+        ? user.activeSessions.some(session => session.token === token)
+        : true; // If no sessions recorded, allow the token (fallback for older/seeded users)
+
       if (!isSessionActive) {
+        console.warn(`[Auth] Session mismatch for user ${user.email}. Token not found in activeSessions.`);
         return res.status(401).json({ error: 'Session has been revoked or expired. Please login again.' });
       }
 

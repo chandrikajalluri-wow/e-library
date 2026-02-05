@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, ZoomIn, ZoomOut, Maximize2, Minimize2, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, List } from 'lucide-react';
+import { ArrowLeft, Loader2, ZoomIn, ZoomOut, Maximize2, Minimize2, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, List, BadgeCheck } from 'lucide-react';
 import { getBook } from '../services/bookService';
 import { getReadingProgress, updateReadingProgress } from '../services/borrowService';
 import { getMyMembership } from '../services/membershipService';
@@ -24,6 +24,7 @@ const PDFViewer: React.FC = () => {
     const [showBookmarks, setShowBookmarks] = useState(false);
     const [useFallback, setUseFallback] = useState(false);
     const [rendering, setRendering] = useState(false);
+    const [isCompleted, setIsCompleted] = useState(false);
 
     // Page Input State
     const [pageInput, setPageInput] = useState<string>('1');
@@ -167,9 +168,11 @@ const PDFViewer: React.FC = () => {
 
                 const lastPage = progress.last_page || 1;
                 const savedBookmarks = Array.isArray(progress.bookmarks) ? progress.bookmarks : [];
+                const status = progress.status;
 
                 setCurrentPage(lastPage);
                 setBookmarks(savedBookmarks);
+                setIsCompleted(status === 'completed' || status === 'returned');
 
                 console.log('Set current page to:', lastPage);
                 console.log('Set bookmarks to:', savedBookmarks);
@@ -443,6 +446,21 @@ const PDFViewer: React.FC = () => {
         }
     };
 
+    const handleMarkFinished = async () => {
+        if (!id) return;
+        try {
+            await updateReadingProgress(id, {
+                status: 'completed',
+                last_page: totalPages
+            });
+            toast.success('Congratulations! You have finished this book.');
+            navigate('/dashboard');
+        } catch (err) {
+            console.error('Failed to mark book as finished:', err);
+            toast.error('Failed to update reading status');
+        }
+    };
+
     if (loading) {
         return (
             <div className="pdf-loader-overlay">
@@ -498,6 +516,29 @@ const PDFViewer: React.FC = () => {
                     <button className="control-btn" onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
                         {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
                     </button>
+                    {!isCompleted && (
+                        <button
+                            className="btn-finish-book"
+                            onClick={handleMarkFinished}
+                            style={{
+                                background: 'var(--success-color)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '8px',
+                                fontWeight: '700',
+                                fontSize: '0.8rem',
+                                marginLeft: '1rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                        >
+                            <BadgeCheck size={16} />
+                            Mark Finished
+                        </button>
+                    )}
                 </div>
             </header>
 

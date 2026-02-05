@@ -14,6 +14,7 @@ interface BorrowCartContextType {
     increaseQty: (bookId: string) => void;
     decreaseQty: (bookId: string) => void;
     clearCart: () => void;
+    removeManyFromCart: (bookIds: string[]) => void;
     isInCart: (bookId: string) => boolean;
     getCartCount: () => number;
     getItemQuantity: (bookId: string) => number;
@@ -145,6 +146,10 @@ export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setCartItems([]);
     };
 
+    const removeManyFromCart = (bookIds: string[]) => {
+        setCartItems((prevItems: CartItem[]) => prevItems.filter((item: CartItem) => !bookIds.includes(item.book._id)));
+    };
+
     const isInCart = (bookId: string): boolean => {
         return cartItems.some((item) => item.book._id === bookId);
     };
@@ -167,6 +172,7 @@ export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 increaseQty,
                 decreaseQty,
                 clearCart,
+                removeManyFromCart,
                 isInCart,
                 getCartCount,
                 getItemQuantity,

@@ -38,6 +38,7 @@ import notificationRoutes from './routes/notifications';
 import membershipRoutes from './routes/memberships';
 import superAdminRoutes from './routes/superAdmin';
 import orderRoutes from './routes/orders';
+import aiRoutes from './routes/ai';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -52,6 +53,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/memberships', membershipRoutes);
 app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -62,7 +64,7 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

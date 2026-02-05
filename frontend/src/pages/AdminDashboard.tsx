@@ -9,6 +9,7 @@ import { getAllBookRequests, updateBookRequestStatus, getProfile, getAllReadlist
 
 import { getActivityLogs } from '../services/logService';
 import { getAdmins } from '../services/superAdminService';
+import { generateBookContent } from '../services/aiService';
 import { RoleName, BookStatus, RequestStatus, MembershipName } from '../types/enums';
 import type { Book, Category, User } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -72,6 +73,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [showAddBookForm, setShowAddBookForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean; title: string; message: string; onConfirm: () => void;
@@ -234,6 +236,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     setBookPage(1);
     setReadHistoryPage(1);
   }, [activeTab]);
+
+  const handleGenerateWithAI = async () => {
+    if (!newBook.title || !newBook.author) {
+      toast.error('Please enter both book title and author name first');
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      const generatedContent = await generateBookContent(newBook.title, newBook.author);
+
+      setNewBook({
+        ...newBook,
+        description: generatedContent.description,
+        author_description: generatedContent.authorBio
+      });
+
+      toast.success('AI content generated successfully!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to generate content with AI');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -734,6 +760,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     </select>
                   </div>
                   <div className="form-group"><label>Rating (0-5)</label><input type="number" step="0.1" min="0" max="5" value={(newBook as any).rating} onChange={(e) => setNewBook({ ...newBook, rating: e.target.value } as any)} /></div>
+
+                  {/* AI Generation Button */}
+                  <div className="form-group full-width ai-generate-section">
+                    <button
+                      type="button"
+                      onClick={handleGenerateWithAI}
+                      disabled={isGeneratingAI || !newBook.title || !newBook.author}
+                      className="admin-btn-generate ai-generate-btn"
+                    >
+                      {isGeneratingAI ? (
+                        <>
+                          <div className="spinner-mini"></div>
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                          </svg>
+                          <span>Generate with AI</span>
+                        </>
+                      )}
+                    </button>
+                    <p className="ai-helper-text">
+                      ✨ Let AI generate book description and author biography based on title and author name
+                    </p>
+                  </div>
 
                   <div className="form-group file-group">
                     <label>Cover Image</label>

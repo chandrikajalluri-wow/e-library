@@ -36,10 +36,15 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
     const getButtonText = () => {
         if (!isAuthenticated) return 'Sign Up';
         if (isCurrent) return 'Current Plan';
+
+        // If currentMembership is null or invalid, and this is the basic plan, it should be the current plan (default)
+        if (!currentMembership && membership.name === MembershipName.BASIC) return 'Current Plan';
+
         if (membership.name === MembershipName.BASIC && currentMembership?.name === MembershipName.PREMIUM) {
-            return 'Standard Plan';
+            return 'Standard Plan'; // Or 'Downgrade' if preferred, but Standard Plan is softer
         }
-        if (membership.price === 0) return 'Downgrade';
+
+        if (membership.price === 0) return 'Free Plan';
         return 'Upgrade Now';
     };
 

@@ -38,7 +38,7 @@ export const getReadingProgress = async (bookId: string): Promise<any> => {
   return res.data;
 };
 
-export const updateReadingProgress = async (bookId: string, progress: { last_page?: number; bookmarks?: number[] }): Promise<any> => {
+export const updateReadingProgress = async (bookId: string, progress: { last_page?: number; bookmarks?: number[]; status?: string }): Promise<any> => {
   const res = await api.put(`${BASE_URL}/progress/${bookId}`, progress);
   return res.data;
 };

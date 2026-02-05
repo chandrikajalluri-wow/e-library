@@ -26,7 +26,7 @@ interface Address {
 const DeliveryAddress: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { cartItems: contextCartItems, clearCart } = useBorrowCart();
+    const { cartItems: contextCartItems, removeManyFromCart } = useBorrowCart();
     // Use items passed via state, or fall back to full cart
     const cartItems = (location.state?.checkoutItems || contextCartItems) as CartItem[];
     const [addresses, setAddresses] = useState<Address[]>([]);
@@ -184,6 +184,12 @@ const DeliveryAddress: React.FC = () => {
             return;
         }
 
+        const selectedAddress = addresses.find(a => a._id === selectedAddressId);
+        if (!selectedAddress?.phoneNumber) {
+            toast.error('Phone number is mandatory');
+            return;
+        }
+
         const availableItems = cartItems.filter(item => item.book.noOfCopies > 0);
         if (availableItems.length === 0) {
             toast.error('No items available for delivery');
@@ -203,11 +209,11 @@ const DeliveryAddress: React.FC = () => {
 
             await placeOrder(orderData);
             toast.success('🎉 Order placed successfully!');
-            // Only clear cart if we checked out the FULL cart (not single item)
-            // If single item, we might want to remove just that item, but for now we just don't clear the whole cart.
-            if (!location.state?.checkoutItems) {
-                clearCart();
-            }
+
+            // Remove ONLY the items that were checked out
+            const orderedItemIds = availableItems.map(item => item.book._id);
+            removeManyFromCart(orderedItemIds);
+
             // In a real app, you might navigate to a success page
             navigate('/my-orders');
         } catch (error: any) {

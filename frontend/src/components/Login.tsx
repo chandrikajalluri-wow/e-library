@@ -146,15 +146,21 @@ const Login: React.FC = () => {
         <div className="auth-separator">OR</div>
 
         <div className="auth-social-login">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => toast.error('Google Sign In failed')}
-            useOneTap
-            theme="outline"
-            shape="pill"
-            text="signin_with"
-            width="100%"
-          />
+          {import.meta.env.VITE_GOOGLE_CLIENT_ID && !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes('your_google_client_id_here') ? (
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast.error('Google Sign In failed')}
+              useOneTap
+              theme="outline"
+              shape="pill"
+              text="signin_with"
+              width="100%"
+            />
+          ) : (
+            <button className="auth-social-btn-disabled" disabled title="Google Login not configured">
+              <span>Sign in with Google (Not Configured)</span>
+            </button>
+          )}
         </div>
 
         <div className="auth-footer">
