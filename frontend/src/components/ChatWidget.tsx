@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, User, ShieldCheck, Minus } from 'lucide-react';
+import { MessageCircle, X, Send, ShieldCheck, Minus } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { createOrGetSession, getSessionMessages } from '../services/chatService';
 import { getProfile } from '../services/userService';
@@ -12,7 +12,6 @@ const ChatWidget: React.FC = () => {
     const [inputValue, setInputValue] = useState('');
     const [session, setSession] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
-    const [isTyping, setIsTyping] = useState(false);
     const [adminTyping, setAdminTyping] = useState(false);
     const socketRef = useRef<Socket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);

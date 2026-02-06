@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Send, User, MessageSquare, CheckCircle, XCircle, Clock, Filter, BarChart3 } from 'lucide-react';
+import { Search, Send, User, MessageSquare, Filter, BarChart3 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { getAllSessionsAdmin, getSessionMessages, closeSession } from '../services/chatService';
 import { getProfile } from '../services/userService';
