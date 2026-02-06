@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download } from 'lucide-react';
+import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download, Eye, XCircle } from 'lucide-react';
 import { createBook, getBooks, updateBook, deleteBook, checkBookDeletionSafety } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
@@ -15,6 +15,8 @@ import { RoleName, BookStatus, RequestStatus, MembershipName } from '../types/en
 import type { Book, Category, User } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Loader from '../components/Loader';
+import { motion, AnimatePresence } from 'framer-motion';
+import AdminSupportManager from '../components/AdminSupportManager';
 import '../styles/AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -86,6 +88,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [isStatsLoading, setIsStatsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [exchangeStatusFilter, setExchangeStatusFilter] = useState('return_requested');
 
   const inventoryRef = useRef<HTMLDivElement>(null);
   const borrowsRef = useRef<HTMLDivElement>(null);
@@ -152,7 +156,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchOrderReturns = async () => {
     setIsDataLoading(true);
     try {
-      const data = await getAllOrders({ status: 'return_requested' });
+      // Map 'all_exchanges' to a comma-separated list for the backend if needed, 
+      // or just handle it as a special case. 
+      // But looking at the backend, it expects a single status or 'all'.
+      // If we want ALL exchanges, we might need a better query.
+      // For now, let's just use regular 'status' logic.
+      const statusToSend = exchangeStatusFilter === 'all_exchanges' ? 'return_requested,returned,return_rejected' : exchangeStatusFilter;
+      const data = await getAllOrders({ status: statusToSend });
+      console.log('Fetched exchange orders:', data);
       setOrderReturns(data);
     } catch (err: unknown) {
       console.error(err);
@@ -228,16 +239,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   }, [searchTerm]);
 
   useEffect(() => {
-    if (activeTab === 'stats') fetchStats();
-    if (activeTab === 'user-requests') fetchUserRequests();
-    if (activeTab === 'requests') fetchOrderReturns();
-    if (activeTab === 'logs') fetchLogs();
-
-    // Reset page numbers when switching tabs
-    setBookPage(1);
-    setReadHistoryPage(1);
-  }, [activeTab]);
-
+    if (activeTab === 'borrows') fetchReadHistory();
+    else if (activeTab === 'user-requests') fetchUserRequests();
+    else if (activeTab === 'requests') fetchOrderReturns();
+    else if (activeTab === 'books') fetchBooks();
+    else if (activeTab === 'logs') fetchLogs();
+    else if (activeTab === 'stats') fetchStats();
+  }, [activeTab, bookPage, readHistoryPage, membershipFilter, exchangeStatusFilter]);
   const handleGenerateWithAI = async () => {
     if (!newBook.title || !newBook.author) {
       toast.error('Please enter both book title and author name first');
@@ -593,9 +601,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   {activeTab === 'stats' && 'Dashboard Overview'}
                   {activeTab === 'books' && 'Manage Books'}
                   {activeTab === 'categories' && 'Manage Categories'}
-                  {activeTab === 'requests' && 'Return Requests'}
+                  {activeTab === 'requests' && 'Exchange Requests'}
                   {activeTab === 'user-requests' && 'Book Suggestions'}
                   {activeTab === 'borrows' && 'Read History'}
+                  {activeTab === 'support' && 'Customer Support'}
                   {activeTab === 'logs' && 'User Activity Logs'}
                 </h1>
                 <p className="admin-header-subtitle">
@@ -1154,41 +1163,101 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
         {
           activeTab === 'requests' && (
-            <section className="card admin-table-section">
-              <div className="admin-table-header-box"><h3 className="admin-table-title">Order Return Requests</h3></div>
+            <section className="card admin-table-section saas-reveal">
+              <div className="admin-table-header-box">
+                <h3 className="admin-table-title">Exchange Requests</h3>
+                <div className="admin-filter-group">
+                  <div className="admin-filter-item">
+                    <span className="admin-filter-label">Status</span>
+                    <select
+                      value={exchangeStatusFilter}
+                      onChange={(e) => setExchangeStatusFilter(e.target.value)}
+                      className="admin-filter-select"
+                    >
+                      <option value="all_exchanges">Show All</option>
+                      <option value="return_requested">Pending</option>
+                      <option value="returned">Exchanged</option>
+                      <option value="return_rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
               <div className="admin-table-wrapper">
                 {isDataLoading ? (
                   <div className="admin-loading-container">
                     <div className="spinner"></div>
-                    <p>Fetching Return Requests...</p>
+                    <p>Fetching Exchange Requests...</p>
                   </div>
                 ) : (
                   <table className="admin-table">
-                    <thead><tr><th>Customer</th><th>Order ID</th><th>Items</th><th>Total</th><th>Return Reason</th><th className="admin-actions-cell">Action</th></tr></thead>
-                    <tbody>{orderReturns.map(order => (
-                      <tr key={order._id}>
-                        <td>
-                          <div className="user-info-box">
-                            <span className="user-main-name">{order.user_id?.name || 'Unknown'}</span>
-                            <span className="user-sub-email">{order.user_id?.email}</span>
-                          </div>
-                        </td>
-                        <td><span className="book-main-title">#{order._id.slice(-8).toUpperCase()}</span></td>
-                        <td><span className="book-sub-meta">{order.items?.length || 0} items</span></td>
-                        <td><span className="admin-fine-amount">₹{order.totalAmount?.toFixed(2)}</span></td>
-                        <td><div className="book-info-box"><span className="book-sub-meta">{order.returnReason || 'No reason provided'}</span></div></td>
-                        <td className="admin-actions-cell">
-                          <div className="admin-actions-flex">
-                            <button onClick={() => handleApproveOrderReturn(order._id)} className="admin-btn-edit">Approve</button>
-                            <button onClick={() => handleDeclineOrderReturn(order._id)} className="admin-btn-delete">Decline</button>
-                          </div>
-                        </td>
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Order ID</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Exchange Reason</th>
+                        <th>Proof</th>
+                        {exchangeStatusFilter === 'return_requested' && (
+                          <th className="admin-actions-cell">Action</th>
+                        )}
                       </tr>
-                    ))}</tbody>
+                    </thead>
+                    <tbody>
+                      {orderReturns.map(order => (
+                        <tr key={order._id}>
+                          <td>
+                            <div className="user-info-box">
+                              <span className="user-main-name">{order.user_id?.name || 'Unknown'}</span>
+                              <span className="user-sub-email">{order.user_id?.email}</span>
+                            </div>
+                          </td>
+                          <td><span className="book-main-title">#{order._id.slice(-8).toUpperCase()}</span></td>
+                          <td><span className="book-sub-meta">{order.items?.length || 0} items</span></td>
+                          <td><span className="admin-fine-amount">₹{order.totalAmount?.toFixed(2)}</span></td>
+                          <td>
+                            <div className="book-info-box">
+                              <span className="book-sub-meta">{order.returnReason || 'No reason provided'}</span>
+                            </div>
+                          </td>
+                          <td>
+                            {order.exchangeImageUrl ? (
+                              <div
+                                className="admin-proof-thumb"
+                                onClick={() => setPreviewImage(order.exchangeImageUrl)}
+                              >
+                                <img src={order.exchangeImageUrl} alt="Proof" />
+                                <div className="thumb-overlay">
+                                  <Eye size={12} />
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="no-proof-text">No Proof</span>
+                            )}
+                          </td>
+                          {exchangeStatusFilter === 'return_requested' && (
+                            <td className="admin-actions-cell">
+                              <div className="admin-actions-flex">
+                                <button onClick={() => handleApproveOrderReturn(order._id)} className="admin-btn-edit">Approve</button>
+                                <button onClick={() => handleDeclineOrderReturn(order._id)} className="admin-btn-delete">Reject</button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
                   </table>
                 )}
               </div>
-              {!isDataLoading && orderReturns.length === 0 && <div className="admin-empty-state">No pending order returns.</div>}
+              {!isDataLoading && orderReturns.length === 0 && (
+                <div className="admin-empty-state">
+                  {exchangeStatusFilter === 'return_requested'
+                    ? 'No pending exchange requests.'
+                    : exchangeStatusFilter === 'returned'
+                      ? 'No processed exchanges found.'
+                      : 'No rejected exchange requests found.'}
+                </div>
+              )}
             </section>
           )
         }
@@ -1344,6 +1413,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
             </section>
           )
         }
+        {
+          activeTab === 'support' && (
+            <AdminSupportManager />
+          )
+        }
       </main >
 
       <ConfirmationModal
@@ -1351,6 +1425,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         type={confirmModal.type} isLoading={confirmModal.isLoading} onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* Exchange Proof Preview Modal */}
+      <AnimatePresence>
+        {previewImage && (
+          <motion.div
+            className="image-preview-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPreviewImage(null)}
+          >
+            <motion.div
+              className="image-preview-content"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              <button className="close-preview" onClick={() => setPreviewImage(null)}>
+                <XCircle size={24} />
+              </button>
+              <img src={previewImage} alt="Exchange Proof Large" />
+              <div className="preview-caption">Exchange Evidence Proof</div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div >
   );
 };

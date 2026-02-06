@@ -2,6 +2,7 @@ import express from 'express';
 import { auth, checkRole } from '../middleware/authMiddleware';
 import * as orderController from '../controllers/orderController';
 import { RoleName } from '../types/enums';
+import { upload } from '../middleware/uploadMiddleware';
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.get('/admin/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN])
 router.get('/my-orders', auth, orderController.getMyOrders);
 router.get('/my-order/:id', auth, orderController.getMyOrderById);
 router.patch('/:id/cancel', auth, orderController.cancelOwnOrder);
-router.patch('/:id/return', auth, orderController.requestReturnOrder);
+router.patch('/:id/return', auth, upload.single('image'), orderController.requestReturnOrder);
 router.post('/', auth, orderController.placeOrder);
 
 export default router;

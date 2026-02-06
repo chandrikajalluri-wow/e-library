@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ChevronUp } from 'lucide-react';
 
 const ScrollToTop: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -32,14 +33,14 @@ const ScrollToTop: React.FC = () => {
                     onClick={scrollToTop}
                     style={{
                         position: 'fixed',
-                        bottom: '6rem',
+                        bottom: '12rem',
                         right: '2rem',
                         backgroundColor: 'var(--primary-color)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '50%',
-                        width: '50px',
-                        height: '50px',
+                        width: '60px',
+                        height: '60px',
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
@@ -50,18 +51,7 @@ const ScrollToTop: React.FC = () => {
                     }}
                     title="Scroll to Top"
                 >
-                    <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <path d="M18 15l-6-6-6 6" />
-                    </svg>
+                    <ChevronUp size={32} />
                 </button>
             )}
         </>

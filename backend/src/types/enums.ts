@@ -16,6 +16,7 @@ export enum OrderStatus {
     DELIVERED = 'delivered',
     CANCELLED = 'cancelled',
     RETURN_REQUESTED = 'return_requested',
+    RETURN_ACCEPTED = 'return_accepted',
     RETURNED = 'returned',
     RETURN_REJECTED = 'return_rejected'
 }

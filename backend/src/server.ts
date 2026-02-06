@@ -39,6 +39,7 @@ import membershipRoutes from './routes/memberships';
 import superAdminRoutes from './routes/superAdmin';
 import orderRoutes from './routes/orders';
 import aiRoutes from './routes/ai';
+import chatRoutes from './routes/chat';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -54,6 +55,7 @@ app.use('/api/memberships', membershipRoutes);
 app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -64,7 +66,25 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
   });
 });
 
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { initSocket } from './socket/socketManager';
+
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : ["http://localhost:5173", "http://localhost:5174", "https://e-library-three-pi.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    credentials: true,
+  }
+});
+
+initSocket(io);
+
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

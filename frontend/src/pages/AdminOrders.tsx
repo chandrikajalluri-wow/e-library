@@ -260,8 +260,10 @@ const AdminOrders: React.FC = () => {
                             <option value="processing">Processing</option>
                             <option value="shipped">Shipped</option>
                             <option value="delivered">Delivered</option>
-                            <option value="return_requested">Return Requested</option>
-                            <option value="returned">Returned</option>
+                            <option value="return_requested">Exchange Pending</option>
+                            <option value="return_accepted">Accepted</option>
+                            <option value="returned">Exchanged</option>
+                            <option value="return_rejected">Exchange Rejected</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
@@ -328,7 +330,7 @@ const AdminOrders: React.FC = () => {
                                     <option value="processing">Processing</option>
                                     <option value="shipped">Shipped</option>
                                     <option value="delivered">Delivered</option>
-                                    <option value="returned">Returned</option>
+                                    <option value="returned">Exchanged</option>
                                     <option value="cancelled">Cancelled</option>
                                 </select>
                                 <button className="bulk-cancel-btn" onClick={() => setSelectedOrders([])}>
@@ -377,7 +379,11 @@ const AdminOrders: React.FC = () => {
                                                     <span className="premium-badge-mini">PREMIUM</span>
                                                 )}
                                                 <div className={`status-badge-premium ${order.status}`}>
-                                                    {order.status}
+                                                    {order.status === 'return_requested' ? 'Exchange Pending' :
+                                                        order.status === 'return_accepted' ? 'Accepted' :
+                                                            order.status === 'returned' ? 'Exchanged' :
+                                                                order.status === 'return_rejected' ? 'Exchange Rejected' :
+                                                                    order.status}
                                                 </div>
                                             </div>
                                         </div>

@@ -72,7 +72,11 @@ const UserOrders: React.FC = () => {
             case 'shipped': return { class: 'status-shipped', label: 'Shipped' };
             case 'delivered': return { class: 'status-delivered', label: 'Delivered' };
             case 'cancelled': return { class: 'status-cancelled', label: 'Cancelled' };
-            default: return { class: 'status-pending', label: status };
+            case 'return_requested': return { class: 'status-pending', label: 'Exchange Pending' };
+            case 'return_accepted': return { class: 'status-processing', label: 'Accepted' };
+            case 'returned': return { class: 'status-shipped', label: 'Exchanged' };
+            case 'return_rejected': return { class: 'status-cancelled', label: 'Exchange Rejected' };
+            default: return { class: 'status-pending', label: status.replace(/_/g, ' ').toUpperCase() };
         }
     };
 

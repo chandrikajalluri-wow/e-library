@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
     ArrowLeft, Calendar, Package, User, Mail, Phone,
-    MapPin, CreditCard, FileText, Download, XCircle
+    MapPin, CreditCard, FileText, Download, XCircle,
+    AlertCircle as ExchangeIcon, Eye
 } from 'lucide-react';
 import { getOrderById, updateOrderStatus } from '../services/adminOrderService';
 
@@ -11,6 +12,7 @@ import { getOrderById, updateOrderStatus } from '../services/adminOrderService';
 import StatusDropdown from '../components/StatusDropdown';
 import Loader from '../components/Loader';
 import { generateInvoice } from '../utils/invoiceGenerator';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import '../styles/AdminOrderDetails.css';
 
@@ -36,6 +38,7 @@ interface OrderDetails {
     status: string;
     createdAt: string;
     returnReason?: string;
+    exchangeImageUrl?: string;
 }
 
 const AdminOrderDetailsPage: React.FC = () => {
@@ -43,6 +46,7 @@ const AdminOrderDetailsPage: React.FC = () => {
     const [order, setOrder] = useState<OrderDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     useEffect(() => {
         if (orderId) {
@@ -132,50 +136,167 @@ const AdminOrderDetailsPage: React.FC = () => {
                             currentStatus={order.status}
                             onStatusChange={handleStatusUpdate}
                             isLoading={isUpdating}
+                            isExchange={!!order.returnReason}
                         />
                     </div>
                 </div>
             </div>
 
-            {
-                order.returnReason && (
-                    <div className="return-reason-alert">
-                        <div className="alert-content">
-                            <strong>Return Reason Submitted:</strong>
-                            {order.returnReason}
+            {order.returnReason && (
+                <div className="exchange-details-card saas-reveal">
+                    <div className="exchange-card-header">
+                        <div className="header-label">
+                            <ExchangeIcon size={20} className="icon-pulse" />
+                            <span>Exchange Request</span>
+                        </div>
+                        <div className={`status-badge-mini ${order.status}`}>
+                            <div className="status-dot"></div>
+                            <span>
+                                {order.status === 'return_requested' && 'Exchange Pending'}
+                                {order.status === 'return_accepted' && 'Accepted'}
+                                {order.status === 'returned' && 'Item Received'}
+                                {['processing', 'shipped', 'delivered'].includes(order.status) && 'Exchange in Progress'}
+                                {order.status === 'return_rejected' && 'Exchange Rejected'}
+                            </span>
                         </div>
                     </div>
-                )
-            }
+
+                    <div className="exchange-card-content">
+                        <div className="reason-section">
+                            <span className="section-label">Reason for Exchange</span>
+                            <p className="reason-text-main">{order.returnReason}</p>
+                        </div>
+
+                        {order.exchangeImageUrl && (
+                            <div className="proof-section-premium">
+                                <span className="section-label">Evidence Proof</span>
+                                <div
+                                    className="proof-card-mini"
+                                    onClick={() => setPreviewImage(order.exchangeImageUrl!)}
+                                >
+                                    <img src={order.exchangeImageUrl} alt="Exchange Proof" />
+                                    <div className="proof-overlay-premium">
+                                        <Eye size={18} />
+                                        <span>Full Preview</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            <AnimatePresence>
+                {previewImage && (
+                    <motion.div
+                        className="image-preview-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setPreviewImage(null)}
+                    >
+                        <motion.div
+                            className="image-preview-content"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        >
+                            <button className="close-preview" onClick={() => setPreviewImage(null)}>
+                                <XCircle size={24} />
+                            </button>
+                            <img src={previewImage} alt="Large Proof" />
+                            <div className="preview-caption">Exchange Evidence Proof</div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Compact Progress Stepper */}
             <div className="compact-stepper-container">
                 <div className="stepper-track">
-                    <div className={`stepper-step ${currentStep >= 1 ? 'active' : ''}`}>
-                        <div className="step-dot"><div className="dot-inner"></div></div>
-                        <span className="step-label">Placed</span>
-                    </div>
-                    <div className={`stepper-line ${currentStep >= 2 ? 'active' : ''}`}></div>
-                    <div className={`stepper-step ${currentStep >= 2 ? 'active' : ''}`}>
-                        <div className="step-dot"><div className="dot-inner"></div></div>
-                        <span className="step-label">Processing</span>
-                    </div>
-                    <div className={`stepper-line ${currentStep >= 3 ? 'active' : ''}`}></div>
-                    <div className={`stepper-step ${currentStep >= 3 ? 'active' : ''}`}>
-                        <div className="step-dot"><div className="dot-inner"></div></div>
-                        <span className="step-label">Shipped</span>
-                    </div>
-                    <div className={`stepper-line ${currentStep >= 4 ? 'active' : ''}`}></div>
-                    <div className={`stepper-step ${currentStep >= 4 ? 'active' : ''}`}>
-                        <div className="step-dot"><div className="dot-inner"></div></div>
-                        <span className="step-label">Delivered</span>
-                    </div>
-                    {order.status === 'cancelled' && (
+                    {!order.returnReason ? (
+                        // Standard Flow
                         <>
-                            <div className="stepper-line cancelled"></div>
+                            <div className={`stepper-step ${currentStep >= 1 ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Placed</span>
+                            </div>
+                            <div className={`stepper-line ${currentStep >= 2 ? 'active' : ''}`}></div>
+                            <div className={`stepper-step ${currentStep >= 2 ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Processing</span>
+                            </div>
+                            <div className={`stepper-line ${currentStep >= 3 ? 'active' : ''}`}></div>
+                            <div className={`stepper-step ${currentStep >= 3 ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Shipped</span>
+                            </div>
+                            <div className={`stepper-line ${currentStep >= 4 ? 'active' : ''}`}></div>
+                            <div className={`stepper-step ${currentStep >= 4 ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Delivered</span>
+                            </div>
+                            {order.status === 'cancelled' && (
+                                <>
+                                    <div className="stepper-line cancelled"></div>
+                                    <div className="stepper-step active cancelled">
+                                        <div className="step-dot"><XCircle size={12} /></div>
+                                        <span className="step-label">Cancelled</span>
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    ) : order.status === 'return_rejected' ? (
+                        // Rejected Flow
+                        <>
                             <div className="stepper-step active cancelled">
-                                <div className="step-dot"><XCircle size={12} /></div>
-                                <span className="step-label">Cancelled</span>
+                                <div className="step-dot"><XCircle size={14} /></div>
+                                <span className="step-label">Exchange Rejected</span>
+                            </div>
+                        </>
+                    ) : (
+                        // Detailed Exchange Flow
+                        <>
+                            {/* Step 1: Exchange Pending */}
+                            <div className={`stepper-step ${['return_requested', 'return_accepted', 'returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Exchange Pending</span>
+                            </div>
+                            <div className={`stepper-line ${['return_accepted', 'returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}></div>
+
+                            {/* Step 2: Accepted */}
+                            <div className={`stepper-step ${['return_accepted', 'returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Accepted</span>
+                            </div>
+                            <div className={`stepper-line ${['returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}></div>
+
+                            {/* Step 3: Item Received */}
+                            <div className={`stepper-step ${['returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Item Received</span>
+                            </div>
+                            <div className={`stepper-line ${['processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}></div>
+
+                            {/* Step 4: Processed */}
+                            <div className={`stepper-step ${['processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Processed</span>
+                            </div>
+                            <div className={`stepper-line ${['shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}></div>
+
+                            {/* Step 5: Shipped */}
+                            <div className={`stepper-step ${['shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Shipped</span>
+                            </div>
+                            <div className={`stepper-line ${['delivered'].includes(order.status) ? 'active' : ''}`}></div>
+
+                            {/* Step 6: Delivered */}
+                            <div className={`stepper-step ${['delivered'].includes(order.status) ? 'active' : ''}`}>
+                                <div className="step-dot"><div className="dot-inner"></div></div>
+                                <span className="step-label">Delivered</span>
                             </div>
                         </>
                     )}

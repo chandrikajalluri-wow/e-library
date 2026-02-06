@@ -13,6 +13,7 @@
     "@getbrevo/brevo": "^2.5.0",
     "@google/generative-ai": "^0.24.1",
     "@types/multer": "^2.0.0",
+    "@types/socket.io-client": "^1.4.36",
     "axios": "^1.13.4",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.3",
@@ -24,7 +25,8 @@
     "mongoose": "^7.6.0",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
-    "node-cron": "^4.2.1"
+    "node-cron": "^4.2.1",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
@@ -32,6 +34,7 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^20.11.30",
+    "@types/socket.io": "^3.0.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }

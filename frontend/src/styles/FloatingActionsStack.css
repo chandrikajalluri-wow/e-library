@@ -1,0 +1,36 @@
+/* Floating Actions Stack System */
+.floating-actions-stack {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column-reverse;
+    /* ThemeToggle (bottom), Chat (mid), ScrollToTop (top) */
+    gap: 1.25rem;
+    align-items: flex-end;
+    pointer-events: none;
+    /* Let clicks pass through to content behind gaps */
+}
+
+.floating-actions-stack>* {
+    pointer-events: auto;
+    /* Buttons are clickable */
+}
+
+/* Ensure individual fixed positions are overridden when in stack */
+.floating-actions-stack .theme-toggle-fixed,
+.floating-actions-stack .chat-widget-container,
+.floating-actions-stack button[title="Scroll to Top"] {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+}
+
+@media (max-width: 480px) {
+    .floating-actions-stack {
+        bottom: 1.5rem;
+        right: 1.5rem;
+        gap: 1rem;
+    }
+}

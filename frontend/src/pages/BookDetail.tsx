@@ -438,7 +438,7 @@ const BookDetail: React.FC = () => {
             <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 {hasAccess ? (
-                  book.file_url ? (
+                  book.pdf_url ? (
                     <button
                       onClick={() => navigate(`/read/${book._id}`)}
                       className="btn-primary readlist-btn"
@@ -459,15 +459,27 @@ const BookDetail: React.FC = () => {
                     </button>
                   )
                 ) : (
-                  <button
-                    onClick={handleAddToReadlist}
-                    disabled={isSubmitting}
-                    className="btn-primary readlist-btn"
-                    style={{ background: 'var(--accent-color)' }}
-                  >
-                    <BookOpen size={18} />
-                    {isSubmitting ? 'Saving...' : 'Save to Library'}
-                  </button>
+                  book.pdf_url ? (
+                    <button
+                      onClick={handleAddToReadlist}
+                      disabled={isSubmitting}
+                      className="btn-primary readlist-btn"
+                      style={{ background: 'var(--accent-color)' }}
+                    >
+                      <BookOpen size={18} />
+                      {isSubmitting ? 'Saving...' : 'Save to Library'}
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="btn-primary readlist-btn disabled-btn"
+                      style={{ background: 'var(--text-secondary)', color: 'white', cursor: 'not-allowed', opacity: 0.7 }}
+                      title="No PDF available for this book"
+                    >
+                      <BookOpen size={18} />
+                      Not Available to Read Online
+                    </button>
+                  )
                 )}
 
                 <button
