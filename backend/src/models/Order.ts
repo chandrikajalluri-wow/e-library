@@ -13,9 +13,11 @@ export interface IOrder extends Document {
     totalAmount: number;
     deliveryFee: number;
     paymentMethod: string;
-    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'return_requested' | 'returned';
+    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'return_requested' | 'return_accepted' | 'returned' | 'return_rejected';
     estimatedDeliveryDate: Date;
+    deliveredAt?: Date;
     returnReason?: string;
+    exchangeImageUrl?: string;
     createdAt: Date;
 }
 
@@ -35,11 +37,13 @@ const orderSchema = new Schema<IOrder>(
         paymentMethod: { type: String, default: 'Cash on Delivery' },
         status: {
             type: String,
-            enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'return_requested', 'returned'],
+            enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'return_requested', 'return_accepted', 'returned', 'return_rejected'],
             default: 'pending',
         },
         estimatedDeliveryDate: { type: Date },
+        deliveredAt: { type: Date },
         returnReason: { type: String },
+        exchangeImageUrl: { type: String },
     },
     { timestamps: true }
 );

@@ -460,7 +460,7 @@ const BorrowCart: React.FC = () => {
                                             </div>
                                             <div className="badge">
                                                 <div className="badge-dot"></div>
-                                                <span>Easy Returns</span>
+                                                <span>Easy exchanges</span>
                                             </div>
                                         </div>
                                     </motion.div>

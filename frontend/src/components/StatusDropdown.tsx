@@ -5,22 +5,35 @@ interface StatusDropdownProps {
     currentStatus: string;
     onStatusChange: (status: string) => void;
     isLoading?: boolean;
+    isExchange?: boolean; // New prop
 }
 
-const statuses = [
+const standardStatuses = [
     { value: 'pending', label: 'Pending', icon: 'pending' },
     { value: 'processing', label: 'Processing', icon: 'processing' },
     { value: 'shipped', label: 'Shipped', icon: 'shipped' },
     { value: 'delivered', label: 'Delivered', icon: 'delivered' },
-    { value: 'return_requested', label: 'Return Req.', icon: 'return_requested' },
-    { value: 'returned', label: 'Returned', icon: 'returned' },
-    { value: 'return_rejected', label: 'Return Rej.', icon: 'return_rejected' },
+    { value: 'return_requested', label: 'Exchange Req.', icon: 'return_requested' },
+    { value: 'returned', label: 'Exchanged', icon: 'returned' },
+    { value: 'return_rejected', label: 'Exchange Rej.', icon: 'return_rejected' },
     { value: 'cancelled', label: 'Cancelled', icon: 'cancelled' },
 ];
 
-const StatusDropdown: React.FC<StatusDropdownProps> = ({ currentStatus, onStatusChange, isLoading }) => {
+const exchangeStatuses = [
+    { value: 'return_requested', label: 'Exchange Pending', icon: 'return_requested' },
+    { value: 'return_accepted', label: 'Accepted', icon: 'return_accepted' },
+    { value: 'returned', label: 'Item Received', icon: 'returned' },
+    { value: 'processing', label: 'Exchange Processed', icon: 'processing' },
+    { value: 'shipped', label: 'Shipped', icon: 'shipped' },
+    { value: 'delivered', label: 'Delivered', icon: 'delivered' },
+    { value: 'return_rejected', label: 'Exchange Rejected', icon: 'return_rejected' },
+];
+
+const StatusDropdown: React.FC<StatusDropdownProps> = ({ currentStatus, onStatusChange, isLoading, isExchange }) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    const activeStatuses = isExchange ? exchangeStatuses : standardStatuses;
 
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -32,7 +45,9 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({ currentStatus, onStatus
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const currentStatusObj = statuses.find(s => s.value === currentStatus) || statuses[0];
+    const currentStatusObj = activeStatuses.find(s => s.value === currentStatus) ||
+        standardStatuses.find(s => s.value === currentStatus) ||
+        standardStatuses[0];
     const isCancelled = currentStatus === 'cancelled';
 
     return (
@@ -50,7 +65,7 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({ currentStatus, onStatus
             {isOpen && (
                 <div className="status-menu">
                     <div className="menu-header">Update Status</div>
-                    {statuses.map((status) => (
+                    {activeStatuses.map((status) => (
                         <button
                             key={status.value}
                             onClick={() => {

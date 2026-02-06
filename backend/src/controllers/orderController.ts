@@ -132,8 +132,15 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
         let filter: any = {};
 
         if (status && status !== 'all') {
-            filter.status = status;
+            if (typeof status === 'string' && status.includes(',')) {
+                filter.status = { $in: status.split(',') };
+            } else {
+                filter.status = status;
+            }
         }
+
+        console.log(`[AdminOrders] Query:`, req.query);
+        console.log(`[AdminOrders] Filter:`, filter);
 
         if (startDate && endDate) {
             filter.createdAt = {
@@ -261,7 +268,8 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             }
         }
 
-        if (status === OrderStatus.DELIVERED && previousStatus !== OrderStatus.DELIVERED) {
+        if (status === OrderStatus.DELIVERED && (!order.deliveredAt || previousStatus !== OrderStatus.DELIVERED)) {
+            order.deliveredAt = new Date();
             const user = await User.findById(order.user_id).populate('membership_id');
             const membership = user?.membership_id as any;
             const borrowDuration = membership?.borrowDuration || 14;
@@ -283,12 +291,12 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
 
         await order.save();
 
-        // Send In-App Notification for Return Decisions
+        // Send In-App Notification for Return Decisions (now Exchange)
         if (status === OrderStatus.RETURNED || status === OrderStatus.RETURN_REJECTED) {
             const isApproved = status === OrderStatus.RETURNED;
             const message = isApproved
-                ? `Your return request for Order #${order._id.toString().slice(-8).toUpperCase()} has been APPROVED.`
-                : `Your return request for Order #${order._id.toString().slice(-8).toUpperCase()} has been REJECTED.`;
+                ? `Your exchange request for Order #${order._id.toString().slice(-8).toUpperCase()} has been APPROVED.`
+                : `Your exchange request for Order #${order._id.toString().slice(-8).toUpperCase()} has been REJECTED.`;
 
             await sendNotification(
                 NotificationType.BORROW,
@@ -348,7 +356,7 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
 
         const result = await Order.updateMany(
             { _id: { $in: orderIds } },
-            { $set: { status: status } }
+            { $set: { status: status, deliveredAt: status === 'delivered' ? new Date() : undefined } }
         );
 
         // Optionally send emails for each, but for bulk it might be noisy. 
@@ -483,7 +491,7 @@ export const getMyOrderById = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// User: Request Return Order
+// User: Request Return Order (Now Exchange)
 export const requestReturnOrder = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
@@ -491,7 +499,7 @@ export const requestReturnOrder = async (req: AuthRequest, res: Response) => {
         const userId = req.user!._id;
 
         if (!reason) {
-            return res.status(400).json({ error: 'Reason for return is required' });
+            return res.status(400).json({ error: 'Reason for exchange is required' });
         }
 
         const order = await Order.findById(id);
@@ -501,17 +509,37 @@ export const requestReturnOrder = async (req: AuthRequest, res: Response) => {
 
         // Check ownership
         if (order.user_id.toString() !== userId.toString()) {
-            return res.status(403).json({ error: 'Unauthorized to return this order' });
+            return res.status(403).json({ error: 'Unauthorized to request exchange for this order' });
         }
 
-        // Check status - can only return if delivered
+        // Check status - can only exchange if delivered
         if (order.status !== OrderStatus.DELIVERED) {
-            return res.status(400).json({ error: `Cannot return order with status: ${order.status}` });
+            return res.status(400).json({ error: `Cannot request exchange for order with status: ${order.status}` });
+        }
+
+        // Check 7-day window
+        const deliveryDateStr = order.deliveredAt || (order as any).updatedAt || order.createdAt;
+        if (!deliveryDateStr) {
+            return res.status(400).json({ error: 'Delivery date not found. Please contact support.' });
+        }
+
+        const deliveredAt = new Date(deliveryDateStr);
+        const now = new Date();
+        const diffInDays = (now.getTime() - deliveredAt.getTime()) / (1000 * 3600 * 24);
+
+        if (diffInDays > 7) {
+            return res.status(400).json({ error: 'Exchange window has expired (7 days from delivery)' });
         }
 
         // Update status and reason
         order.status = OrderStatus.RETURN_REQUESTED;
         order.returnReason = reason;
+
+        // Handle Image Upload
+        if (req.file) {
+            order.exchangeImageUrl = (req.file as any).path; // Cloudinary URL
+        }
+
         await order.save();
 
         // Update associated borrow records (optional: could mark them as return_requested too)
@@ -521,19 +549,19 @@ export const requestReturnOrder = async (req: AuthRequest, res: Response) => {
         );
 
         // Notify Admins
-        // await notifySuperAdmins(`New Return Request for Order #${order._id.toString().slice(-8).toUpperCase()} from ${req.user!.name}`);
+        // await notifySuperAdmins(`New Exchange Request for Order #${order._id.toString().slice(-8).toUpperCase()} from ${req.user!.name}`);
 
         // Notify User
         await sendNotification(
             NotificationType.BORROW,
-            `Return request submitted for Order #${order._id.toString().slice(-8).toUpperCase()}. Awaiting admin approval.`,
+            `Exchange request submitted for Order #${order._id.toString().slice(-8).toUpperCase()}. Awaiting admin approval.`,
             userId as any,
             null as any
         );
 
-        res.status(200).json({ message: 'Return request submitted successfully', order });
+        res.status(200).json({ message: 'Exchange request submitted successfully', order });
     } catch (error: any) {
-        console.error('Request return error:', error);
-        res.status(500).json({ error: 'Failed to submit return request' });
+        console.error('Request exchange error:', error);
+        res.status(500).json({ error: 'Failed to submit exchange request' });
     }
 };

@@ -46,6 +46,8 @@ import ScrollToTop from './components/ScrollToTop';
 import { RoleName } from './types/enums';
 
 import AnnouncementBanner from './components/AnnouncementBanner';
+import ChatWidget from './components/ChatWidget';
+import './styles/FloatingActionsStack.css';
 
 const App: React.FC = () => {
   return (
@@ -73,16 +75,12 @@ const App: React.FC = () => {
             <Route path="/memberships" element={<MembershipPlans />} />
           </Route>
 
+          {/* User Protected Routes with UserLayout */}
           <Route element={<ProtectedRoute allowedRoles={[RoleName.USER]} />}>
             <Route element={<UserLayout />}>
               <Route path="/books" element={<BookList />} />
               <Route path="/books/:id" element={<BookDetail />} />
               <Route path="/read/:id" element={<PDFViewer />} />
-            </Route>
-          </Route>
-
-          <Route element={<ProtectedRoute allowedRoles={[RoleName.USER]} />}>
-            <Route element={<UserLayout />}>
               <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/my-orders" element={<UserOrders />} />
@@ -96,14 +94,14 @@ const App: React.FC = () => {
             </Route>
           </Route>
 
-          {/* Shared Routes */}
+          {/* Shared Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={[RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN]} />}>
             <Route element={<UserLayout />}>
               <Route path="/notifications" element={<NotificationsPage />} />
             </Route>
           </Route>
 
-          {/* Admin Routes */}
+          {/* Admin Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={[RoleName.ADMIN, RoleName.SUPER_ADMIN]} />}>
             <Route element={<UserLayout />}>
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
@@ -112,17 +110,20 @@ const App: React.FC = () => {
             </Route>
           </Route>
 
-          {/* Super Admin Routes */}
+          {/* Super Admin Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={[RoleName.SUPER_ADMIN]} />}>
             <Route element={<UserLayout />}>
               <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
             </Route>
           </Route>
         </Routes>
-        <ScrollToTop />
-        <ThemeToggle className="theme-toggle-fixed" />
+        <div className="floating-actions-stack">
+          <ThemeToggle className="theme-toggle-fixed" />
+          <ChatWidget />
+          <ScrollToTop />
+        </div>
       </Router>
-    </ThemeProvider >
+    </ThemeProvider>
   );
 };
 
