@@ -170,7 +170,10 @@ const Signup: React.FC = () => {
         <div className="auth-social-login">
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
-            onError={() => toast.error('Google Sign In failed')}
+            onError={() => {
+              console.error('Google GSI Error: This is likely due to an unauthorized origin or blocked third-party cookies.');
+              toast.error('Google Sign In failed. Please ensure third-party cookies are enabled or check your configuration.');
+            }}
             useOneTap
             theme="outline"
             shape="pill"
