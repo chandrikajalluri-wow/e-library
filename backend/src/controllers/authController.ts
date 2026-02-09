@@ -10,6 +10,7 @@ import { sendEmail } from '../utils/mailer';
 import { IRole } from '../models/Role';
 import { RoleName, MembershipName } from '../types/enums';
 import { OAuth2Client } from 'google-auth-library';
+import { getVerificationEmailTemplate, getPasswordResetTemplate } from '../utils/emailTemplates';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -57,7 +58,8 @@ export const signup = async (req: Request, res: Response) => {
         await sendEmail(
             email,
             'Verify Your Email',
-            `Please verify your email by clicking: ${verifyLink}`
+            `Please verify your email by clicking: ${verifyLink}`,
+            getVerificationEmailTemplate(name, verifyLink)
         );
 
         const basicMembership = await Membership.findOne({ name: 'basic' });
@@ -94,7 +96,8 @@ export const login = async (req: Request, res: Response) => {
                 await sendEmail(
                     user.email,
                     'Verify Your Email',
-                    `Please verify your email by clicking: ${verifyLink}`
+                    `Please verify your email by clicking: ${verifyLink}`,
+                    getVerificationEmailTemplate(user.name, verifyLink)
                 );
                 await user.save();
                 return res.status(400).json({
@@ -192,7 +195,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
         await sendEmail(
             email,
             'Password Reset',
-            `Click here to reset: ${resetLink}`
+            `Click here to reset: ${resetLink}`,
+            getPasswordResetTemplate(user.name, resetLink)
         );
 
         res.json({ message: 'Reset link sent' });

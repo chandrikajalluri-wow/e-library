@@ -16,6 +16,8 @@ router.get('/admin/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN])
 // User Routes
 router.get('/my-orders', auth, orderController.getMyOrders);
 router.get('/my-order/:id', auth, orderController.getMyOrderById);
+// Shared Routes
+router.get('/:id/invoice', auth, orderController.getOrderInvoice);
 router.patch('/:id/cancel', auth, orderController.cancelOwnOrder);
 router.patch('/:id/return', auth, upload.single('image'), orderController.requestReturnOrder);
 router.post('/', auth, orderController.placeOrder);

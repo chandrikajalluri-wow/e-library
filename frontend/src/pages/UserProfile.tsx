@@ -135,6 +135,7 @@ const UserProfile: React.FC = () => {
       toast.success("Membership cancelled successfully");
       setIsCancellationModalOpen(false);
       loadProfile();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Failed to cancel membership");
     } finally {
@@ -337,31 +338,23 @@ const UserProfile: React.FC = () => {
                 {user.membership_id?.name && user.membership_id.name !== MembershipName.BASIC && (
                   <div className="membership-actions-premium">
                     {(() => {
-                      const expiryDate = user.membershipExpiryDate ? new Date(user.membershipExpiryDate) : null;
-                      const daysUntilExpiry = expiryDate
-                        ? Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-                        : null;
-
-                      const canRenew = daysUntilExpiry !== null && daysUntilExpiry <= 7;
-
                       return (
                         <div className="m-actions-wrap">
-                          {canRenew ? (
-                            <button
-                              className="btn-premium-action renew"
-                              onClick={() => setIsRenewalModalOpen(true)}
-                            >
-                              Renew Membership
-                            </button>
-                          ) : (
-                            <div className="renewal-info-tag">
-                              <Calendar size={14} />
-                              <span>Renewal opens 7 days before expiry</span>
-                            </div>
-                          )}
+                          <button
+                            className="btn-premium-action renew"
+                            onClick={() => {
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                              setIsRenewalModalOpen(true);
+                            }}
+                          >
+                            Renew Membership
+                          </button>
                           <button
                             className="btn-text-danger"
-                            onClick={() => setIsCancellationModalOpen(true)}
+                            onClick={() => {
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                              setIsCancellationModalOpen(true);
+                            }}
                           >
                             Cancel Membership
                           </button>
@@ -506,6 +499,7 @@ const UserProfile: React.FC = () => {
             onSuccess={() => {
               loadProfile();
               setIsRenewalModalOpen(false);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             onSubmit={renewMembership}
           />

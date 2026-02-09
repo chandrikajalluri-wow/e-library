@@ -52,6 +52,7 @@ router.get('/admins', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminControl
 // --- Contact Queries ---
 router.get('/contact-queries', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.getContactQueries);
 router.patch('/contact-queries/:id', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.updateContactQueryStatus);
+router.post('/contact-queries/:id/reply', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.replyToContactQuery);
 
 // --- Reported Reviews ---
 router.get('/reported-reviews', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.getReportedReviews);

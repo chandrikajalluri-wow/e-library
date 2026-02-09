@@ -1,3 +1,12 @@
+interface UserExportData {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+    status: string;
+    membership: string;
+    deletionScheduled: string;
+}
 
 interface OrderExportData {
     _id: string;
@@ -30,6 +39,44 @@ interface BookExportData {
     rating: number;
     addedBy: string;
 }
+
+export const exportUsersToCSV = (users: any[]) => {
+    const data: UserExportData[] = users.map(user => ({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role_id?.name || 'User',
+        status: user.isVerified ? 'Verified' : 'Pending',
+        membership: user.membership_id?.name || 'Basic',
+        deletionScheduled: user.deletionScheduledAt ? new Date(user.deletionScheduledAt).toLocaleDateString() : 'No'
+    }));
+
+    const headers = ['User ID', 'Name', 'Email', 'Role', 'Status', 'Membership', 'Deletion Scheduled'];
+
+    const csvRows = [
+        headers.join(','),
+        ...data.map(row => [
+            `"${row._id}"`,
+            `"${row.name}"`,
+            `"${row.email}"`,
+            `"${row.role}"`,
+            `"${row.status}"`,
+            `"${row.membership}"`,
+            `"${row.deletionScheduled}"`
+        ].join(','))
+    ];
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Users_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
 
 export const exportOrdersToCSV = (orders: any[]) => {
     const data: OrderExportData[] = orders.map(order => ({

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download, Eye, XCircle } from 'lucide-react';
+import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download, Eye, XCircle, X } from 'lucide-react';
 import { createBook, getBooks, updateBook, deleteBook, checkBookDeletionSafety } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
@@ -176,9 +176,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchBooks = async () => {
     setIsDataLoading(true);
     try {
-      const isPremiumParam = bookTypeFilter === 'all' ? '' : (bookTypeFilter === MembershipName.PREMIUM.toLowerCase() ? '&isPremium=true' : '&isPremium=false');
-      const categoryParam = categoryFilter === 'all' ? '' : `&category=${categoryFilter}`;
-      const data = await getBooks(`page=${bookPage}&limit=10&showArchived=true&search=${searchTerm}${isPremiumParam}${categoryParam}`);
+      const params = new URLSearchParams();
+      params.append('page', bookPage.toString());
+      params.append('limit', '10');
+      params.append('showArchived', 'true');
+      params.append('search', searchTerm);
+
+      if (bookTypeFilter === MembershipName.PREMIUM.toLowerCase()) {
+        params.append('isPremium', 'true');
+      } else if (bookTypeFilter === MembershipName.BASIC.toLowerCase()) {
+        params.append('isPremium', 'false');
+      }
+
+      if (categoryFilter !== 'all') {
+        params.append('category', categoryFilter);
+      }
+
+      if (currentUser?.role === RoleName.ADMIN) {
+        params.append('addedBy', currentUser._id);
+      }
+
+      const data = await getBooks(params.toString());
       setAllBooks(data.books);
       setBookTotalPages(data.pages);
     } catch (err) {
@@ -226,7 +244,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
   useEffect(() => {
     if (activeTab === 'books') fetchBooks();
-  }, [activeTab, bookPage, bookTypeFilter, categoryFilter]);
+  }, [activeTab, bookPage, bookTypeFilter, categoryFilter, currentUser]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -236,7 +254,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       }
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
+  }, [searchTerm, currentUser]);
 
   useEffect(() => {
     if (activeTab === 'borrows') fetchReadHistory();
@@ -887,10 +905,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                       <Search size={18} className="search-icon" />
                       <input
                         type="text"
-                        placeholder="Search by title, author, isbn..."
+                        placeholder="Search by title..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
+                      {searchTerm && (
+                        <button
+                          type="button"
+                          className="admin-search-clear-btn"
+                          onClick={() => setSearchTerm('')}
+                          aria-label="Clear book search"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -898,7 +926,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   <div className="toolbar-row toolbar-filters-row">
                     <div className="filter-item-box">
                       <Layers size={16} />
-                      <select value={bookTypeFilter} onChange={(e) => setBookTypeFilter(e.target.value)}>
+                      <select value={bookTypeFilter} onChange={(e) => setBookTypeFilter(e.target.value)} className="admin-filter-select">
                         <option value="all">All Books</option>
                         <option value="premium">Premium Only</option>
                         <option value="normal">Free Books</option>
@@ -1096,7 +1124,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 <div className="admin-section-header">
                   <div className="admin-search-wrapper premium-search-box">
                     <div className="search-icon-inside">
-                      <Search size={18} />
+                      <Search size={20} />
                     </div>
                     <input
                       type="text"
@@ -1105,6 +1133,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                       onChange={(e) => setCategorySearch(e.target.value)}
                       className="admin-search-input-premium"
                     />
+                    {categorySearch && (
+                      <button
+                        className="admin-search-clear-btn"
+                        onClick={() => setCategorySearch('')}
+                        aria-label="Clear category search"
+                        style={{
+                          position: 'absolute',
+                          right: '18px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <X size={18} />
+                      </button>
+                    )}
                   </div>
                 </div>
 

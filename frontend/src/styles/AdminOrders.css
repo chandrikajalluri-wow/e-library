@@ -115,7 +115,7 @@
     flex-direction: column;
     align-items: stretch;
     margin-bottom: 2rem;
-    gap: 1rem;
+    gap: 2rem;
     border: 1px solid var(--border-color);
 }
 
@@ -124,7 +124,7 @@
     width: 100%;
 }
 
-.search-box svg {
+.search-box .search-icon {
     position: absolute;
     left: 1.5rem;
     top: 50%;
@@ -135,7 +135,29 @@
     transition: all 0.3s;
 }
 
-.search-box:focus-within svg {
+.search-box:focus-within .search-icon {
+    color: var(--primary-color);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.admin-search-clear-btn {
+    position: absolute;
+    right: 2.25rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.2s;
+    z-index: 50;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.admin-search-clear-btn:hover {
     color: var(--primary-color);
     transform: translateY(-50%) scale(1.1);
 }
@@ -143,7 +165,7 @@
 .search-box input {
     width: 100%;
     height: 56px !important;
-    padding: 0 1.5rem 0 4rem !important;
+    padding: 0 3.5rem 0 4rem !important;
     background: rgba(255, 255, 255, 0.6) !important;
     backdrop-filter: blur(12px);
     border: 1px solid var(--border-color) !important;
@@ -164,7 +186,7 @@
 .search-box input:focus {
     background: var(--card-bg) !important;
     border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.08), 0 10px 25px -10px rgba(99, 102, 241, 0.15) !important;
+    box-shadow: none !important;
 }
 
 .filter-group {
@@ -175,6 +197,7 @@
     align-items: center;
     width: 100%;
     overflow-x: auto;
+    padding: 0.5rem 0;
 }
 
 .filter-item {
@@ -184,7 +207,7 @@
     background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(8px);
     border: 1px solid var(--border-color);
-    padding: 0 1.25rem !important;
+    padding: 0 1.25rem 0 1.5rem !important;
     height: 50px !important;
     border-radius: 14px !important;
     color: var(--text-secondary);
@@ -203,7 +226,6 @@
 }
 
 .filter-item:hover {
-    border-color: var(--primary-color);
     background: var(--card-bg);
     transform: translateY(-2px);
     box-shadow: 0 5px 15px -5px rgba(99, 102, 241, 0.15);
@@ -227,7 +249,7 @@
     font-weight: 700;
     font-size: 0.95rem;
     cursor: pointer;
-    padding: 0 1.75rem 0 0 !important;
+    padding: 0 2rem 0 0.5rem !important;
     height: 100%;
     outline: none;
     display: block;
@@ -243,11 +265,18 @@
     margin-top: 0 !important;
 }
 
+.filter-item select:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
 .filter-item select option {
     background: var(--card-bg);
     color: var(--text-primary);
-    padding: 1rem;
+    padding: 12px 1.5rem !important;
     font-weight: 600;
+    text-indent: 10px;
 }
 
 .date-filter {
@@ -711,9 +740,15 @@
 }
 
 .no-orders {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
     text-align: center;
     padding: 5rem 0;
     color: var(--text-secondary);
+    gap: 1.5rem;
 }
 
 .no-orders h3 {
