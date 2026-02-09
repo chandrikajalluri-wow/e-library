@@ -110,6 +110,23 @@ const ChatWidget: React.FC = () => {
         }
     };
 
+    const groupMessagesByDate = (msgs: any[]) => {
+        const groups: { [key: string]: any[] } = {};
+        msgs.forEach(msg => {
+            const date = new Date(msg.createdAt).toLocaleDateString(undefined, {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            if (!groups[date]) groups[date] = [];
+            groups[date].push(msg);
+        });
+        return groups;
+    };
+
+    const groupedMessages = React.useMemo(() => groupMessagesByDate(messages), [messages]);
+
     if (!localStorage.getItem('token') || role !== RoleName.USER) return null;
 
     return (
@@ -140,16 +157,21 @@ const ChatWidget: React.FC = () => {
                             <span className="message-time">Support • Just now</span>
                         </div>
 
-                        {messages.map((msg, index) => (
-                            <div
-                                key={index}
-                                className={`message-bubble ${msg.sender_id?._id === user?._id || msg.sender_id === user?._id ? 'user' : 'admin'}`}
-                            >
-                                {msg.content}
-                                <span className="message-time">
-                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            </div>
+                        {Object.entries(groupedMessages).map(([date, msgs]) => (
+                            <React.Fragment key={date}>
+                                <div className="chat-date-separator"><span>{date}</span></div>
+                                {(msgs as any[]).map((msg, index) => (
+                                    <div
+                                        key={index}
+                                        className={`message-bubble ${msg.sender_id?._id === user?._id || msg.sender_id === user?._id ? 'user' : 'admin'}`}
+                                    >
+                                        {msg.content}
+                                        <span className="message-time">
+                                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                ))}
+                            </React.Fragment>
                         ))}
 
                         {adminTyping && (

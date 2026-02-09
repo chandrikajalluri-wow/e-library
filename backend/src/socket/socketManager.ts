@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import ChatMessage, { MessageType } from '../models/ChatMessage';
-import ChatSession from '../models/ChatSession';
+import ChatSession, { SessionStatus } from '../models/ChatSession';
 
 export const initSocket = (io: Server) => {
     io.on('connection', (socket: Socket) => {
@@ -28,10 +28,19 @@ export const initSocket = (io: Server) => {
                     messageType: type
                 });
 
-                // Update session's last message
-                await ChatSession.findByIdAndUpdate(sessionId, {
-                    lastMessage: newMessage._id
-                });
+                // Update session
+                const session = await ChatSession.findById(sessionId);
+                if (session) {
+                    session.lastMessage = newMessage._id as any;
+
+                    // If sender is NOT the user (meaning it's an admin) and status is OPEN -> set to IN_PROGRESS
+                    if (session.user_id.toString() !== senderId && session.status === SessionStatus.OPEN) {
+                        session.status = SessionStatus.IN_PROGRESS;
+                        session.admin_id = senderId as any;
+                    }
+
+                    await session.save();
+                }
 
                 // Emit to todos in the room
                 io.to(sessionId).emit('new_message', newMessage);
