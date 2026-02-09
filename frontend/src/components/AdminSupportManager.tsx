@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Send, User, MessageSquare, Filter, BarChart3, X } from 'lucide-react';
+import { Search, Send, User, MessageSquare, Filter, BarChart3, X, ArrowLeft, Info } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { getAllSessionsAdmin, getSessionMessages, closeSession } from '../services/chatService';
 import { getProfile } from '../services/userService';
@@ -15,6 +15,7 @@ const AdminSupportManager: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [userTyping, setUserTyping] = useState<any>(null);
     const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'in_progress' | 'closed'>('all');
+    const [showUserDetails, setShowUserDetails] = useState(false);
     const socketRef = useRef<Socket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const activeSessionRef = useRef<any>(null);
@@ -179,7 +180,7 @@ const AdminSupportManager: React.FC = () => {
     };
 
     return (
-        <div className={`admin-support-container saas-reveal active ${activeSession ? 'has-session' : ''}`}>
+        <div className={`admin-support-container saas-reveal active ${activeSession ? 'has-session' : ''} ${showUserDetails ? 'show-details-mobile' : ''}`}>
             <div className="sessions-sidebar">
                 <div className="sidebar-header">
                     <div className="title-stack">
@@ -272,6 +273,15 @@ const AdminSupportManager: React.FC = () => {
                 {activeSession ? (
                     <>
                         <div className="active-chat-header-premium">
+                            <button
+                                className="mobile-back-btn"
+                                onClick={() => {
+                                    setActiveSession(null);
+                                    setShowUserDetails(false);
+                                }}
+                            >
+                                <ArrowLeft size={20} />
+                            </button>
                             <div className="header-user">
                                 <div className="user-avatar-premium small">
                                     {activeSession.user_id?.profileImage ? <img src={activeSession.user_id.profileImage} alt="" /> : <User size={20} />}
@@ -291,6 +301,12 @@ const AdminSupportManager: React.FC = () => {
                                         End Session
                                     </button>
                                 )}
+                                <button
+                                    className={`btn-info-action ${showUserDetails ? 'active' : ''}`}
+                                    onClick={() => setShowUserDetails(!showUserDetails)}
+                                >
+                                    <Info size={20} />
+                                </button>
                             </div>
                         </div>
 
@@ -301,7 +317,7 @@ const AdminSupportManager: React.FC = () => {
                                     {msgs.map((msg, index) => (
                                         <div
                                             key={index}
-                                            className={`admin-chat-bubble ${msg.sender_id?._id === admin?._id || msg.sender_id === admin?._id ? 'mine' : 'other'}`}
+                                            className={`admin-chat-bubble ${msg.sender_id?._id === activeSession.user_id?._id || msg.sender_id === activeSession.user_id?._id ? 'other' : 'mine'}`}
                                         >
                                             {msg.content}
                                             <span className="msg-timestamp">

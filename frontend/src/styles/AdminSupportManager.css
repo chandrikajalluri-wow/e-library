@@ -35,7 +35,8 @@
 }
 
 .sidebar-header {
-    padding: 2.25rem 1.75rem 1.5rem;
+    padding: 3rem 1.75rem 2rem;
+    /* Even more breathing room at top */
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
 }
@@ -76,14 +77,16 @@
 }
 
 .active-chat-header-premium {
-    padding: 1.25rem 2rem;
+    padding: 1.5rem 2.5rem;
+    /* Increased padding */
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: var(--card-bg);
     flex-shrink: 0;
-    height: 85px;
+    height: 100px;
+    /* Increased height for safer clearance */
     z-index: 10;
 }
 
@@ -187,10 +190,14 @@
 
 .search-box-premium {
     position: relative;
-    height: 48px;
+    height: 40px;
+    /* Reduced from 48px */
+    width: 90%;
+    /* More compact width */
+    margin: 0 auto;
     background: var(--bg-color);
     border: 1px solid var(--border-color);
-    border-radius: 24px;
+    border-radius: 20px;
     display: flex;
     align-items: center;
 }
@@ -595,5 +602,153 @@
     to {
         transform: translateX(0);
         opacity: 1;
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+    .admin-support-container {
+        grid-template-columns: 280px 1fr;
+    }
+
+    .admin-support-container.has-session {
+        grid-template-columns: 280px 1fr;
+    }
+
+    .user-details-sidebar {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 320px;
+        z-index: 1000;
+        background: var(--card-bg);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+        display: none !important;
+        /* Toggle via class */
+    }
+
+    .admin-support-container.show-details-mobile .user-details-sidebar {
+        display: flex !important;
+    }
+}
+
+@media (max-width: 992px) {
+    .admin-support-container {
+        height: calc(100vh - 100px);
+        margin-top: 0.5rem;
+    }
+
+    .active-chat-header-premium {
+        padding: 1rem 1.5rem;
+        height: 80px;
+    }
+
+    .admin-messages-container {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-support-container {
+        grid-template-columns: 1fr;
+        border-radius: 0;
+        margin-top: 0;
+        height: calc(100vh - 64px);
+        border: none;
+    }
+
+    .admin-support-container.has-session .sessions-sidebar {
+        display: none;
+    }
+
+    .admin-support-container.has-session .chat-main-area {
+        display: flex;
+    }
+
+    .sessions-sidebar {
+        width: 100%;
+        border-right: none;
+    }
+
+    .chat-main-area {
+        display: none;
+    }
+
+    .sidebar-header {
+        padding: 2rem 1.25rem 1.5rem;
+    }
+
+    .mobile-back-btn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        color: var(--text-primary);
+        cursor: pointer;
+        margin-right: 0.75rem;
+    }
+
+    .user-details-sidebar {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .admin-chat-input-premium {
+        padding: 1rem;
+    }
+
+    .active-chat-header-premium h3 {
+        font-size: 1rem;
+    }
+
+    .user-meta {
+        font-size: 0.7rem;
+    }
+
+    .actions-cluster {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-close-action {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.7rem;
+    }
+}
+
+/* Helper Elements */
+.mobile-back-btn {
+    display: none;
+}
+
+.btn-info-action {
+    display: none;
+}
+
+@media (max-width: 1200px) {
+    .btn-info-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-info-action.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
     }
 }

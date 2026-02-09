@@ -8,7 +8,7 @@
     flex-direction: column-reverse;
     /* ThemeToggle (bottom), Chat (mid), ScrollToTop (top) */
     gap: 1.25rem;
-    align-items: flex-end;
+    align-items: center;
     pointer-events: none;
     /* Let clicks pass through to content behind gaps */
 }
