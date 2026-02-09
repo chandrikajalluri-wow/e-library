@@ -15,12 +15,13 @@ initCronJobs();
 app.use(
   cors({
     origin: process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(',')
+      ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
       : ["http://localhost:5173", "http://localhost:5174", "https://e-library-three-pi.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "Range"],
     exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length"],
     credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
 
@@ -76,10 +77,11 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(',')
+      ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
       : ["http://localhost:5173", "http://localhost:5174", "https://e-library-three-pi.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
+    optionsSuccessStatus: 200,
   }
 });
 
