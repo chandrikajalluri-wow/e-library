@@ -38,3 +38,8 @@ export const cancelMembership = async (reason: string): Promise<{ message: strin
     const res = await api.put('/memberships/cancel', { reason });
     return res.data;
 };
+
+export const renewMembership = async (): Promise<{ message: string; membershipExpiryDate: string }> => {
+    const res = await api.post('/users/renew-membership');
+    return res.data;
+};

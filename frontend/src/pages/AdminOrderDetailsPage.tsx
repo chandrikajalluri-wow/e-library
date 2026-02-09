@@ -6,12 +6,11 @@ import {
     MapPin, CreditCard, FileText, Download, XCircle,
     AlertCircle as ExchangeIcon, Eye
 } from 'lucide-react';
-import { getOrderById, updateOrderStatus } from '../services/adminOrderService';
+import { getOrderById, updateOrderStatus, downloadInvoice } from '../services/adminOrderService';
 
 
 import StatusDropdown from '../components/StatusDropdown';
 import Loader from '../components/Loader';
-import { generateInvoice } from '../utils/invoiceGenerator';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import '../styles/AdminOrderDetails.css';
@@ -80,13 +79,13 @@ const AdminOrderDetailsPage: React.FC = () => {
         }
     };
 
-    const handleDownloadInvoice = () => {
+    const handleDownloadInvoice = async () => {
         if (!order) return;
         try {
-            generateInvoice(order as any);
+            await downloadInvoice(order._id);
             toast.success('Invoice generated successfully');
-        } catch (error) {
-            toast.error('Failed to generate invoice');
+        } catch (error: any) {
+            toast.error(error || 'Failed to generate invoice');
         }
     };
 

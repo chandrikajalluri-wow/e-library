@@ -10,8 +10,9 @@ import Notification from '../models/Notification';
 import Order from '../models/Order';
 import Contact from '../models/Contact';
 import Readlist from '../models/Readlist';
-import { RoleName, ActivityAction, NotificationType } from '../types/enums';
+import { RoleName, ActivityAction, NotificationType, MembershipName } from '../types/enums';
 import { sendEmail } from '../utils/mailer';
+import { getDeletionScheduledTemplate } from '../utils/emailTemplates';
 
 export const getAllUsers = async (req: Request, res: Response) => {
     try {
@@ -49,7 +50,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     const { force } = req.body;
 
     try {
-        const user = await User.findById(req.params.id);
+        const user = await User.findById(req.params.id).populate('membership_id');
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         if (force === true) {
@@ -75,22 +76,34 @@ export const deleteUser = async (req: Request, res: Response) => {
             return res.json({ message: 'User deactivated and anonymized (Force)' });
         }
 
-        const pendingBorrows = await Borrow.find({
+        // Check for active reading activity
+        const activeReads = await Readlist.find({
             user_id: user._id,
-            returned_at: { $exists: false }
+            status: 'active'
         }).populate('book_id', 'title');
 
-        const unpaidFines = await Borrow.find({
+        // Check for undelivered orders
+        const undeliveredOrders = await Order.find({
             user_id: user._id,
-            isFinePaid: false,
-            fine_amount: { $gt: 0 }
-        }).populate('book_id', 'title');
+            status: { $in: ['pending', 'processing', 'shipped', 'return_requested', 'return_accepted'] }
+        });
 
-        if (pendingBorrows.length > 0 || unpaidFines.length > 0) {
+        // Check for active premium membership
+        const hasActivePremium = user.membership_id &&
+            (user.membership_id as any).name === MembershipName.PREMIUM &&
+            user.membershipExpiryDate &&
+            user.membershipExpiryDate > new Date();
+
+        if (activeReads.length > 0 || undeliveredOrders.length > 0 || hasActivePremium) {
+            const obligations: string[] = [];
+            if (activeReads.length > 0) obligations.push(`${activeReads.length} active reading sessions`);
+            if (undeliveredOrders.length > 0) obligations.push(`${undeliveredOrders.length} undelivered orders`);
+            if (hasActivePremium) obligations.push('Active Premium Membership');
+
             return res.status(409).json({
                 error: 'User has pending obligations',
                 details: {
-                    pendingBorrows: pendingBorrows.map(b => ({ book: (b.book_id as any).title, dueDate: b.return_date })),
+                    obligations
                 }
             });
         }
@@ -111,7 +124,8 @@ export const deleteUser = async (req: Request, res: Response) => {
             await sendEmail(
                 user.email,
                 'Account Scheduled for Deletion',
-                `Hello ${user.name},\n\nYour account is scheduled for deletion on ${deletionDate.toDateString()}.`
+                `Hello ${user.name},\n\nYour account is scheduled for deletion on ${deletionDate.toDateString()}.`,
+                getDeletionScheduledTemplate(user.name, deletionDate.toDateString())
             );
         } catch (emailErr) {
             console.error('Failed to send deletion email', emailErr);
@@ -401,5 +415,44 @@ export const dismissReviewReports = async (req: Request, res: Response) => {
         res.json({ message: 'Reports dismissed' });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
+    }
+};
+export const replyToContactQuery = async (req: Request, res: Response) => {
+    try {
+        const { replyText } = req.body;
+        const { id } = req.params;
+
+        if (!replyText) {
+            return res.status(400).json({ error: 'Reply text is required' });
+        }
+
+        const query = await Contact.findById(id);
+        if (!query) {
+            return res.status(404).json({ error: 'Query not found' });
+        }
+
+        // Send email to user
+        const { getQueryReplyTemplate } = require('../utils/emailTemplates');
+        const subject = 'Response to your query - BookStack Support';
+        const text = `Hi ${query.name},\n\nOur team has responded to your query:\n\n${replyText}\n\nOriginal Message:\n"${query.message}"\n\nBest regards,\nThe BookStack Team`;
+
+        await sendEmail(query.email, subject, text, getQueryReplyTemplate(query.name, query.message, replyText));
+
+        // Update status to RESOLVED
+        query.status = 'RESOLVED';
+        await query.save();
+
+        // Log the activity
+        await ActivityLog.create({
+            user_id: (req as any).user._id,
+            action: ActivityAction.USER_UPDATED,
+            description: `Replied to contact query from ${query.email} and marked as RESOLVED`,
+            timestamp: new Date()
+        });
+
+        res.json({ message: 'Reply sent and query marked as resolved', query });
+    } catch (err) {
+        console.error('Reply to contact query error:', err);
+        res.status(500).json({ error: 'Failed to send reply' });
     }
 };

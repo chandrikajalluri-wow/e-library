@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Send, User, MessageSquare, Filter, BarChart3 } from 'lucide-react';
+import { Search, Send, User, MessageSquare, Filter, BarChart3, X } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { getAllSessionsAdmin, getSessionMessages, closeSession } from '../services/chatService';
 import { getProfile } from '../services/userService';
@@ -17,6 +17,17 @@ const AdminSupportManager: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'in_progress' | 'closed'>('all');
     const socketRef = useRef<Socket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const activeSessionRef = useRef<any>(null);
+    const adminRef = useRef<any>(null);
+
+    // Keep refs in sync with state for socket listeners
+    useEffect(() => {
+        activeSessionRef.current = activeSession;
+    }, [activeSession]);
+
+    useEffect(() => {
+        adminRef.current = admin;
+    }, [admin]);
 
     useEffect(() => {
         initAdminSupport();
@@ -53,19 +64,25 @@ const AdminSupportManager: React.FC = () => {
 
             socketRef.current.on('admin_notification', (notif: any) => {
                 if (notif.type === 'new_chat_message') {
-                    refreshSessions();
+                    debouncedRefresh();
                 }
             });
 
             socketRef.current.on('new_message', (message: any) => {
-                if (activeSession && message.session_id === activeSession._id) {
-                    setMessages(prev => [...prev, message]);
+                const currentActive = activeSessionRef.current;
+                if (currentActive && message.session_id === currentActive._id) {
+                    setMessages(prev => {
+                        // Avoid duplicates if any
+                        if (prev.some(m => m._id === message._id)) return prev;
+                        return [...prev, message];
+                    });
                 }
-                refreshSessions();
+                debouncedRefresh();
             });
 
             socketRef.current.on('user_typing', (data: any) => {
-                if (activeSession && data.sessionId === activeSession._id) {
+                const currentActive = activeSessionRef.current;
+                if (currentActive && data.sessionId === currentActive._id) {
                     setUserTyping(data.isTyping ? data.userName : null);
                 }
             });
@@ -149,10 +166,20 @@ const AdminSupportManager: React.FC = () => {
         return groups;
     };
 
-    const groupedMessages = groupMessagesByDate(messages);
+    const groupedMessages = React.useMemo(() => groupMessagesByDate(messages), [messages]);
+
+    // Cleanup typing timeout
+    const refreshDebounceRef = useRef<any>(null);
+
+    const debouncedRefresh = () => {
+        if (refreshDebounceRef.current) clearTimeout(refreshDebounceRef.current);
+        refreshDebounceRef.current = setTimeout(() => {
+            refreshSessions();
+        }, 1000);
+    };
 
     return (
-        <div className="admin-support-container saas-reveal active">
+        <div className={`admin-support-container saas-reveal active ${activeSession ? 'has-session' : ''}`}>
             <div className="sessions-sidebar">
                 <div className="sidebar-header">
                     <div className="title-stack">
@@ -178,13 +205,25 @@ const AdminSupportManager: React.FC = () => {
 
                 <div className="sidebar-controls">
                     <div className="search-box-premium">
-                        <Search size={14} />
+                        <div className="search-icon-inside-support">
+                            <Search size={18} />
+                        </div>
                         <input
                             type="text"
-                            placeholder="Search user or ID..."
+                            placeholder="Search user name..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
+                            className="admin-search-input-support"
                         />
+                        {searchTerm && (
+                            <button
+                                className="admin-search-clear-btn-support"
+                                onClick={() => setSearchTerm('')}
+                                aria-label="Clear search"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </div>
                     <div className="filter-tabs">
                         <button className={statusFilter === 'all' ? 'active' : ''} onClick={() => setStatusFilter('all')}>All</button>
@@ -244,12 +283,14 @@ const AdminSupportManager: React.FC = () => {
                             </div>
                             <div className="actions-cluster">
                                 <div className={`status-tag ${activeSession.status}`}>{activeSession.status.replace('_', ' ')}</div>
-                                <button
-                                    className="btn-close-action"
-                                    onClick={() => handleCloseSession(activeSession._id)}
-                                >
-                                    End Session
-                                </button>
+                                {activeSession.status !== 'closed' && (
+                                    <button
+                                        className="btn-close-action"
+                                        onClick={() => handleCloseSession(activeSession._id)}
+                                    >
+                                        End Session
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -318,6 +359,63 @@ const AdminSupportManager: React.FC = () => {
                                 <span>{stats.open + stats.inProgress} active requests</span>
                             </div>
                         </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Column 3: User Details Sidebar */}
+            <div className="user-details-sidebar">
+                {activeSession ? (
+                    <>
+                        <div className="user-profile-summary">
+                            <div className="user-avatar-premium large">
+                                {activeSession.user_id?.profileImage ? (
+                                    <img src={activeSession.user_id.profileImage} alt="" />
+                                ) : (
+                                    <div className="avatar-placeholder">{activeSession.user_id?.name?.charAt(0)}</div>
+                                )}
+                            </div>
+                            <div className="user-profile-info">
+                                <h3>{activeSession.user_id?.name}</h3>
+                                <p className="user-email">{activeSession.user_id?.email}</p>
+                            </div>
+                        </div>
+
+                        <div className="user-meta-details">
+                            <div className="meta-item">
+                                <div className="icon-wrapper">
+                                    <User size={18} />
+                                </div>
+                                <div className="meta-content">
+                                    <label>User ID</label>
+                                    <span>{activeSession.user_id?._id}</span>
+                                </div>
+                            </div>
+
+                            <div className="meta-item">
+                                <div className="icon-wrapper">
+                                    <MessageSquare size={18} />
+                                </div>
+                                <div className="meta-content">
+                                    <label>Session ID</label>
+                                    <span>{activeSession._id}</span>
+                                </div>
+                            </div>
+
+                            <div className="meta-item">
+                                <div className="icon-wrapper">
+                                    <Filter size={18} />
+                                </div>
+                                <div className="meta-content">
+                                    <label>Status</label>
+                                    <span style={{ textTransform: 'capitalize' }}>{activeSession.status.replace('_', ' ')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="empty-details-state">
+                        <p>Select a conversation to view user details</p>
                     </div>
                 )}
             </div>

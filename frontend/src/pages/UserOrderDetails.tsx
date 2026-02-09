@@ -19,8 +19,7 @@ import {
     AlertCircle as WarningIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getOrderDetails, requestReturn } from '../services/userOrderService';
-import { generateInvoice } from '../utils/invoiceGenerator';
+import { getOrderDetails, requestReturn, downloadInvoice } from '../services/userOrderService';
 import { OrderStatus } from '../types/enums';
 import Loader from '../components/Loader';
 import '../styles/UserOrderDetails.css';
@@ -251,7 +250,7 @@ const UserOrderDetails: React.FC = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 className="download-invoice-btn-mini"
-                                onClick={() => generateInvoice(order)}
+                                onClick={() => downloadInvoice(order._id)}
                             >
                                 <Download size={18} />
                                 <span>Invoice</span>

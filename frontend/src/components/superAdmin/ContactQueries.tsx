@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { getContactQueries, updateContactQueryStatus } from '../../services/superAdminService';
-import { CheckCircle, Clock, Mail, MessageSquare } from 'lucide-react';
+import { getContactQueries, updateContactQueryStatus, replyToContactQuery } from '../../services/superAdminService';
+import { CheckCircle, Clock, Mail, MessageSquare, Send, X } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 interface ContactQuery {
     _id: string;
@@ -19,6 +20,9 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
     const [queries, setQueries] = useState<ContactQuery[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('OPEN');
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         fetchQueries();
@@ -40,8 +44,31 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
         try {
             const updated = await updateContactQueryStatus(id, newStatus);
             setQueries(prev => prev.map(q => q._id === id ? updated : q));
+            toast.success(`Query marked as ${newStatus.toLowerCase()}`);
         } catch (err) {
             console.error('Failed to update status', err);
+            toast.error('Failed to update status');
+        }
+    };
+
+    const handleReplySubmit = async (id: string) => {
+        if (!replyText.trim()) {
+            toast.error('Please enter a response message');
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            const data = await replyToContactQuery(id, replyText);
+            setQueries(prev => prev.map(q => q._id === id ? data.query : q));
+            setReplyingTo(null);
+            setReplyText('');
+            toast.success('Reply sent successfully and query resolved');
+        } catch (err) {
+            console.error('Failed to send reply', err);
+            toast.error('Failed to send reply');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -109,21 +136,81 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
                             </div>
 
                             <div className="query-actions">
-                                {query.status === 'OPEN' ? (
-                                    <button
-                                        onClick={() => handleStatusUpdate(query._id, 'RESOLVED')}
-                                        className="query-btn-resolve"
-                                    >
-                                        <CheckCircle size={16} />
-                                        Mark as Resolved
-                                    </button>
+                                {replyingTo === query._id ? (
+                                    <div className="query-reply-box saas-reveal" style={{ width: '100%', marginTop: '1rem' }}>
+                                        <textarea
+                                            className="admin-textarea"
+                                            placeholder="Type your response here..."
+                                            value={replyText}
+                                            onChange={(e) => setReplyText(e.target.value)}
+                                            style={{ minHeight: '120px', marginBottom: '1rem', width: '100%' }}
+                                            disabled={isSubmitting}
+                                        />
+                                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                            <button
+                                                onClick={() => { setReplyingTo(null); setReplyText(''); }}
+                                                className="admin-btn-secondary"
+                                                disabled={isSubmitting}
+                                            >
+                                                <X size={16} />
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => handleReplySubmit(query._id)}
+                                                className="admin-btn-positive"
+                                                disabled={isSubmitting}
+                                            >
+                                                {isSubmitting ? (
+                                                    <div className="spinner-mini"></div>
+                                                ) : (
+                                                    <>
+                                                        <Send size={16} />
+                                                        Send Reply
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <button
-                                        onClick={() => handleStatusUpdate(query._id, 'OPEN')}
-                                        className="query-btn-reopen"
-                                    >
-                                        Re-open Query
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+                                        {query.status === 'OPEN' && (
+                                            <button
+                                                onClick={() => setReplyingTo(query._id)}
+                                                className="query-btn-reply"
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    padding: '0.5rem 1rem',
+                                                    borderRadius: '8px',
+                                                    background: 'rgba(99, 102, 241, 0.1)',
+                                                    color: 'var(--primary-color)',
+                                                    border: 'none',
+                                                    fontWeight: 600,
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <MessageSquare size={16} />
+                                                Reply to User
+                                            </button>
+                                        )}
+                                        {query.status === 'OPEN' ? (
+                                            <button
+                                                onClick={() => handleStatusUpdate(query._id, 'RESOLVED')}
+                                                className="query-btn-resolve"
+                                            >
+                                                <CheckCircle size={16} />
+                                                Mark as Resolved
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleStatusUpdate(query._id, 'OPEN')}
+                                                className="query-btn-reopen"
+                                            >
+                                                Re-open Query
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>

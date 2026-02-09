@@ -74,6 +74,11 @@ export const updateContactQueryStatus = async (id: string, status: string) => {
     return response.data;
 };
 
+export const replyToContactQuery = async (id: string, replyText: string) => {
+    const response = await api.post(`/super-admin/contact-queries/${id}/reply`, { replyText });
+    return response.data;
+};
+
 export const getReportedReviews = async () => {
     const response = await api.get('/super-admin/reported-reviews');
     return response.data;

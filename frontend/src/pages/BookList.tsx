@@ -6,6 +6,7 @@ import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, Rotate
 import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 import { addToReadlist } from '../services/userService';
+import Loader from '../components/Loader';
 
 import type { Book } from '../types';
 import { BookStatus } from '../types/enums';
@@ -85,7 +86,7 @@ const BookList: React.FC = () => {
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
-  }, [selectedCategory, filterType, selectedLanguage, sortOrder]);
+  }, [search, selectedCategory, filterType, selectedLanguage, sortOrder]);
 
   useEffect(() => {
     loadRecommendations();
@@ -115,14 +116,19 @@ const BookList: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      // Build query string
-      let query = `search=${search}&page=${page}&limit=10&sort=${sortOrder || '-createdAt'}`;
-      if (selectedCategory.length > 0) query += `&category=${selectedCategory.join(',')}`;
-      if (filterType === 'premium') query += `&isPremium=true`;
-      if (filterType === 'free') query += `&isPremium=false`;
-      if (selectedLanguage.length > 0) query += `&language=${selectedLanguage.join(',')}`;
+      // Build query string using URLSearchParams for robust encoding
+      const params = new URLSearchParams();
+      params.append('search', search);
+      params.append('page', page.toString());
+      params.append('limit', '10');
+      params.append('sort', sortOrder || '-createdAt');
 
-      const data = await getBooks(query);
+      if (selectedCategory.length > 0) params.append('category', selectedCategory.join(','));
+      if (filterType === 'premium') params.append('isPremium', 'true');
+      if (filterType === 'free') params.append('isPremium', 'false');
+      if (selectedLanguage.length > 0) params.append('language', selectedLanguage.join(','));
+
+      const data = await getBooks(params.toString());
 
       setBooks(data.books);
       setTotal(data.total);
@@ -439,169 +445,141 @@ const BookList: React.FC = () => {
         {search || selectedCategory.length > 0 || selectedLanguage.length > 0 || filterType !== 'all' ? 'Search Results' : 'All Books'}
       </h2>
 
-      <div className="grid-books">
-        {books.map((book) => (
-          <div
-            key={book._id}
-            className="card book-card"
-            onClick={() => navigate(`/books/${book._id}`)}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="book-cover-container">
-              {book.cover_image_url ? (
-                <img
-                  src={ensureHttps(book.cover_image_url)}
-                  alt={book.title}
-                  className="book-cover-img"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="no-image-placeholder">No Image</div>
-              )}
-            </div>
-            <div className="book-info-container">
-              <div className="book-category-tag">
-                {typeof book.category_id === 'object' &&
-                  book.category_id !== null
-                  ? (book.category_id as any).name
-                  : 'Uncategorized'}
-              </div>
-              {book.isPremium && (
-                <div className="premium-badge-tag">Premium</div>
-              )}
-              <h3 className="book-title-h3">{book.title}</h3>
-              <p className="book-author-p">by {book.author}</p>
-
-              <div className="book-meta-info">
-                <span className="book-price-tag">₹{book.price}</span>
-                <span className="book-year-tag">• {book.publishedYear}</span>
-              </div>
-
-              <div className="book-footer">
-                <div className="book-status-info">
-                  <span className={`status-badge status-${book.status} book-status-badge`}>
-                    {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status.toUpperCase()}
-                  </span>
-                  <span className="book-copies-info">
-                    {book.noOfCopies}{' '}
-                    {book.noOfCopies === 1 ? 'copy' : 'copies'} available
-                  </span>
+      {loading && books.length === 0 ? (
+        <Loader />
+      ) : (
+        <>
+          <div className="grid-books">
+            {books.map((book) => (
+              <div
+                key={book._id}
+                className="card book-card"
+                onClick={() => navigate(`/books/${book._id}`)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="book-cover-container">
+                  {book.cover_image_url ? (
+                    <img
+                      src={ensureHttps(book.cover_image_url)}
+                      alt={book.title}
+                      className="book-cover-img"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="no-image-placeholder">No Image</div>
+                  )}
                 </div>
-                <div className="book-actions-row" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      if (!localStorage.getItem('token')) {
-                        toast.info('Please sign in to add books to your library');
-                        navigate('/login');
-                        return;
-                      }
-                      try {
-                        await addToReadlist(book._id);
-                        toast.success('Saved to your library!');
-                        navigate('/dashboard');
-                      } catch (err: any) {
-                        if (err.response?.status === 403 && err.response?.data?.requiresUpgrade) {
-                          toast.info(err.response.data.error);
-                          navigate('/memberships');
-                        } else {
-                          toast.error(err.response?.data?.error || 'Failed to save to library');
-                        }
-                      }
-                    }}
-                    className="btn-primary book-action-btn"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      flex: '1',
-                      padding: '0.5rem 0.75rem',
-                      fontSize: '0.8rem',
-                      marginTop: '0.5rem',
-                      background: 'var(--accent-color)'
-                    }}
-                  >
-                    <BookOpen size={16} />
-                    Save to Library
-                  </button>
+                <div className="book-info-container">
+                  <div className="book-category-tag">
+                    {typeof book.category_id === 'object' &&
+                      book.category_id !== null
+                      ? (book.category_id as any).name
+                      : 'Uncategorized'}
+                  </div>
+                  {book.isPremium && (
+                    <div className="premium-badge-tag">Premium</div>
+                  )}
+                  <h3 className="book-title-h3">{book.title}</h3>
+                  <p className="book-author-p">by {book.author}</p>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(book);
-                      toast.success(`${book.title} added to cart!`);
-                      navigate('/borrow-cart');
-                    }}
-                    disabled={isInCart(book._id)}
-                    className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      flex: '1',
-                      padding: '0.5rem 0.75rem',
-                      fontSize: '0.8rem',
-                      marginTop: '0.5rem',
-                    }}
-                  >
-                    <ShoppingCart size={16} />
-                    {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
-                  </button>
+                  <div className="book-meta-info">
+                    <span className="book-price-tag">₹{book.price}</span>
+                    <span className="book-year-tag">• {book.publishedYear}</span>
+                  </div>
+
+                  <div className="book-footer">
+                    <div className="book-status-info">
+                      <span className={`status-badge status-${book.status} book-status-badge`}>
+                        {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status.toUpperCase()}
+                      </span>
+                      <span className="book-copies-info">
+                        {book.noOfCopies}{' '}
+                        {book.noOfCopies === 1 ? 'copy' : 'copies'} available
+                      </span>
+                    </div>
+                    <div className="book-actions-row" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!localStorage.getItem('token')) {
+                            toast.info('Please sign in to add books to your library');
+                            navigate('/login');
+                            return;
+                          }
+                          try {
+                            await addToReadlist(book._id);
+                            toast.success('Saved to your library!');
+                            navigate('/dashboard');
+                          } catch (err: any) {
+                            if (err.response?.status === 403 && err.response?.data?.requiresUpgrade) {
+                              toast.info(err.response.data.error);
+                              navigate('/memberships');
+                            } else {
+                              toast.error(err.response?.data?.error || 'Failed to save to library');
+                            }
+                          }
+                        }}
+                        className="btn-primary book-action-btn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          flex: '1',
+                          padding: '0.5rem 0.75rem',
+                          fontSize: '0.8rem',
+                          marginTop: '0.5rem',
+                          background: 'var(--accent-color)'
+                        }}
+                      >
+                        <BookOpen size={16} />
+                        Save to Library
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart(book);
+                          toast.success(`${book.title} added to cart!`);
+                          navigate('/borrow-cart');
+                        }}
+                        disabled={isInCart(book._id)}
+                        className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          flex: '1',
+                          padding: '0.5rem 0.75rem',
+                          fontSize: '0.8rem',
+                          marginTop: '0.5rem',
+                        }}
+                      >
+                        <ShoppingCart size={16} />
+                        {isInCart(book._id) ? 'In Cart ✓' : 'Add to Cart'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
-      {
-        books.length === 0 && (
-          <p className="no-books-msg">
-            No books found matching your criteria.
-          </p>
-        )
-      }
-      {
-        books.length > 0 && total > 10 && (
-          <div className="pagination-container">
-            <button
-              className="pagination-btn"
-              disabled={page === 1 || loading}
-              onClick={() => {
-                setPage(p => Math.max(1, p - 1));
-                setTimeout(() => {
-                  if (searchSectionRef.current) {
-                    const yOffset = -120;
-                    const element = searchSectionRef.current;
-                    const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
-                    window.scrollTo({ top: y, behavior: 'smooth' });
-                  }
-                }, 100);
-              }}
-            >
-              <ChevronLeft size={20} />
-            </button>
-
-            {(() => {
-              const totalPages = Math.ceil(total / 10);
-              let startPage = page;
-
-              // If on last page and there's more than 1 page, show previous one too
-              if (page === totalPages && totalPages > 1) {
-                startPage = page - 1;
-              }
-
-              // Ensure we don't go out of bounds
-              const pages = [];
-              if (startPage <= totalPages) pages.push(startPage);
-              if (startPage + 1 <= totalPages) pages.push(startPage + 1);
-
-              return pages.map((pageNum) => (
+          {
+            books.length === 0 && (
+              <p className="no-books-msg">
+                No books found matching your criteria.
+              </p>
+            )
+          }
+          {
+            books.length > 0 && total > 10 && (
+              <div className="pagination-container">
                 <button
-                  key={pageNum}
+                  className="pagination-btn"
+                  disabled={page === 1 || loading}
                   onClick={() => {
-                    setPage(pageNum);
+                    setPage(p => Math.max(1, p - 1));
                     setTimeout(() => {
                       if (searchSectionRef.current) {
                         const yOffset = -120;
@@ -611,36 +589,69 @@ const BookList: React.FC = () => {
                       }
                     }, 100);
                   }}
-                  className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
-                  disabled={loading}
                 >
-                  {pageNum}
+                  <ChevronLeft size={20} />
                 </button>
-              ));
-            })()}
 
-            <button
-              className="pagination-btn"
-              disabled={page === Math.ceil(total / 10) || loading}
-              onClick={() => {
-                setPage(p => Math.min(Math.ceil(total / 10), p + 1));
-                setTimeout(() => {
-                  if (searchSectionRef.current) {
-                    const yOffset = -120;
-                    const element = searchSectionRef.current;
-                    const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
-                    window.scrollTo({ top: y, behavior: 'smooth' });
+                {(() => {
+                  const totalPages = Math.ceil(total / 10);
+                  let startPage = page;
+
+                  // If on last page and there's more than 1 page, show previous one too
+                  if (page === totalPages && totalPages > 1) {
+                    startPage = page - 1;
                   }
-                }, 100);
-              }}
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        )
-      }
 
-    </div >
+                  // Ensure we don't go out of bounds
+                  const pages = [];
+                  if (startPage <= totalPages) pages.push(startPage);
+                  if (startPage + 1 <= totalPages) pages.push(startPage + 1);
+
+                  return pages.map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => {
+                        setPage(pageNum);
+                        setTimeout(() => {
+                          if (searchSectionRef.current) {
+                            const yOffset = -120;
+                            const element = searchSectionRef.current;
+                            const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+                            window.scrollTo({ top: y, behavior: 'smooth' });
+                          }
+                        }, 100);
+                      }}
+                      className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
+                      disabled={loading}
+                    >
+                      {pageNum}
+                    </button>
+                  ));
+                })()}
+
+                <button
+                  className="pagination-btn"
+                  disabled={page === Math.ceil(total / 10) || loading}
+                  onClick={() => {
+                    setPage(p => Math.min(Math.ceil(total / 10), p + 1));
+                    setTimeout(() => {
+                      if (searchSectionRef.current) {
+                        const yOffset = -120;
+                        const element = searchSectionRef.current;
+                        const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+                      }
+                    }, 100);
+                  }}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            )
+          }
+        </>
+      )}
+    </div>
   );
 };
 

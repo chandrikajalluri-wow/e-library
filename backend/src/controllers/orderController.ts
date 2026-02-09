@@ -12,6 +12,8 @@ import { NotificationType, BorrowStatus, MembershipName, BookStatus, OrderStatus
 import { sendNotification, notifySuperAdmins, notifyAdmins } from '../utils/notification';
 import { sendEmail } from '../utils/mailer';
 import { RoleName } from '../types/enums';
+import { getOrderStatusUpdateTemplate } from '../utils/emailTemplates';
+import { generateInvoicePdfBase64 } from '../utils/pdfGenerator';
 
 export const placeOrder = async (req: AuthRequest, res: Response) => {
     const { items, selectedAddressId } = req.body;
@@ -151,6 +153,7 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
 
         // Search by User Name or Order ID
         if (search) {
+            console.log(`[AdminSearch] Raw Search Term: "${search}"`);
             const users = await User.find({
                 name: { $regex: search, $options: 'i' }
             }).select('_id');
@@ -158,15 +161,17 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
             const userIds = users.map(user => user._id);
 
             filter.$or = [
-                { _id: search }, // Allow searching strictly by Order ID
-                { user_id: { $in: userIds } } // Or by User Name
+                {
+                    $expr: {
+                        $regexMatch: {
+                            input: { $toString: "$_id" },
+                            regex: search,
+                            options: "i"
+                        }
+                    }
+                },
+                { user_id: { $in: userIds } }
             ];
-
-            // If the search term is not a valid ObjectId, only search by user name
-            const isValidObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
-            if (!isValidObjectId(search as string)) {
-                filter.$or = [{ user_id: { $in: userIds } }];
-            }
         }
 
         let sortOption: any = { createdAt: -1 };
@@ -317,19 +322,42 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         // }
 
         // Send Email Notification
+        const populatedOrder = await Order.findById(order._id)
+            .populate('items.book_id', 'title')
+            .populate('address_id');
+
         const user = order.user_id as any;
-        const emailSubject = `Your Order Status Update - #${order._id}`;
+        const emailSubject = `Your Order Status Update - #${order._id.toString().slice(-8).toUpperCase()}`;
         const emailText = `
 Hi ${user.name},
 
-Your order #${order._id} status has been updated to: ${status.toUpperCase().replace(/_/g, ' ')}.
+Your order #${order._id.toString().slice(-8).toUpperCase()} status has been updated to: ${status.toUpperCase().replace(/_/g, ' ')}.
 
 Thank you for choosing BookStack!
 
 — BookStack Team
         `;
 
-        sendEmail(user.email, emailSubject, emailText).catch(err =>
+        const attachments = [];
+        if (['shipped', 'delivered'].includes(status.toLowerCase())) {
+            try {
+                const pdfBase64 = await generateInvoicePdfBase64(populatedOrder || order);
+                attachments.push({
+                    name: `Invoice_${order._id.toString().slice(-8).toUpperCase()}.pdf`,
+                    content: pdfBase64
+                });
+            } catch (pdfErr) {
+                console.error('Failed to generate invoice PDF:', pdfErr);
+            }
+        }
+
+        sendEmail(
+            user.email,
+            emailSubject,
+            emailText,
+            getOrderStatusUpdateTemplate(user.name, populatedOrder || order, status),
+            attachments
+        ).catch(err =>
             console.error('Failed to send order status email:', err)
         );
 
@@ -563,5 +591,40 @@ export const requestReturnOrder = async (req: AuthRequest, res: Response) => {
     } catch (error: any) {
         console.error('Request exchange error:', error);
         res.status(500).json({ error: 'Failed to submit exchange request' });
+    }
+};
+
+// Admin/User: Get Order Invoice PDF
+export const getOrderInvoice = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const order = await Order.findById(id)
+            .populate('user_id', 'name email')
+            .populate('items.book_id', 'title cover_image_url price author')
+            .populate('address_id');
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Check permission (User can only see own, Admin can see all)
+        const userRole = (req.user!.role_id as any).name;
+        if (userRole !== RoleName.SUPER_ADMIN && userRole !== RoleName.ADMIN && order.user_id._id.toString() !== req.user!._id.toString()) {
+            return res.status(403).json({ error: 'Unauthorized to view this invoice' });
+        }
+
+        const pdfBase64 = await generateInvoicePdfBase64(order);
+        const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename=Invoice_${order._id.toString().toUpperCase()}.pdf`,
+            'Content-Length': pdfBuffer.length
+        });
+
+        res.send(pdfBuffer);
+    } catch (error: any) {
+        console.error('Get order invoice error:', error);
+        res.status(500).json({ error: 'Failed to generate invoice' });
     }
 };

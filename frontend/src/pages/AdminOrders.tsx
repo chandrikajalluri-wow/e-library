@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Package, Search, Filter, Calendar,
     Clock, CheckCircle, Truck, XCircle, AlertCircle,
-    Download, CheckSquare, Square, ArrowUpDown
+    Download, CheckSquare, Square, ArrowUpDown, X
 } from 'lucide-react';
 import { getAllOrders, bulkUpdateOrderStatus } from '../services/adminOrderService';
 import Loader from '../components/Loader';
@@ -96,6 +96,14 @@ const AdminOrders: React.FC = () => {
         fetchOrders();
     }, [filterStatus, dateRange, sortBy, filterMembership]);
 
+    // Debounced search effect
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            fetchOrders();
+        }, 500);
+        return () => clearTimeout(delayDebounceFn);
+    }, [search]);
+
     const fetchOrders = async () => {
         setIsLoading(true);
         try {
@@ -118,7 +126,7 @@ const AdminOrders: React.FC = () => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        fetchOrders();
+        // Debounce will handle the actual fetch
     };
 
     const handleBulkStatusChange = async (newStatus: string) => {
@@ -226,13 +234,25 @@ const AdminOrders: React.FC = () => {
             {/* Filters */}
             <div className="filters-toolbar">
                 <form onSubmit={handleSearch} className="search-box">
-                    <Search size={18} />
+                    <Search size={18} className="search-icon" />
                     <input
                         type="text"
-                        placeholder="Search by Order ID or User..."
+                        placeholder="Search by User..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
+                    {search && (
+                        <button
+                            type="button"
+                            className="admin-search-clear-btn"
+                            onClick={() => {
+                                setSearch('');
+                            }}
+                            aria-label="Clear search"
+                        >
+                            <X size={16} />
+                        </button>
+                    )}
                 </form>
 
                 <div className="filter-group">

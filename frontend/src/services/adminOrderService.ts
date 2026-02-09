@@ -44,3 +44,20 @@ export const bulkUpdateOrderStatus = async (orderIds: string[], status: string) 
         throw error.response?.data?.error || 'Failed to perform bulk update';
     }
 };
+export const downloadInvoice = async (orderId: string) => {
+    try {
+        const response = await api.get(`orders/${orderId}/invoice`, {
+            responseType: 'blob'
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Invoice_${orderId.toUpperCase()}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+        throw error.response?.data?.error || 'Failed to download invoice';
+    }
+};

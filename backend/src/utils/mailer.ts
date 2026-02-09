@@ -1,6 +1,12 @@
 import * as brevo from '@getbrevo/brevo';
 
-export const sendEmail = async (to: string, subject: string, text: string) => {
+export const sendEmail = async (
+  to: string,
+  subject: string,
+  text: string,
+  html?: string,
+  attachments?: { name: string; content: string }[]
+) => {
   // Validate environment variables
   if (!process.env.BREVO_API_KEY) {
     console.error('BREVO_API_KEY is not set in environment variables');
@@ -32,6 +38,12 @@ export const sendEmail = async (to: string, subject: string, text: string) => {
   };
   sendSmtpEmail.to = [{ email: to }];
   sendSmtpEmail.textContent = text;
+  if (html) {
+    sendSmtpEmail.htmlContent = html;
+  }
+  if (attachments && attachments.length > 0) {
+    sendSmtpEmail.attachment = attachments;
+  }
 
   try {
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);

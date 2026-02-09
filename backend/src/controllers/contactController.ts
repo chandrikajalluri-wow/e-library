@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { sendEmail } from '../utils/mailer';
 import Contact from '../models/Contact';
 import { notifySuperAdmins } from '../utils/notification';
+import { getContactResponseTemplate } from '../utils/emailTemplates';
 
 export const submitContactForm = async (req: Request, res: Response) => {
     const { name, email, message } = req.body;
@@ -16,7 +17,7 @@ export const submitContactForm = async (req: Request, res: Response) => {
         const userSubject = 'We received your message - BookStack Support';
         const userText = `Hi ${name},\n\nThank you for contacting BookStack. We have received your query and our team will get back to you soon.\n\nYour message:\n"${message}"\n\nBest regards,\nBookStack Administration`;
 
-        await sendEmail(email, userSubject, userText);
+        await sendEmail(email, userSubject, userText, getContactResponseTemplate(name, message));
 
         const adminSubject = 'New Contact Us Submission - BookStack';
         const adminText = `New message from ${name} (${email}):\n\n${message}`;

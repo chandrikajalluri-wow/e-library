@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { getAllUsers, manageAdmin, deleteUser, revokeUserDeletion } from '../../services/superAdminService';
 import { toast } from 'react-toastify';
+import { X, Download, RotateCw } from 'lucide-react';
 import ConfirmationModal from '../ConfirmationModal';
 import { RoleName } from '../../types/enums';
+import { exportUsersToCSV } from '../../utils/csvExport';
 
 interface User {
     _id: string;
@@ -50,7 +52,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
         setModalOpen(true);
     };
 
-    const [conflictData, setConflictData] = useState<{ pendingBorrows: any[], unpaidFines: any[] } | null>(null);
+    const [conflictData, setConflictData] = useState<{ obligations: string[] } | null>(null);
 
     const handleAction = async (force: boolean = false) => {
         if (!selectedUser || !modalAction) return;
@@ -78,12 +80,10 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
         } catch (err: any) {
             if (err.response?.status === 409 && modalAction === 'delete') {
                 setConflictData(err.response.data.details);
-                // Keep modal open, but maybe switch content or show secondary modal?
-                // Actually, let's just set conflictData. The Modal content logic can adapt.
                 return;
             }
             toast.error(err.response?.data?.error || 'Action failed');
-            setModalOpen(false); // Close on other errors
+            setModalOpen(false);
         }
     };
 
@@ -92,24 +92,38 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
 
         if (conflictData) {
             return {
-                title: 'Cannot Delete User (Pending Obligations)',
+                title: 'Cannot Delete User (Active Obligations)',
                 message: (
                     <div>
-                        <p style={{ marginBottom: '10px' }}>User has active borrows or fines:</p>
-                        <ul style={{ listStyle: 'disc', paddingLeft: '20px', marginBottom: '10px', fontSize: '0.9em' }}>
-                            {conflictData.pendingBorrows?.map((b, i) => (
-                                <li key={`b-${i}`}>Borrowed: <strong>{b.book}</strong> (Due: {new Date(b.dueDate).toLocaleDateString()})</li>
-                            ))}
-                            {conflictData.unpaidFines?.map((f, i) => (
-                                <li key={`f-${i}`}>Fine: <strong>{f.book}</strong> (Amount: ₹{f.amount})</li>
+                        <p style={{ marginBottom: '10px', color: 'var(--error-color)', fontWeight: 600 }}>The following items prevent deletion:</p>
+                        <ul style={{ listStyle: 'none', padding: 0, marginBottom: '20px' }}>
+                            {conflictData.obligations?.map((obs, i) => (
+                                <li key={i} style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '8px 12px',
+                                    background: 'rgba(239, 68, 68, 0.05)',
+                                    borderRadius: '6px',
+                                    marginBottom: '4px',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    <span style={{ color: '#ef4444' }}>•</span> {obs}
+                                </li>
                             ))}
                         </ul>
-                        <p className="status-rejected" style={{ fontWeight: 'bold' }}>Do you want to FORCE delete this user immediately?</p>
+
+                        <p className="status-rejected" style={{ fontWeight: 'bold', marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                            Do you want to FORCE delete this user immediately?
+                        </p>
+                        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '4px' }}>
+                            This will anonymize the account regardless of the above obligations.
+                        </p>
                     </div>
                 ),
                 type: 'danger' as const,
                 confirmText: 'Force Delete',
-                onConfirm: () => handleAction(true) // Call with force=true
+                onConfirm: () => handleAction(true)
             };
         }
 
@@ -129,7 +143,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
             case 'delete':
                 return {
                     title: 'Delete User (Safe)',
-                    message: `This will schedule ${selectedUser.name} for deletion in 7 days. If they have no pending books/fines.`,
+                    message: `This will schedule ${selectedUser.name} for deletion in 7 days. This action is only allowed if the user has no active premium membership, active reading sessions, or undelivered orders.`,
                     type: 'danger' as const
                 };
             case 'revoke':
@@ -156,16 +170,38 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
         <div className="card admin-table-section">
             <div className="admin-table-header-box">
                 {!hideTitle && <h3 className="admin-table-title">User & Admin Management</h3>}
-                <input
-                    type="text"
-                    placeholder="Search Users..."
-                    className="admin-search-input"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <button onClick={fetchUsers} className="admin-refresh-stats-btn" style={{ height: 'auto', padding: '0.5rem 1rem' }}>
-                    Refresh
-                </button>
+                <div className="admin-search-wrapper">
+                    <input
+                        type="text"
+                        placeholder="Search Users..."
+                        className="admin-search-input"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ width: '100%' }}
+                    />
+                    {searchTerm && (
+                        <button
+                            className="admin-search-clear-btn"
+                            onClick={() => setSearchTerm('')}
+                            aria-label="Clear search"
+                        >
+                            <X size={16} />
+                        </button>
+                    )}
+                </div>
+                <div className="admin-header-actions">
+                    <button onClick={fetchUsers} className="admin-refresh-stats-btn">
+                        <RotateCw size={18} className={loading ? 'spin' : ''} />
+                        Refresh
+                    </button>
+                    <button
+                        onClick={() => exportUsersToCSV(filteredUsers)}
+                        className="admin-export-csv-btn"
+                    >
+                        <Download size={18} />
+                        Export CSV
+                    </button>
+                </div>
             </div>
             <div className="admin-table-wrapper">
                 {loading ? (
