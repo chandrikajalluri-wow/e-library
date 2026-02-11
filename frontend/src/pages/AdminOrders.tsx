@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/AdminOrders.css';
 
 interface OrderItem {
-    book_id: { title: string; cover_image_url: string };
+    book_id: { _id: string; title: string; cover_image_url: string };
     quantity: number;
     priceAtOrder: number;
 }
@@ -133,8 +133,17 @@ const AdminOrders: React.FC = () => {
         if (selectedOrders.length === 0) return;
         setIsBulkProcessing(true);
         try {
-            await bulkUpdateOrderStatus(selectedOrders, newStatus);
-            toast.success(`Updated ${selectedOrders.length} orders to ${newStatus}`);
+            const response = await bulkUpdateOrderStatus(selectedOrders, newStatus);
+            const { modifiedCount, skippedCount } = response;
+
+            if (modifiedCount === 0) {
+                toast.warning(`No orders were updated. All ${skippedCount} items were skipped due to invalid status flow.`);
+            } else if (skippedCount > 0) {
+                toast.success(`Updated ${modifiedCount} orders. ${skippedCount} were skipped.`);
+            } else {
+                toast.success(`Successfully updated ${modifiedCount} orders to ${newStatus}`);
+            }
+
             fetchOrders();
         } catch (error: any) {
             toast.error(error);
@@ -146,16 +155,26 @@ const AdminOrders: React.FC = () => {
 
     const toggleOrderSelection = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
+        const order = orders.find(o => o._id === id);
+        if (order && isTerminalStatus(order.status)) {
+            toast.info(`Orders with status "${order.status}" cannot be updated in bulk.`);
+            return;
+        }
         setSelectedOrders(prev =>
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
         );
     };
 
+    const isTerminalStatus = (status: string) => {
+        return ['delivered', 'cancelled', 'returned'].includes(status);
+    };
+
     const toggleAllSelection = () => {
-        if (selectedOrders.length === orders.length) {
+        const selectableOrders = orders.filter(o => !isTerminalStatus(o.status));
+        if (selectedOrders.length === selectableOrders.length && selectableOrders.length > 0) {
             setSelectedOrders([]);
         } else {
-            setSelectedOrders(orders.map(o => o._id));
+            setSelectedOrders(selectableOrders.map(o => o._id));
         }
     };
 
@@ -178,14 +197,18 @@ const AdminOrders: React.FC = () => {
         }
     };
 
-    // Calculate Stats
+    // Calculate Stats based on individual flattened items
+    const flattenedItems = orders.flatMap(order =>
+        order.items.map(item => ({ ...item, status: order.status }))
+    );
+
     const stats = {
-        total: orders.length,
-        pending: orders.filter(o => o.status === 'pending').length,
-        processing: orders.filter(o => o.status === 'processing').length,
-        shipped: orders.filter(o => o.status === 'shipped').length,
-        delivered: orders.filter(o => o.status === 'delivered').length,
-        cancelled: orders.filter(o => o.status === 'cancelled').length,
+        total: flattenedItems.length,
+        pending: flattenedItems.filter(i => i.status === 'pending').length,
+        processing: flattenedItems.filter(i => i.status === 'processing').length,
+        shipped: flattenedItems.filter(i => i.status === 'shipped').length,
+        delivered: flattenedItems.filter(i => i.status === 'delivered').length,
+        cancelled: flattenedItems.filter(i => i.status === 'cancelled').length,
     };
 
     return (
@@ -372,108 +395,113 @@ const AdminOrders: React.FC = () => {
                             <p>Try adjusting your search or filters</p>
                         </div>
                     ) : (
-                        orders.map(order => {
-                            const step = getStatusStep(order.status);
-                            const isSelected = selectedOrders.includes(order._id);
+                        orders.flatMap(order =>
+                            order.items.map((item, itemIdx) => {
+                                const step = getStatusStep(order.status);
+                                const isSelected = selectedOrders.includes(order._id);
+                                const book = item.book_id;
+                                const itemTotal = item.priceAtOrder * item.quantity;
 
-                            return (
-                                <div
-                                    key={order._id}
-                                    className={`admin-order-card cursor-pointer hover:shadow-md transition-shadow ${isSelected ? 'selected' : ''}`}
-                                    onClick={() => navigate(`/admin/orders/${order._id}`)}
-                                >
-                                    <div className="selection-checkbox" onClick={(e) => toggleOrderSelection(order._id, e)}>
-                                        {isSelected ? <CheckSquare size={20} className="text-indigo-600" /> : <Square size={20} />}
-                                    </div>
-
-                                    <div className="order-header">
-                                        <div className="order-id-info">
-                                            <h4>#{order._id.slice(-6).toUpperCase()}</h4>
-                                            <span className="order-date">
-                                                {new Date(order.createdAt).toLocaleDateString()}
-                                            </span>
+                                return (
+                                    <div
+                                        key={`${order._id}-${itemIdx}`}
+                                        className={`admin-order-card cursor-pointer hover:shadow-md transition-shadow ${isSelected ? 'selected' : ''}`}
+                                        onClick={() => navigate(`/admin/orders/${order._id}?bookId=${book?._id}`)}
+                                    >
+                                        <div
+                                            className={`selection-checkbox ${isTerminalStatus(order.status) ? 'disabled' : ''}`}
+                                            onClick={(e) => toggleOrderSelection(order._id, e)}
+                                            style={isTerminalStatus(order.status) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                        >
+                                            {isSelected ? <CheckSquare size={20} className="text-indigo-600" /> : <Square size={20} />}
                                         </div>
-                                        <div className="status-control" onClick={(e) => e.stopPropagation()}>
-                                            <div className="order-metadata">
-                                                {order.user_id?.membership_id?.name === 'premium' && (
-                                                    <span className="premium-badge-mini">PREMIUM</span>
-                                                )}
-                                                <div className={`status-badge-premium ${order.status}`}>
-                                                    {order.status === 'return_requested' ? 'Exchange Pending' :
-                                                        order.status === 'return_accepted' ? 'Accepted' :
-                                                            order.status === 'returned' ? 'Exchanged' :
-                                                                order.status === 'return_rejected' ? 'Exchange Rejected' :
-                                                                    order.status}
+
+                                        <div className="order-header">
+                                            <div className="order-id-info">
+                                                <h4>#{order._id.slice(-6).toUpperCase()}</h4>
+                                                <span className="order-date">
+                                                    {new Date(order.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <div className="status-control" onClick={(e) => e.stopPropagation()}>
+                                                <div className="order-metadata">
+                                                    {order.user_id?.membership_id?.name === 'premium' && (
+                                                        <span className="premium-badge-mini">PREMIUM</span>
+                                                    )}
+                                                    <div className={`status-badge-premium ${order.status}`}>
+                                                        {order.status === 'return_requested' ? 'Exchange Pending' :
+                                                            order.status === 'return_accepted' ? 'Accepted' :
+                                                                order.status === 'returned' ? 'Exchanged' :
+                                                                    order.status === 'return_rejected' ? 'Exchange Rejected' :
+                                                                        order.status}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {(order.status === 'pending' || order.status === 'processing') && order.user_id?.membership_id?.name === 'premium' ? (
-                                        <div className="delivery-countdown">
-                                            <div className="countdown-timer">
-                                                <Clock size={14} />
-                                                <Countdown date={order.createdAt} membership={order.user_id?.membership_id?.name} currentTime={currentTime} />
+                                        {(order.status === 'pending' || order.status === 'processing') && order.user_id?.membership_id?.name === 'premium' ? (
+                                            <div className="delivery-countdown">
+                                                <div className="countdown-timer">
+                                                    <Clock size={14} />
+                                                    <Countdown date={order.createdAt} membership={order.user_id?.membership_id?.name} currentTime={currentTime} />
+                                                </div>
+                                                <div className="countdown-bar">
+                                                    <CountdownProgress date={order.createdAt} membership={order.user_id?.membership_id?.name} currentTime={currentTime} />
+                                                </div>
                                             </div>
-                                            <div className="countdown-bar">
-                                                <CountdownProgress date={order.createdAt} membership={order.user_id?.membership_id?.name} currentTime={currentTime} />
+                                        ) : null}
+
+                                        <div className="order-body">
+                                            <div className="user-details" style={{ flex: 1.5 }}>
+                                                <p className="label">Customer</p>
+                                                <p className="value">{order.user_id?.name}</p>
+                                                <p className="sub-value">{order.user_id?.email}</p>
+                                            </div>
+                                            <div className="order-item-details-inline" style={{ flex: 2, display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                <img
+                                                    src={book?.cover_image_url || 'https://via.placeholder.com/150?text=NA'}
+                                                    alt={book?.title || 'Book'}
+                                                    style={{ width: '45px', height: '65px', borderRadius: '8px', objectFit: 'cover' }}
+                                                />
+                                                <div className="item-text">
+                                                    <p className="value" style={{ fontSize: '0.95rem', fontWeight: '700' }}>{book?.title || 'Deleted Book'}</p>
+                                                    <p className="sub-value">Qty: {item.quantity}</p>
+                                                </div>
+                                            </div>
+                                            <div className="order-total-mini text-right" style={{ flex: 1 }}>
+                                                <p className="label">Item Total</p>
+                                                <p className="value highlight">₹{itemTotal.toFixed(2)}</p>
                                             </div>
                                         </div>
-                                    ) : null}
 
-                                    <div className="order-body">
-                                        <div className="user-details">
-                                            <p className="label">Customer</p>
-                                            <p className="value">{order.user_id?.name}</p>
-                                            <p className="sub-value">{order.user_id?.email}</p>
+                                        <div className="order-progress-container">
+                                            <div className="order-progress-bar">
+                                                <div
+                                                    className={`progress-fill ${order.status}`}
+                                                    style={{ width: `${order.status === 'cancelled' ? 100 : (step / 4) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                            <div className="progress-labels">
+                                                <span>Placed</span>
+                                                <span>Processing</span>
+                                                <span>Shipped</span>
+                                                <span>Delivered</span>
+                                            </div>
                                         </div>
-                                        <div className="order-summary-mini">
-                                            <p className="label">Items</p>
-                                            <p className="value">{order.items.length} items</p>
-                                        </div>
-                                        <div className="order-total-mini text-right">
-                                            <p className="label">Total Amount</p>
-                                            <p className="value highlight">₹{order.totalAmount}</p>
+
+                                        <div className="order-footer">
+                                            <div className="order-info-pill">
+                                                <Package size={14} />
+                                                <span>Single Item Management</span>
+                                            </div>
+                                            <div className="card-actions">
+                                                <button className="quick-view-btn">Manage Item</button>
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div className="order-progress-container">
-                                        <div className="order-progress-bar">
-                                            <div
-                                                className={`progress-fill ${order.status}`}
-                                                style={{ width: `${order.status === 'cancelled' ? 100 : (step / 4) * 100}%` }}
-                                            ></div>
-                                        </div>
-                                        <div className="progress-labels">
-                                            <span>Placed</span>
-                                            <span>Processing</span>
-                                            <span>Shipped</span>
-                                            <span>Delivered</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="order-footer">
-                                        <div className="order-items-preview">
-                                            {order.items.map((item, idx) => {
-                                                const book = item.book_id;
-                                                const title = book?.title || 'Deleted Book';
-                                                const cover = book?.cover_image_url || 'https://via.placeholder.com/150?text=NA';
-
-                                                return (
-                                                    <div key={idx} className="preview-item" title={title}>
-                                                        <img src={cover} alt={title} />
-                                                        <span className="qty-badge">x{item.quantity}</span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                        <div className="card-actions">
-                                            <button className="quick-view-btn">View Details</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
+                                );
+                            })
+                        )
                     )}
                 </div>
             )}

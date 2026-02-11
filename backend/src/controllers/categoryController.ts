@@ -7,6 +7,7 @@ import { RoleName } from '../types/enums';
 
 export const getAllCategories = async (req: any, res: Response) => {
     try {
+        const { addedBy } = req.query;
         const query: any = {};
 
         if (req.user) {
@@ -26,7 +27,11 @@ export const getAllCategories = async (req: any, res: Response) => {
         // Enhance categories with book count
         const categoriesWithStats = await Promise.all(
             categories.map(async (cat) => {
-                const bookCount = await Book.countDocuments({ category_id: cat._id });
+                const bookFilter: any = { category_id: cat._id };
+                if (addedBy) {
+                    bookFilter.addedBy = addedBy;
+                }
+                const bookCount = await Book.countDocuments(bookFilter);
                 return {
                     ...cat.toObject(),
                     bookCount

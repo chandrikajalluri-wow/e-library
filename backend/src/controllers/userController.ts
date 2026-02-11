@@ -2,6 +2,7 @@ import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import User from '../models/User';
+import { IRole } from '../models/Role';
 import Borrow from '../models/Borrow';
 import Wishlist from '../models/Wishlist';
 import BookRequest from '../models/BookRequest';
@@ -219,13 +220,17 @@ export const requestBook = async (req: AuthRequest, res: Response) => {
         await sendNotification(
             NotificationType.BOOK_REQUEST,
             `Your request for "${title}" has been submitted.`,
-            req.user!._id as any
+            req.user!._id as any,
+            undefined,
+            newRequest._id.toString()
         );
 
         // Notify Admins
         await notifyAdmins(
             `New Book Request: ${user.name} suggested "${title}" by ${author}`,
-            NotificationType.BOOK_REQUEST
+            NotificationType.BOOK_REQUEST,
+            undefined,
+            newRequest._id.toString()
         );
 
         res.status(201).json({
@@ -594,16 +599,34 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
     try {
         const { addedBy } = req.query;
 
-        // 1. Total Books (Always count all non-archived books for dashboard context)
-        const totalBooks = await Book.countDocuments({ status: { $ne: BookStatus.ARCHIVED } });
+        // Base Query for books - include archived books for administrative overview
+        const bookFilter: any = {};
+        if (addedBy) {
+            bookFilter.addedBy = addedBy;
+        }
 
-        // 2. Total Users (Count all non-deleted registered users)
-        const totalUsers = await User.countDocuments({ isDeleted: false });
+        // 1. Total Books
+        const totalBooks = await Book.countDocuments(bookFilter);
 
-        // 3. Reads Stats
-        // Removed addedBy filtering to show global platform stats to all admins
+        // 2. Reads Stats
         let readlistQuery: any = {};
         let borrowQuery: any = {};
+
+        if (addedBy) {
+            // Include ALL books by this admin (Existing, Archived, and even Deleted)
+            // We use the same discovery logic as revenue for consistency
+            const adminLogs = await ActivityLog.find({
+                user_id: addedBy,
+                action: { $regex: /Added new book/i }
+            }).select('book_id');
+            const logBookIds = adminLogs.map(log => log.book_id?.toString()).filter(id => !!id);
+            const currentBookIds = (await Book.find({ addedBy }).select('_id')).map(b => b._id.toString());
+
+            const adminBookIds = Array.from(new Set([...logBookIds, ...currentBookIds]));
+
+            readlistQuery.book_id = { $in: adminBookIds };
+            borrowQuery.book_id = { $in: adminBookIds };
+        }
 
         const [statsReadlist, statsBorrow, activeReadlistCount, activeBorrowCount] = await Promise.all([
             Readlist.countDocuments(readlistQuery),
@@ -615,22 +638,70 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
         const totalReads = statsReadlist + statsBorrow;
         const activeReads = activeReadlistCount + activeBorrowCount;
 
-        // 4. Order Stats
-        // Revenue should sum totalAmount from ALL orders as per user request
-        const orders = await Order.find({});
-        const totalOrders = orders.length;
-        const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+        // 3. Order Stats
+        let totalOrders = 0;
+        let totalRevenue = 0;
+        let completedOrders = 0;
+        let pendingOrders = 0;
 
-        const completedStatuses = ['delivered', 'completed'];
+        const realizedStatuses = ['delivered', 'completed', 'returned'];
         const pendingStatuses = ['pending', 'processing', 'shipped'];
 
-        const completedOrders = orders.filter(o => completedStatuses.includes(o.status)).length;
-        const pendingOrders = orders.filter(o => pendingStatuses.includes(o.status)).length;
+        if (addedBy) {
+            // Include ALL books by this admin (Existing, Archived, and even Deleted)
+            // We use ActivityLog to find all book IDs ever added by this admin
+            const adminLogs = await ActivityLog.find({
+                user_id: addedBy,
+                action: { $regex: /Added new book/i }
+            }).select('book_id');
 
-        // 5. Suggestions (Total pending book requests)
+            const adminBookIdsFromLogs = adminLogs.map(log => log.book_id?.toString()).filter(id => !!id);
+
+            // Also get currently existing books (including archived) just in case logs are missing or updated
+            const adminBooks = await Book.find({ addedBy }).select('_id');
+            const adminBookIdsFromBooks = adminBooks.map(b => b._id.toString());
+
+            // Unique set of all book IDs associated with this admin
+            const adminBookIds = Array.from(new Set([...adminBookIdsFromLogs, ...adminBookIdsFromBooks]));
+
+            // For individual admin, we need to scan orders and filter items
+            const orders = await Order.find({ 'items.book_id': { $in: adminBookIds } });
+            totalOrders = orders.length;
+
+            orders.forEach(order => {
+                const adminItems = order.items.filter(item => adminBookIds.includes(item.book_id.toString()));
+                const adminRevenue = adminItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0);
+
+                // Realized revenue only from successful orders
+                if (realizedStatuses.includes(order.status)) {
+                    totalRevenue += adminRevenue;
+                    completedOrders++;
+                } else if (pendingStatuses.includes(order.status)) {
+                    pendingOrders++;
+                }
+            });
+        } else {
+            // Global stats for Super Admin if addedBy is not provided
+            const orders = await Order.find({});
+            totalOrders = orders.length;
+
+            orders.forEach(order => {
+                // For Super Admin, we consider totalAmount (item totals + fees) realized upon delivery
+                if (realizedStatuses.includes(order.status)) {
+                    totalRevenue += (order.totalAmount || 0);
+                    completedOrders++;
+                } else if (pendingStatuses.includes(order.status)) {
+                    pendingOrders++;
+                }
+            });
+        }
+
+        // 4. Suggestions (Total pending book requests)
+        // Suggestions are global for now, but we could filter if we knew which category/genre the admin manages.
+        // Keeping global as per current architecture unless specified otherwise.
         const pendingSuggestions = await BookRequest.countDocuments({ status: RequestStatus.PENDING });
 
-        // 6. Insights via Aggregation
+        // 5. Insights via Aggregation
         const getMostFrequent = async (Model: any, field: string, filter: any = {}) => {
             const result = await Model.aggregate([
                 { $match: filter },
@@ -641,10 +712,10 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
             return result.length > 0 ? result[0] : null;
         };
 
-        const mostReadMatch = await getMostFrequent(Readlist, 'book_id');
-        const mostWishlistedMatch = await getMostFrequent(Wishlist, 'book_id');
-        const mostActiveMatch = await getMostFrequent(Readlist, 'user_id');
-        const topBuyerMatch = await getMostFrequent(Order, 'user_id');
+        const mostReadMatch = await getMostFrequent(Readlist, 'book_id', readlistQuery);
+        const mostWishlistedMatch = await getMostFrequent(Wishlist, 'book_id', readlistQuery); // Using readlistQuery (book filter) for wishlist too
+        const mostActiveMatch = await getMostFrequent(Readlist, 'user_id', readlistQuery);
+        const topBuyerMatch = await getMostFrequent(Order, 'user_id', addedBy ? { 'items.book_id': { $in: (await Book.find({ addedBy }).select('_id')).map(b => b._id) } } : {});
 
         // Resolve IDs to human readable strings
         const mostReadBook = mostReadMatch ?
@@ -658,7 +729,6 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
 
         res.json({
             totalBooks,
-            totalUsers,
             totalReads,
             activeReads,
             totalOrders,
@@ -678,18 +748,20 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
     }
 };
 
+
 export const getAllReadlistEntries = async (req: AuthRequest, res: Response) => {
     try {
-        const { membership, page = 1, limit = 10, addedBy } = req.query;
+        const { membership, page = 1, limit = 10 } = req.query; // Removed addedBy from query to enforce it via auth
         const parsedPage = parseInt(page as string) || 1;
         const parsedLimit = parseInt(limit as string) || 10;
         const skip = (parsedPage - 1) * parsedLimit;
 
         const query: any = {};
 
-        // Filter by admin's books if addedBy is specified
-        if (addedBy) {
-            const adminBooks = await Book.find({ addedBy }).select('_id');
+        // Enforce seller isolation for regular Admins
+        const userRole = (req.user!.role_id as any).name;
+        if (userRole === RoleName.ADMIN) {
+            const adminBooks = await Book.find({ addedBy: req.user!._id }).select('_id');
             query.book_id = { $in: adminBooks.map((b: any) => b._id) };
         }
 

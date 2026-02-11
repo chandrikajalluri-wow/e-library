@@ -10,7 +10,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/UserOrders.css';
 
 interface OrderItem {
-    book_id: { title: string; cover_image_url: string; price: number; author: string } | null;
+    book_id: { _id: string; title: string; cover_image_url: string; price: number; author: string } | null;
     quantity: number;
     priceAtOrder: number;
 }
@@ -161,97 +161,102 @@ const UserOrders: React.FC = () => {
                     </motion.div>
                 ) : (
                     <div key="list" className="orders-grid">
-                        {orders.map(order => {
-                            const status = getStatusStyles(order.status);
-                            const canCancel = ['pending', 'processing'].includes(order.status);
+                        {orders.flatMap(order =>
+                            order.items.map((item, itemIdx) => {
+                                const status = getStatusStyles(order.status);
+                                const canCancel = ['pending', 'processing'].includes(order.status);
+                                const book = item.book_id;
+                                const itemTotal = item.priceAtOrder * item.quantity;
 
-                            return (
-                                <motion.div
-                                    key={order._id}
-                                    className="order-master-card"
-                                    variants={cardVariants}
-                                    whileHover="hover"
-                                >
-                                    <div className="card-glass-glow"></div>
+                                return (
+                                    <motion.div
+                                        key={`${order._id}-${itemIdx}`}
+                                        className="order-master-card"
+                                        variants={cardVariants}
+                                        whileHover="hover"
+                                    >
+                                        <div className="card-glass-glow"></div>
 
-                                    <div className="card-top-header">
-                                        <div className="id-group">
-                                            <span className="order-id-label">ORDER ID</span>
-                                            <span className="order-id-value">#{order._id.slice(-8).toUpperCase()}</span>
-                                        </div>
-                                        <div className={`status-pill ${status.class}`}>
-                                            <div className="status-dot"></div>
-                                            <span>{status.label}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="order-main-content">
-                                        <div className="meta-grid">
-                                            <div className="meta-cell">
-                                                <Calendar size={16} />
-                                                <div className="meta-text">
-                                                    <span className="label">Date</span>
-                                                    <span className="value">{new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                                </div>
+                                        <div className="card-top-header">
+                                            <div className="id-group">
+                                                <span className="order-id-label">ORDER ID</span>
+                                                <span className="order-id-value">#{order._id.slice(-8).toUpperCase()}</span>
                                             </div>
-                                            <div className="meta-cell">
-                                                <Clock size={16} />
-                                                <div className="meta-text">
-                                                    <span className="label">Time</span>
-                                                    <span className="value">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                </div>
-                                            </div>
-                                            <div className="meta-cell">
-                                                <Package size={16} />
-                                                <div className="meta-text">
-                                                    <span className="label">Items</span>
-                                                    <span className="value">{order.items.reduce((acc, curr) => acc + curr.quantity, 0)} Books</span>
-                                                </div>
+                                            <div className={`status-pill ${status.class}`}>
+                                                <div className="status-dot"></div>
+                                                <span>{status.label}</span>
                                             </div>
                                         </div>
 
-                                        <div className="books-preview-strip">
-                                            {order.items.map((item, idx) => (
-                                                <div key={idx} className="preview-book-thumb" title={item.book_id?.title || 'Deleted Book'}>
-                                                    <img src={item.book_id?.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={item.book_id?.title || 'Deleted Book'} />
-                                                    {item.quantity > 1 && <span className="qty-overlay">x{item.quantity}</span>}
+                                        <div className="order-main-content">
+                                            <div className="meta-grid">
+                                                <div className="meta-cell">
+                                                    <Calendar size={16} />
+                                                    <div className="meta-text">
+                                                        <span className="label">Date</span>
+                                                        <span className="value">{new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                    </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                                <div className="meta-cell">
+                                                    <Clock size={16} />
+                                                    <div className="meta-text">
+                                                        <span className="label">Time</span>
+                                                        <span className="value">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="meta-cell">
+                                                    <Package size={16} />
+                                                    <div className="meta-text">
+                                                        <span className="label">Quantity</span>
+                                                        <span className="value">{item.quantity} Book{item.quantity > 1 ? 's' : ''}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                    <div className="card-bottom-actions">
-                                        <div className="total-display">
-                                            <span className="label">Grand Total</span>
-                                            <span className="value">₹{order.totalAmount.toFixed(2)}</span>
+                                            <div className="books-preview-strip single-book-view" style={{ justifyContent: 'flex-start', gap: '1.5rem' }}>
+                                                <div className="preview-book-thumb" style={{ width: '80px', height: '120px' }}>
+                                                    <img src={book?.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={book?.title || 'Deleted Book'} />
+                                                </div>
+                                                <div className="book-text-info-inline">
+                                                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)' }}>{book?.title || 'Deleted Book'}</h4>
+                                                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{book?.author || 'N/A'}</p>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div className="action-buttons-group">
-                                            {canCancel && (
+                                        <div className="card-bottom-actions">
+                                            <div className="total-display">
+                                                <span className="label">Item Total</span>
+                                                <span className="value">₹{itemTotal.toFixed(2)}</span>
+                                            </div>
+
+                                            <div className="action-buttons-group">
+                                                {canCancel && (
+                                                    <button
+                                                        className="cancel-order-btn-premium"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setOrderToCancel(order._id);
+                                                            setIsCancelModalOpen(true);
+                                                        }}
+                                                    >
+                                                        <XCircle size={16} />
+                                                        <span>Cancel</span>
+                                                    </button>
+                                                )}
                                                 <button
-                                                    className="cancel-order-btn-premium"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setOrderToCancel(order._id);
-                                                        setIsCancelModalOpen(true);
-                                                    }}
+                                                    className="view-order-details-btn"
+                                                    onClick={() => navigate(`/orders/${order._id}?bookId=${book?._id}`)}
                                                 >
-                                                    <XCircle size={16} />
-                                                    <span>Cancel Order</span>
+                                                    <span>Details</span>
+                                                    <ChevronRight size={18} />
                                                 </button>
-                                            )}
-                                            <button
-                                                className="view-order-details-btn"
-                                                onClick={() => navigate(`/orders/${order._id}`)}
-                                            >
-                                                <span>Details</span>
-                                                <ChevronRight size={18} />
-                                            </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
+                                    </motion.div>
+                                );
+                            })
+                        )}
                     </div>
                 )}
             </AnimatePresence>

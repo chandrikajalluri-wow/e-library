@@ -24,4 +24,7 @@ router.put('/:id/read', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]),
 // Mark all as read (Admin)
 router.put('/read-all', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), notificationController.markAllNotificationsAsReadAdmin);
 
+// Stock alert (User triggers for out-of-stock items)
+router.post('/stock-alert', auth, notificationController.notifyStockAlert);
+
 export default router;

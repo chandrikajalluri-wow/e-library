@@ -6,6 +6,7 @@ export interface INotification extends Document {
     message: string;
     user_id: Types.ObjectId;
     book_id?: Types.ObjectId;
+    target_id?: string;
     is_read: boolean;
     timestamp: Date;
 }
@@ -15,6 +16,7 @@ const notificationSchema = new Schema<INotification>({
     message: { type: String, required: true },
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     book_id: { type: Schema.Types.ObjectId, ref: 'Book' },
+    target_id: { type: String },
     is_read: { type: Boolean, default: false },
     timestamp: { type: Date, default: Date.now },
 });

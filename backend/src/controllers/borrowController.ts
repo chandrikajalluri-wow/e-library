@@ -102,9 +102,11 @@ export const issueBook = async (req: AuthRequest, res: Response) => {
             book._id as any
         );
 
-        await notifyAdmins(
-            `${user?.name || 'A user'} started reading "${book.title}"`,
-            NotificationType.BORROW
+        await sendNotification(
+            NotificationType.BORROW,
+            `You borrowed "${book.title}"`,
+            req.user!._id as any,
+            book._id as any
         );
 
         await User.findByIdAndUpdate(req.user!._id, {
@@ -151,12 +153,15 @@ export const requestReturn = async (req: AuthRequest, res: Response) => {
             NotificationType.RETURN,
             `Return request submitted for "${book?.title}"`,
             req.user!._id as any,
-            borrow.book_id as any
+            borrow.book_id as any,
+            borrow._id.toString()
         );
 
         await notifyAdmins(
             `${user?.name || 'A user'} requested to return "${book?.title}"`,
-            NotificationType.RETURN
+            NotificationType.RETURN,
+            borrow.book_id as any,
+            borrow._id.toString()
         );
 
         await ActivityLog.create({
@@ -492,7 +497,8 @@ export const checkoutCart = async (req: AuthRequest, res: Response) => {
 
         await notifyAdmins(
             `${user?.name || 'A user'} started reading ${totalItemsToBorrow} book(s) from cart`,
-            NotificationType.BORROW
+            NotificationType.BORROW,
+            bookIds
         );
 
         // Create detailed description for Activity Log

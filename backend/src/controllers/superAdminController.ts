@@ -322,11 +322,14 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
             { $sort: { month: 1 } }
         ]);
 
-        // Order Trends (Last 6 Months)
+        const realizedStatuses = ['delivered', 'completed', 'returned'];
+
+        // Order Trends (Last 6 Months) with Realized Revenue
         const orderTrends = await Order.aggregate([
             {
                 $match: {
-                    createdAt: { $gte: sixMonthsAgo }
+                    createdAt: { $gte: sixMonthsAgo },
+                    status: { $in: realizedStatuses }
                 }
             },
             {
@@ -342,6 +345,7 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
 
         const totalOrders = await Order.countDocuments();
         const revenueResult = await Order.aggregate([
+            { $match: { status: { $in: realizedStatuses } } },
             { $group: { _id: null, total: { $sum: '$totalAmount' } } }
         ]);
         const totalRevenue = revenueResult[0]?.total || 0;

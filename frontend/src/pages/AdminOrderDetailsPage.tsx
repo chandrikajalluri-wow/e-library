@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
     ArrowLeft, Calendar, Package, User, Mail, Phone,
     MapPin, CreditCard, FileText, Download, XCircle,
-    AlertCircle as ExchangeIcon, Eye
+    ArrowLeftRight as ExchangeIcon, Eye
 } from 'lucide-react';
 import { getOrderById, updateOrderStatus, downloadInvoice } from '../services/adminOrderService';
 
@@ -19,7 +19,16 @@ interface OrderDetails {
     _id: string;
     user_id: { name: string; email: string; phone?: string };
     items: {
-        book_id: { _id: string; title: string; cover_image_url: string; price: number };
+        book_id: {
+            _id: string;
+            title: string;
+            cover_image_url: string;
+            price: number;
+            addedBy?: {
+                _id: string;
+                name: string;
+            };
+        };
         quantity: number;
         priceAtOrder: number;
     }[];
@@ -42,6 +51,10 @@ interface OrderDetails {
 
 const AdminOrderDetailsPage: React.FC = () => {
     const { orderId } = useParams<{ orderId: string }>();
+    const { search } = useLocation();
+    const queryParams = new URLSearchParams(search);
+    const bookId = queryParams.get('bookId');
+
     const [order, setOrder] = useState<OrderDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -106,6 +119,17 @@ const AdminOrderDetailsPage: React.FC = () => {
     };
 
     const currentStep = getStatusStep(order.status);
+
+    // Filter items if bookId is provided
+    const displayItems = bookId
+        ? order.items.filter(item => item.book_id?._id === bookId)
+        : order.items;
+
+    const maskPhoneNumber = (phone?: string) => {
+        if (!phone) return 'Not provided';
+        // Mask all characters except the last 4
+        return phone.toString().replace(/.(?=.{4})/g, '*');
+    };
 
     return (
         <div className="admin-details-container saas-reveal">
@@ -323,7 +347,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                             <div className="info-row row-center">
                                 <Phone size={14} className="icon-sub" />
                                 <span className="value-sub">
-                                    {order.address_id?.phoneNumber || order.user_id?.phone || 'Not provided'}
+                                    {maskPhoneNumber(order.address_id?.phoneNumber || order.user_id?.phone)}
                                 </span>
                             </div>
                         </div>
@@ -339,7 +363,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                                 {order.address_id?.street},<br />
                                 {order.address_id?.city}, {order.address_id?.state},<br />
                                 {order.address_id?.zipCode}, {order.address_id?.country}<br />
-                                <strong>Phone:</strong> {order.address_id?.phoneNumber || 'N/A'}
+                                <strong>Phone:</strong> {maskPhoneNumber(order.address_id?.phoneNumber)}
                             </p>
                         </div>
                     </div>
@@ -375,38 +399,74 @@ const AdminOrderDetailsPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Items Table */}
-                    <div className="items-list-container">
-                        <div className="items-table-header">
-                            <span className="col-item">Product</span>
-                            <span className="col-qty">Quantity</span>
-                            <span className="col-price">Unit Price</span>
-                            <span className="col-total">Total</span>
-                        </div>
-                        <div className="items-rows">
-                            {order.items.map((item, idx) => (
-                                <div className="item-row" key={idx}>
-                                    <div className="item-info col-item">
-                                        <img
-                                            src={item.book_id?.cover_image_url || 'https://via.placeholder.com/150?text=NA'}
-                                            alt={item.book_id?.title || 'Book'}
-                                            className="table-img"
-                                        />
-                                        <div className="item-meta">
-                                            <span className="item-title">{item.book_id?.title || 'Deleted Book'}</span>
-                                            <span className="item-id">
-                                                ID: {item.book_id?._id ? item.book_id._id.slice(-6).toUpperCase() : 'N/A'}
-                                            </span>
+                    {/* Order Items - Individual Cards */}
+                    <div className="items-cards-column" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        {displayItems.map((item, idx) => (
+                            <div className="admin-item-card-premium" key={idx} style={{
+                                background: 'var(--card-bg)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '24px',
+                                padding: '1.5rem',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                            }}>
+                                <div className="card-top-info" style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: '1.5rem',
+                                    borderBottom: '1px solid var(--border-color)',
+                                    paddingBottom: '1rem'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <Package size={20} className="text-indigo-600" />
+                                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800' }}>Item {idx + 1}</h3>
+                                    </div>
+                                    <div className="seller-badge-admin" style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '700',
+                                        color: 'var(--primary-color)',
+                                        background: 'rgba(99, 102, 241, 0.1)',
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '10px'
+                                    }}>
+                                        <User size={14} />
+                                        <span>Seller: {item.book_id?.addedBy?.name || 'Unknown'}</span>
+                                    </div>
+                                </div>
+                                <div className="item-main-content" style={{ display: 'flex', gap: '1.5rem' }}>
+                                    <img
+                                        src={item.book_id?.cover_image_url || 'https://via.placeholder.com/150?text=NA'}
+                                        alt={item.book_id?.title || 'Book'}
+                                        style={{ width: '80px', height: '110px', borderRadius: '12px', objectFit: 'cover' }}
+                                    />
+                                    <div className="item-details-expanded" style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '750' }}>{item.book_id?.title || 'Deleted Book'}</h4>
+                                            <span style={{ fontWeight: '700', color: 'var(--text-secondary)' }}>₹{item.priceAtOrder.toFixed(2)} / unit</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+                                            <div className="qty-info" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Quantity:</span>
+                                                <span style={{
+                                                    background: 'var(--bg-color)',
+                                                    padding: '0.2rem 0.6rem',
+                                                    borderRadius: '6px',
+                                                    fontWeight: '700',
+                                                    border: '1px solid var(--border-color)'
+                                                }}>x{item.quantity}</span>
+                                            </div>
+                                            <div className="item-total" style={{ textAlign: 'right' }}>
+                                                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Item Subtotal</p>
+                                                <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: '900', color: 'var(--primary-color)' }}>₹{(item.priceAtOrder * item.quantity).toFixed(2)}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="col-qty">
-                                        <span className="qty-tag">x{item.quantity}</span>
-                                    </div>
-                                    <div className="col-price">₹{item.priceAtOrder.toFixed(2)}</div>
-                                    <div className="col-total font-bold">₹{(item.priceAtOrder * item.quantity).toFixed(2)}</div>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
                     </div>
 
                     {/* Grand Summary Card */}
@@ -414,7 +474,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                         <div className="summary-details">
                             <div className="row">
                                 <span>Subtotal</span>
-                                <span>₹{order.items.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0).toFixed(2)}</span>
+                                <span>₹{displayItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0).toFixed(2)}</span>
                             </div>
                             <div className="row">
                                 <span>Delivery Fee</span>
@@ -429,7 +489,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                                 <h3>Total Amount</h3>
                                 <p>Includes all applicable taxes</p>
                             </div>
-                            <span className="total-value">₹{order.totalAmount.toFixed(2)}</span>
+                            <span className="total-value">₹{(displayItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0) + order.deliveryFee).toFixed(2)}</span>
                         </div>
                     </div>
                 </main>

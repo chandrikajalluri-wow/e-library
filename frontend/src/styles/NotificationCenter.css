@@ -279,3 +279,155 @@
     background: rgba(99, 102, 241, 0.08);
     border-radius: 12px;
 }
+
+/* Filter Bar Styles - Pill Design */
+.filters-bar {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+.filter-pill {
+    display: flex;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    /* Rounded rect look */
+    padding: 0 0.75rem;
+    /* Remove top/bottom padding, use height for alignment */
+    height: 42px;
+    min-width: 160px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.filter-pill:hover,
+.filter-pill:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 6px rgba(99, 102, 241, 0.1);
+}
+
+.filter-icon {
+    color: var(--text-secondary);
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+    display: flex;
+    /* Ensure SVG centers itself */
+    align-items: center;
+}
+
+.select-wrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    /* Fill the pill height */
+}
+
+.select-wrapper select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    padding: 1rem 1.5rem 0 0;
+    /* Added top padding for alignment */
+    width: 100%;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.select-wrapper select:focus {
+    outline: none;
+}
+
+.chevron-icon {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text-secondary);
+}
+
+.date-range-pill {
+    min-width: 340px;
+    /* Slightly wider for dates */
+    gap: 0.5rem;
+}
+
+.date-range-pill input {
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    width: auto;
+    flex: 1;
+    padding: 2px 0 0 0;
+    /* Added top padding for alignment */
+    margin: 0;
+    cursor: pointer;
+}
+
+.date-separator {
+    margin: 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.clear-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0 1rem;
+    height: 42px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: auto;
+    /* Push to right */
+}
+
+.clear-filters-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+@media (max-width: 768px) {
+    .filters-bar {
+        gap: 0.75rem;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-pill {
+        width: 100%;
+    }
+
+    .date-range-pill {
+        min-width: 0;
+    }
+
+    .clear-filters-btn {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
+    }
+}
