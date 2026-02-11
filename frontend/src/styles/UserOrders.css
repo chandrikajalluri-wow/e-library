@@ -467,6 +467,7 @@
 
     .orders-grid {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 
     .header-content {
@@ -475,5 +476,79 @@
 
     .order-master-card {
         padding: 1.5rem;
+        gap: 1.25rem;
+    }
+
+    .order-id-value {
+        font-size: 1rem;
+    }
+
+    .meta-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+
+    .meta-cell {
+        gap: 1rem;
+    }
+
+    .books-preview-strip {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .preview-book-thumb {
+        width: 50px;
+        height: 70px;
+    }
+
+    .card-bottom-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+        padding-top: 1.25rem;
+    }
+
+    .total-display {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .total-display .value {
+        font-size: 1.25rem;
+    }
+
+    .action-buttons-group {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .action-buttons-group button {
+        width: 100%;
+        justify-content: center;
+        padding: 0.85rem;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .orders-view-container {
+        padding: 0 1rem 3rem;
+    }
+
+    .order-master-card {
+        border-radius: 24px;
+        padding: 1.25rem;
+    }
+
+    .admin-header-title {
+        font-size: 1.5rem;
+    }
+
+    .status-pill {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.7rem;
     }
 }

@@ -625,11 +625,13 @@
         background: var(--card-bg);
         box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
         display: none !important;
-        /* Toggle via class */
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
     }
 
     .admin-support-container.show-details-mobile .user-details-sidebar {
         display: flex !important;
+        transform: translateX(0);
     }
 }
 
@@ -691,34 +693,102 @@
         color: var(--text-primary);
         cursor: pointer;
         margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    /* Compact Header for Mobile */
+    .active-chat-header-premium {
+        padding: 0.75rem 1rem;
+        height: auto;
+        min-height: 70px;
+        gap: 0.5rem;
+    }
+
+    .header-user {
+        gap: 0.75rem;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .header-user .user-avatar-premium.small {
+        width: 36px;
+        height: 36px;
+    }
+
+    .header-user h3 {
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+    }
+
+    .user-meta {
+        font-size: 0.7rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
+    }
+
+    .actions-cluster {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.4rem;
+        flex-shrink: 0;
+    }
+
+    .status-tag {
+        display: none;
+        /* Hide status tag on very small screens to save space */
+    }
+
+    .btn-close-action {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.65rem;
+        border-radius: 6px;
+    }
+
+    .admin-chat-bubble {
+        max-width: 85%;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .admin-messages-container {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .admin-chat-input-premium {
+        padding: 0.75rem 1rem;
+    }
+
+    .input-group-enhanced {
+        padding: 0.3rem 0.3rem 0.3rem 1rem;
     }
 
     .user-details-sidebar {
         width: 100%;
         max-width: 100%;
     }
+}
 
-    .admin-chat-input-premium {
-        padding: 1rem;
-    }
-
-    .active-chat-header-premium h3 {
-        font-size: 1rem;
+@media (max-width: 480px) {
+    .header-user h3 {
+        max-width: 80px;
     }
 
     .user-meta {
-        font-size: 0.7rem;
+        max-width: 100px;
     }
 
-    .actions-cluster {
-        flex-direction: row;
-        align-items: center;
-        gap: 0.5rem;
+    .btn-close-action span {
+        display: none;
     }
 
     .btn-close-action {
-        padding: 0.3rem 0.6rem;
-        font-size: 0.7rem;
+        padding: 0.4rem;
     }
 }
 

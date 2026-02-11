@@ -52,10 +52,6 @@ const SuperAdminDashboard: React.FC = () => {
                     <>
                         <div className="admin-stats-grid-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                             <div className="card stats-card-content">
-                                <span className="stats-label">Total Users</span>
-                                <span className="stats-value">{metrics.users}</span>
-                            </div>
-                            <div className="card stats-card-content">
                                 <span className="stats-label">Total Books</span>
                                 <span className="stats-value stats-value-info">{metrics.totalBooks}</span>
                             </div>

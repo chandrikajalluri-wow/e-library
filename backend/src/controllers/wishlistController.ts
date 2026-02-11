@@ -7,6 +7,7 @@ import Book from '../models/Book';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendNotification, notifyAdmins } from '../utils/notification';
 import { NotificationType } from '../types/enums';
+import ActivityLog from '../models/ActivityLog';
 
 export const getMyWishlist = async (req: AuthRequest, res: Response) => {
     try {
@@ -68,6 +69,28 @@ export const addToWishlist = async (req: AuthRequest, res: Response) => {
             req.user!._id as any,
             book_id as any
         );
+
+        // Notify Admins if book is out of stock
+        if (book && book.noOfCopies === 0) {
+            await notifyAdmins(
+                `Low Stock Alert: ${user?.name} wishlisted "${book.title}" which is out of stock.`,
+                NotificationType.STOCK_ALERT,
+                book_id as any,
+                book_id.toString()
+            );
+        }
+
+        // Log Activity
+        try {
+            await ActivityLog.create({
+                user_id: req.user!._id,
+                action: 'ADD_TO_WISHLIST',
+                book_id: book_id as any,
+                timestamp: new Date()
+            });
+        } catch (logErr) {
+            console.error('Failed to log wishlist activity:', logErr);
+        }
 
         res.status(201).json(item);
     } catch (err) {

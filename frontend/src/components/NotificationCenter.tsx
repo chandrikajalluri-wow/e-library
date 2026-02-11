@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     getMyNotifications, markNotificationRead, markAllNotificationsRead,
     markAsRead as markAdminRead,
@@ -13,6 +14,7 @@ const NotificationCenter: React.FC<{ showLabel?: boolean }> = ({ showLabel }) =>
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate();
     const role = localStorage.getItem('role');
     const isAdmin = role === RoleName.ADMIN || role === RoleName.SUPER_ADMIN;
 
@@ -68,6 +70,25 @@ const NotificationCenter: React.FC<{ showLabel?: boolean }> = ({ showLabel }) =>
         }
     };
 
+    const handleNotificationClick = async (notif: any) => {
+        if (!notif.is_read) {
+            await handleMarkRead(notif._id);
+        }
+
+        if (isAdmin) {
+            if (notif.type === 'order' && notif.target_id) {
+                navigate(`/admin/orders/${notif.target_id}`);
+            } else if (notif.type === 'return') {
+                navigate('/admin-dashboard?tab=requests');
+            } else if (notif.type === 'book_request') {
+                navigate('/admin-dashboard?tab=user-requests');
+            } else if (notif.book_id) {
+                navigate(`/books/${notif.book_id._id || notif.book_id}`);
+            }
+        }
+        setIsOpen(false);
+    };
+
     const unreadCount = notifications.filter(n => !n.is_read).length;
 
     return (
@@ -107,7 +128,7 @@ const NotificationCenter: React.FC<{ showLabel?: boolean }> = ({ showLabel }) =>
                                     <div
                                         key={notif._id}
                                         className={`notification-item ${notif.is_read ? 'read' : 'unread'} ${isActionRequired ? 'action-required' : ''}`}
-                                        onClick={() => !notif.is_read && handleMarkRead(notif._id)}
+                                        onClick={() => handleNotificationClick(notif)}
                                     >
                                         <div className="notif-icon">
                                             {notif.type === 'borrow' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v10.5M4 19.5H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5.5"></path></svg>}
@@ -136,13 +157,11 @@ const NotificationCenter: React.FC<{ showLabel?: boolean }> = ({ showLabel }) =>
                         )}
                     </div>
 
-                    {!isAdmin && (
-                        <div className="notification-footer">
-                            <Link to="/notifications" onClick={() => setIsOpen(false)}>
-                                View all notifications
-                            </Link>
-                        </div>
-                    )}
+                    <div className="notification-footer">
+                        <Link to="/notifications" onClick={() => setIsOpen(false)}>
+                            View all notifications
+                        </Link>
+                    </div>
                 </div>
             )}
         </div>

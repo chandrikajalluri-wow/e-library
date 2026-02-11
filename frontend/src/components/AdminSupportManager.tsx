@@ -298,7 +298,7 @@ const AdminSupportManager: React.FC = () => {
                                         className="btn-close-action"
                                         onClick={() => handleCloseSession(activeSession._id)}
                                     >
-                                        End Session
+                                        <span>End Session</span>
                                     </button>
                                 )}
                                 <button

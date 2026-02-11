@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
     ArrowLeft,
@@ -33,6 +33,10 @@ interface OrderDetails {
             cover_image_url: string;
             price: number;
             author?: string;
+            addedBy?: {
+                _id: string;
+                name: string;
+            };
         } | null;
         quantity: number;
         priceAtOrder: number;
@@ -59,6 +63,10 @@ interface OrderDetails {
 const UserOrderDetails: React.FC = () => {
     const { orderId } = useParams<{ orderId: string }>();
     const navigate = useNavigate();
+    const { search } = useLocation();
+    const queryParams = new URLSearchParams(search);
+    const bookId = queryParams.get('bookId');
+
     const [order, setOrder] = useState<OrderDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
@@ -227,6 +235,11 @@ const UserOrderDetails: React.FC = () => {
     if (isLoading) return <Loader />;
     if (!order) return <div className="order-not-found-view">Order not found</div>;
 
+    // Filter items if bookId is provided
+    const displayItems = bookId
+        ? order.items.filter(item => item.book_id?._id === bookId)
+        : order.items;
+
     const steps = getStatusSteps(order.status, !!order.returnReason);
 
     return (
@@ -285,16 +298,38 @@ const UserOrderDetails: React.FC = () => {
 
             <div className="details-main-grid">
                 <div className="grid-left-col">
-                    {/* Order Items */}
-                    <motion.section className="order-items-listing" variants={itemVariants}>
-                        <div className="section-card-premium">
-                            <div className="card-header-with-icon">
-                                <Package size={22} />
-                                <h2>Shipment Details ({order.items.length} items)</h2>
-                            </div>
-                            <div className="items-stack-details">
-                                {order.items.map((item, idx) => (
-                                    <div key={idx} className="order-item-row-premium">
+                    {/* Order Items - Individual Cards */}
+                    {displayItems.map((item, idx) => (
+                        <motion.section
+                            key={idx}
+                            className="order-items-listing-individual"
+                            variants={itemVariants}
+                            style={{ marginBottom: '1.5rem' }}
+                        >
+                            <div className="section-card-premium">
+                                <div className="card-header-with-icon" style={{ justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <Package size={22} />
+                                        <h2>Item {idx + 1}</h2>
+                                    </div>
+                                    <div className="seller-badge-premium" style={{
+                                        padding: '0.4rem 0.8rem',
+                                        background: 'var(--bg-secondary)',
+                                        borderRadius: '10px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '700',
+                                        color: 'var(--primary-color)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.4rem',
+                                        border: '1px solid var(--border-color)'
+                                    }}>
+                                        <ShoppingBag size={14} />
+                                        <span>Seller: {item.book_id?.addedBy?.name || 'Unknown Seller'}</span>
+                                    </div>
+                                </div>
+                                <div className="items-stack-details">
+                                    <div className="order-item-row-premium" style={{ borderBottom: 'none', paddingBottom: 0 }}>
                                         <div className="item-img-box">
                                             <img src={item.book_id?.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={item.book_id?.title || 'Deleted Book'} />
                                         </div>
@@ -307,12 +342,15 @@ const UserOrderDetails: React.FC = () => {
                                                 <span>Quantity: {item.quantity}</span>
                                                 <span className="row-total">₹{(item.priceAtOrder * item.quantity).toFixed(2)}</span>
                                             </div>
+                                            <div className="author-row" style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                <span>Author: {item.book_id?.author || 'N/A'}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
+                                </div>
                             </div>
-                        </div>
-                    </motion.section>
+                        </motion.section>
+                    ))}
                 </div>
 
                 <div className="grid-right-col">
@@ -357,7 +395,7 @@ const UserOrderDetails: React.FC = () => {
                             <div className="summary-details-stack">
                                 <div className="summary-line">
                                     <span className="label">Subtotal</span>
-                                    <span className="value">₹{order.items.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0).toFixed(2)}</span>
+                                    <span className="value">₹{displayItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0).toFixed(2)}</span>
                                 </div>
                                 <div className="summary-line">
                                     <span className="label">Delivery Fee</span>
@@ -368,7 +406,7 @@ const UserOrderDetails: React.FC = () => {
                                 <div className="summary-divider"></div>
                                 <div className="summary-line final-total">
                                     <span className="label">Total Amount</span>
-                                    <span className="value">₹{order.totalAmount.toFixed(2)}</span>
+                                    <span className="value">₹{(displayItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0) + order.deliveryFee).toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>

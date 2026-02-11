@@ -144,8 +144,9 @@ export const createBook = async (req: AuthRequest, res: Response, next: NextFunc
             await notifySuperAdmins(`Admin ${req.user!.name} added a new book: ${book.title}`);
         }
 
-        // Notify all users about the new book (Targeting only regular users)
+        // Notify all users about the new book
         await notifyAllUsers(`New Addition: "${book.title}" is now available!`, 'system', book._id, RoleName.USER);
+
 
         res.status(201).json(book);
     } catch (err) {

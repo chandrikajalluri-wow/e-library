@@ -42,7 +42,8 @@ export enum NotificationType {
     WISHLIST = 'wishlist',
     ORDER = 'order',
     BOOK_REQUEST = 'book_request',
-    SYSTEM = 'system'
+    SYSTEM = 'system',
+    STOCK_ALERT = 'stock_alert'
 }
 
 export enum ActivityAction {

@@ -90,6 +90,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [exchangeStatusFilter, setExchangeStatusFilter] = useState('return_requested');
+  const [suggestionSearch, setSuggestionSearch] = useState('');
+  const [suggestionStatusFilter, setSuggestionStatusFilter] = useState('all');
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
   const inventoryRef = useRef<HTMLDivElement>(null);
   const borrowsRef = useRef<HTMLDivElement>(null);
@@ -97,14 +100,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchCommonData = async () => {
     try {
       setIsInitialLoading(true);
-      const cats = await getCategories();
-      setCategories(cats);
-
       const profile = await getProfile();
       setCurrentUser(profile);
 
+      let catParams = '';
+      if (profile.role === RoleName.ADMIN || profile.role === RoleName.SUPER_ADMIN) {
+        catParams = `addedBy=${profile._id}`;
+      }
+      const cats = await getCategories(catParams);
+      setCategories(cats);
+
       // Fetch stats for all admins so header counts are accurate
-      fetchStats();
+      fetchStats(profile);
 
       if (profile.role === RoleName.SUPER_ADMIN) {
         const adminList = await getAdmins();
@@ -126,6 +133,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [bookPage, readHistoryPage, activeTab]);
+
+  // Handle deep-linking for editing a book
+  useEffect(() => {
+    const editBookId = searchParams.get('editBookId');
+    if (editBookId && allBooks.length > 0) {
+      const bookToEdit = allBooks.find(b => b._id === editBookId);
+      if (bookToEdit && editingBookId !== editBookId) {
+        handleEditBook(bookToEdit);
+      }
+    }
+  }, [searchParams, allBooks]);
 
   const fetchReadHistory = async () => {
     setIsDataLoading(true);
@@ -220,10 +238,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     }
   };
 
-  const fetchStats = async () => {
+  const fetchStats = async (userProfile?: User) => {
+    const targetUser = userProfile || currentUser;
+    if (!targetUser) return; // Prevent global fetch if we don't have a user yet
+
     setIsStatsLoading(true);
     try {
-      const data = await getAdminDashboardStats();
+      let params = '';
+      if (targetUser.role === RoleName.ADMIN || targetUser.role === RoleName.SUPER_ADMIN) {
+        params = `addedBy=${targetUser._id}`;
+      }
+      const data = await getAdminDashboardStats(params);
       setStats(data);
     } catch (err) {
       console.error('Failed to fetch stats', err);
@@ -257,13 +282,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   }, [searchTerm, currentUser]);
 
   useEffect(() => {
+    // Prevent fetching until currentUser is loaded to avoid "flicker" with global stats
+    if (!currentUser) return;
+
     if (activeTab === 'borrows') fetchReadHistory();
     else if (activeTab === 'user-requests') fetchUserRequests();
     else if (activeTab === 'requests') fetchOrderReturns();
     else if (activeTab === 'books') fetchBooks();
     else if (activeTab === 'logs') fetchLogs();
     else if (activeTab === 'stats') fetchStats();
-  }, [activeTab, bookPage, readHistoryPage, membershipFilter, exchangeStatusFilter]);
+  }, [activeTab, bookPage, readHistoryPage, membershipFilter, exchangeStatusFilter, currentUser]);
+  const maskDetails = (text: string) => {
+    if (!text || currentUser?.role === RoleName.SUPER_ADMIN) return text;
+    if (text.length <= 2) return text[0] + '*';
+    return text[0] + '*'.repeat(text.length - 2) + text[text.length - 1];
+  };
+
   const handleGenerateWithAI = async () => {
     if (!newBook.title || !newBook.author) {
       toast.error('Please enter both book title and author name first');
@@ -408,6 +442,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
           } else {
             await createBook(formData);
             toast.success('Book created successfully');
+
+            // Auto-approve if coming from a suggestion
+            if (selectedRequestId) {
+              handleBookRequestStatus(selectedRequestId, RequestStatus.APPROVED, true);
+              setSelectedRequestId(null);
+            }
           }
 
           setNewBook({
@@ -464,6 +504,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     setCoverImageFile(null);
     setAuthorImageFile(null);
     setPdfFile(null);
+    setSelectedRequestId(null);
     setShowAddBookForm(false);
   };
 
@@ -528,7 +569,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
 
 
-  const handleBookRequestStatus = (id: string, status: string) => {
+  const handleBookRequestStatus = (id: string, status: string, silent = false) => {
+    if (silent) {
+      return updateBookRequestStatus(id, status)
+        .then(() => fetchUserRequests())
+        .catch(err => console.error('Failed to update request status silently', err));
+    }
+
     setConfirmModal({
       isOpen: true, title: `${status.charAt(0).toUpperCase() + status.slice(1)} Request`,
       message: `Are you sure you want to ${status} this book request?`,
@@ -676,7 +723,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
             <div className="admin-stats-header">
               <h3 className="admin-table-title">Performance Insights</h3>
               <button
-                onClick={fetchStats}
+                onClick={() => fetchStats()}
                 className="admin-refresh-stats-btn"
                 disabled={isStatsLoading}
               >
@@ -701,11 +748,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 <span className="stats-value">{stats.totalBooks}</span>
               </div>
               <div className="card stats-card-content">
-                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
-                <span className="stats-label">Total Users</span>
-                <span className="stats-value stats-value-accent">{stats.totalUsers}</span>
-              </div>
-              <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></div>
                 <span className="stats-label">Total Reads</span>
                 <span className="stats-value stats-value-accent">{stats.totalReads}</span>
@@ -723,7 +765,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 <span className="stats-value">{stats.totalOrders}</span>
               </div>
               <div className="card stats-card-content">
-                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+                <div className="stats-icon-box">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 3h12" />
+                    <path d="M6 8h12" />
+                    <path d="m6 13 8.5 8" />
+                    <path d="M6 13h3" />
+                    <path d="M9 13c6.667 0 6.667-10 0-10" />
+                  </svg>
+                </div>
                 <span className="stats-label">Total Revenue</span>
                 <span className="stats-value stats-value-success">₹{stats.totalRevenue.toLocaleString()}</span>
               </div>
@@ -753,11 +803,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z"></path></svg></div>
                 <span className="stats-label">Most Wishlisted</span>
                 <div className="user-main-name" style={{ marginTop: '0.5rem' }}>{stats.mostWishlistedBook}</div>
-              </div>
-              <div className="card stats-card-content">
-                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg></div>
-                <span className="stats-label">Most Active User</span>
-                <div className="user-main-name" style={{ marginTop: '0.5rem' }}>{stats.mostActiveUser}</div>
               </div>
               <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg></div>
@@ -1312,7 +1357,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         {
           activeTab === 'user-requests' && (
             <section className="card admin-table-section">
-              <div className="admin-table-header-box"><h3 className="admin-table-title">Book Suggestions</h3></div>
+              <div className="admin-table-header-box">
+                <h3 className="admin-table-title">Book Suggestions</h3>
+                <div className="admin-filter-group">
+                  <div className="admin-filter-pill">
+                    <Search size={16} className="text-gray-400" />
+                    <input
+                      type="text"
+                      className="admin-filter-field"
+                      placeholder="Search suggestions..."
+                      value={suggestionSearch}
+                      onChange={(e) => setSuggestionSearch(e.target.value)}
+                    />
+                  </div>
+                  <div className="admin-filter-pill">
+                    <Filter size={16} className="text-gray-400" />
+                    <select
+                      value={suggestionStatusFilter}
+                      onChange={(e) => setSuggestionStatusFilter(e.target.value)}
+                      className="admin-filter-field"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
               <div className="admin-table-wrapper">
                 {isDataLoading ? (
                   <div className="admin-loading-container">
@@ -1322,22 +1394,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 ) : (
                   <table className="admin-table">
                     <thead><tr><th>User</th><th>Book Details</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
-                    <tbody>{userRequests.map(req => (
-                      <tr key={req._id}>
-                        <td>
-                          <div className="user-info-box">
-                            <span className="user-main-name">{req.user_id?.name || 'Unknown'}</span>
-                            <span className="user-sub-email">{req.user_id?.email}</span>
-                            <span className={`membership-pill ${((req.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
-                              {(req.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
-                            </span>
-                          </div>
-                        </td>
-                        <td><div className="book-info-box"><span className="book-main-title">{req.title}</span><span className="book-sub-meta">by {req.author}</span></div></td>
-                        <td><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
-                        <td className="admin-actions-cell">{req.status === RequestStatus.PENDING ? (<div className="admin-actions-flex"><button onClick={() => handleBookRequestStatus(req._id, RequestStatus.APPROVED)} className="admin-btn-edit">Approve</button><button onClick={() => handleBookRequestStatus(req._id, RequestStatus.REJECTED)} className="admin-btn-delete">Reject</button></div>) : <span className="admin-processed-text">Processed</span>}</td>
-                      </tr>
-                    ))}</tbody>
+                    <tbody>
+                      {userRequests
+                        .filter(req => {
+                          const matchesSearch = req.title.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                            req.author.toLowerCase().includes(suggestionSearch.toLowerCase());
+                          const matchesStatus = suggestionStatusFilter === 'all' || req.status === suggestionStatusFilter;
+                          return matchesSearch && matchesStatus;
+                        })
+                        .map(req => (
+                          <tr key={req._id}>
+                            <td>
+                              <div className="user-info-box">
+                                <span className="user-main-name">{req.user_id?.name || 'Unknown'}</span>
+                                <span className="user-sub-email">{req.user_id?.email}</span>
+                                <span className={`membership-pill ${((req.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
+                                  {(req.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="book-info-box">
+                                <span className="book-main-title">
+                                  {req.status === RequestStatus.APPROVED ? maskDetails(req.title) : req.title}
+                                </span>
+                                <span className="book-sub-meta">
+                                  by {req.status === RequestStatus.APPROVED ? maskDetails(req.author) : req.author}
+                                </span>
+                              </div>
+                            </td>
+                            <td><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
+                            <td className="admin-actions-cell" style={{ paddingLeft: '4rem' }}>
+                              <div className="admin-actions-flex">
+                                {req.status === RequestStatus.PENDING ? (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setNewBook({
+                                          ...newBook,
+                                          title: req.title,
+                                          author: req.author,
+                                        });
+                                        setSelectedRequestId(req._id);
+                                        setShowAddBookForm(true);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                      }}
+                                      className="admin-btn-edit"
+                                      style={{ backgroundColor: '#4f46e5', color: 'white' }}
+                                    >
+                                      Add to Library
+                                    </button>
+                                    <button onClick={() => handleBookRequestStatus(req._id, RequestStatus.REJECTED)} className="admin-btn-delete">Reject</button>
+                                  </>
+                                ) : (
+                                  <span className="admin-processed-text">
+                                    {req.status === RequestStatus.APPROVED ? 'Approved' : 'Rejected'}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
                   </table>
                 )}
               </div>

@@ -3,8 +3,9 @@ import type { Category } from '../types';
 
 const BASE_URL = 'categories';
 
-export const getCategories = async (): Promise<Category[]> => {
-  const res = await api.get(BASE_URL);
+export const getCategories = async (query: string = ''): Promise<Category[]> => {
+  const url = query ? `${BASE_URL}?${query}` : BASE_URL;
+  const res = await api.get(url);
   return res.data;
 };
 

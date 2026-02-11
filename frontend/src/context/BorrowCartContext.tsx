@@ -96,6 +96,11 @@ export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }, [cartItems, token, isLoaded]);
 
     const addToCart = (book: Book) => {
+        // Trigger stock alert if out of stock
+        if (book.noOfCopies === 0) {
+            import('../services/notificationService').then(m => m.notifyStockAlert(book._id));
+        }
+
         setCartItems((prevItems: CartItem[]) => {
             const existingItem = prevItems.find((item: CartItem) => item.book._id === book._id);
 

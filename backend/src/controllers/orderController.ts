@@ -112,7 +112,9 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
         // Notify Admins
         await notifyAdmins(
             `New Order: ${user.name} placed order #${newOrder._id.toString().slice(-8).toUpperCase()} for ${totalItemsInOrder} item(s)`,
-            NotificationType.ORDER
+            NotificationType.ORDER,
+            bookIds,
+            newOrder._id.toString()
         );
 
         res.status(201).json({
@@ -141,8 +143,7 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
             }
         }
 
-        console.log(`[AdminOrders] Query:`, req.query);
-        console.log(`[AdminOrders] Filter:`, filter);
+
 
         if (startDate && endDate) {
             filter.createdAt = {
@@ -153,7 +154,6 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
 
         // Search by User Name or Order ID
         if (search) {
-            console.log(`[AdminSearch] Raw Search Term: "${search}"`);
             const users = await User.find({
                 name: { $regex: search, $options: 'i' }
             }).select('_id');
@@ -190,9 +190,30 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
                 select: 'name email phone membership_id',
                 populate: { path: 'membership_id', select: 'name displayName' }
             })
-            .populate('items.book_id', 'title cover_image_url price')
+            .populate({
+                path: 'items.book_id',
+                select: 'title cover_image_url price addedBy',
+                populate: { path: 'addedBy', select: 'name' }
+            })
             .populate('address_id')
             .sort(sortOption);
+
+        const userRole = (req.user!.role_id as any).name;
+        const currentUserId = req.user!._id.toString();
+
+        // If ADMIN (not SUPER_ADMIN), filter items and orders
+        if (userRole === RoleName.ADMIN) {
+            orders = orders.map((order: any) => {
+                const filteredItems = order.items.filter((item: any) =>
+                    item.book_id && item.book_id.addedBy && item.book_id.addedBy._id.toString() === currentUserId
+                );
+
+                // Return a new object with filtered items
+                const orderObj = order.toObject();
+                orderObj.items = filteredItems;
+                return orderObj;
+            }).filter((order: any) => order.items.length > 0);
+        }
 
         // Filter by membership in memory if provided (since it's a deep population filter)
         if (membership && membership !== 'all') {
@@ -207,6 +228,34 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
         console.error('Get all orders error:', error);
         res.status(500).json({ error: 'Failed to fetch orders' });
     }
+};
+
+const isStatusTransitionAllowed = (current: string, next: string): boolean => {
+    const sequence = [
+        OrderStatus.PENDING,
+        OrderStatus.PROCESSING,
+        OrderStatus.SHIPPED,
+        OrderStatus.DELIVERED
+    ];
+
+    const currentIndex = sequence.indexOf(current as OrderStatus);
+    const nextIndex = sequence.indexOf(next as OrderStatus);
+
+    // If both are in the standard sequence
+    if (currentIndex !== -1 && nextIndex !== -1) {
+        return nextIndex === currentIndex + 1;
+    }
+
+    // Special cases
+    if (next === OrderStatus.CANCELLED) {
+        return current === OrderStatus.PENDING || current === OrderStatus.PROCESSING;
+    }
+
+    if (current === OrderStatus.RETURN_REQUESTED) {
+        return next === OrderStatus.RETURNED || next === OrderStatus.RETURN_REJECTED;
+    }
+
+    return false;
 };
 
 // Admin: Update Order Status
@@ -226,6 +275,27 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         }
 
         const previousStatus = order.status;
+
+        // Enforce sequential status updates
+        if (previousStatus !== status && !isStatusTransitionAllowed(previousStatus, status)) {
+            return res.status(400).json({
+                error: `Invalid status transition from ${previousStatus} to ${status}. Updates must follow the sequential flow.`
+            });
+        }
+
+        const userRole = (req.user!.role_id as any).name;
+        const currentUserId = req.user!._id.toString();
+
+        if (userRole === RoleName.ADMIN) {
+            const adminBooks = await Book.find({ addedBy: currentUserId }).select('_id');
+            const adminBookIds = adminBooks.map(b => b._id.toString());
+            const hasOwnBook = order.items.some(item => adminBookIds.includes(item.book_id.toString()));
+
+            if (!hasOwnBook) {
+                return res.status(403).json({ error: 'Unauthorized to update this order' });
+            }
+        }
+
         order.status = status;
 
         // Revert stock/borrows for CANCELLED/RETURNED
@@ -316,7 +386,6 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             description: `Order #${order._id} status updated to ${status} by ${req.user!.name}`,
         }).save();
 
-        const userRole = (req.user!.role_id as any).name;
         // if (userRole === RoleName.ADMIN) {
         //     await notifySuperAdmins(`Admin ${req.user!.name} updated order #${order._id} status to ${status.toUpperCase()}`);
         // }
@@ -377,22 +446,113 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
             return res.status(400).json({ error: 'No orders selected' });
         }
 
-        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        const validStatuses = Object.values(OrderStatus) as string[];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
 
-        const result = await Order.updateMany(
-            { _id: { $in: orderIds } },
-            { $set: { status: status, deliveredAt: status === 'delivered' ? new Date() : undefined } }
-        );
+        const userRole = (req.user!.role_id as any).name;
+        const currentUserId = req.user!._id.toString();
 
-        // Optionally send emails for each, but for bulk it might be noisy. 
-        // For now, just update the DB.
+        let query: any = { _id: { $in: orderIds } };
+
+        if (userRole === RoleName.ADMIN) {
+            const adminBooks = await Book.find({ addedBy: currentUserId }).select('_id');
+            const adminBookIds = adminBooks.map(b => b._id.toString());
+            query["items.book_id"] = { $in: adminBookIds };
+        }
+
+        // Fetch orders to check their current status and handle side effects
+        const orders = await Order.find(query).populate('user_id', 'name email');
+
+        let modifiedCount = 0;
+        let skippedCount = 0;
+
+        for (const order of orders) {
+            const previousStatus = order.status;
+
+            // Skip if no change or invalid transition
+            if (previousStatus === status || !isStatusTransitionAllowed(previousStatus, status)) {
+                skippedCount++;
+                continue;
+            }
+
+            // Apply side effects as in updateOrderStatus
+            order.status = status;
+
+            // Revert stock/borrows for CANCELLED/RETURNED
+            if ((status === OrderStatus.CANCELLED || status === OrderStatus.RETURNED) && previousStatus !== status) {
+                for (const item of order.items) {
+                    const book = await Book.findById(item.book_id);
+                    if (book) {
+                        book.noOfCopies += item.quantity;
+                        if (book.status === BookStatus.OUT_OF_STOCK && book.noOfCopies > 0) {
+                            book.status = BookStatus.AVAILABLE;
+                        }
+                        await book.save();
+                    }
+                }
+
+                if (status === OrderStatus.RETURNED) {
+                    await Borrow.updateMany(
+                        { order_id: order._id },
+                        { $set: { status: BorrowStatus.RETURNED, returned_date: new Date() } }
+                    );
+                    await Readlist.deleteMany({
+                        user_id: order.user_id,
+                        book_id: { $in: order.items.map(i => i.book_id) },
+                        dueDate: null
+                    });
+                } else if (status === OrderStatus.CANCELLED) {
+                    await Borrow.deleteMany({ order_id: order._id });
+                    await Readlist.deleteMany({
+                        user_id: order.user_id,
+                        book_id: { $in: order.items.map(i => i.book_id) },
+                        dueDate: null
+                    });
+                }
+            }
+
+            // Handle RETURN_REJECTED
+            if (status === OrderStatus.RETURN_REJECTED && previousStatus === OrderStatus.RETURN_REQUESTED) {
+                const borrows = await Borrow.find({ order_id: order._id });
+                for (const borrow of borrows) {
+                    const isOverdue = borrow.return_date && borrow.return_date < new Date();
+                    borrow.status = isOverdue ? BorrowStatus.OVERDUE : BorrowStatus.BORROWED;
+                    await borrow.save();
+                }
+            }
+
+            // Handle DELIVERED
+            if (status === OrderStatus.DELIVERED && (!order.deliveredAt || previousStatus !== OrderStatus.DELIVERED)) {
+                order.deliveredAt = new Date();
+                const user = await User.findById(order.user_id).populate('membership_id');
+                const membership = user?.membership_id as any;
+                const borrowDuration = membership?.borrowDuration || 14;
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + borrowDuration);
+
+                for (const item of order.items) {
+                    await Readlist.findOneAndUpdate(
+                        { user_id: order.user_id, book_id: item.book_id },
+                        {
+                            status: 'active',
+                            addedAt: new Date(),
+                            dueDate: dueDate
+                        },
+                        { upsert: true }
+                    );
+                }
+            }
+
+            await order.save();
+            modifiedCount++;
+        }
 
         res.status(200).json({
-            message: `Successfully updated ${result.modifiedCount} orders to ${status}`,
-            modifiedCount: result.modifiedCount
+            message: `Successfully updated ${modifiedCount} orders to ${status}. ${skippedCount} orders were skipped due to invalid status transitions.`,
+            modifiedCount,
+            skippedCount
         });
     } catch (error: any) {
         console.error('Bulk update order status error:', error);
@@ -406,11 +566,33 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const order = await Order.findById(id)
             .populate('user_id', 'name email phone')
-            .populate('items.book_id', 'title cover_image_url price')
+            .populate({
+                path: 'items.book_id',
+                select: 'title cover_image_url price addedBy',
+                populate: { path: 'addedBy', select: 'name' }
+            })
             .populate('address_id');
 
         if (!order) {
             return res.status(404).json({ error: 'Order not found' });
+        }
+
+        const userRole = (req.user!.role_id as any).name;
+        const currentUserId = req.user!._id.toString();
+
+        if (userRole === RoleName.ADMIN) {
+            const filteredItems = order.items.filter((item: any) =>
+                item.book_id && item.book_id.addedBy && item.book_id.addedBy._id.toString() === currentUserId
+            );
+
+            if (filteredItems.length === 0) {
+                return res.status(404).json({ error: 'Order not found for this seller' });
+            }
+
+            // Return a new object with filtered items
+            const orderObj = order.toObject();
+            orderObj.items = filteredItems;
+            return res.status(200).json(orderObj);
         }
 
         res.status(200).json(order);
@@ -426,7 +608,11 @@ export const getMyOrders = async (req: AuthRequest, res: Response) => {
         const userId = req.user!._id;
 
         const orders = await Order.find({ user_id: userId })
-            .populate('items.book_id', 'title cover_image_url price author')
+            .populate({
+                path: 'items.book_id',
+                select: 'title cover_image_url price author addedBy',
+                populate: { path: 'addedBy', select: 'name' }
+            })
             .populate('address_id')
             .sort({ createdAt: -1 });
 
@@ -500,7 +686,11 @@ export const getMyOrderById = async (req: AuthRequest, res: Response) => {
         const userId = req.user!._id;
 
         const order = await Order.findById(id)
-            .populate('items.book_id', 'title cover_image_url price author')
+            .populate({
+                path: 'items.book_id',
+                select: 'title cover_image_url price author addedBy',
+                populate: { path: 'addedBy', select: 'name' }
+            })
             .populate('address_id');
 
         if (!order) {
@@ -600,25 +790,45 @@ export const getOrderInvoice = async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
         const order = await Order.findById(id)
             .populate('user_id', 'name email')
-            .populate('items.book_id', 'title cover_image_url price author')
+            .populate('items.book_id', 'title cover_image_url price author addedBy')
             .populate('address_id');
 
         if (!order) {
             return res.status(404).json({ error: 'Order not found' });
         }
 
-        // Check permission (User can only see own, Admin can see all)
         const userRole = (req.user!.role_id as any).name;
-        if (userRole !== RoleName.SUPER_ADMIN && userRole !== RoleName.ADMIN && order.user_id._id.toString() !== req.user!._id.toString()) {
+        const currentUserId = req.user!._id.toString();
+
+        // Check permission (User can only see own, Admin can see all, SUPER_ADMIN can see all)
+        if (userRole !== RoleName.SUPER_ADMIN && userRole !== RoleName.ADMIN && order.user_id._id.toString() !== currentUserId) {
             return res.status(403).json({ error: 'Unauthorized to view this invoice' });
         }
 
-        const pdfBase64 = await generateInvoicePdfBase64(order);
+        let orderToGenerate = order.toObject();
+
+        // If ADMIN (Seller), filter items and recalculate totals for the PDF
+        if (userRole === RoleName.ADMIN) {
+            const filteredItems = orderToGenerate.items.filter((item: any) =>
+                item.book_id && item.book_id.addedBy && item.book_id.addedBy.toString() === currentUserId
+            );
+
+            if (filteredItems.length === 0) {
+                return res.status(403).json({ error: 'Unauthorized to view this invoice' });
+            }
+
+            orderToGenerate.items = filteredItems;
+            // Recalculate subtotal and total for the seller-specific invoice
+            const subtotal = filteredItems.reduce((sum: number, item: any) => sum + (item.priceAtOrder * item.quantity), 0);
+            orderToGenerate.totalAmount = subtotal + order.deliveryFee;
+        }
+
+        const pdfBase64 = await generateInvoicePdfBase64(orderToGenerate);
         const pdfBuffer = Buffer.from(pdfBase64, 'base64');
 
         res.set({
             'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename=Invoice_${order._id.toString().toUpperCase()}.pdf`,
+            'Content-Disposition': `attachment; filename=Invoice_${orderToGenerate._id.toString().toUpperCase()}.pdf`,
             'Content-Length': pdfBuffer.length
         });
 

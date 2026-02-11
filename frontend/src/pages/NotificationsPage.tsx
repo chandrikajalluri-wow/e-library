@@ -2,27 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { getMyNotifications, markNotificationRead, markAllNotificationsRead } from '../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
-import Loader from '../components/Loader';
+import { Filter, Calendar, X, ChevronDown } from 'lucide-react';
 import '../styles/NotificationCenter.css'; // Reusing styles
 
 const NotificationsPage: React.FC = () => {
     const [notifications, setNotifications] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+
+    // Filter States
+    const [filterType, setFilterType] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     const fetchNotifications = async () => {
         try {
-            const data = await getMyNotifications();
+            const params: any = {};
+            if (filterType !== 'all') params.type = filterType;
+            if (filterStatus !== 'all') params.is_read = filterStatus === 'read' ? 'true' : 'false';
+            if (startDate) params.startDate = startDate;
+            if (endDate) params.endDate = endDate;
+
+            const data = await getMyNotifications(params);
             setNotifications(data);
         } catch (err) {
             console.error("Failed to fetch notifications", err);
-        } finally {
-            setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchNotifications();
-    }, []);
+    }, [filterType, filterStatus, startDate, endDate]);
 
     const handleMarkRead = async (id: string) => {
         try {
@@ -45,7 +54,7 @@ const NotificationsPage: React.FC = () => {
     const role = localStorage.getItem('role');
     const isAdmin = role === 'admin' || role === 'super_admin';
 
-    if (loading) return <Loader />;
+    // if (loading) return <Loader />; // Better to show loader inside list or overlay to keep filters visible
 
     return (
         <div className="notifications-page dashboard-container saas-reveal">
@@ -56,18 +65,82 @@ const NotificationsPage: React.FC = () => {
                         {isAdmin ? 'Monitor and manage user activities and requests' : 'Stay updated with your library activities'}
                     </p>
                 </div>
-                {notifications.some(n => !n.is_read) && (
-                    <button className="btn-secondary mark-all-read-btn" onClick={handleMarkAllRead}>
-                        Mark all as read
+                <div className="header-actions">
+                    {notifications.some(n => !n.is_read) && (
+                        <button className="btn-secondary mark-all-read-btn" onClick={handleMarkAllRead}>
+                            Mark all as read
+                        </button>
+                    )}
+                </div>
+            </header>
+
+            {/* Filter Bar */}
+            <div className="filters-bar">
+                <div className="filter-pill">
+                    <Filter size={16} className="filter-icon" />
+                    <div className="select-wrapper">
+                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                            <option value="all">All Types</option>
+                            <option value="order">Orders</option>
+                            <option value="return">Exchanges</option>
+                            <option value="book_request">Requests</option>
+                            <option value="stock_alert">Stock Updates</option>
+                        </select>
+                        <ChevronDown size={14} className="chevron-icon" />
+                    </div>
+                </div>
+
+                <div className="filter-pill">
+                    <Filter size={16} className="filter-icon" />
+                    <div className="select-wrapper">
+                        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                            <option value="all">All Status</option>
+                            <option value="unread">Unread</option>
+                            <option value="read">Read</option>
+                        </select>
+                        <ChevronDown size={14} className="chevron-icon" />
+                    </div>
+                </div>
+
+                <div className="filter-pill date-range-pill">
+                    <Calendar size={16} className="filter-icon" />
+                    <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        placeholder="dd-mm-yyyy"
+                    />
+                    <span className="date-separator">TO</span>
+                    <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        placeholder="dd-mm-yyyy"
+                    />
+                </div>
+
+                {(filterType !== 'all' || filterStatus !== 'all' || startDate || endDate) && (
+                    <button
+                        className="clear-filters-btn"
+                        onClick={() => {
+                            setFilterType('all');
+                            setFilterStatus('all');
+                            setStartDate('');
+                            setEndDate('');
+                        }}
+                        title="Clear Filters"
+                    >
+                        <X size={16} />
+                        Clear
                     </button>
                 )}
-            </header>
+            </div>
 
             <div className="notifications-container card">
                 {notifications.length > 0 ? (
                     <div className="notifications-list-full">
                         {notifications.map((notif) => {
-                            const isActionRequired = isAdmin && (notif.type === 'return' || notif.type === 'book_request' || notif.type === 'order');
+                            const isActionRequired = isAdmin && (notif.type === 'return' || notif.type === 'book_request' || notif.type === 'order' || notif.type === 'stock_alert');
 
                             return (
                                 <div
@@ -96,14 +169,34 @@ const NotificationsPage: React.FC = () => {
                                                 {formatDistanceToNow(new Date(notif.timestamp), { addSuffix: true })}
                                             </span>
                                         </div>
-                                        {notif.book_id && (
-                                            <div className="notif-book-info">
-                                                <p className="notif-book-text">Related Book: <strong>{notif.book_id.title}</strong></p>
+
+                                        <div className="notif-actions">
+                                            {isAdmin && notif.type === 'order' && notif.target_id && (
+                                                <Link to={`/admin/orders/${notif.target_id}`} className="view-action-btn order-btn">
+                                                    View Order
+                                                </Link>
+                                            )}
+                                            {isAdmin && notif.type === 'return' && (
+                                                <Link to="/admin-dashboard?tab=requests" className="view-action-btn exchange-btn">
+                                                    View Exchanges
+                                                </Link>
+                                            )}
+                                            {isAdmin && notif.type === 'book_request' && (
+                                                <Link to="/admin-dashboard?tab=user-requests" className="view-action-btn request-btn">
+                                                    View Requests
+                                                </Link>
+                                            )}
+                                            {isAdmin && (notif.type === 'stock_alert' || notif.type === 'wishlist') && notif.target_id && (
+                                                <Link to={`/admin-dashboard?tab=books&editBookId=${notif.target_id}`} className="view-action-btn order-btn">
+                                                    Manage Stock
+                                                </Link>
+                                            )}
+                                            {notif.book_id && (
                                                 <Link to={`/books/${notif.book_id._id || notif.book_id}`} className="view-book-btn">
                                                     View Book
                                                 </Link>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
                                     {!notif.is_read && <div className="unread-pulse"></div>}
                                 </div>
@@ -175,22 +268,64 @@ const NotificationsPage: React.FC = () => {
                     font-size: 0.85rem;
                     color: var(--text-secondary);
                 }
-                .notif-book-info {
-                    margin-top: 1rem;
-                    padding-top: 1rem;
-                    border-top: 1px dashed var(--border-color);
+                .notif-actions {
+                    margin-top: 1.25rem;
                     display: flex;
-                    justify-content: space-between;
+                    gap: 1rem;
                     align-items: center;
+                    flex-wrap: wrap;
                 }
-                .notif-book-text {
-                    color: var(--text-primary);
+                .view-action-btn {
+                    padding: 0.6rem 1.25rem;
+                    border-radius: 100px;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    text-decoration: none;
+                    transition: all 0.2s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .order-btn {
+                    background: rgba(245, 158, 11, 0.1);
+                    color: #f59e0b;
+                    border: 1px solid rgba(245, 158, 11, 0.2);
+                }
+                .order-btn:hover {
+                    background: #f59e0b;
+                    color: white;
+                }
+                .exchange-btn {
+                    background: rgba(16, 185, 129, 0.1);
+                    color: #10b981;
+                    border: 1px solid rgba(16, 185, 129, 0.2);
+                }
+                .exchange-btn:hover {
+                    background: #10b981;
+                    color: white;
+                }
+                .request-btn {
+                    background: rgba(139, 92, 246, 0.1);
+                    color: #8b5cf6;
+                    border: 1px solid rgba(139, 92, 246, 0.2);
+                }
+                .request-btn:hover {
+                    background: #8b5cf6;
+                    color: white;
                 }
                 .view-book-btn {
+                    padding: 0.6rem 1.25rem;
+                    border-radius: 100px;
                     font-size: 0.85rem;
                     color: var(--primary-color);
                     font-weight: 600;
                     text-decoration: none;
+                    border: 1px solid var(--primary-color);
+                    transition: all 0.2s ease;
+                }
+                .view-book-btn:hover {
+                    background: var(--primary-color);
+                    color: white;
                 }
                 .unread-pulse {
                     width: 10px;

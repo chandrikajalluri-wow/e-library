@@ -4,7 +4,6 @@ import {
   updateProfile,
   renewMembership,
 } from "../services/userService";
-import { cancelMembership } from "../services/membershipService";
 import { MembershipName } from '../types/enums';
 import { getCategories } from "../services/categoryService";
 import { toast } from "react-toastify";
@@ -12,7 +11,6 @@ import Loader from "../components/Loader";
 import "../styles/UserProfile.css";
 import type { Category, Membership } from "../types";
 import PaymentModal from "../components/PaymentModal";
-import CancellationModal from "../components/CancellationModal";
 import { useNavigate } from 'react-router-dom';
 import {
   Camera,
@@ -43,8 +41,6 @@ const UserProfile: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false);
-  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
-  const [isProcessingCancellation, setIsProcessingCancellation] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -128,20 +124,6 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  const handleCancelMembership = async (reason: string) => {
-    try {
-      setIsProcessingCancellation(true);
-      await cancelMembership(reason);
-      toast.success("Membership cancelled successfully");
-      setIsCancellationModalOpen(false);
-      loadProfile();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Failed to cancel membership");
-    } finally {
-      setIsProcessingCancellation(false);
-    }
-  };
 
 
   if (!user) return <Loader />;
@@ -337,30 +319,17 @@ const UserProfile: React.FC = () => {
 
                 {user.membership_id?.name && user.membership_id.name !== MembershipName.BASIC && (
                   <div className="membership-actions-premium">
-                    {(() => {
-                      return (
-                        <div className="m-actions-wrap">
-                          <button
-                            className="btn-premium-action renew"
-                            onClick={() => {
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                              setIsRenewalModalOpen(true);
-                            }}
-                          >
-                            Renew Membership
-                          </button>
-                          <button
-                            className="btn-text-danger"
-                            onClick={() => {
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                              setIsCancellationModalOpen(true);
-                            }}
-                          >
-                            Cancel Membership
-                          </button>
-                        </div>
-                      );
-                    })()}
+                    <div className="m-actions-wrap">
+                      <button
+                        className="btn-premium-action renew"
+                        onClick={() => {
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          setIsRenewalModalOpen(true);
+                        }}
+                      >
+                        Renew Membership
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -502,15 +471,6 @@ const UserProfile: React.FC = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             onSubmit={renewMembership}
-          />
-        )
-      }
-      {
-        isCancellationModalOpen && (
-          <CancellationModal
-            onClose={() => setIsCancellationModalOpen(false)}
-            onConfirm={handleCancelMembership}
-            isProcessing={isProcessingCancellation}
           />
         )
       }
