@@ -433,7 +433,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                                         borderRadius: '10px'
                                     }}>
                                         <User size={14} />
-                                        <span>Seller: {item.book_id?.addedBy?.name || 'Unknown'}</span>
+                                        <span>Managed By: {item.book_id?.addedBy?.name || 'Unknown'}</span>
                                     </div>
                                 </div>
                                 <div className="item-main-content" style={{ display: 'flex', gap: '1.5rem' }}>

@@ -45,7 +45,7 @@ const orderSchema = new Schema<IOrder>(
         returnReason: { type: String },
         exchangeImageUrl: { type: String },
     },
-    { timestamps: true }
+    { timestamps: true, collection: 'orders' }
 );
 
 export default mongoose.model<IOrder>('Order', orderSchema);

@@ -7,30 +7,15 @@ import { RoleName } from '../types/enums';
 
 export const getAllCategories = async (req: any, res: Response) => {
     try {
-        const { addedBy } = req.query;
+        // All admins now see global categories and global book counts
         const query: any = {};
-
-        if (req.user) {
-            const userRole = (req.user.role_id as any).name;
-
-            if (userRole === RoleName.ADMIN) {
-                query.$or = [
-                    { addedBy: req.user._id },
-                    { addedBy: { $exists: false } },
-                    { addedBy: null }
-                ];
-            }
-        }
-
         const categories = await Category.find(query).sort({ name: 1 });
 
         // Enhance categories with book count
         const categoriesWithStats = await Promise.all(
             categories.map(async (cat) => {
                 const bookFilter: any = { category_id: cat._id };
-                if (addedBy) {
-                    bookFilter.addedBy = addedBy;
-                }
+                // Removed addedBy filter to show global book count per category
                 const bookCount = await Book.countDocuments(bookFilter);
                 return {
                     ...cat.toObject(),

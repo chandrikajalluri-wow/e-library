@@ -17,6 +17,6 @@ const bookRequestSchema = new Schema<IBookRequest>({
     reason: { type: String },
     status: { type: String, enum: Object.values(RequestStatus), default: RequestStatus.PENDING },
     createdAt: { type: Date, default: Date.now },
-});
+}, { collection: 'book_requests' });
 
 export default mongoose.model<IBookRequest>('BookRequest', bookRequestSchema);

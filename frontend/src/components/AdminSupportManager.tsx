@@ -205,8 +205,8 @@ const AdminSupportManager: React.FC = () => {
                 </div>
 
                 <div className="sidebar-controls">
-                    <div className="search-box-premium">
-                        <div className="search-icon-inside-support">
+                    <div className="support-search-box">
+                        <div className="support-search-icon">
                             <Search size={18} />
                         </div>
                         <input
@@ -214,11 +214,11 @@ const AdminSupportManager: React.FC = () => {
                             placeholder="Search user name..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="admin-search-input-support"
+                            className="support-search-input"
                         />
                         {searchTerm && (
                             <button
-                                className="admin-search-clear-btn-support"
+                                className="support-search-clear-btn"
                                 onClick={() => setSearchTerm('')}
                                 aria-label="Clear search"
                             >
@@ -398,15 +398,6 @@ const AdminSupportManager: React.FC = () => {
                         </div>
 
                         <div className="user-meta-details">
-                            <div className="meta-item">
-                                <div className="icon-wrapper">
-                                    <User size={18} />
-                                </div>
-                                <div className="meta-content">
-                                    <label>User ID</label>
-                                    <span>{activeSession.user_id?._id}</span>
-                                </div>
-                            </div>
 
                             <div className="meta-item">
                                 <div className="icon-wrapper">

@@ -258,7 +258,7 @@ const UserOrderDetails: React.FC = () => {
                     <div className="id-group">
                         <span className="order-label">ORDER DETAILS</span>
                         <div className="id-header-row">
-                            <h1>#{order._id.toUpperCase()}</h1>
+                            <h1>#{order._id.slice(-8).toUpperCase()}</h1>
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -325,7 +325,7 @@ const UserOrderDetails: React.FC = () => {
                                         border: '1px solid var(--border-color)'
                                     }}>
                                         <ShoppingBag size={14} />
-                                        <span>Seller: {item.book_id?.addedBy?.name || 'Unknown Seller'}</span>
+                                        <span>Managed By: {item.book_id?.addedBy?.name || 'Unknown'}</span>
                                     </div>
                                 </div>
                                 <div className="items-stack-details">

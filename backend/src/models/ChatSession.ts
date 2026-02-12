@@ -26,7 +26,7 @@ const chatSessionSchema = new Schema<IChatSession>(
         },
         lastMessage: { type: Schema.Types.ObjectId, ref: 'ChatMessage' }
     },
-    { timestamps: true }
+    { timestamps: true, collection: 'chat_sessions' }
 );
 
 export default mongoose.model<IChatSession>('ChatSession', chatSessionSchema);

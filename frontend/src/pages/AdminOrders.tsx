@@ -186,6 +186,15 @@ const AdminOrders: React.FC = () => {
         exportOrdersToCSV(orders);
     };
 
+    const handleClearFilters = () => {
+        setSearch('');
+        setFilterStatus('all');
+        setFilterMembership('all');
+        setSortBy('newest');
+        setDateRange({ start: '', end: '' });
+        toast.info('Filters cleared');
+    };
+
     const getStatusStep = (status: string) => {
         switch (status) {
             case 'pending': return 1;
@@ -260,7 +269,7 @@ const AdminOrders: React.FC = () => {
                     <Search size={18} className="search-icon" />
                     <input
                         type="text"
-                        placeholder="Search by User..."
+                        placeholder="Search by User, Order ID..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -338,6 +347,16 @@ const AdminOrders: React.FC = () => {
                         />
                     </div>
                 </div>
+                {(search || filterStatus !== 'all' || filterMembership !== 'all' || sortBy !== 'newest' || dateRange.start || dateRange.end) && (
+                    <button
+                        onClick={handleClearFilters}
+                        className="clear-filters-btn"
+                        title="Clear all filters"
+                    >
+                        <XCircle size={18} />
+                        <span>Clear Filters</span>
+                    </button>
+                )}
             </div>
 
             <div className="list-controls">
@@ -418,7 +437,7 @@ const AdminOrders: React.FC = () => {
 
                                         <div className="order-header">
                                             <div className="order-id-info">
-                                                <h4>#{order._id.slice(-6).toUpperCase()}</h4>
+                                                <h4>#{order._id.slice(-8).toUpperCase()}</h4>
                                                 <span className="order-date">
                                                     {new Date(order.createdAt).toLocaleDateString()}
                                                 </span>
@@ -490,10 +509,6 @@ const AdminOrders: React.FC = () => {
                                         </div>
 
                                         <div className="order-footer">
-                                            <div className="order-info-pill">
-                                                <Package size={14} />
-                                                <span>Single Item Management</span>
-                                            </div>
                                             <div className="card-actions">
                                                 <button className="quick-view-btn">Manage Item</button>
                                             </div>

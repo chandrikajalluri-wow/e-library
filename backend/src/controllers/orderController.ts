@@ -198,22 +198,7 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
             .populate('address_id')
             .sort(sortOption);
 
-        const userRole = (req.user!.role_id as any).name;
-        const currentUserId = req.user!._id.toString();
-
-        // If ADMIN (not SUPER_ADMIN), filter items and orders
-        if (userRole === RoleName.ADMIN) {
-            orders = orders.map((order: any) => {
-                const filteredItems = order.items.filter((item: any) =>
-                    item.book_id && item.book_id.addedBy && item.book_id.addedBy._id.toString() === currentUserId
-                );
-
-                // Return a new object with filtered items
-                const orderObj = order.toObject();
-                orderObj.items = filteredItems;
-                return orderObj;
-            }).filter((order: any) => order.items.length > 0);
-        }
+        // All admins now view all orders/items
 
         // Filter by membership in memory if provided (since it's a deep population filter)
         if (membership && membership !== 'all') {
@@ -283,18 +268,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        const userRole = (req.user!.role_id as any).name;
-        const currentUserId = req.user!._id.toString();
-
-        if (userRole === RoleName.ADMIN) {
-            const adminBooks = await Book.find({ addedBy: currentUserId }).select('_id');
-            const adminBookIds = adminBooks.map(b => b._id.toString());
-            const hasOwnBook = order.items.some(item => adminBookIds.includes(item.book_id.toString()));
-
-            if (!hasOwnBook) {
-                return res.status(403).json({ error: 'Unauthorized to update this order' });
-            }
-        }
+        // All admins now update all orders
 
         order.status = status;
 
@@ -451,16 +425,9 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
             return res.status(400).json({ error: 'Invalid status' });
         }
 
-        const userRole = (req.user!.role_id as any).name;
-        const currentUserId = req.user!._id.toString();
+        // All admins now bulk update all orders
 
         let query: any = { _id: { $in: orderIds } };
-
-        if (userRole === RoleName.ADMIN) {
-            const adminBooks = await Book.find({ addedBy: currentUserId }).select('_id');
-            const adminBookIds = adminBooks.map(b => b._id.toString());
-            query["items.book_id"] = { $in: adminBookIds };
-        }
 
         // Fetch orders to check their current status and handle side effects
         const orders = await Order.find(query).populate('user_id', 'name email');
@@ -577,23 +544,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ error: 'Order not found' });
         }
 
-        const userRole = (req.user!.role_id as any).name;
-        const currentUserId = req.user!._id.toString();
-
-        if (userRole === RoleName.ADMIN) {
-            const filteredItems = order.items.filter((item: any) =>
-                item.book_id && item.book_id.addedBy && item.book_id.addedBy._id.toString() === currentUserId
-            );
-
-            if (filteredItems.length === 0) {
-                return res.status(404).json({ error: 'Order not found for this seller' });
-            }
-
-            // Return a new object with filtered items
-            const orderObj = order.toObject();
-            orderObj.items = filteredItems;
-            return res.status(200).json(orderObj);
-        }
+        // All admins now view all orders/items
 
         res.status(200).json(order);
     } catch (error: any) {

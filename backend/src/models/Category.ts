@@ -13,7 +13,7 @@ const categorySchema = new Schema<ICategory>({
   description: { type: String },
   addedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now },
-});
+}, { collection: 'categories' });
 
 // Add indexes for optimized queries
 categorySchema.index({ name: 1 });      // For sorting by name in getAllCategories

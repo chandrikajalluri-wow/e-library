@@ -81,7 +81,7 @@ const userSchema = new Schema<IUser>(
     ],
     createdAt: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { timestamps: true, collection: 'users' }
 );
 
 export default mongoose.model<IUser>('User', userSchema);
