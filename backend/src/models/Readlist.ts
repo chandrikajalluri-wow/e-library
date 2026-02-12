@@ -26,7 +26,7 @@ const readlistSchema = new Schema<IReadlist>(
         last_page: { type: Number, default: 1 },
         bookmarks: { type: [Number], default: [] }
     },
-    { timestamps: true }
+    { timestamps: true, collection: 'read_lists' }
 );
 
 // allow multiple records for the same book over time

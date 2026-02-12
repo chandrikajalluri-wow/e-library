@@ -37,29 +37,8 @@ export const notifyAdmins = async (
         const roles = await Role.find({ name: RoleName.ADMIN });
         const roleIds = roles.map(r => r._id);
 
-        let targetAdminIds: any[] = [];
-
-        // If specific books are involved, find their sellers (Admins)
-        if (affectedBookIds) {
-            const ids = Array.isArray(affectedBookIds) ? affectedBookIds : [affectedBookIds];
-            if (ids.length > 0) {
-                const books = await Book.find({ _id: { $in: ids } }).select('addedBy');
-                // Collect unique seller IDs
-                const sellerIds = new Set(books.map((b: any) => b.addedBy?.toString()).filter((id: any) => id));
-                targetAdminIds = Array.from(sellerIds);
-            }
-        }
-
+        // All admins now receive all notifications
         let query: any = { role_id: { $in: roleIds } };
-
-        // If we identified target sellers, restrict the query to them
-        if (affectedBookIds) {
-            if (targetAdminIds.length > 0) {
-                query._id = { $in: targetAdminIds };
-            } else {
-                return;
-            }
-        }
 
         const admins = await User.find(query);
 

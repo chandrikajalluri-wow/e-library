@@ -27,7 +27,7 @@ const chatMessageSchema = new Schema<IChatMessage>(
         },
         isRead: { type: Boolean, default: false }
     },
-    { timestamps: true }
+    { timestamps: true, collection: 'chat_messages' }
 );
 
 export default mongoose.model<IChatMessage>('ChatMessage', chatMessageSchema);

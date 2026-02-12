@@ -27,6 +27,6 @@ const borrowSchema = new Schema<IBorrow>({
   last_page: { type: Number, default: 1 },
   bookmarks: { type: [Number], default: [] },
   order_id: { type: Schema.Types.ObjectId, ref: 'Order' },
-});
+}, { collection: 'borrows' });
 
 export default mongoose.model<IBorrow>('Borrow', borrowSchema);

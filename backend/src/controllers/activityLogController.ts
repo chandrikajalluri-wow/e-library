@@ -11,14 +11,7 @@ export const getActivityLogs = async (req: AuthRequest, res: Response) => {
         const query: any = {};
         const userRole = (req.user.role_id as any).name;
 
-        // Enforce seller isolation for regular Admins
-        if (userRole === RoleName.ADMIN) {
-            const adminBooks = await Book.find({ addedBy: req.user._id }).select('_id');
-            const adminBookIds = adminBooks.map(b => b._id);
-
-            // Only show logs related to this admin's books
-            query.book_id = { $in: adminBookIds };
-        }
+        // All admins now see global activity logs
 
         const logs = await ActivityLog.find(query)
             .populate({

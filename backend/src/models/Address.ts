@@ -23,7 +23,7 @@ const addressSchema = new Schema<IAddress>(
         country: { type: String, required: true },
         isDefault: { type: Boolean, default: false },
     },
-    { timestamps: true }
+    { timestamps: true, collection: 'addresses' }
 );
 
 export default mongoose.model<IAddress>('Address', addressSchema);

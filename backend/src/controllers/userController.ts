@@ -13,6 +13,7 @@ import Book from '../models/Book';
 import Order from '../models/Order';
 import Readlist from '../models/Readlist';
 import ActivityLog from '../models/ActivityLog';
+import Category from '../models/Category';
 import { sendEmail } from '../utils/mailer';
 import { sendNotification, notifyAdmins } from '../utils/notification';
 import { NotificationType, BorrowStatus, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus, BookStatus } from '../types/enums';
@@ -600,19 +601,18 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
         const { addedBy } = req.query;
 
         // Base Query for books - include archived books for administrative overview
+        // All admins now see global dashboard stats
         const bookFilter: any = {};
-        if (addedBy) {
-            bookFilter.addedBy = addedBy;
-        }
 
-        // 1. Total Books
+        // 1. Total Books & Categories
         const totalBooks = await Book.countDocuments(bookFilter);
+        const totalCategories = await Category.countDocuments({});
 
         // 2. Reads Stats
         let readlistQuery: any = {};
         let borrowQuery: any = {};
 
-        if (addedBy) {
+        if (addedBy && false) {
             // Include ALL books by this admin (Existing, Archived, and even Deleted)
             // We use the same discovery logic as revenue for consistency
             const adminLogs = await ActivityLog.find({
@@ -647,7 +647,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
         const realizedStatuses = ['delivered', 'completed', 'returned'];
         const pendingStatuses = ['pending', 'processing', 'shipped'];
 
-        if (addedBy) {
+        if (addedBy && false) {
             // Include ALL books by this admin (Existing, Archived, and even Deleted)
             // We use ActivityLog to find all book IDs ever added by this admin
             const adminLogs = await ActivityLog.find({
@@ -715,7 +715,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
         const mostReadMatch = await getMostFrequent(Readlist, 'book_id', readlistQuery);
         const mostWishlistedMatch = await getMostFrequent(Wishlist, 'book_id', readlistQuery); // Using readlistQuery (book filter) for wishlist too
         const mostActiveMatch = await getMostFrequent(Readlist, 'user_id', readlistQuery);
-        const topBuyerMatch = await getMostFrequent(Order, 'user_id', addedBy ? { 'items.book_id': { $in: (await Book.find({ addedBy }).select('_id')).map(b => b._id) } } : {});
+        const topBuyerMatch = await getMostFrequent(Order, 'user_id', {});
 
         // Resolve IDs to human readable strings
         const mostReadBook = mostReadMatch ?
@@ -729,6 +729,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
 
         res.json({
             totalBooks,
+            totalCategories,
             totalReads,
             activeReads,
             totalOrders,
@@ -758,12 +759,7 @@ export const getAllReadlistEntries = async (req: AuthRequest, res: Response) => 
 
         const query: any = {};
 
-        // Enforce seller isolation for regular Admins
-        const userRole = (req.user!.role_id as any).name;
-        if (userRole === RoleName.ADMIN) {
-            const adminBooks = await Book.find({ addedBy: req.user!._id }).select('_id');
-            query.book_id = { $in: adminBooks.map((b: any) => b._id) };
-        }
+        // All admins now see global read history
 
         // Filter by membership tier
         if (membership && membership !== 'all') {

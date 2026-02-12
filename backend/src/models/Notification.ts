@@ -19,6 +19,6 @@ const notificationSchema = new Schema<INotification>({
     target_id: { type: String },
     is_read: { type: Boolean, default: false },
     timestamp: { type: Date, default: Date.now },
-});
+}, { collection: 'notifications' });
 
 export default mongoose.model<INotification>('Notification', notificationSchema);

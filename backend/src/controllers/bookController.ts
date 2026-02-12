@@ -41,6 +41,15 @@ export const getAllBooks = async (req: Request, res: Response, next: NextFunctio
         if (isPremium === 'true') query.isPremium = true;
         if (isPremium === 'false') query.isPremium = { $ne: true };
 
+        const { stock } = req.query;
+        if (stock === 'inStock') {
+            query.noOfCopies = { $gt: 0 };
+        } else if (stock === 'outOfStock') {
+            query.noOfCopies = 0;
+        } else if (stock === 'lowStock') {
+            query.noOfCopies = { $lte: 2, $gt: 0 };
+        }
+
         if (showArchived !== 'true') {
             query.status = { $ne: BookStatus.ARCHIVED };
         }

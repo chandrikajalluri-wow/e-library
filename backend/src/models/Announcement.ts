@@ -28,7 +28,7 @@ const announcementSchema = new Schema<IAnnouncement>(
         },
         isActive: { type: Boolean, default: true },
     },
-    { timestamps: true }
+    { timestamps: true, collection: 'announcements' }
 );
 
 export default mongoose.model<IAnnouncement>('Announcement', announcementSchema);

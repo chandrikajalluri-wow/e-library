@@ -34,6 +34,6 @@ const reviewSchema = new Schema<IReview>({
   ],
   reviewed_at: { type: Date, default: Date.now },
   updated_at: { type: Date },
-});
+}, { collection: 'reviews' });
 
 export default mongoose.model<IReview>('Review', reviewSchema);

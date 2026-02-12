@@ -191,7 +191,7 @@ const NotificationsPage: React.FC = () => {
                                                     Manage Stock
                                                 </Link>
                                             )}
-                                            {notif.book_id && (
+                                            {!isAdmin && notif.book_id && (
                                                 <Link to={`/books/${notif.book_id._id || notif.book_id}`} className="view-book-btn">
                                                     View Book
                                                 </Link>

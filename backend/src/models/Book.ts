@@ -55,7 +55,7 @@ const bookSchema = new Schema<IBook>(
     isPremium: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { timestamps: true, collection: 'books' }
 );
 
 export default mongoose.model<IBook>('Book', bookSchema);

@@ -35,6 +35,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [bookTypeFilter, setBookTypeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [stockFilter, setStockFilter] = useState('all');
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
@@ -53,7 +54,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     mostReadBook: 'N/A',
     mostWishlistedBook: 'N/A',
     mostActiveUser: 'N/A',
-    topBuyer: 'N/A'
+    topBuyer: 'N/A',
+    totalCategories: 0
   });
 
   const [newBook, setNewBook] = useState({
@@ -97,21 +99,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const inventoryRef = useRef<HTMLDivElement>(null);
   const borrowsRef = useRef<HTMLDivElement>(null);
 
+  const [exchangeSearch, setExchangeSearch] = useState('');
+  const delayDebounceFn = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'requests') {
+      if (delayDebounceFn.current) clearTimeout(delayDebounceFn.current);
+      delayDebounceFn.current = setTimeout(() => {
+        fetchOrderReturns();
+      }, 500);
+    }
+    return () => {
+      if (delayDebounceFn.current) clearTimeout(delayDebounceFn.current);
+    };
+  }, [exchangeSearch]);
+
   const fetchCommonData = async () => {
     try {
       setIsInitialLoading(true);
       const profile = await getProfile();
       setCurrentUser(profile);
 
-      let catParams = '';
-      if (profile.role === RoleName.ADMIN || profile.role === RoleName.SUPER_ADMIN) {
-        catParams = `addedBy=${profile._id}`;
-      }
-      const cats = await getCategories(catParams);
+      const cats = await getCategories();
       setCategories(cats);
 
       // Fetch stats for all admins so header counts are accurate
-      fetchStats(profile);
+      fetchStats();
 
       if (profile.role === RoleName.SUPER_ADMIN) {
         const adminList = await getAdmins();
@@ -174,13 +187,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchOrderReturns = async () => {
     setIsDataLoading(true);
     try {
-      // Map 'all_exchanges' to a comma-separated list for the backend if needed, 
-      // or just handle it as a special case. 
-      // But looking at the backend, it expects a single status or 'all'.
-      // If we want ALL exchanges, we might need a better query.
-      // For now, let's just use regular 'status' logic.
       const statusToSend = exchangeStatusFilter === 'all_exchanges' ? 'return_requested,returned,return_rejected' : exchangeStatusFilter;
-      const data = await getAllOrders({ status: statusToSend });
+      const data = await getAllOrders({ status: statusToSend, search: exchangeSearch });
       console.log('Fetched exchange orders:', data);
       setOrderReturns(data);
     } catch (err: unknown) {
@@ -190,6 +198,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       setIsDataLoading(false);
     }
   };
+
 
   const fetchBooks = async () => {
     setIsDataLoading(true);
@@ -210,8 +219,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         params.append('category', categoryFilter);
       }
 
-      if (currentUser?.role === RoleName.ADMIN) {
-        params.append('addedBy', currentUser._id);
+      if (stockFilter !== 'all') {
+        params.append('stock', stockFilter);
       }
 
       const data = await getBooks(params.toString());
@@ -238,17 +247,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     }
   };
 
-  const fetchStats = async (userProfile?: User) => {
-    const targetUser = userProfile || currentUser;
-    if (!targetUser) return; // Prevent global fetch if we don't have a user yet
-
+  const fetchStats = async () => {
     setIsStatsLoading(true);
     try {
-      let params = '';
-      if (targetUser.role === RoleName.ADMIN || targetUser.role === RoleName.SUPER_ADMIN) {
-        params = `addedBy=${targetUser._id}`;
-      }
-      const data = await getAdminDashboardStats(params);
+      const data = await getAdminDashboardStats();
       setStats(data);
     } catch (err) {
       console.error('Failed to fetch stats', err);
@@ -269,7 +271,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
   useEffect(() => {
     if (activeTab === 'books') fetchBooks();
-  }, [activeTab, bookPage, bookTypeFilter, categoryFilter, currentUser]);
+  }, [activeTab, bookPage, bookTypeFilter, categoryFilter, stockFilter, currentUser]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -292,11 +294,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     else if (activeTab === 'logs') fetchLogs();
     else if (activeTab === 'stats') fetchStats();
   }, [activeTab, bookPage, readHistoryPage, membershipFilter, exchangeStatusFilter, currentUser]);
-  const maskDetails = (text: string) => {
-    if (!text || currentUser?.role === RoleName.SUPER_ADMIN) return text;
-    if (text.length <= 2) return text[0] + '*';
-    return text[0] + '*'.repeat(text.length - 2) + text[text.length - 1];
-  };
 
   const handleGenerateWithAI = async () => {
     if (!newBook.title || !newBook.author) {
@@ -362,28 +359,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const handleCancelCategoryEdit = () => {
     setEditingCategoryId(null);
     setNewCategory({ name: '', description: '' });
+    setShowCategoryForm(false);
   };
 
-  const handleDeleteCategory = (cat: Category) => {
-    if (cat.bookCount && cat.bookCount > 0) {
-      toast.error(`Cannot delete category "${cat.name}" because it contains ${cat.bookCount} books.`);
-      return;
-    }
-
+  const handleDeleteCategory = (category: Category) => {
     setConfirmModal({
       isOpen: true,
       title: 'Delete Category',
-      message: `Are you sure you want to delete the category "${cat.name}"?`,
+      message: `Are you sure you want to delete the category "${category.name}"? This action cannot be undone.`,
       type: 'danger',
       isLoading: false,
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
-          await removeCategory(cat._id);
-          toast.success('Category deleted');
+          await removeCategory(category._id);
+          toast.success('Category deleted successfully');
           fetchCommonData();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         } catch (err: any) {
+          console.error(err);
           toast.error(err.response?.data?.error || 'Failed to delete category');
           setConfirmModal(prev => ({ ...prev, isLoading: false }));
         }
@@ -566,6 +560,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     }
   };
 
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setBookTypeFilter('all');
+    setCategoryFilter('all');
+    setStockFilter('all');
+    setBookPage(1);
+    toast.info('Filters cleared');
+  };
+
 
 
 
@@ -667,7 +670,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   {activeTab === 'books' && 'Manage Books'}
                   {activeTab === 'categories' && 'Manage Categories'}
                   {activeTab === 'requests' && 'Exchange Requests'}
-                  {activeTab === 'user-requests' && 'Book Suggestions'}
+                  {activeTab === 'user-requests' && 'Book Requests'}
                   {activeTab === 'borrows' && 'Read History'}
                   {activeTab === 'support' && 'Customer Support'}
                   {activeTab === 'logs' && 'User Activity Logs'}
@@ -742,10 +745,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
             </div>
             <div className="admin-stats-grid-container">
               {/* Row 1: Core Metrics */}
+
               <div className="card stats-card-content">
-                <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div>
+                <div className="stats-icon-box">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                    <path d="M8 7h6" />
+                    <path d="M8 11h8" />
+                    <path d="M8 15h6" />
+                  </svg>
+                </div>
                 <span className="stats-label">Total Books</span>
-                <span className="stats-value">{stats.totalBooks}</span>
+                <span className="stats-value">{stats.totalBooks.toLocaleString()}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                </div>
+                <span className="stats-label">Total Categories</span>
+                <span className="stats-value">{stats.totalCategories.toLocaleString()}</span>
               </div>
               <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></div>
@@ -763,19 +783,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg></div>
                 <span className="stats-label">Total Orders</span>
                 <span className="stats-value">{stats.totalOrders}</span>
-              </div>
-              <div className="card stats-card-content">
-                <div className="stats-icon-box">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 3h12" />
-                    <path d="M6 8h12" />
-                    <path d="m6 13 8.5 8" />
-                    <path d="M6 13h3" />
-                    <path d="M9 13c6.667 0 6.667-10 0-10" />
-                  </svg>
-                </div>
-                <span className="stats-label">Total Revenue</span>
-                <span className="stats-value stats-value-success">₹{stats.totalRevenue.toLocaleString()}</span>
               </div>
               <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
@@ -940,7 +947,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
               <div className="toolbar-header">
                 <div className="toolbar-title-box">
                   <h3 className="admin-table-title">Inventory Management</h3>
-                  <span className="total-count-badge">{stats.totalBooks} Total Books</span>
+                  <div className="toolbar-title-actions">
+                    <button onClick={handleExportBooks} className="admin-btn-secondary export-csv-btn-mini">
+                      <Download size={16} />
+                      <span>Export CSV</span>
+                    </button>
+                    <span className="total-count-badge">{stats.totalBooks} Total Books</span>
+                  </div>
                 </div>
 
                 <div className="admin-two-line-toolbar">
@@ -986,10 +999,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                         ))}
                       </select>
                     </div>
-                    <button onClick={handleExportBooks} className="admin-btn-secondary export-csv-btn">
-                      <Download size={18} />
-                      Export CSV
-                    </button>
+                    <div className="filter-item-box">
+                      <CircleSlash size={16} />
+                      <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)} className="admin-filter-select">
+                        <option value="all">Stock Status</option>
+                        <option value="inStock">In Stock</option>
+                        <option value="outOfStock">Out of Stock</option>
+                        <option value="lowStock">Low Stock (≤ 2)</option>
+                      </select>
+                    </div>
+                    {(searchTerm || bookTypeFilter !== 'all' || categoryFilter !== 'all' || stockFilter !== 'all') && (
+                      <button
+                        onClick={handleClearFilters}
+                        className="admin-btn-secondary clear-filters-btn"
+                        title="Clear all filters"
+                      >
+                        <XCircle size={18} />
+                        <span>Clear</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1229,7 +1257,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                               }} className="orb-action-btn edit-orb">
                                 Modify
                               </button>
-                              {currentUser?.role === RoleName.SUPER_ADMIN && (
+                              {(currentUser?.role === RoleName.SUPER_ADMIN || currentUser?.role === RoleName.ADMIN) && (
                                 <button onClick={() => handleDeleteCategory(c)} className="orb-action-btn delete-orb">
                                   Remove
                                 </button>
@@ -1258,6 +1286,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
               <div className="admin-table-header-box">
                 <h3 className="admin-table-title">Exchange Requests</h3>
                 <div className="admin-filter-group">
+                  <div className="search-box-premium" style={{ marginRight: '1rem' }}>
+                    <Search size={18} className="search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search Order ID, User..."
+                      value={exchangeSearch}
+                      onChange={(e) => setExchangeSearch(e.target.value)}
+                    />
+                    {exchangeSearch && (
+                      <button
+                        className="search-clear-btn"
+                        onClick={() => setExchangeSearch('')}
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
                   <div className="admin-filter-item">
                     <span className="admin-filter-label">Status</span>
                     <select
@@ -1358,14 +1403,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
           activeTab === 'user-requests' && (
             <section className="card admin-table-section">
               <div className="admin-table-header-box">
-                <h3 className="admin-table-title">Book Suggestions</h3>
+                <h3 className="admin-table-title">Book Requests</h3>
                 <div className="admin-filter-group">
                   <div className="admin-filter-pill">
                     <Search size={16} className="text-gray-400" />
                     <input
                       type="text"
                       className="admin-filter-field"
-                      placeholder="Search suggestions..."
+                      placeholder="Search requests..."
                       value={suggestionSearch}
                       onChange={(e) => setSuggestionSearch(e.target.value)}
                     />
@@ -1416,10 +1461,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                             <td>
                               <div className="book-info-box">
                                 <span className="book-main-title">
-                                  {req.status === RequestStatus.APPROVED ? maskDetails(req.title) : req.title}
+                                  {req.title}
                                 </span>
                                 <span className="book-sub-meta">
-                                  by {req.status === RequestStatus.APPROVED ? maskDetails(req.author) : req.author}
+                                  by {req.author}
                                 </span>
                               </div>
                             </td>

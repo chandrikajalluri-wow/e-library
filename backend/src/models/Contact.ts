@@ -20,7 +20,7 @@ const contactSchema = new Schema<IContact>(
             default: 'OPEN'
         }
     },
-    { timestamps: true }
+    { timestamps: true, collection: 'contacts' }
 );
 
 export default mongoose.model<IContact>('Contact', contactSchema);

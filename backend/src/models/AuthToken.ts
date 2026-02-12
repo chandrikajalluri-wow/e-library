@@ -17,6 +17,6 @@ const authTokenSchema = new Schema<IAuthToken>({
   created_at: { type: Date, default: Date.now },
   expires_at: { type: Date, required: true },
   used: { type: Boolean, default: false },
-});
+}, { collection: 'auth_tokens' });
 
 export default mongoose.model<IAuthToken>('AuthToken', authTokenSchema);

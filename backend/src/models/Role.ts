@@ -13,7 +13,7 @@ const roleSchema = new Schema<IRole>(
     description: String,
     createdAt: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { timestamps: true, collection: 'roles' }
 );
 
 export default mongoose.model<IRole>('Role', roleSchema);

@@ -34,7 +34,7 @@ const membershipSchema = new Schema<IMembership>(
         features: [{ type: String }],
         createdAt: { type: Date, default: Date.now },
     },
-    { timestamps: true }
+    { timestamps: true, collection: 'memberships' }
 );
 
 // Add indexes for optimized queries

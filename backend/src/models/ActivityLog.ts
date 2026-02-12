@@ -18,6 +18,6 @@ const activityLogSchema = new Schema<IActivityLog>({
   book_id: { type: Schema.Types.ObjectId, ref: 'Book' }, // optional
   ip_address: { type: String },
   device_info: { type: String },
-});
+}, { collection: 'activity_logs' });
 
 export default mongoose.model<IActivityLog>('ActivityLog', activityLogSchema);
