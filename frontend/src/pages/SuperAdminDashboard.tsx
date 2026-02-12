@@ -29,7 +29,7 @@ const SuperAdminDashboard: React.FC = () => {
     }, [activeTab]);
 
     return (
-        <div className="admin-layout" style={{ marginTop: '20px' }}>
+        <div className="admin-layout">
             <main className="admin-main-content">
                 {/* Dashboard Title */}
                 <header className="admin-header">

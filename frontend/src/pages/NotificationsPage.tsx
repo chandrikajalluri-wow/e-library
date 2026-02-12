@@ -3,6 +3,7 @@ import { getMyNotifications, markNotificationRead, markAllNotificationsRead } fr
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Filter, Calendar, X, ChevronDown } from 'lucide-react';
+import { RoleName } from '../types/enums';
 import '../styles/NotificationCenter.css'; // Reusing styles
 
 const NotificationsPage: React.FC = () => {
@@ -76,19 +77,21 @@ const NotificationsPage: React.FC = () => {
 
             {/* Filter Bar */}
             <div className="filters-bar">
-                <div className="filter-pill">
-                    <Filter size={16} className="filter-icon" />
-                    <div className="select-wrapper">
-                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-                            <option value="all">All Types</option>
-                            <option value="order">Orders</option>
-                            <option value="return">Exchanges</option>
-                            <option value="book_request">Requests</option>
-                            <option value="stock_alert">Stock Updates</option>
-                        </select>
-                        <ChevronDown size={14} className="chevron-icon" />
+                {role !== RoleName.SUPER_ADMIN && (
+                    <div className="filter-pill">
+                        <Filter size={16} className="filter-icon" />
+                        <div className="select-wrapper">
+                            <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                                <option value="all">All Types</option>
+                                <option value="order">Orders</option>
+                                <option value="return">Exchanges</option>
+                                <option value="book_request">Requests</option>
+                                <option value="stock_alert">Stock Updates</option>
+                            </select>
+                            <ChevronDown size={14} className="chevron-icon" />
+                        </div>
                     </div>
-                </div>
+                )}
 
                 <div className="filter-pill">
                     <Filter size={16} className="filter-icon" />

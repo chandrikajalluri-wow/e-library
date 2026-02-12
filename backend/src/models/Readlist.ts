@@ -3,7 +3,7 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 export interface IReadlist extends Document {
     user_id: Types.ObjectId;
     book_id: Types.ObjectId;
-    status: 'active' | 'completed';
+    status: 'active' | 'completed' | 'expired';
     addedAt: Date;
     dueDate?: Date;
     completedAt?: Date;
@@ -17,7 +17,7 @@ const readlistSchema = new Schema<IReadlist>(
         book_id: { type: Schema.Types.ObjectId, ref: 'Book', required: true },
         status: {
             type: String,
-            enum: ['active', 'completed'],
+            enum: ['active', 'completed', 'expired'],
             default: 'active'
         },
         addedAt: { type: Date, default: Date.now },

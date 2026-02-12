@@ -98,9 +98,9 @@ const Announcements: React.FC<AnnouncementsProps> = ({ hideTitle = false }) => {
 
     return (
         <div className="admin-categories-layout">
-            <section className="card admin-form-section" style={{ marginBottom: '1.25rem' }}>
+            <section className="card admin-form-section" style={{ marginBottom: '1.25rem', padding: '2rem 2.5rem' }}>
                 {!hideTitle && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2.5rem' }}>
                         <div style={{
                             width: '48px',
                             height: '48px',
@@ -178,7 +178,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ hideTitle = false }) => {
             </section>
 
             <section className="admin-categories-list-section" style={{ marginTop: 0 }}>
-                <div className="admin-table-header-box" style={{ borderRadius: '24px 24px 0 0', borderBottom: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+                <div className="admin-table-header-box" style={{ borderRadius: '24px 24px 0 0', borderBottom: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '2rem 2.5rem', minHeight: '80px' }}>
                     {!hideTitle && <h3 className="admin-table-title">Active Announcements</h3>}
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, marginLeft: 'auto' }}>
                         {announcements.length} {announcements.length === 1 ? 'announcement' : 'announcements'}

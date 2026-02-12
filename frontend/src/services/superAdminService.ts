@@ -5,6 +5,11 @@ export const getAllUsers = async () => {
     return response.data;
 };
 
+export const getUserDetails = async (userId: string) => {
+    const response = await api.get(`/super-admin/user/${userId}/details`);
+    return response.data;
+};
+
 export const manageAdmin = async (userId: string, action: 'promote' | 'demote') => {
     const response = await api.post('/super-admin/manage-admin', { userId, action });
     return response.data;

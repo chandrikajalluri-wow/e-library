@@ -28,6 +28,9 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ targetPage }) =
 
     useEffect(() => {
         // Filter announcements based on current path or explicit targetPage prop
+        const role = localStorage.getItem('role');
+        const isAdmin = role === 'admin' || role === 'super_admin';
+
         const filtered = announcements.filter(ann => {
             if (!ann.isActive) return false;
 
@@ -44,13 +47,29 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ targetPage }) =
             // Don't show any announcements on Super Admin pages
             if (path.includes('/super-admin')) return false;
 
+            // Role-based filtering for shared pages (like /notifications)
+            if (isAdmin) {
+                // Admins should NOT see User-specific announcements
+                if (annTarget === TargetPage.USER) return false;
+                // Admins SHOULD see Admin announcements
+                if (annTarget === TargetPage.ADMIN_PANEL) return true;
+            } else {
+                // Non-admins should NOT see Admin announcements
+                if (annTarget === TargetPage.ADMIN_PANEL) return false;
+            }
+
             if (annTarget === TargetPage.HOME && path === '/') return true;
             if (annTarget === TargetPage.BOOKS && path.includes('/books')) return true;
             if (annTarget === TargetPage.DASHBOARD && (path.includes('/dashboard') || path.includes('/admin-dashboard'))) return true;
             if (annTarget === TargetPage.PROFILE && path.includes('/profile')) return true;
-            // Target all user-facing pages (non-admin)
-            if (annTarget === TargetPage.USER && !path.includes('/admin')) return true;
-            // Expanded admin panel check to includes '/admin' to cover /admin/orders etc.
+
+            // Target all user-facing pages (non-admin) - refined check
+            if (annTarget === TargetPage.USER) {
+                // Double check to ensure we don't accidentally show it on admin pages if role check missed somehow
+                return !path.includes('/admin');
+            }
+
+            // Expanded admin panel check
             if (annTarget === TargetPage.ADMIN_PANEL && (path.includes('/admin-dashboard') || path.includes('/admin'))) return true;
 
             return false;

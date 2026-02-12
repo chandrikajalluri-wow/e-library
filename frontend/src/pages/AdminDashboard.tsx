@@ -36,6 +36,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [bookTypeFilter, setBookTypeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
+  const [readHistoryStatusFilter, setReadHistoryStatusFilter] = useState('all');
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
@@ -161,7 +162,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchReadHistory = async () => {
     setIsDataLoading(true);
     try {
-      const data = await getAllReadlistEntries(`page=${readHistoryPage}&limit=10&membership=${membershipFilter}`);
+      const data = await getAllReadlistEntries(`page=${readHistoryPage}&limit=10&membership=${membershipFilter}&status=${readHistoryStatusFilter}`);
       setReadHistory(data.readlist);
       setReadHistoryTotalPages(data.pages);
     } catch (err: unknown) {
@@ -267,7 +268,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   useEffect(() => {
     if (activeTab === 'borrows') fetchReadHistory();
     if (activeTab === 'requests') fetchOrderReturns();
-  }, [activeTab, readHistoryPage, membershipFilter]);
+  }, [activeTab, readHistoryPage, membershipFilter, readHistoryStatusFilter]);
 
   useEffect(() => {
     if (activeTab === 'books') fetchBooks();
@@ -287,13 +288,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     // Prevent fetching until currentUser is loaded to avoid "flicker" with global stats
     if (!currentUser) return;
 
-    if (activeTab === 'borrows') fetchReadHistory();
+    else if (activeTab === 'borrows') fetchReadHistory();
     else if (activeTab === 'user-requests') fetchUserRequests();
     else if (activeTab === 'requests') fetchOrderReturns();
     else if (activeTab === 'books') fetchBooks();
     else if (activeTab === 'logs') fetchLogs();
     else if (activeTab === 'stats') fetchStats();
-  }, [activeTab, bookPage, readHistoryPage, membershipFilter, exchangeStatusFilter, currentUser]);
+  }, [activeTab, bookPage, readHistoryPage, membershipFilter, readHistoryStatusFilter, exchangeStatusFilter, currentUser]);
 
   const handleGenerateWithAI = async () => {
     if (!newBook.title || !newBook.author) {
@@ -647,22 +648,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   }
 
   return (
-    <div className="admin-layout">
-      <main className="admin-main-content">
+    <div className={hideHeader ? "admin-nested-layout" : "admin-layout"}>
+      <main className={hideHeader ? "admin-nested-content" : "admin-main-content"}>
         <header className="admin-header">
           {(activeTab === 'books' || activeTab === 'categories') && currentUser?.role === 'super_admin' && (
-            <div className="admin-super-banner" style={{ margin: '0 0 1.5rem 0', borderRadius: '16px' }}>
+            <div className="admin-super-banner" style={{ margin: '0 0 1rem 0', borderRadius: '16px' }}>
               <div className="banner-icon-box">
                 <BookOpen size={20} />
               </div>
               {activeTab === 'books' ? (
-                <span><strong>Super Admin View:</strong> You are viewing the global book collection. You can add or manage books for any administrator.</span>
+                <span><strong>Super Admin View:</strong> You are viewing the global book collection.</span>
               ) : (
-                <span><strong>Super Admin View:</strong> You are managing the global category architecture. Changes applied here affect the entire platform.</span>
+                <span><strong>Super Admin View:</strong> You are viewing the global category collection.</span>
               )}
             </div>
           )}
-          <div className="admin-header-flex">
+          <div className="admin-header-flex" style={
+            (hideHeader && (activeTab === 'books' || activeTab === 'categories') && currentUser?.role === RoleName.SUPER_ADMIN)
+              ? { display: 'none' }
+              : {}
+          }>
             {!hideHeader && (
               <div className="admin-header-titles">
                 <h1 className="admin-header-title">
@@ -681,7 +686,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
               </div>
             )}
             <div className={`admin-header-actions ${hideHeader ? 'actions-standalone' : ''}`}>
-              {activeTab === 'books' && (
+              {activeTab === 'books' && currentUser?.role !== RoleName.SUPER_ADMIN && (
                 <button
                   onClick={() => setShowAddBookForm(!showAddBookForm)}
                   className={`admin-refresh-stats-btn ${showAddBookForm ? 'admin-btn-negative' : 'admin-btn-positive'}`}
@@ -699,7 +704,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   )}
                 </button>
               )}
-              {activeTab === 'categories' && (
+              {activeTab === 'categories' && currentUser?.role !== RoleName.SUPER_ADMIN && (
                 <button
                   onClick={() => setShowCategoryForm(!showCategoryForm)}
                   className={`admin-refresh-stats-btn ${showCategoryForm ? 'admin-btn-negative' : 'admin-btn-positive'}`}
@@ -1039,7 +1044,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                           <th>Rating</th>
                           <th>Stock</th>
                           <th>Status</th>
-                          <th className="actions-header">Actions</th>
+                          {currentUser?.role !== RoleName.SUPER_ADMIN && <th className="actions-header">Actions</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -1089,16 +1094,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                                 {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status}
                               </span>
                             </td>
-                            <td className="actions-cell">
-                              <div className="actions-button-group">
-                                <button onClick={() => handleEditBook(book)} className="btn-action-icon btn-edit-icon" title="Edit Book">
-                                  Edit
-                                </button>
-                                <button onClick={() => handleDeleteBook(book._id)} className="btn-action-icon btn-delete-icon" title="Delete Book">
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
+                            {currentUser?.role !== RoleName.SUPER_ADMIN && (
+                              <td className="actions-cell">
+                                <div className="actions-button-group">
+                                  <button onClick={() => handleEditBook(book)} className="btn-action-icon btn-edit-icon" title="Edit Book">
+                                    Edit
+                                  </button>
+                                  <button onClick={() => handleDeleteBook(book._id)} className="btn-action-icon btn-delete-icon" title="Delete Book">
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -1143,7 +1150,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
         {
           activeTab === 'categories' && (
-            <div className={`admin-categories-split-layout ${showCategoryForm ? 'form-open' : ''} saas-reveal`}>
+            <div className={`admin-categories-split-layout ${showCategoryForm ? 'form-open' : ''} ${currentUser?.role === RoleName.SUPER_ADMIN ? 'super-admin-categories' : ''} saas-reveal`}>
               {showCategoryForm && (
                 <aside className="category-sidebar-panel saas-reveal-left">
                   <div className="card admin-form-section sticky-form">
@@ -1250,19 +1257,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                               <p className="orb-description">{c.description || 'No description provided.'}</p>
                             </div>
 
-                            <div className="orb-footer">
-                              <button onClick={() => {
-                                handleEditCategory(c);
-                                setShowCategoryForm(true);
-                              }} className="orb-action-btn edit-orb">
-                                Modify
-                              </button>
-                              {(currentUser?.role === RoleName.SUPER_ADMIN || currentUser?.role === RoleName.ADMIN) && (
-                                <button onClick={() => handleDeleteCategory(c)} className="orb-action-btn delete-orb">
-                                  Remove
+                            {currentUser?.role !== RoleName.SUPER_ADMIN && (
+                              <div className="orb-footer">
+                                <button onClick={() => {
+                                  handleEditCategory(c);
+                                  setShowCategoryForm(true);
+                                }} className="orb-action-btn edit-orb">
+                                  Modify
                                 </button>
-                              )}
-                            </div>
+                                {currentUser?.role === RoleName.ADMIN && (
+                                  <button onClick={() => handleDeleteCategory(c)} className="orb-action-btn delete-orb">
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1522,6 +1531,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                       <option value="all">All Tiers</option>
                       <option value={MembershipName.BASIC.toLowerCase()}>{MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}</option>
                       <option value={MembershipName.PREMIUM.toLowerCase()}>{MembershipName.PREMIUM.charAt(0).toUpperCase() + MembershipName.PREMIUM.slice(1)}</option>
+                    </select>
+                  </div>
+                  <div className="admin-filter-item">
+                    <span className="admin-filter-label">Status</span>
+                    <select value={readHistoryStatusFilter} onChange={(e) => setReadHistoryStatusFilter(e.target.value)} className="admin-filter-select">
+                      <option value="all">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="completed">Completed</option>
+                      <option value="expired">Expired</option>
                     </select>
                   </div>
                 </div>
