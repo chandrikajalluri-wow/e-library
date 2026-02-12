@@ -10,6 +10,7 @@ import Notification from '../models/Notification';
 import Order from '../models/Order';
 import Contact from '../models/Contact';
 import Readlist from '../models/Readlist';
+import Address from '../models/Address';
 import { RoleName, ActivityAction, NotificationType, MembershipName } from '../types/enums';
 import { sendEmail } from '../utils/mailer';
 import { getDeletionScheduledTemplate } from '../utils/emailTemplates';
@@ -458,5 +459,29 @@ export const replyToContactQuery = async (req: Request, res: Response) => {
     } catch (err) {
         console.error('Reply to contact query error:', err);
         res.status(500).json({ error: 'Failed to send reply' });
+    }
+};
+
+export const getUserDetails = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id)
+            .populate('role_id', 'name')
+            .populate('membership_id', 'name')
+            .select('-password -verificationToken');
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const addresses = await Address.find({ user_id: id }).sort({ isDefault: -1, createdAt: -1 });
+
+        res.json({
+            user,
+            addresses
+        });
+    } catch (err) {
+        console.error('Get user details error:', err);
+        res.status(500).json({ error: 'Server error' });
     }
 };

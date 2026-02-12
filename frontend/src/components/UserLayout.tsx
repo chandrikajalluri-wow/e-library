@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import UserNavbar from './UserNavbar';
 import Footer from './Footer';
+import AdminFooter from './AdminFooter';
 
 import { RoleName } from '../types/enums';
 import '../styles/Home.css';
@@ -10,6 +11,7 @@ const UserLayout: React.FC = () => {
 
     // Theme sync logic removed to prevent overriding local preference
     // The ThemeContext now handles persistence reliably via localStorage
+    const role = localStorage.getItem('role');
 
     return (
         <div className="user-layout-container saas-theme" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -19,7 +21,7 @@ const UserLayout: React.FC = () => {
                     <Outlet />
                 </div>
             </main>
-            {localStorage.getItem('role') !== RoleName.ADMIN && localStorage.getItem('role') !== RoleName.SUPER_ADMIN && <Footer />}
+            {role === RoleName.ADMIN || role === RoleName.SUPER_ADMIN ? <AdminFooter /> : <Footer />}
         </div>
     );
 };

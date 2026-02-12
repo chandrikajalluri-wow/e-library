@@ -752,7 +752,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
 
 export const getAllReadlistEntries = async (req: AuthRequest, res: Response) => {
     try {
-        const { membership, page = 1, limit = 10 } = req.query; // Removed addedBy from query to enforce it via auth
+        const { membership, status, page = 1, limit = 10 } = req.query; // Removed addedBy from query to enforce it via auth
         const parsedPage = parseInt(page as string) || 1;
         const parsedLimit = parseInt(limit as string) || 10;
         const skip = (parsedPage - 1) * parsedLimit;
@@ -760,6 +760,11 @@ export const getAllReadlistEntries = async (req: AuthRequest, res: Response) => 
         const query: any = {};
 
         // All admins now see global read history
+
+        // Filter by status
+        if (status && status !== 'all') {
+            query.status = status;
+        }
 
         // Filter by membership tier
         if (membership && membership !== 'all') {

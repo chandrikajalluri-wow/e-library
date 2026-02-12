@@ -7,6 +7,7 @@ import { sendEmail } from './mailer';
 import Membership from '../models/Membership';
 import { MembershipName } from '../types/enums';
 import { getMembershipExpiryWarningTemplate, getMembershipExpiredTemplate } from './emailTemplates';
+import Readlist from '../models/Readlist';
 
 export const initCronJobs = () => {
   // 1. Daily Due Date Reminder (9:00 AM)
@@ -142,6 +143,29 @@ export const initCronJobs = () => {
 
     } catch (err) {
       console.error('Error in membership expiry cron job:', err);
+    }
+  });
+
+  // 4. Daily Readlist Expiry Check (Midnight)
+  cron.schedule('0 0 * * *', async () => {
+    console.log('Running readlist expiry check cron job...');
+    try {
+      const now = new Date();
+      const result = await Readlist.updateMany(
+        {
+          status: 'active',
+          dueDate: { $lt: now }
+        },
+        {
+          $set: { status: 'expired' }
+        }
+      );
+
+      if (result.modifiedCount > 0) {
+        console.log(`Expired ${result.modifiedCount} overdue readlist items.`);
+      }
+    } catch (err) {
+      console.error('Error in readlist expiry cron job:', err);
     }
   });
 

@@ -10,6 +10,9 @@ const router = express.Router();
 // Get all users (including admins)
 router.get('/users', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.getAllUsers);
 
+// Get specific user details with addresses
+router.get('/user/:id/details', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.getUserDetails);
+
 // Create Admin (Promote User)
 router.post('/manage-admin', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.manageAdmin);
 
