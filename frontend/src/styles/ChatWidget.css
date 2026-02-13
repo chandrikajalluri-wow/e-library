@@ -16,8 +16,8 @@
 
 /* Toggle Button */
 .chat-toggle-btn {
-    width: 64px;
-    height: 64px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-color) 0%, #4338ca 100%);
     color: white;
@@ -401,8 +401,8 @@
 }
 
 .chat-toggle-btn {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;

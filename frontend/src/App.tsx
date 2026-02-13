@@ -34,6 +34,7 @@ import UserSettings from './pages/UserSettings';
 import NotificationsPage from './pages/NotificationsPage';
 import HelpCenter from './pages/HelpCenter';
 import PDFViewer from './pages/PDFViewer';
+import AcceptAdminInvite from './pages/AcceptAdminInvite';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import UserLayout from './components/UserLayout';
@@ -63,6 +64,7 @@ const App: React.FC = () => {
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/reset/:token" element={<ResetPassword />} />
           <Route path="/verify/:token" element={<VerifyEmail />} />
+          <Route path="/accept-admin" element={<AcceptAdminInvite />} />
 
           {/* Public Pages with Navbar & Footer */}
           <Route element={<PublicLayout />}>

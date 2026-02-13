@@ -785,7 +785,7 @@ export const getOrderInvoice = async (req: AuthRequest, res: Response) => {
 
         res.send(pdfBuffer);
     } catch (error: any) {
-        console.error('Get order invoice error:', error);
-        res.status(500).json({ error: 'Failed to generate invoice' });
+        console.error(`[InvoiceError] Failed to generate invoice for order ${req.params.id}:`, error);
+        res.status(500).json({ error: 'Failed to generate invoice: ' + error.message });
     }
 };

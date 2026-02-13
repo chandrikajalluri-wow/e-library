@@ -419,15 +419,48 @@
     background: var(--card-bg);
     border-radius: 24px;
     padding: 1.5rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid var(--border-color);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
 }
 
+/* Status-based gradient borders */
+.admin-order-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--border-color), var(--border-color));
+    transition: all 0.3s;
+}
+
+.admin-order-card:has(.status-badge-premium.pending)::before {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.admin-order-card:has(.status-badge-premium.processing)::before {
+    background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+}
+
+.admin-order-card:has(.status-badge-premium.shipped)::before {
+    background: linear-gradient(90deg, #c084fc, #a855f7);
+}
+
+.admin-order-card:has(.status-badge-premium.delivered)::before {
+    background: linear-gradient(90deg, #4ade80, #22c55e);
+}
+
+.admin-order-card:has(.status-badge-premium.cancelled)::before {
+    background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
 .admin-order-card:hover {
-    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05);
-    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+    border-color: rgba(99, 102, 241, 0.3);
 }
 
 .admin-order-card.selected {
@@ -436,18 +469,24 @@
     box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.1);
 }
 
+.admin-order-card.selected::before {
+    background: linear-gradient(90deg, var(--primary-color), #818cf8);
+    height: 5px;
+}
+
 .selection-checkbox {
     position: absolute;
     top: 1.5rem;
     left: 1rem;
     color: #cbd5e1;
-    transition: color 0.2s;
+    transition: all 0.2s;
     z-index: 10;
     cursor: pointer;
 }
 
 .admin-order-card:hover .selection-checkbox {
     color: #94a3b8;
+    transform: scale(1.1);
 }
 
 .admin-order-card.selected .selection-checkbox {
@@ -785,6 +824,157 @@
     box-shadow: 0 6px 8px -1px rgba(16, 185, 129, 0.3);
 }
 
+/* Priority Indicator Badge */
+.priority-indicator {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 950;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
+    animation: pulse-urgent 2s ease-in-out infinite;
+    z-index: 5;
+    flex-shrink: 0;
+}
+
+@keyframes pulse-urgent {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.9;
+        transform: scale(1.05);
+    }
+}
+
+/* Order Value Badge */
+.order-value-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: var(--primary-color);
+    font-size: 0.95rem;
+    font-weight: 800;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    letter-spacing: -0.25px;
+}
+
+[data-theme='dark'] .order-value-badge {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.08));
+}
+
+/* Item Count Badge */
+.item-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.4rem 0.85rem;
+    border-radius: 10px;
+}
+
+/* Clear Filters Button Enhancement */
+.clear-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+    padding: 0.6rem 1.25rem;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.1);
+}
+
+[data-theme='dark'] .clear-filters-btn {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.1));
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.clear-filters-btn:hover {
+    background: linear-gradient(135deg, #fca5a5, #f87171);
+    color: white;
+    border-color: #ef4444;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.25);
+}
+
+/* Enhanced Book Item Display */
+.order-item-details-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.order-item-details-inline>div {
+    transition: all 0.2s;
+}
+
+.order-item-details-inline>div:hover {
+    transform: translateX(3px);
+}
+
+/* Smooth Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.admin-order-card {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Enhanced Status Badge with Glow */
+.status-badge-premium {
+    position: relative;
+}
+
+.status-badge-premium.pending {
+    box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+}
+
+.status-badge-premium.processing {
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
+}
+
+.status-badge-premium.shipped {
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+}
+
+.status-badge-premium.delivered {
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+}
+
+.status-badge-premium.cancelled {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
 @media (max-width: 768px) {
     .filters-toolbar {
         flex-direction: column;
@@ -817,4 +1007,138 @@
     .bulk-actions select {
         flex: 1;
     }
+}
+
+/* Final Polish Utilities */
+.glass-panel {
+    background: rgba(var(--card-bg-rgb), 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-glow-pending {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+}
+
+.status-glow-processing {
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+}
+
+.status-glow-shipped {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+.status-glow-delivered {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.shimmer-effect {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 3s infinite;
+}
+
+/* Premium Circular Countdown Timer */
+.premium-circular-timer {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+}
+
+.premium-circular-timer svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.timer-track {
+    stroke: var(--border-color);
+    fill: none;
+    opacity: 0.3;
+}
+
+.timer-progress {
+    fill: none;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+}
+
+.timer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    z-index: 2;
+}
+
+.timer-hours {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.timer-mins {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.circular-timer-overdue {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    padding: 0.4rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    animation: urgent-pulse 2s infinite;
+}
+
+@keyframes urgent-pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+.pulse-urgent {
+    animation: urgent-pulse 2s infinite;
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Remove old progress bar styles */
+.delivery-countdown,
+.countdown-bar {
+    display: none !important;
 }

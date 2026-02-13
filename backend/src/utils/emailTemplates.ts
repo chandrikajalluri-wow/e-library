@@ -206,3 +206,60 @@ export const getQueryReplyTemplate = (name: string, originalMessage: string, rep
         <p>Best regards,<br>The BookStack Team</p>
     `);
 };
+
+export const getAdminInvitationTemplate = (
+    userName: string,
+    inviterName: string,
+    acceptLink: string,
+    expiresAt: Date
+) => {
+    const formattedExpiry = new Date(expiresAt).toLocaleString('en-IN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+
+    return getBaseTemplate(`
+        <h2 style="color: #27ae60;">🎉 You've Been Invited to Become an Admin!</h2>
+        <p>Hello ${userName},</p>
+        <p><span class="highlight">${inviterName}</span> has invited you to join the BookStack administration team.</p>
+        
+        <div style="background-color: #f0f8ff; border-left: 4px solid #3498db; padding: 20px; margin: 25px 0; border-radius: 4px;">
+            <p style="margin: 0; font-weight: bold; color: #2c3e50;">As an admin, you'll be able to:</p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Manage the book collection</li>
+                <li>Handle user requests and orders</li>
+                <li>Monitor system activity</li>
+                <li>Access advanced analytics</li>
+            </ul>
+        </div>
+
+        <p>To accept this invitation and activate your admin privileges, click the button below:</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${acceptLink}" class="button" style="background-color: #27ae60; padding: 14px 32px; font-size: 16px;">
+                Accept Admin Invitation
+            </a>
+        </div>
+
+        <p style="font-size: 0.9em; color: #666;">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; font-size: 0.85em; background-color: #f9f9f9; padding: 10px; border-radius: 4px;">
+            <a href="${acceptLink}">${acceptLink}</a>
+        </p>
+
+        <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 4px; margin-top: 30px;">
+            <p style="margin: 0; font-weight: bold; color: #856404;">⏰ Important:</p>
+            <p style="margin: 5px 0 0; color: #856404;">This invitation will expire on <strong>${formattedExpiry}</strong>. Please accept it before then.</p>
+        </div>
+
+        <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin-top: 15px;">
+            <p style="margin: 0; font-weight: bold; color: #721c24;">🔒 Security Notice:</p>
+            <p style="margin: 5px 0 0; color: #721c24;">This invitation link is unique and can only be used once. Do not share it with anyone. If you did not expect this invitation, please contact support immediately.</p>
+        </div>
+
+        <p style="margin-top: 30px;">Welcome to the team!</p>
+        <p>Best regards,<br>The BookStack Team</p>
+    `);
+};

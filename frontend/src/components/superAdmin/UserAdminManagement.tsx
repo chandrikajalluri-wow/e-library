@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getAllUsers, manageAdmin, deleteUser, revokeUserDeletion, getUserDetails } from '../../services/superAdminService';
+import { getAllUsers, manageAdmin, deleteUser, revokeUserDeletion, getUserDetails, inviteAdmin } from '../../services/superAdminService';
 import { toast } from 'react-toastify';
 import { X, Download, RotateCw, Trash2, Undo2, ShieldCheck, ShieldAlert, Eye, Mail, Phone, Calendar, UserCircle, Hash } from 'lucide-react';
 import ConfirmationModal from '../ConfirmationModal';
@@ -28,7 +28,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [modalAction, setModalAction] = useState<'promote' | 'demote' | 'delete' | 'revoke' | null>(null);
+    const [modalAction, setModalAction] = useState<'promote' | 'demote' | 'delete' | 'revoke' | 'invite' | null>(null);
 
     // Details Modal State
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -68,7 +68,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
         fetchUsers();
     }, []);
 
-    const confirmAction = (user: User, action: 'promote' | 'demote' | 'delete' | 'revoke') => {
+    const confirmAction = (user: User, action: 'promote' | 'demote' | 'delete' | 'revoke' | 'invite') => {
         setSelectedUser(user);
         setModalAction(action);
         setModalOpen(true);
@@ -90,6 +90,9 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
             } else if (modalAction === 'revoke') {
                 await revokeUserDeletion(selectedUser._id);
                 toast.success('User deletion revoked successfully');
+            } else if (modalAction === 'invite') {
+                await inviteAdmin(selectedUser._id);
+                toast.success(`Admin invitation sent to ${selectedUser.email}`);
             } else {
                 await manageAdmin(selectedUser._id, modalAction);
                 toast.success(`User ${modalAction}d successfully`);
@@ -150,6 +153,12 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
         }
 
         switch (modalAction) {
+            case 'invite':
+                return {
+                    title: 'Invite as Admin',
+                    message: `Send an admin invitation to ${selectedUser.name} (${selectedUser.email})? They will receive an email with a secure link to accept the invitation.`,
+                    type: 'info' as const
+                };
             case 'promote':
                 return {
                     title: 'Promote to Admin',
@@ -284,7 +293,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                                             {user.role_id?.name !== RoleName.SUPER_ADMIN && (
                                                 <>
                                                     {user.role_id?.name === RoleName.USER && (
-                                                        <button onClick={() => confirmAction(user, 'promote')} className="admin-btn-approve-icon" title="Make Admin">
+                                                        <button onClick={() => confirmAction(user, 'invite')} className="admin-btn-approve-icon" title="Invite as Admin">
                                                             <ShieldCheck size={18} />
                                                         </button>
                                                     )}
