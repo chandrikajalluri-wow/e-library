@@ -46,10 +46,18 @@ export enum NotificationType {
     STOCK_ALERT = 'stock_alert'
 }
 
+export enum InviteStatus {
+    PENDING = 'pending',
+    ACCEPTED = 'accepted',
+    EXPIRED = 'expired'
+}
+
 export enum ActivityAction {
     USER_DELETED = 'USER_DELETED',
     ADMIN_MGMT_PROMOTE = 'ADMIN_MGMT_PROMOTE',
     ADMIN_MGMT_DEMOTE = 'ADMIN_MGMT_DEMOTE',
+    ADMIN_INVITE_SENT = 'ADMIN_INVITE_SENT',
+    ADMIN_INVITE_ACCEPTED = 'ADMIN_INVITE_ACCEPTED',
     BOOK_CREATED = 'BOOK_CREATED',
     BOOK_UPDATED = 'BOOK_UPDATED',
     BOOK_DELETED = 'BOOK_DELETED',

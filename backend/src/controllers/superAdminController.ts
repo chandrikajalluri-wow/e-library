@@ -485,3 +485,52 @@ export const getUserDetails = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+/**
+ * Invite a user to become an admin
+ * POST /api/super-admin/invite-admin/:userId
+ */
+export const inviteAdmin = async (req: Request, res: Response) => {
+    try {
+        const { userId } = req.params;
+        const inviterId = (req as any).user._id.toString();
+
+        // Import the service
+        const adminInviteService = require('../services/adminInviteService');
+
+        // Call the service to create the invitation
+        const result = await adminInviteService.createAdminInvite(userId, inviterId);
+
+        return res.status(201).json({
+            message: result.message,
+            email: result.email,
+        });
+    } catch (error: any) {
+        console.error('Error inviting admin:', error);
+
+        // Handle specific error messages
+        const errorMessage = error.message || 'Failed to send invitation';
+
+        if (errorMessage === 'Cannot invite yourself') {
+            return res.status(400).json({ error: 'Cannot invite yourself' });
+        }
+
+        if (errorMessage === 'Target user not found') {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (errorMessage === 'Cannot invite deleted user') {
+            return res.status(400).json({ error: 'Cannot invite deleted user' });
+        }
+
+        if (errorMessage === 'User is already an admin') {
+            return res.status(400).json({ error: 'User is already an admin' });
+        }
+
+        if (errorMessage === 'Invitation already sent to this user') {
+            return res.status(400).json({ error: 'Invitation already sent to this user' });
+        }
+
+        return res.status(500).json({ error: errorMessage });
+    }
+};

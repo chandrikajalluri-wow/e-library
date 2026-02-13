@@ -206,7 +206,7 @@ const ChatWidget: React.FC = () => {
             )}
 
             <button className="chat-toggle-btn" onClick={() => setIsOpen(!isOpen)}>
-                {isOpen ? <X size={28} /> : <MessageCircle size={28} />}
+                {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
             </button>
         </div>
     );

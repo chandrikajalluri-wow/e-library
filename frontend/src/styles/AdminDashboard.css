@@ -2679,7 +2679,8 @@ body.dark-mode .report-reason-item {
     pointer-events: none;
 }
 
-.category-orb-card:hover {
+/* Hover effects disabled for super admin panel */
+/* .category-orb-card:hover {
     transform: translateY(-8px);
     border-color: var(--primary-color);
     box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.15);
@@ -2687,7 +2688,7 @@ body.dark-mode .report-reason-item {
 
 .category-orb-card:hover .orb-card-glow {
     opacity: 0.08;
-}
+} */
 
 .category-orb-card.is-editing {
     border-color: var(--primary-color);

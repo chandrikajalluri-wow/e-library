@@ -263,7 +263,13 @@ const UserOrderDetails: React.FC = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 className="download-invoice-btn-mini"
-                                onClick={() => downloadInvoice(order._id)}
+                                onClick={async () => {
+                                    try {
+                                        await downloadInvoice(order._id);
+                                    } catch (err) {
+                                        console.error('Invoice download failed:', err);
+                                    }
+                                }}
                             >
                                 <Download size={18} />
                                 <span>Invoice</span>

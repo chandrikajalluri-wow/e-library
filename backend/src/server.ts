@@ -41,6 +41,7 @@ import superAdminRoutes from './routes/superAdmin';
 import orderRoutes from './routes/orders';
 import aiRoutes from './routes/ai';
 import chatRoutes from './routes/chat';
+import adminInviteRoutes from './routes/adminInvite';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -57,6 +58,7 @@ app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/admin-invite', adminInviteRoutes);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {

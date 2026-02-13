@@ -39,8 +39,8 @@ const ScrollToTop: React.FC = () => {
                         color: 'white',
                         border: 'none',
                         borderRadius: '50%',
-                        width: '60px',
-                        height: '60px',
+                        width: '48px',
+                        height: '48px',
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
@@ -51,7 +51,7 @@ const ScrollToTop: React.FC = () => {
                     }}
                     title="Scroll to Top"
                 >
-                    <ChevronUp size={32} />
+                    <ChevronUp size={24} />
                 </button>
             )}
         </>

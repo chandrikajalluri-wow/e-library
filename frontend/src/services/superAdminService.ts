@@ -15,6 +15,11 @@ export const manageAdmin = async (userId: string, action: 'promote' | 'demote') 
     return response.data;
 };
 
+export const inviteAdmin = async (userId: string) => {
+    const response = await api.post(`/super-admin/invite-admin/${userId}`);
+    return response.data;
+};
+
 export const deleteUser = async (userId: string, force: boolean = false) => {
     // Send force in body or query. Since original was delete, body might not be supported/standard in axios delete without structure.
     // Recommended: Use data property for delete body or query param. Let's use body with 'data' config.

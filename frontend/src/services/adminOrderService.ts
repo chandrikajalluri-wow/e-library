@@ -1,5 +1,6 @@
 
 import api from '../api';
+import { toast } from 'react-toastify';
 
 export const getAllOrders = async (filters: any) => {
     try {
@@ -58,6 +59,28 @@ export const downloadInvoice = async (orderId: string) => {
         link.remove();
         window.URL.revokeObjectURL(url);
     } catch (error: any) {
-        throw error.response?.data?.error || 'Failed to download invoice';
+        if (error.response?.data instanceof Blob) {
+            const reader = new FileReader();
+            return new Promise((_, reject) => {
+                reader.onload = () => {
+                    try {
+                        const message = JSON.parse(reader.result as string).error || 'Failed to download invoice';
+                        toast.error(message);
+                        reject(message);
+                    } catch (e) {
+                        toast.error('Failed to download invoice');
+                        reject('Failed to download invoice');
+                    }
+                };
+                reader.onerror = () => {
+                    toast.error('Failed to download invoice');
+                    reject('Failed to download invoice');
+                };
+                reader.readAsText(error.response.data);
+            });
+        }
+        const errorMessage = error.response?.data?.error || 'Failed to download invoice';
+        toast.error(errorMessage);
+        throw errorMessage;
     }
 };
