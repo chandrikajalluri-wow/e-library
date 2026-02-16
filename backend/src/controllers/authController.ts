@@ -89,23 +89,22 @@ export const login = async (req: Request, res: Response) => {
         }
 
         if (!user.isVerified) {
-            if (!user.verificationToken) {
-                user.verificationToken = crypto.randomBytes(20).toString('hex');
-                const frontendUrl = process.env.FRONTEND_URL;
-                const verifyLink = `${frontendUrl}/verify/${user.verificationToken}`;
-                await sendEmail(
-                    user.email,
-                    'Verify Your Email',
-                    `Please verify your email by clicking: ${verifyLink}`,
-                    getVerificationEmailTemplate(user.name, verifyLink)
-                );
-                await user.save();
-                return res.status(400).json({
-                    error:
-                        'Account not verified. A new verification email has been sent to you.',
-                });
-            }
-            return res.status(400).json({ error: 'Please verify your email first' });
+            user.verificationToken = crypto.randomBytes(20).toString('hex');
+            const frontendUrl = process.env.FRONTEND_URL;
+            const verifyLink = `${frontendUrl}/verify/${user.verificationToken}`;
+
+            await sendEmail(
+                user.email,
+                'Verify Your Email',
+                `Please verify your email by clicking: ${verifyLink}`,
+                getVerificationEmailTemplate(user.name, verifyLink)
+            );
+
+            await user.save();
+
+            return res.status(400).json({
+                error: 'Account not verified. A new verification email has been sent to your inbox. Please verify to continue.'
+            });
         }
 
         if (!user.password) {

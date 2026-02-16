@@ -319,7 +319,7 @@ const UserSettings: React.FC = () => {
                                 <p>This is a list of devices that have logged into your account. Revoke any sessions that you do not recognize.</p>
                             </div>
                             {lastLogin && (
-                                <div className="last-login-info" style={{ marginBottom: '2rem' }}>
+                                <div className="last-login-info">
                                     <strong>Last active login:</strong> {new Date(lastLogin).toLocaleString()}
                                 </div>
                             )}

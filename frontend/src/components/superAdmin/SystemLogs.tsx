@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getSystemLogs } from '../../services/superAdminService';
 import { Activity, Clock, User, Zap } from 'lucide-react';
+import '../../styles/SuperAdminLogs.css';
 
 interface SystemLogsProps {
     hideTitle?: boolean;
@@ -9,34 +10,65 @@ interface SystemLogsProps {
 const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [filterAction, setFilterAction] = useState('ALL');
+    const itemsPerPage = 10;
+
+    const fetchLogs = async () => {
+        setLoading(true);
+        try {
+            const data = await getSystemLogs();
+            setLogs(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchLogs = async () => {
-            setLoading(true);
-            try {
-                const data = await getSystemLogs();
-                setLogs(data);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchLogs();
     }, []);
 
-    const getActionBadgeColor = (action: string) => {
+    // Filter Logic
+    const filteredLogs = logs.filter(log => {
+        const matchesSearch =
+            log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (log.user_id?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (log.user_id?.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesFilter = filterAction === 'ALL' ? true :
+            filterAction === 'CREATE' ? (log.action.toLowerCase().includes('create') || log.action.toLowerCase().includes('add') || log.action.toLowerCase().includes('accepted')) :
+                filterAction === 'UPDATE' ? (log.action.toLowerCase().includes('update') || log.action.toLowerCase().includes('edit')) :
+                    filterAction === 'DELETE' ? (log.action.toLowerCase().includes('delete') || log.action.toLowerCase().includes('remove') || log.action.toLowerCase().includes('ban')) :
+                        true;
+
+        return matchesSearch && matchesFilter;
+    });
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+    const paginatedLogs = filteredLogs.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const getBadgeClass = (action: string) => {
         const actionLower = action?.toLowerCase() || '';
-        if (actionLower.includes('create') || actionLower.includes('add')) {
-            return { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'rgba(16, 185, 129, 0.2)' };
+        if (actionLower.includes('create') || actionLower.includes('add') || actionLower.includes('accepted')) {
+            return 'badge-purple';
         }
-        if (actionLower.includes('delete') || actionLower.includes('remove')) {
-            return { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'rgba(239, 68, 68, 0.2)' };
+        if (actionLower.includes('delete') || actionLower.includes('remove') || actionLower.includes('ban')) {
+            return 'badge-red';
         }
         if (actionLower.includes('update') || actionLower.includes('edit')) {
-            return { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: 'rgba(245, 158, 11, 0.2)' };
+            return 'badge-orange';
         }
-        return { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', border: 'rgba(99, 102, 241, 0.2)' };
+        if (actionLower.includes('sent') || actionLower.includes('login')) {
+            return 'badge-blue';
+        }
+        return 'badge-green'; // Default
     };
 
     const formatTimestamp = (timestamp: string) => {
@@ -52,14 +84,14 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
         else if (diffMins < 60) relative = `${diffMins}m ago`;
         else if (diffHours < 24) relative = `${diffHours}h ago`;
         else if (diffDays < 7) relative = `${diffDays}d ago`;
-        else relative = date.toLocaleDateString();
+        else relative = `${diffDays}d ago`;
 
         return {
             relative,
             full: date.toLocaleString('en-US', {
-                year: 'numeric',
                 month: 'short',
                 day: 'numeric',
+                year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
             })
@@ -67,120 +99,126 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
     };
 
     return (
-        <div className="card admin-table-section">
-            <div className="admin-table-header-box" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                {!hideTitle && (
-                    <>
-                        <div style={{
-                            width: '48px',
-                            height: '48px',
-                            background: 'linear-gradient(135deg, #6366f1 0%, #818cf8 100%)',
-                            borderRadius: '14px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white'
-                        }}>
+        <div className="system-logs-container">
+            <div className="system-logs-header">
+                {!hideTitle ? (
+                    <div className="system-logs-title-group">
+                        <div className="system-logs-icon-wrapper">
                             <Activity size={24} />
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <h3 className="admin-table-title" style={{ marginBottom: '0.25rem' }}>Admin Activity Logs</h3>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
-                                Track all administrative actions and system events
-                            </p>
+                        <div className="system-logs-text">
+                            <h3>Admin Activity Logs</h3>
+                            <p>Track all administrative actions and system events</p>
                         </div>
-                    </>
+                    </div>
+                ) : (
+                    <div></div>
                 )}
-                <span style={{
-                    fontSize: '0.85rem',
-                    color: 'var(--text-secondary)',
-                    fontWeight: 600,
-                    padding: '0.5rem 1rem',
-                    background: 'rgba(99, 102, 241, 0.08)',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(99, 102, 241, 0.15)',
-                    marginLeft: 'auto'
-                }}>
-                    {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
-                </span>
+                <div className="system-logs-actions">
+                    <button onClick={fetchLogs} className="logs-refresh-btn" title="Refresh Logs">
+                        <Activity size={18} className={loading ? 'animate-spin' : ''} />
+                    </button>
+                    <div className="system-logs-count">
+                        {filteredLogs.length} entries
+                    </div>
+                </div>
             </div>
-            <div className="admin-table-wrapper">
-                {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem' }}>
+
+            <div className="system-logs-toolbar">
+                <input
+                    type="text"
+                    placeholder="Search logs..."
+                    className="logs-search-input"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <select
+                    className="logs-filter-select"
+                    value={filterAction}
+                    onChange={(e) => setFilterAction(e.target.value)}
+                >
+                    <option value="ALL">All Actions</option>
+                    <option value="CREATE">Create / Add</option>
+                    <option value="UPDATE">Update / Edit</option>
+                    <option value="DELETE">Delete / Remove</option>
+                </select>
+            </div>
+
+            <div className="logs-table-wrapper">
+                {loading && logs.length === 0 ? (
+                    <div className="logs-loading">
                         <div className="spinner"></div>
                     </div>
-                ) : logs.length > 0 ? (
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th style={{ width: '200px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Clock size={16} />
-                                        <span>Timestamp</span>
-                                    </div>
-                                </th>
-                                <th>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <User size={16} />
-                                        <span>User</span>
-                                    </div>
-                                </th>
-                                <th style={{ width: '180px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Zap size={16} />
-                                        <span>Action</span>
-                                    </div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {logs.map(log => {
-                                const time = formatTimestamp(log.timestamp);
-                                const badgeColor = getActionBadgeColor(log.action);
-                                return (
-                                    <tr key={log._id}>
-                                        <td>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                                                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                                    {time.relative}
+                ) : filteredLogs.length > 0 ? (
+                    <>
+                        <table className="logs-table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <div><Clock size={14} /> TIMESTAMP</div>
+                                    </th>
+                                    <th>
+                                        <div><User size={14} /> USER</div>
+                                    </th>
+                                    <th>
+                                        <div><Zap size={14} /> ACTION</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paginatedLogs.map(log => {
+                                    const time = formatTimestamp(log.timestamp);
+                                    const badgeClass = getBadgeClass(log.action);
+                                    return (
+                                        <tr key={log._id}>
+                                            <td>
+                                                <div className="log-time-wrapper">
+                                                    <span className="log-time-relative">{time.relative}</span>
+                                                    <span className="log-time-full">{time.full}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="log-user-wrapper">
+                                                    <span className="log-user-name">{log.user_id?.name || 'System'}</span>
+                                                    <span className="log-user-email">{log.user_id?.email || 'Automated Action'}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className={`log-action-badge ${badgeClass}`}>
+                                                    {log.action}
                                                 </span>
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                                                    {time.full}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="user-info-box">
-                                                <span className="user-main-name">{log.user_id?.name || 'System'}</span>
-                                                <span className="user-sub-email">{log.user_id?.email || 'Automated'}</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                fontSize: '0.8rem',
-                                                fontWeight: 700,
-                                                padding: '0.4rem 0.85rem',
-                                                borderRadius: '12px',
-                                                background: badgeColor.bg,
-                                                color: badgeColor.color,
-                                                border: `1px solid ${badgeColor.border}`,
-                                                textTransform: 'capitalize'
-                                            }}>
-                                                {log.action}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+
+                        {totalPages > 1 && (
+                            <div className="logs-pagination">
+                                <button
+                                    className="pagination-btn"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                >
+                                    Previous
+                                </button>
+                                <span className="pagination-info">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    className="pagination-btn"
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 ) : (
-                    <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-secondary)' }}>
-                        <Activity size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                        <p style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>No activity logs yet</p>
-                        <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>Admin actions will appear here once they start occurring</p>
+                    <div className="logs-loading">
+                        <p>No activity logs found matching your criteria</p>
                     </div>
                 )}
             </div>

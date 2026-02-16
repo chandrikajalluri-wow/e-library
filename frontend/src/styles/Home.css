@@ -389,12 +389,16 @@
   opacity: 0.98;
 }
 
+.home-page.saas-theme.dark-mode .purple-bg {
+  background: transparent;
+}
+
 .section-title {
   font-size: 2.25rem;
   font-weight: 850;
   margin-bottom: 1rem;
   letter-spacing: -1px;
-  color: #000000 !important;
+  color: var(--saas-text);
 }
 
 .section-sub {
@@ -1000,4 +1004,333 @@
   .trust-item {
     justify-content: flex-start;
   }
+}
+
+/* History */
+.category-card[data-category="history"],
+.category-card[data-category*="history"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://tse1.explicit.bing.net/th/id/OIP.JSJ42L5XDYXP2jz-O8uZWwHaFH?rs=1&pid=ImgDetMain&o=7&rm=3');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Romance / Rom-Com */
+.category-card[data-category*="romance"],
+.category-card[data-category*="rom"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://tse4.mm.bing.net/th/id/OIP.Z0yV5CabwpsBU35Yn_hEswHaLf?rs=1&pid=ImgDetMain&o=7&rm=3');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Science Fiction */
+.category-card[data-category*="science"],
+.category-card[data-category*="fiction"],
+.category-card[data-category*="sci-fi"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://tse3.mm.bing.net/th/id/OIP.7Po85FSpjTPHO9eXOYYCGwHaFJ?rs=1&pid=ImgDetMain&o=7&rm=3');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Technology */
+.category-card[data-category*="technology"],
+.category-card[data-category*="tech"] {
+  background-image:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%),
+    url('https://imageio.forbes.com/specials-images/imageserve/643016813686d8eafca00875/0x0.jpg?format=jpg&width=1200');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* White text for all categories with background images */
+.category-card[data-category*="business"] h3,
+.category-card[data-category*="fantasy"] h3,
+.category-card[data-category*="finance"] h3,
+.category-card[data-category*="history"] h3,
+.category-card[data-category*="romance"] h3,
+.category-card[data-category*="rom"] h3,
+.category-card[data-category*="science"] h3,
+.category-card[data-category*="fiction"] h3,
+.category-card[data-category*="technology"] h3,
+.category-card[data-category*="tech"] h3 {
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.category-card[data-category*="business"] p,
+.category-card[data-category*="fantasy"] p,
+.category-card[data-category*="finance"] p,
+.category-card[data-category*="history"] p,
+.category-card[data-category*="romance"] p,
+.category-card[data-category*="rom"] p,
+.category-card[data-category*="science"] p,
+.category-card[data-category*="fiction"] p,
+.category-card[data-category*="technology"] p,
+.category-card[data-category*="tech"] p {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.category-card[data-category*="business"] .category-icon,
+.category-card[data-category*="fantasy"] .category-icon,
+.category-card[data-category*="finance"] .category-icon,
+.category-card[data-category*="history"] .category-icon,
+.category-card[data-category*="romance"] .category-icon,
+.category-card[data-category*="rom"] .category-icon,
+.category-card[data-category*="science"] .category-icon,
+.category-card[data-category*="fiction"] .category-icon,
+.category-card[data-category*="technology"] .category-icon,
+.category-card[data-category*="tech"] .category-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Hover effects for categories with backgrounds */
+
+.category-card[data-category*="business"]:hover,
+.category-card[data-category*="fantasy"]:hover,
+.category-card[data-category*="finance"]:hover,
+.category-card[data-category*="history"]:hover,
+.category-card[data-category*="romance"]:hover,
+.category-card[data-category*="rom"]:hover,
+.category-card[data-category*="science"]:hover,
+.category-card[data-category*="fiction"]:hover,
+.category-card[data-category*="technology"]:hover,
+.category-card[data-category*="tech"]:hover {
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+@media (max-width: 992px) {
+  .categories-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .category-card {
+    padding: 2.5rem 1.5rem;
+    min-height: 160px;
+  }
+}
+
+/* TRUST BADGES SECTION */
+.trust-badges-section {
+  padding: 3rem 0;
+  border-bottom: 1px solid var(--saas-border);
+  background: linear-gradient(to right, var(--saas-bg), rgba(99, 102, 241, 0.03), var(--saas-bg));
+}
+
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  padding: 0 1rem;
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--saas-border);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.trust-item:hover {
+  transform: translateY(-5px);
+  background: rgba(99, 102, 241, 0.05);
+  border-color: var(--saas-primary);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.trust-icon-box {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 12px;
+  color: var(--saas-primary);
+  flex-shrink: 0;
+}
+
+.trust-text h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.2rem 0;
+  color: var(--saas-text);
+}
+
+.trust-text p {
+  font-size: 0.85rem;
+  margin: 0;
+  color: var(--saas-text-muted);
+}
+
+@media (max-width: 992px) {
+  .trust-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .trust-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .trust-item {
+    justify-content: flex-start;
+  }
+}
+
+/* Extracted Inline Styles for Home.tsx */
+
+.hero-grid-styled {
+  display: grid !important;
+  grid-template-columns: 1.1fr 0.9fr !important;
+  gap: 2rem !important;
+  align-items: center !important;
+  min-height: 600px;
+}
+
+.hero-stack-styled {
+  min-width: 0;
+}
+
+.hero-carousel-container-styled {
+  width: 100%;
+  height: 450px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.skeleton-card-wrapper {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 2rem;
+  min-height: 400px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-line-title {
+  height: 24px;
+  width: 60%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-line-body-large {
+  height: 48px;
+  width: 40%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-bottom: 2rem;
+}
+
+.skeleton-line-body {
+  height: 16px;
+  width: 80%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-line-body-short {
+  height: 16px;
+  width: 70%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-cat-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-bottom: 1rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-cat-title {
+  height: 20px;
+  width: 70%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-cat-desc {
+  height: 14px;
+  width: 90%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.view-all-card-styled {
+  cursor: pointer;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%);
+  border-color: var(--saas-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.view-all-icon-styled {
+  background: var(--saas-primary);
+  margin-bottom: 1rem;
+  border-radius: 50%;
+}
+
+.view-all-text-styled {
+  transform: none;
+  opacity: 1;
+}
+
+.cta-actions-styled {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.cta-view-plans-btn-styled {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.cta-decor-styled {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  opacity: 0.1;
+  transform: rotate(15deg);
 }

@@ -9,7 +9,12 @@ export const getMyNotifications = async (req: AuthRequest, res: Response) => {
         let filter: any = { user_id: req.user!._id };
 
         if (type && type !== 'all') {
-            filter.type = type;
+            const types = (type as string).split(',');
+            if (types.length > 1) {
+                filter.type = { $in: types };
+            } else {
+                filter.type = type;
+            }
         }
 
         if (is_read !== undefined && is_read !== 'all') {

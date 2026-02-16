@@ -20,6 +20,8 @@ router.get('/my-order/:id', auth, orderController.getMyOrderById);
 router.get('/:id/invoice', auth, orderController.getOrderInvoice);
 router.patch('/:id/cancel', auth, orderController.cancelOwnOrder);
 router.patch('/:id/return', auth, upload.single('image'), orderController.requestReturnOrder);
+router.patch('/:id/refund-details', auth, orderController.submitRefundDetails);
 router.post('/', auth, orderController.placeOrder);
+
 
 export default router;

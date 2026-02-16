@@ -13,12 +13,19 @@ export interface IOrder extends Document {
     totalAmount: number;
     deliveryFee: number;
     paymentMethod: string;
-    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'return_requested' | 'return_accepted' | 'returned' | 'return_rejected';
+    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'return_requested' | 'return_accepted' | 'returned' | 'return_rejected' | 'refund_initiated' | 'refunded';
     estimatedDeliveryDate: Date;
     deliveredAt?: Date;
     returnReason?: string;
     exchangeImageUrl?: string;
     createdAt: Date;
+    refundDetails?: {
+        accountName: string;
+        bankName: string;
+        accountNumber: string;
+        ifscCode: string;
+        submittedAt: Date;
+    };
 }
 
 const orderSchema = new Schema<IOrder>(
@@ -37,13 +44,20 @@ const orderSchema = new Schema<IOrder>(
         paymentMethod: { type: String, default: 'Cash on Delivery' },
         status: {
             type: String,
-            enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'return_requested', 'return_accepted', 'returned', 'return_rejected'],
+            enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'return_requested', 'return_accepted', 'returned', 'return_rejected', 'refund_initiated', 'refunded'],
             default: 'pending',
         },
         estimatedDeliveryDate: { type: Date },
         deliveredAt: { type: Date },
         returnReason: { type: String },
         exchangeImageUrl: { type: String },
+        refundDetails: {
+            accountName: { type: String },
+            bankName: { type: String },
+            accountNumber: { type: String },
+            ifscCode: { type: String },
+            submittedAt: { type: Date }
+        },
     },
     { timestamps: true, collection: 'orders' }
 );

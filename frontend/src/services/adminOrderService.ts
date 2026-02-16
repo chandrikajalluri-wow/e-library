@@ -11,6 +11,8 @@ export const getAllOrders = async (filters: any) => {
         if (filters.startDate) queryParams.append('startDate', filters.startDate);
         if (filters.endDate) queryParams.append('endDate', filters.endDate);
         if (filters.membership && filters.membership !== 'all') queryParams.append('membership', filters.membership);
+        if (filters.page) queryParams.append('page', filters.page.toString());
+        if (filters.limit) queryParams.append('limit', filters.limit.toString());
 
         // API base URL is already configured in api.ts, just append the endpoint
         const response = await api.get(`orders/admin/all?${queryParams.toString()}`);

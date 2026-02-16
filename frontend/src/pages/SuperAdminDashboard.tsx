@@ -67,10 +67,7 @@ const SuperAdminDashboard: React.FC = () => {
                                 <span className="stats-label">Total Revenue</span>
                                 <span className="stats-value stats-value-accent">₹{metrics.totalRevenue?.toLocaleString()}</span>
                             </div>
-                            <div className="card stats-card-content">
-                                <span className="stats-label">System Activities</span>
-                                <span className="stats-value stats-value-info">{metrics.totalActivity}</span>
-                            </div>
+
                         </div>
                         <AnalyticsDashboard data={metrics} />
                     </>

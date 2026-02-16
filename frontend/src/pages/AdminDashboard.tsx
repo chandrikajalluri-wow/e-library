@@ -32,6 +32,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [readHistory, setReadHistory] = useState<any[]>([]);
   const [userRequests, setUserRequests] = useState<any[]>([]);
   const [orderReturns, setOrderReturns] = useState<any[]>([]);
+  const [exchangePage, setExchangePage] = useState(1);
+  const [exchangeTotalPages, setExchangeTotalPages] = useState(1);
+  const [exchangeTotalOrders, setExchangeTotalOrders] = useState(0);
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [bookTypeFilter, setBookTypeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -187,11 +190,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
   const fetchOrderReturns = async () => {
     setIsDataLoading(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
-      const statusToSend = exchangeStatusFilter === 'all_exchanges' ? 'return_requested,returned,return_rejected' : exchangeStatusFilter;
-      const data = await getAllOrders({ status: statusToSend, search: exchangeSearch });
+      const statusToSend = exchangeStatusFilter === 'all_exchanges' ? 'return_requested,return_accepted,returned,return_rejected,refund_initiated,refunded' : exchangeStatusFilter;
+      const data = await getAllOrders({
+        status: statusToSend,
+        search: exchangeSearch,
+        page: exchangePage,
+        limit: 10
+      });
       console.log('Fetched exchange orders:', data);
-      setOrderReturns(data);
+
+      // Handle paginated response
+      if (data && data.orders) {
+        setOrderReturns(data.orders);
+        setExchangeTotalPages(data.totalPages || 1);
+        setExchangeTotalOrders(data.totalOrders || 0);
+      } else {
+        setOrderReturns(Array.isArray(data) ? data : []);
+      }
     } catch (err: unknown) {
       console.error(err);
       toast.error('Failed to fetch order returns');
@@ -264,6 +281,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   useEffect(() => {
     fetchCommonData();
   }, []);
+
+  useEffect(() => {
+    fetchOrderReturns();
+  }, [exchangeStatusFilter, exchangeSearch, exchangePage]);
+
+  // Reset page on filter change
+  useEffect(() => {
+    setExchangePage(1);
+  }, [exchangeStatusFilter, exchangeSearch]);
 
   useEffect(() => {
     if (activeTab === 'borrows') fetchReadHistory();
@@ -609,7 +635,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
-          await updateOrderStatus(orderId, 'returned');
+          await updateOrderStatus(orderId, 'return_accepted');
           toast.success('Return request approved');
           fetchOrderReturns();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
@@ -1320,9 +1346,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                       className="admin-filter-select"
                     >
                       <option value="all_exchanges">Show All</option>
-                      <option value="return_requested">Pending</option>
-                      <option value="returned">Exchanged</option>
+                      <option value="return_requested">Pending approval</option>
+                      <option value="return_accepted">Accepted (Awaiting return)</option>
+                      <option value="returned">Exchanged / Received</option>
                       <option value="return_rejected">Rejected</option>
+                      <option value="refund_initiated">Refund Initiated</option>
                     </select>
                   </div>
                 </div>
@@ -1394,13 +1422,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   </table>
                 )}
               </div>
+
+              {/* Added pagination for exchanges */}
+              {!isDataLoading && exchangeTotalPages > 1 && (
+                <div className="admin-pagination" style={{ margin: '1rem' }}>
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setExchangePage(prev => Math.max(1, prev - 1))}
+                    disabled={exchangePage === 1}
+                  >
+                    Previous
+                  </button>
+                  <div className="pagination-info">
+                    Page <span>{exchangePage}</span> of <span>{exchangeTotalPages}</span>
+                    <div className="total-count-mini">Total {exchangeTotalOrders} requests</div>
+                  </div>
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setExchangePage(prev => Math.min(exchangeTotalPages, prev + 1))}
+                    disabled={exchangePage === exchangeTotalPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+
               {!isDataLoading && orderReturns.length === 0 && (
                 <div className="admin-empty-state">
                   {exchangeStatusFilter === 'return_requested'
                     ? 'No pending exchange requests.'
-                    : exchangeStatusFilter === 'returned'
-                      ? 'No processed exchanges found.'
-                      : 'No rejected exchange requests found.'}
+                    : exchangeStatusFilter === 'return_accepted'
+                      ? 'No accepted requests awaiting item return.'
+                      : exchangeStatusFilter === 'returned'
+                        ? 'No processed exchanges found.'
+                        : exchangeStatusFilter === 'refund_initiated'
+                          ? 'No active refunds found.'
+                          : 'No rejected exchange requests found.'}
                 </div>
               )}
             </section>

@@ -51,7 +51,7 @@ const ContentModeration: React.FC = () => {
         <div className="card admin-table-section">
             <div className="admin-table-header-box">
                 <h3 className="admin-table-title">Content Moderation</h3>
-                <button onClick={fetchReviews} className="admin-refresh-stats-btn" style={{ height: 'auto', padding: '0.5rem 1rem' }}>
+                <button onClick={fetchReviews} className="admin-refresh-stats-btn btn-compact">
                     Refresh
                 </button>
             </div>
@@ -73,7 +73,7 @@ const ContentModeration: React.FC = () => {
                         <tbody>
                             {reviews.map(review => (
                                 <tr key={review._id}>
-                                    <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    <td className="table-cell-date">
                                         {new Date(review.reviewed_at).toLocaleDateString()}
                                     </td>
                                     <td>
@@ -83,8 +83,8 @@ const ContentModeration: React.FC = () => {
                                         </div>
                                     </td>
                                     <td><span className="book-main-title">{review.book_id?.title || 'Unknown'}</span></td>
-                                    <td><span style={{ fontWeight: 800, color: '#f59e0b' }}>★ {review.rating}</span></td>
-                                    <td style={{ maxWidth: '300px', lineHeight: '1.4' }}>{review.comment}</td>
+                                    <td><span className="table-cell-rating-star">★ {review.rating}</span></td>
+                                    <td className="table-cell-comment">{review.comment}</td>
                                     <td className="admin-actions-cell">
                                         <button onClick={() => confirmDelete(review._id)} className="admin-btn-delete">Remove</button>
                                     </td>

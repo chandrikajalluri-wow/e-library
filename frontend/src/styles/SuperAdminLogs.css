@@ -1,0 +1,369 @@
+/* Super Admin Activity Logs - Dedicated Styles */
+
+.system-logs-container {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color, #e2e8f0);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.system-logs-header {
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
+    background: #fff;
+}
+
+.system-logs-title-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+.system-logs-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background: #6366f1;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.system-logs-text h3 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.25rem 0;
+    letter-spacing: -0.01em;
+}
+
+.system-logs-text p {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0;
+    font-weight: 500;
+}
+
+.system-logs-count {
+    background: #f1f5f9;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+/* Table Styles */
+.logs-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.logs-table th {
+    text-align: left;
+    padding: 1.25rem 2rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.logs-table th div {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logs-table td {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+}
+
+.logs-table tr:last-child td {
+    border-bottom: none;
+}
+
+.logs-table tr:hover td {
+    background-color: #f8fafc;
+}
+
+/* Timestamp Column */
+.log-time-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.log-time-relative {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.log-time-full {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* User Column */
+.log-user-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.log-user-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.log-user-email {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+/* Action Badge */
+.log-action-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Specific Badge Colors */
+.badge-green {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.badge-red {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.badge-orange {
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #ffedd5;
+}
+
+.badge-blue {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #dbeafe;
+}
+
+.badge-purple {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border: 1px solid #ede9fe;
+}
+
+/* Loading State */
+.logs-loading {
+    padding: 4rem;
+    display: flex;
+    justify-content: center;
+    color: #cbd5e1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .system-logs-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .logs-table td {
+        padding: 1rem;
+    }
+}
+
+/* Dark Mode */
+[data-theme="dark"] .system-logs-container,
+[data-theme="dark"] .system-logs-header {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .system-logs-text h3 {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .system-logs-text p {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .logs-table th {
+    background: #1e293b;
+    color: #94a3b8;
+    border-bottom-color: #334155;
+}
+
+[data-theme="dark"] .logs-table td {
+    border-bottom-color: #334155;
+}
+
+[data-theme="dark"] .logs-table tr:hover td {
+    background-color: #0f172a;
+}
+
+[data-theme="dark"] .log-time-relative,
+[data-theme="dark"] .log-user-name {
+    color: #f8fafc;
+}
+
+/* --- New Enhancements --- */
+
+.system-logs-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logs-refresh-btn {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logs-refresh-btn:hover {
+    background: #f1f5f9;
+    color: #4f46e5;
+}
+
+.system-logs-toolbar {
+    padding: 1rem 2rem;
+    display: flex;
+    gap: 1rem;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.logs-search-input {
+    flex-grow: 1;
+    padding: 0.6rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: white;
+}
+
+.logs-filter-select {
+    padding: 0.6rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: white;
+    min-width: 150px;
+    cursor: pointer;
+}
+
+.logs-pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 1rem 2rem;
+    gap: 1rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.pagination-btn {
+    padding: 0.4rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Dark Mode Toolbar */
+[data-theme="dark"] .system-logs-toolbar,
+[data-theme="dark"] .logs-pagination {
+    background: #1e293b;
+    border-color: #334155;
+    border-top-color: #334155;
+}
+
+[data-theme="dark"] .logs-search-input,
+[data-theme="dark"] .logs-filter-select,
+[data-theme="dark"] .pagination-btn {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .logs-refresh-btn {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .logs-refresh-btn:hover {
+    background: #334155;
+    color: #818cf8;
+}

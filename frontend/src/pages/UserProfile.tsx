@@ -132,7 +132,7 @@ const UserProfile: React.FC = () => {
 
   return (
     <div className="profile-container dashboard-container saas-reveal">
-      <div className="back-to-catalog-container" style={{ maxWidth: '1280px', margin: '0 auto 1.5rem auto', padding: '0 2rem' }}>
+      <div className="back-to-catalog-container">
         <button onClick={() => navigate('/books')} className="back-to-catalog-link">
           <ArrowLeft size={18} />
           Back to Catalog
@@ -397,7 +397,7 @@ const UserProfile: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="genre-edit-section" style={{ marginTop: '2rem' }}>
+                <div className="genre-edit-section">
                   <label className="form-label-large">Favorite Genres (Max 3)</label>
                   {isPremium ? (
                     <div className="genre-selection-wrapper">

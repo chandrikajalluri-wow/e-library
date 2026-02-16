@@ -154,7 +154,7 @@ export const requestReturn = async (req: AuthRequest, res: Response) => {
             `Return request submitted for "${book?.title}"`,
             req.user!._id as any,
             borrow.book_id as any,
-            borrow._id.toString()
+            (borrow.order_id || borrow._id).toString()
         );
 
         await notifyAdmins(

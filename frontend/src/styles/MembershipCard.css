@@ -182,3 +182,7 @@
         font-size: 2rem;
     }
 }
+
+.membership-card-premium .membership-card-current-badge {
+    top: 3rem;
+}

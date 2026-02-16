@@ -115,35 +115,63 @@ const AdminOrders: React.FC = () => {
     const [isBulkProcessing, setIsBulkProcessing] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalOrders, setTotalOrders] = useState(0);
+    const [counts, setCounts] = useState({ total: 0, pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 });
+    const itemsPerPage = 10;
+
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000); // Update every minute
         return () => clearInterval(timer);
     }, []);
 
     useEffect(() => {
-        fetchOrders();
-    }, [filterStatus, dateRange, sortBy, filterMembership]);
+        setCurrentPage(1); // Reset to first page on filter change
+    }, [filterStatus, dateRange, sortBy, filterMembership, search]);
 
-    // Debounced search effect
+    useEffect(() => {
+        fetchOrders();
+    }, [filterStatus, dateRange, sortBy, filterMembership, currentPage]);
+
+    // Initial fetch for search (debounced)
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchOrders();
+            if (currentPage === 1) {
+                fetchOrders();
+            } else {
+                setCurrentPage(1);
+            }
         }, 500);
         return () => clearTimeout(delayDebounceFn);
     }, [search]);
 
     const fetchOrders = async () => {
         setIsLoading(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         try {
-            const data = await getAllOrders({
+            const response = await getAllOrders({
                 status: filterStatus,
                 search: search,
                 sort: sortBy,
                 startDate: dateRange.start,
                 endDate: dateRange.end,
-                membership: filterMembership
+                membership: filterMembership,
+                page: currentPage,
+                limit: itemsPerPage
             });
-            setOrders(data);
+
+            // Handle new paginated response structure
+            if (response && response.orders) {
+                setOrders(response.orders);
+                setTotalPages(response.totalPages || 1);
+                setTotalOrders(response.totalOrders || 0);
+                if (response.counts) setCounts(response.counts);
+            } else {
+                // Fallback for old/direct array response if needed
+                setOrders(Array.isArray(response) ? response : []);
+            }
             setSelectedOrders([]); // Clear selection on refresh
         } catch (error: any) {
             toast.error(error);
@@ -234,14 +262,14 @@ const AdminOrders: React.FC = () => {
         }
     };
 
-    // Calculate Stats based on orders
+    // Use backend-provided counts for accurate stats
     const stats = {
-        total: orders.length,
-        pending: orders.filter(o => o.status === 'pending').length,
-        processing: orders.filter(o => o.status === 'processing').length,
-        shipped: orders.filter(o => o.status === 'shipped').length,
-        delivered: orders.filter(o => o.status === 'delivered').length,
-        cancelled: orders.filter(o => o.status === 'cancelled').length,
+        total: counts.total,
+        pending: counts.pending,
+        processing: counts.processing,
+        shipped: counts.shipped,
+        delivered: counts.delivered,
+        cancelled: counts.cancelled,
     };
 
     return (
@@ -438,151 +466,177 @@ const AdminOrders: React.FC = () => {
                             <p>Try adjusting your search or filters</p>
                         </div>
                     ) : (
-                        orders.map(order => {
-                            const step = getStatusStep(order.status);
-                            const isSelected = selectedOrders.includes(order._id);
-                            const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
-                            const isPremium = order.user_id?.membership_id?.name === 'premium';
+                        <>
+                            {orders.map(order => {
+                                const step = getStatusStep(order.status);
+                                const isSelected = selectedOrders.includes(order._id);
+                                const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+                                const isPremium = order.user_id?.membership_id?.name === 'premium';
 
-                            // Check for priority (urgent premium orders < 6 hours left)
-                            let isUrgent = false;
-                            if (isPremium && (order.status === 'pending' || order.status === 'processing')) {
-                                const createdAt = new Date(order.createdAt).getTime();
-                                const deadline = createdAt + 24 * 60 * 60 * 1000;
-                                const remaining = deadline - currentTime.getTime();
-                                isUrgent = remaining > 0 && remaining < 6 * 60 * 60 * 1000;
-                            }
+                                // Check for priority (urgent premium orders < 6 hours left)
+                                let isUrgent = false;
+                                if (isPremium && (order.status === 'pending' || order.status === 'processing')) {
+                                    const createdAt = new Date(order.createdAt).getTime();
+                                    const deadline = createdAt + 24 * 60 * 60 * 1000;
+                                    const remaining = deadline - currentTime.getTime();
+                                    isUrgent = remaining > 0 && remaining < 6 * 60 * 60 * 1000;
+                                }
 
-                            return (
-                                <div
-                                    key={order._id}
-                                    className={`admin-order-card cursor-pointer hover:shadow-md transition-shadow ${isSelected ? 'selected' : ''}`}
-                                    onClick={() => navigate(`/admin/orders/${order._id}`)}
-                                >
+                                return (
                                     <div
-                                        className={`selection-checkbox ${isTerminalStatus(order.status) ? 'disabled' : ''}`}
-                                        onClick={(e) => toggleOrderSelection(order._id, e)}
-                                        style={isTerminalStatus(order.status) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                        key={order._id}
+                                        className={`admin-order-card cursor-pointer hover:shadow-md transition-shadow ${isSelected ? 'selected' : ''}`}
+                                        onClick={() => navigate(`/admin/orders/${order._id}`)}
                                     >
-                                        {isSelected ? <CheckSquare size={20} className="text-indigo-600" /> : <Square size={20} />}
-                                    </div>
-
-                                    <div className="order-header">
-                                        <div className="order-id-info">
-                                            <h4>#{order._id.slice(-8).toUpperCase()}</h4>
-                                            <span className="order-date">
-                                                {new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                            </span>
+                                        <div
+                                            className={`selection-checkbox ${isTerminalStatus(order.status) ? 'disabled' : ''}`}
+                                            onClick={(e) => toggleOrderSelection(order._id, e)}
+                                            style={isTerminalStatus(order.status) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                        >
+                                            {isSelected ? <CheckSquare size={20} className="text-indigo-600" /> : <Square size={20} />}
                                         </div>
-                                        <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            {isUrgent && (
-                                                <div className="priority-indicator">Priority</div>
-                                            )}
-                                            {(order.status === 'pending' || order.status === 'processing') && isPremium && (
-                                                <CircularCountdown date={order.createdAt} membership={order.user_id?.membership_id?.name} currentTime={currentTime} />
-                                            )}
-                                            <div className="status-control" onClick={(e) => e.stopPropagation()}>
-                                                <div className="order-metadata">
-                                                    {isPremium && (
-                                                        <span className="premium-badge-mini">PREMIUM</span>
-                                                    )}
-                                                    <div className={`status-badge-premium ${order.status}`}>
-                                                        {order.status === 'return_requested' ? 'Exchange Pending' :
-                                                            order.status === 'return_accepted' ? 'Accepted' :
-                                                                order.status === 'returned' ? 'Exchanged' :
-                                                                    order.status === 'return_rejected' ? 'Exchange Rejected' :
-                                                                        order.status}
+
+                                        <div className="order-header">
+                                            <div className="order-id-info">
+                                                <h4>#{order._id.slice(-8).toUpperCase()}</h4>
+                                                <span className="order-date">
+                                                    {new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </span>
+                                            </div>
+                                            <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                {isUrgent && (
+                                                    <div className="priority-indicator">Priority</div>
+                                                )}
+                                                {(order.status === 'pending' || order.status === 'processing') && isPremium && (
+                                                    <CircularCountdown date={order.createdAt} membership={order.user_id?.membership_id?.name} currentTime={currentTime} />
+                                                )}
+                                                <div className="status-control" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="order-metadata">
+                                                        {isPremium && (
+                                                            <span className="premium-badge-mini">PREMIUM</span>
+                                                        )}
+                                                        <div className={`status-badge-premium ${order.status}`}>
+                                                            {order.status === 'return_requested' ? 'Exchange Pending' :
+                                                                order.status === 'return_accepted' ? 'Accepted' :
+                                                                    order.status === 'returned' ? 'Exchanged' :
+                                                                        order.status === 'return_rejected' ? 'Exchange Rejected' :
+                                                                            order.status}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="order-body">
-                                        <div className="user-details" style={{ flex: 1.5 }}>
-                                            <p className="label">Customer</p>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
-                                                <div style={{
-                                                    width: '32px',
-                                                    height: '32px',
-                                                    borderRadius: '50%',
-                                                    background: 'var(--primary-color)',
-                                                    color: 'white',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontWeight: '800',
-                                                    fontSize: '0.8rem'
-                                                }}>
-                                                    {order.user_id?.name?.charAt(0).toUpperCase() || 'U'}
-                                                </div>
-                                                <div>
-                                                    <p className="value" style={{ fontSize: '0.95rem' }}>{order.user_id?.name}</p>
-                                                    <p className="sub-value" style={{ fontSize: '0.75rem' }}>{order.user_id?.email}</p>
+                                        <div className="order-body">
+                                            <div className="user-details" style={{ flex: 1.5 }}>
+                                                <p className="label">Customer</p>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
+                                                    <div style={{
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        borderRadius: '50%',
+                                                        background: 'var(--primary-color)',
+                                                        color: 'white',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontWeight: '800',
+                                                        fontSize: '0.8rem'
+                                                    }}>
+                                                        {order.user_id?.name?.charAt(0).toUpperCase() || 'U'}
+                                                    </div>
+                                                    <div>
+                                                        <p className="value" style={{ fontSize: '0.95rem' }}>{order.user_id?.name}</p>
+                                                        <p className="sub-value" style={{ fontSize: '0.75rem' }}>{order.user_id?.email}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="order-item-details-inline" style={{ flex: 2.5 }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
-                                                {order.items.slice(0, 2).map((item, itemIdx) => {
-                                                    const book = item.book_id;
-                                                    return (
-                                                        <div key={itemIdx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.5rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                                                            <img
-                                                                src={book?.cover_image_url || 'https://via.placeholder.com/150?text=NA'}
-                                                                alt={book?.title || 'Book'}
-                                                                style={{ width: '36px', height: '54px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }}
-                                                            />
-                                                            <div className="item-text" style={{ flex: 1, minWidth: 0 }}>
-                                                                <p className="value" style={{ fontSize: '0.85rem', fontWeight: '700', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{book?.title || 'Deleted Book'}</p>
-                                                                <p className="sub-value" style={{ margin: '0.15rem 0 0', fontSize: '0.75rem' }}>Qty: {item.quantity}</p>
+                                            <div className="order-item-details-inline" style={{ flex: 2.5 }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                                                    {order.items.slice(0, 2).map((item, itemIdx) => {
+                                                        const book = item.book_id;
+                                                        return (
+                                                            <div key={itemIdx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.5rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                                                                <img
+                                                                    src={book?.cover_image_url || 'https://via.placeholder.com/150?text=NA'}
+                                                                    alt={book?.title || 'Book'}
+                                                                    style={{ width: '36px', height: '54px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }}
+                                                                />
+                                                                <div className="item-text" style={{ flex: 1, minWidth: 0 }}>
+                                                                    <p className="value" style={{ fontSize: '0.85rem', fontWeight: '700', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{book?.title || 'Deleted Book'}</p>
+                                                                    <p className="sub-value" style={{ margin: '0.15rem 0 0', fontSize: '0.75rem' }}>Qty: {item.quantity}</p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                                {order.items.length > 2 && (
-                                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0.5rem', fontWeight: '600' }}>
-                                                        + {order.items.length - 2} more books
-                                                    </p>
-                                                )}
+                                                        );
+                                                    })}
+                                                    {order.items.length > 2 && (
+                                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0.5rem', fontWeight: '600' }}>
+                                                            + {order.items.length - 2} more books
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="order-total-mini text-right" style={{ flex: 1.2, display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                                <p className="label">Summary</p>
+                                                <div className="order-value-badge">
+                                                    <CreditCard size={14} />
+                                                    <span>₹{order.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                </div>
+                                                <div className="item-count-badge">
+                                                    <Package size={13} />
+                                                    <span>{totalQuantity} {totalQuantity === 1 ? 'Book' : 'Books'}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="order-total-mini text-right" style={{ flex: 1.2, display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                                            <p className="label">Summary</p>
-                                            <div className="order-value-badge">
-                                                <CreditCard size={14} />
-                                                <span>₹{order.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                            </div>
-                                            <div className="item-count-badge">
-                                                <Package size={13} />
-                                                <span>{totalQuantity} {totalQuantity === 1 ? 'Book' : 'Books'}</span>
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <div className="order-progress-container">
-                                        <div className="order-progress-bar">
-                                            <div
-                                                className={`progress-fill ${order.status}`}
-                                                style={{ width: `${order.status === 'cancelled' ? 100 : (step / 4) * 100}%` }}
-                                            ></div>
+                                        <div className="order-progress-container">
+                                            <div className="order-progress-bar">
+                                                <div
+                                                    className={`progress-fill ${order.status}`}
+                                                    style={{ width: `${order.status === 'cancelled' ? 100 : (step / 4) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                            <div className="progress-labels">
+                                                <span>Placed</span>
+                                                <span>Processing</span>
+                                                <span>Shipped</span>
+                                                <span>Delivered</span>
+                                            </div>
                                         </div>
-                                        <div className="progress-labels">
-                                            <span>Placed</span>
-                                            <span>Processing</span>
-                                            <span>Shipped</span>
-                                            <span>Delivered</span>
-                                        </div>
-                                    </div>
 
-                                    <div className="order-footer">
-                                        <div className="card-actions">
-                                            <button className="quick-view-btn">Manage Order</button>
+                                        <div className="order-footer">
+                                            <div className="card-actions">
+                                                <button className="quick-view-btn">Manage Order</button>
+                                            </div>
                                         </div>
                                     </div>
+                                );
+                            })}
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="admin-pagination">
+                                    <button
+                                        className="pagination-btn"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        Previous
+                                    </button>
+                                    <div className="pagination-info">
+                                        Page <span>{currentPage}</span> of <span>{totalPages}</span>
+                                        <div className="total-count-mini">Total {totalOrders} orders</div>
+                                    </div>
+                                    <button
+                                        className="pagination-btn"
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                    </button>
                                 </div>
-                            );
-                        })
+                            )}
+                        </>
                     )}
                 </div>
             )}

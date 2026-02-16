@@ -14,6 +14,7 @@ import MembershipCard from '../components/MembershipCard';
 import PaymentModal from '../components/PaymentModal';
 import { toast } from 'react-toastify';
 import '../styles/Home.css';
+import '../styles/Home.css';
 
 
 
@@ -217,14 +218,8 @@ const Home: React.FC = () => {
           <div className="glow glow-1"></div>
           <div className="glow glow-2"></div>
         </div>
-        <div className="saas-container hero-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: '1.1fr 0.9fr',
-          gap: '2rem',
-          alignItems: 'center',
-          minHeight: '600px'
-        }}>
-          <div className="hero-stack text-left" style={{ minWidth: 0 }}>
+        <div className="saas-container hero-grid hero-grid-styled">
+          <div className="hero-stack text-left hero-stack-styled">
             <div className="hero-badge saas-reveal">✨ Your Modern Digital Sanctuary</div>
             <h1 className="hero-main-title saas-reveal">
               Read Smart. Read Anytime. <br />
@@ -244,12 +239,7 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          <div className="hero-carousel-container saas-reveal" style={{
-            width: '100%',
-            height: '450px',
-            display: 'flex',
-            justifyContent: 'flex-start'
-          }}>
+          <div className="hero-carousel-container saas-reveal hero-carousel-container-styled">
             <div className="carousel-track">
               {books.length > 0 ? (
                 [...books.slice(0, Math.ceil(books.length / 2)), ...books.slice(0, Math.ceil(books.length / 2))].map((book, index) => (
@@ -387,41 +377,11 @@ const Home: React.FC = () => {
               // Loading skeletons
               Array.from({ length: 3 }).map((_, index) => (
                 <div key={`skeleton-${index}`} className="saas-reveal active">
-                  <div className="membership-card-skeleton" style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: '16px',
-                    padding: '2rem',
-                    minHeight: '400px',
-                    animation: 'pulse 1.5s ease-in-out infinite'
-                  }}>
-                    <div style={{
-                      height: '24px',
-                      width: '60%',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '4px',
-                      marginBottom: '1rem'
-                    }}></div>
-                    <div style={{
-                      height: '48px',
-                      width: '40%',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '4px',
-                      marginBottom: '2rem'
-                    }}></div>
-                    <div style={{
-                      height: '16px',
-                      width: '80%',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '4px',
-                      marginBottom: '0.5rem'
-                    }}></div>
-                    <div style={{
-                      height: '16px',
-                      width: '70%',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '4px',
-                      marginBottom: '0.5rem'
-                    }}></div>
+                  <div className="membership-card-skeleton skeleton-card-wrapper">
+                    <div className="skeleton-line-title"></div>
+                    <div className="skeleton-line-body-large"></div>
+                    <div className="skeleton-line-body"></div>
+                    <div className="skeleton-line-body-short"></div>
                   </div>
                 </div>
               ))
@@ -454,27 +414,9 @@ const Home: React.FC = () => {
               // Loading skeletons
               Array.from({ length: 8 }).map((_, index) => (
                 <div key={`cat-skeleton-${index}`} className="category-card saas-reveal active">
-                  <div style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    marginBottom: '1rem',
-                    animation: 'pulse 1.5s ease-in-out infinite'
-                  }}></div>
-                  <div style={{
-                    height: '20px',
-                    width: '70%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '4px',
-                    marginBottom: '0.5rem'
-                  }}></div>
-                  <div style={{
-                    height: '14px',
-                    width: '90%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '4px'
-                  }}></div>
+                  <div className="skeleton-cat-icon"></div>
+                  <div className="skeleton-cat-title"></div>
+                  <div className="skeleton-cat-desc"></div>
                 </div>
               ))
             ) : (
@@ -490,9 +432,8 @@ const Home: React.FC = () => {
                         navigate(`/books?category=${category._id}`);
                       }
                     }}
-                    className="category-card saas-reveal"
+                    className="category-card saas-reveal cursor-pointer"
                     data-category={category.name.toLowerCase().replace(/\s+/g, '-')}
-                    style={{ cursor: 'pointer' }}
                   >
                     <div className="category-icon">
                       {getCategoryIcon(category.name)}
@@ -505,29 +446,15 @@ const Home: React.FC = () => {
                 {/* View All Card */}
                 <div
                   onClick={handleExplore}
-                  className="category-card saas-reveal"
-                  style={{
-                    cursor: 'pointer',
-                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%)',
-                    borderColor: 'var(--saas-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center'
-                  }}
+                  className="category-card saas-reveal view-all-card-styled"
                 >
                   <div
-                    className="category-icon"
-                    style={{
-                      background: 'var(--saas-primary)',
-                      marginBottom: '1rem',
-                      borderRadius: '50%'
-                    }}
+                    className="category-icon view-all-icon-styled"
                   >
                     <ArrowRight width="32" height="32" />
                   </div>
                   <h3>View All</h3>
-                  <p style={{ transform: 'none', opacity: 1 }}>Explore our full catalog</p>
+                  <p className="view-all-text-styled">Explore our full catalog</p>
                 </div>
               </>
             )}
@@ -541,16 +468,16 @@ const Home: React.FC = () => {
           <div className="cta-box">
             <h2>Ready to start reading?</h2>
             <p>Join thousands of knowledge seekers today. Your first book is just a click away.</p>
-            <div className="cta-actions" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+            <div className="cta-actions cta-actions-styled">
               <button onClick={handleExplore} className="btn-vibrant large">Join Bookstack Now</button>
               <button onClick={() => {
                 const element = document.querySelector('.membership-plans-grid');
                 if (element) element.scrollIntoView({ behavior: 'smooth' });
-              }} className="btn-outline large" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>View Plans</button>
+              }} className="btn-outline large cta-view-plans-btn-styled">View Plans</button>
             </div>
 
             {/* Visual Decor */}
-            <div className="cta-decor" style={{ position: 'absolute', top: '-50px', right: '-50px', opacity: 0.1, transform: 'rotate(15deg)' }}>
+            <div className="cta-decor cta-decor-styled">
               <BookOpen width="200" height="200" color="white" />
             </div>
           </div>

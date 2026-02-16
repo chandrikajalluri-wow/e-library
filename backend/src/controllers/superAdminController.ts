@@ -284,6 +284,30 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
             }
         ]);
 
+        // Membership Distribution
+        const membershipDistribution = await User.aggregate([
+            {
+                $lookup: {
+                    from: 'memberships',
+                    localField: 'membership_id',
+                    foreignField: '_id',
+                    as: 'membership'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$membership',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: { $ifNull: ['$membership.displayName', 'No Plan'] },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
         // Book Distribution by Category
         const bookDistribution = await Book.aggregate([
             {
@@ -360,6 +384,7 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
             totalOrders,
             totalRevenue,
             userDistribution,
+            membershipDistribution,
             bookDistribution,
             readlistTrends,
             orderTrends

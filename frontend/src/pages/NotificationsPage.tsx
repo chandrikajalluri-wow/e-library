@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getMyNotifications, markNotificationRead, markAllNotificationsRead } from '../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Filter, Calendar, X, ChevronDown } from 'lucide-react';
 import { RoleName } from '../types/enums';
 import '../styles/NotificationCenter.css'; // Reusing styles
+import '../styles/NotificationsPage.css';
 
 const NotificationsPage: React.FC = () => {
+    const navigate = useNavigate();
     const [notifications, setNotifications] = useState<any[]>([]);
 
     // Filter States
@@ -18,12 +20,74 @@ const NotificationsPage: React.FC = () => {
     const fetchNotifications = async () => {
         try {
             const params: any = {};
-            if (filterType !== 'all') params.type = filterType;
+            if (filterType === 'exchange' || (isAdmin && filterType === 'return')) {
+                params.type = isAdmin ? 'return' : 'borrow,return';
+            } else if (filterType === 'order') {
+                params.type = 'order';
+            } else if (filterType === 'canceled') {
+                // Fetch all relevant types for cancellation search
+                params.type = 'order,borrow,return';
+            } else if (filterType === 'new_addition') {
+                params.type = 'system';
+            } else if (filterType !== 'all' && filterType !== 'others') {
+                params.type = filterType;
+            }
+
             if (filterStatus !== 'all') params.is_read = filterStatus === 'read' ? 'true' : 'false';
             if (startDate) params.startDate = startDate;
             if (endDate) params.endDate = endDate;
 
-            const data = await getMyNotifications(params);
+            let data = await getMyNotifications(params);
+
+            // Client-side virtual filtering/refining
+            if (!isAdmin) {
+                if (filterType === 'new_addition') {
+                    data = data.filter((n: any) => n.type === 'system' && n.message.includes('New Addition'));
+                } else if (filterType === 'exchange') {
+                    const exchangeTypes = ['borrow', 'return'];
+                    // EXCLUDE canceled orders even if they are borrow/return type
+                    data = data.filter((n: any) =>
+                        exchangeTypes.includes(n.type?.toLowerCase()) &&
+                        !n.message.toLowerCase().includes('cancelled') &&
+                        !n.message.toLowerCase().includes('canceled')
+                    );
+                } else if (filterType === 'order') {
+                    // Exclude canceled from standard order view
+                    data = data.filter((n: any) =>
+                        n.type === 'order' &&
+                        !n.message.toLowerCase().includes('cancelled') &&
+                        !n.message.toLowerCase().includes('canceled')
+                    );
+                } else if (filterType === 'canceled') {
+                    data = data.filter((n: any) =>
+                        n.message.toLowerCase().includes('cancelled') ||
+                        n.message.toLowerCase().includes('canceled')
+                    );
+                } else if (filterType === 'others') {
+                    const knownTypes = ['order', 'borrow', 'return', 'wishlist'];
+                    data = data.filter((n: any) =>
+                        !knownTypes.includes(n.type?.toLowerCase()) &&
+                        !n.message.includes('New Addition') &&
+                        !n.message.toLowerCase().includes('cancelled') &&
+                        !n.message.toLowerCase().includes('canceled')
+                    );
+                }
+            } else {
+                // Admin side refining
+                if (filterType === 'order') {
+                    data = data.filter((n: any) =>
+                        n.type === 'order' &&
+                        !n.message.toLowerCase().includes('cancelled') &&
+                        !n.message.toLowerCase().includes('canceled')
+                    );
+                } else if (filterType === 'canceled') {
+                    data = data.filter((n: any) =>
+                        n.message.toLowerCase().includes('cancelled') ||
+                        n.message.toLowerCase().includes('canceled')
+                    );
+                }
+            }
+
             setNotifications(data);
         } catch (err) {
             console.error("Failed to fetch notifications", err);
@@ -52,6 +116,44 @@ const NotificationsPage: React.FC = () => {
         }
     };
 
+    const handleNotificationClick = (notif: any) => {
+        if (!notif.is_read) {
+            handleMarkRead(notif._id);
+        }
+
+        const type = notif.type?.toLowerCase();
+
+        if (isAdmin) {
+            if (type === 'order' && notif.target_id) {
+                navigate(`/admin/orders/${notif.target_id}`);
+            } else if (type === 'return' || (type === 'borrow' && notif.target_id)) {
+                // Exchange requests or decisions take admin to requests tab
+                navigate('/admin-dashboard?tab=requests');
+            } else if (type === 'book_request') {
+                navigate('/admin-dashboard?tab=user-requests');
+            } else if ((type === 'stock_alert' || type === 'wishlist') && notif.target_id) {
+                navigate(`/admin-dashboard?tab=books&editBookId=${notif.target_id}`);
+            } else if (notif.book_id) {
+                const bookId = notif.book_id?._id || notif.book_id;
+                navigate(`/books/${bookId}`);
+            }
+        } else {
+            // Redirection logic for users
+            if (type === 'order' || type === 'return' || type === 'borrow') {
+                if (notif.target_id) {
+                    navigate(`/orders/${notif.target_id}`);
+                } else {
+                    navigate('/my-orders');
+                }
+            } else if (type === 'wishlist' || (type === 'system' && notif.message.includes('New Addition'))) {
+                const bookId = notif.book_id?._id || notif.book_id;
+                if (bookId) {
+                    navigate(`/books/${bookId}`);
+                }
+            }
+        }
+    };
+
     const role = localStorage.getItem('role');
     const isAdmin = role === 'admin' || role === 'super_admin';
 
@@ -63,7 +165,7 @@ const NotificationsPage: React.FC = () => {
                 <div className="admin-header-titles">
                     <h1 className="admin-header-title">{isAdmin ? 'Admin Activity Control' : 'Notifications'}</h1>
                     <p className="admin-header-subtitle">
-                        {isAdmin ? 'Monitor and manage user activities and requests' : 'Stay updated with your library activities'}
+                        {isAdmin ? 'Monitor admin activities' : 'Stay updated with your library activities'}
                     </p>
                 </div>
                 <div className="header-actions">
@@ -77,7 +179,23 @@ const NotificationsPage: React.FC = () => {
 
             {/* Filter Bar */}
             <div className="filters-bar">
-                {role !== RoleName.SUPER_ADMIN && (
+                {!isAdmin ? (
+                    <div className="filter-pill">
+                        <Filter size={16} className="filter-icon" />
+                        <div className="select-wrapper">
+                            <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                                <option value="all">All Types</option>
+                                <option value="order">Orders</option>
+                                <option value="exchange">Exchange</option>
+                                <option value="canceled">Canceled</option>
+                                <option value="new_addition">New Addition</option>
+                                <option value="wishlist">Wishlist</option>
+                                <option value="others">Others</option>
+                            </select>
+                            <ChevronDown size={14} className="chevron-icon" />
+                        </div>
+                    </div>
+                ) : role !== RoleName.SUPER_ADMIN && (
                     <div className="filter-pill">
                         <Filter size={16} className="filter-icon" />
                         <div className="select-wrapper">
@@ -85,6 +203,7 @@ const NotificationsPage: React.FC = () => {
                                 <option value="all">All Types</option>
                                 <option value="order">Orders</option>
                                 <option value="return">Exchanges</option>
+                                <option value="canceled">Canceled</option>
                                 <option value="book_request">Requests</option>
                                 <option value="stock_alert">Stock Updates</option>
                             </select>
@@ -143,27 +262,30 @@ const NotificationsPage: React.FC = () => {
                 {notifications.length > 0 ? (
                     <div className="notifications-list-full">
                         {notifications.map((notif) => {
-                            const isActionRequired = isAdmin && (notif.type === 'return' || notif.type === 'book_request' || notif.type === 'order' || notif.type === 'stock_alert');
+                            const type = notif.type?.toLowerCase();
+                            const message = notif.message?.toLowerCase();
+                            const isCanceled = message.includes('cancelled') || message.includes('canceled');
+                            const isActionRequired = isAdmin && !isCanceled && (type === 'return' || type === 'book_request' || type === 'order' || type === 'stock_alert');
 
                             return (
                                 <div
                                     key={notif._id}
-                                    className={`notif-full-item ${notif.is_read ? 'read' : 'unread'} ${isActionRequired ? 'action-required-full' : ''}`}
-                                    onClick={() => !notif.is_read && handleMarkRead(notif._id)}
+                                    className={`notif-full-item ${notif.is_read ? 'read' : 'unread'} ${isActionRequired ? 'action-required' : ''} ${isCanceled ? 'canceled-item' : ''}`}
+                                    onClick={() => handleNotificationClick(notif)}
                                 >
                                     <div className="notif-full-icon">
-                                        {notif.type === 'borrow' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v10.5M4 19.5H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5.5"></path></svg>}
-                                        {notif.type === 'return' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>}
-                                        {notif.type === 'wishlist' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z"></path></svg>}
-                                        {notif.type === 'fine' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>}
-                                        {notif.type === 'order' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>}
-                                        {notif.type === 'book_request' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>}
-                                        {notif.type === 'system' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>}
+                                        {type === 'order' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isCanceled ? "#ef4444" : "#f59e0b"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>}
+                                        {type === 'return' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isCanceled ? "#ef4444" : "#10b981"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3L21 8L16 13"></path><path d="M21 8H12a4 4 0 0 0-4 4v9"></path><path d="M3 13V5a2 2 0 0 1 2-2"></path></svg>}
+                                        {type === 'borrow' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>}
+                                        {type === 'wishlist' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z"></path></svg>}
+                                        {type === 'fine' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>}
+                                        {type === 'book_request' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>}
+                                        {type === 'system' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>}
                                     </div>
                                     <div className="notif-full-content">
                                         <div className="notif-full-main">
                                             {isActionRequired && (
-                                                <span className="action-tag" style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+                                                <span className="action-tag action-tag-styled">
                                                     ACTION REQUIRED
                                                 </span>
                                             )}
@@ -174,29 +296,54 @@ const NotificationsPage: React.FC = () => {
                                         </div>
 
                                         <div className="notif-actions">
-                                            {isAdmin && notif.type === 'order' && notif.target_id && (
-                                                <Link to={`/admin/orders/${notif.target_id}`} className="view-action-btn order-btn">
-                                                    View Order
+                                            {/* Admin Actions */}
+                                            {isAdmin && type === 'order' && notif.target_id && (
+                                                <Link to={`/admin/orders/${notif.target_id}`} className={`view-action-btn ${isCanceled ? 'cancel-btn' : 'order-btn'}`}>
+                                                    {isCanceled ? 'View Cancelled Order' : 'View Order'}
                                                 </Link>
                                             )}
-                                            {isAdmin && notif.type === 'return' && (
-                                                <Link to="/admin-dashboard?tab=requests" className="view-action-btn exchange-btn">
-                                                    View Exchanges
+                                            {isAdmin && type === 'return' && (
+                                                <Link to="/admin-dashboard?tab=requests" className={`view-action-btn ${isCanceled ? 'cancel-btn' : 'exchange-btn'}`}>
+                                                    {isCanceled ? 'View Cancelled Request' : 'View Exchanges'}
                                                 </Link>
                                             )}
-                                            {isAdmin && notif.type === 'book_request' && (
+                                            {isAdmin && type === 'book_request' && (
                                                 <Link to="/admin-dashboard?tab=user-requests" className="view-action-btn request-btn">
                                                     View Requests
                                                 </Link>
                                             )}
-                                            {isAdmin && (notif.type === 'stock_alert' || notif.type === 'wishlist') && notif.target_id && (
+                                            {isAdmin && (type === 'stock_alert' || type === 'wishlist') && notif.target_id && (
                                                 <Link to={`/admin-dashboard?tab=books&editBookId=${notif.target_id}`} className="view-action-btn order-btn">
                                                     Manage Stock
                                                 </Link>
                                             )}
+
+                                            {!isAdmin && (type === 'order' || type === 'return' || type === 'borrow') && (() => {
+                                                const msg = notif.message.toLowerCase();
+                                                const isCanceled = msg.includes('cancelled') || msg.includes('canceled');
+                                                return (
+                                                    <Link
+                                                        to={notif.target_id ? `/orders/${notif.target_id}` : '/my-orders'}
+                                                        className={`view-action-btn ${isCanceled ? 'cancel-btn' : (type === 'order' ? 'order-btn' : 'exchange-btn')}`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (!notif.is_read) handleMarkRead(notif._id);
+                                                        }}
+                                                    >
+                                                        {isCanceled ? 'View Cancelled Order' : (type === 'order' ? 'View Order' : 'View Exchange')}
+                                                    </Link>
+                                                )
+                                            })()}
                                             {!isAdmin && notif.book_id && (
-                                                <Link to={`/books/${notif.book_id._id || notif.book_id}`} className="view-book-btn">
-                                                    View Book
+                                                <Link
+                                                    to={`/books/${notif.book_id._id || notif.book_id}`}
+                                                    className="view-book-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (!notif.is_read) handleMarkRead(notif._id);
+                                                    }}
+                                                >
+                                                    View {notif.type === 'system' ? 'Details' : 'Book'}
                                                 </Link>
                                             )}
                                         </div>
@@ -229,157 +376,7 @@ const NotificationsPage: React.FC = () => {
                 )}
             </div>
 
-            <style>{`
-                .notif-full-item {
-                    padding: 1.5rem;
-                    display: flex;
-                    gap: 1.5rem;
-                    border-bottom: 1px solid var(--border-color);
-                    transition: all 0.3s ease;
-                    position: relative;
-                    background-color: var(--card-bg);
-                }
-                .notif-full-item:last-child {
-                    border-bottom: none;
-                }
-                .notif-full-item.unread {
-                    background-color: rgba(99, 102, 241, 0.05);
-                    border-left: 3px solid var(--primary-color);
-                }
-                .notif-full-icon {
-                    flex-shrink: 0;
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 12px;
-                    background: var(--bg-color);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                    border: 1px solid var(--border-color);
-                }
-                .notif-full-content {
-                    flex: 1;
-                }
-                .notif-full-message {
-                    font-size: 1.1rem;
-                    font-weight: 500;
-                    color: var(--text-primary);
-                    margin-bottom: 0.25rem;
-                }
-                .notif-full-time {
-                    font-size: 0.85rem;
-                    color: var(--text-secondary);
-                }
-                .notif-actions {
-                    margin-top: 1.25rem;
-                    display: flex;
-                    gap: 1rem;
-                    align-items: center;
-                    flex-wrap: wrap;
-                }
-                .view-action-btn {
-                    padding: 0.6rem 1.25rem;
-                    border-radius: 100px;
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                    text-decoration: none;
-                    transition: all 0.2s ease;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .order-btn {
-                    background: rgba(245, 158, 11, 0.1);
-                    color: #f59e0b;
-                    border: 1px solid rgba(245, 158, 11, 0.2);
-                }
-                .order-btn:hover {
-                    background: #f59e0b;
-                    color: white;
-                }
-                .exchange-btn {
-                    background: rgba(16, 185, 129, 0.1);
-                    color: #10b981;
-                    border: 1px solid rgba(16, 185, 129, 0.2);
-                }
-                .exchange-btn:hover {
-                    background: #10b981;
-                    color: white;
-                }
-                .request-btn {
-                    background: rgba(139, 92, 246, 0.1);
-                    color: #8b5cf6;
-                    border: 1px solid rgba(139, 92, 246, 0.2);
-                }
-                .request-btn:hover {
-                    background: #8b5cf6;
-                    color: white;
-                }
-                .view-book-btn {
-                    padding: 0.6rem 1.25rem;
-                    border-radius: 100px;
-                    font-size: 0.85rem;
-                    color: var(--primary-color);
-                    font-weight: 600;
-                    text-decoration: none;
-                    border: 1px solid var(--primary-color);
-                    transition: all 0.2s ease;
-                }
-                .view-book-btn:hover {
-                    background: var(--primary-color);
-                    color: white;
-                }
-                .unread-pulse {
-                    width: 10px;
-                    height: 10px;
-                    background: var(--primary-color);
-                    border-radius: 50%;
-                    position: absolute;
-                    top: 1.5rem;
-                    right: 1.5rem;
-                    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
-                    animation: pulse 2s infinite;
-                }
-                .empty-notifications {
-                    text-align: center;
-                    padding: 4rem 2rem;
-                }
-                .empty-icon-circ {
-                    background: var(--bg-color);
-                    width: 80px;
-                    height: 80px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin: 0 auto 1.5rem auto;
-                    border: 1px solid var(--border-color);
-                }
-                .empty-text {
-                    color: var(--text-secondary);
-                }
-                .explore-books-btn {
-                    margin-top: 1.5rem;
-                    display: inline-block;
-                    text-decoration: none;
-                }
-                @keyframes pulse {
-                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-                    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
-                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-                }
-                
-                [data-theme='dark'] .notif-full-icon {
-                    background: rgba(255, 255, 255, 0.05);
-                }
-                [data-theme='dark'] .notif-full-item.unread {
-                    background-color: rgba(99, 102, 241, 0.1);
-                }
-                [data-theme='dark'] .notif-full-message {
-                    color: #f8fafc;
-                }
-            `}</style>
+
         </div>
     );
 };

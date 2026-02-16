@@ -104,7 +104,7 @@ const UserOrders: React.FC = () => {
             variants={containerVariants}
         >
             <div className="orders-page-header">
-                <div className="header-top-nav" style={{ marginBottom: '1.5rem' }}>
+                <div className="header-top-nav">
                     <button onClick={() => navigate('/dashboard')} className="minimal-back-btn">
                         <ArrowLeft size={18} />
                         <span>Dashboard</span>

@@ -86,7 +86,7 @@ const ReportedReviews: React.FC<ReportedReviewsProps> = ({ hideTitle = false }) 
                         </>
                     )}
                 </div>
-                <div className="admin-premium-label" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fee2e2', color: '#dc2626' }}>
+                <div className="reported-reviews-premium-label">
                     <AlertTriangle size={18} />
                     {reviews.length} Pending
                 </div>
@@ -113,7 +113,7 @@ const ReportedReviews: React.FC<ReportedReviewsProps> = ({ hideTitle = false }) 
                                         <BookOpen size={18} style={{ opacity: 0.5 }} />
                                         <span>{review.book_id?.title}</span>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                                    <div className="book-info-meta">
                                         <span>by {review.user_id?.name}</span>
                                         <span>•</span>
                                         <span style={{ color: '#f59e0b' }}>{'★'.repeat(review.rating)}</span>
@@ -144,8 +144,7 @@ const ReportedReviews: React.FC<ReportedReviewsProps> = ({ hideTitle = false }) 
                                     </button>
                                     <button
                                         onClick={() => openModal(review._id, 'delete')}
-                                        className="admin-btn-delete"
-                                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                        className="admin-btn-delete delete-review-btn-flex"
                                     >
                                         <Trash2 size={16} />
                                         Delete Review

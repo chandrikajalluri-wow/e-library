@@ -55,6 +55,13 @@ interface OrderDetails {
     createdAt: string;
     returnReason?: string;
     exchangeImageUrl?: string;
+    refundDetails?: {
+        accountName: string;
+        bankName: string;
+        accountNumber: string;
+        ifscCode: string;
+        submittedAt: string;
+    };
 }
 
 const CircularCountdown: React.FC<{ date: string; membership?: string; currentTime: Date }> = ({ date, membership, currentTime }) => {
@@ -365,34 +372,50 @@ const AdminOrderDetailsPage: React.FC = () => {
                             </div>
                             <div className={`stepper-line ${['return_accepted', 'returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
 
-                            <div className={`stepper-step ${['return_accepted', 'returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                            <div className={`stepper-step ${['return_accepted', 'returned', 'refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
                                 <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
                                 <span className="step-label">Approved</span>
                             </div>
-                            <div className={`stepper-line ${['returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                            <div className={`stepper-line ${['returned', 'refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
 
-                            <div className={`stepper-step ${['returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                            <div className={`stepper-step ${['returned', 'refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
                                 <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
                                 <span className="step-label">Item In</span>
                             </div>
-                            <div className={`stepper-line ${['processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                            <div className={`stepper-line ${['refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
 
-                            <div className={`stepper-step ${['processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
-                                <span className="step-label">Packed</span>
-                            </div>
-                            <div className={`stepper-line ${['shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                            {['refund_initiated', 'refunded'].includes(order.status) ? (
+                                <>
+                                    <div className={`stepper-step ${['refund_initiated', 'refunded'].includes(order.status) ? 'active' : ''}`}>
+                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <span className="step-label">Refund Init</span>
+                                    </div>
+                                    <div className={`stepper-line ${order.status === 'refunded' ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                                    <div className={`stepper-step ${order.status === 'refunded' ? 'active' : ''}`}>
+                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <span className="step-label">Refunded</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className={`stepper-step ${['processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <span className="step-label">Packed</span>
+                                    </div>
+                                    <div className={`stepper-line ${['shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
 
-                            <div className={`stepper-step ${['shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
-                                <span className="step-label">Transit</span>
-                            </div>
-                            <div className={`stepper-line ${['delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                                    <div className={`stepper-step ${['shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <span className="step-label">Transit</span>
+                                    </div>
+                                    <div className={`stepper-line ${['delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
 
-                            <div className={`stepper-step ${['delivered'].includes(order.status) ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
-                                <span className="step-label">Done</span>
-                            </div>
+                                    <div className={`stepper-step ${['delivered'].includes(order.status) ? 'active' : ''}`}>
+                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <span className="step-label">Done</span>
+                                    </div>
+                                </>
+                            )}
                         </>
                     )}
                 </div>
@@ -470,6 +493,37 @@ const AdminOrderDetailsPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                    {order.refundDetails && (
+                        <div className="sidebar-card refund-details-card">
+                            <div className="card-header" style={{ color: 'var(--status-refunded)' }}>
+                                <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '0.6rem', borderRadius: '12px' }}>
+                                    <CreditCard size={20} className="text-emerald-600" />
+                                </div>
+                                <h3>Refund Bank Details</h3>
+                            </div>
+                            <div className="card-content">
+                                <div className="info-row">
+                                    <span className="label">Account Name</span>
+                                    <span className="value">{order.refundDetails.accountName}</span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="label">Bank Name</span>
+                                    <span className="value">{order.refundDetails.bankName}</span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="label">Account No.</span>
+                                    <span className="value">{order.refundDetails.accountNumber}</span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="label">IFSC Code</span>
+                                    <span className="value uppercase">{order.refundDetails.ifscCode}</span>
+                                </div>
+                                <div className="info-row" style={{ marginTop: '0.5rem', fontSize: '0.75rem', opacity: 0.6 }}>
+                                    <span>Submitted on {new Date(order.refundDetails.submittedAt).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </aside>
 
                 {/* Main Content Area: Order Details & Items */}
