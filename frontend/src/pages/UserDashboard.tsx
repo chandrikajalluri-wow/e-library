@@ -120,43 +120,31 @@ const UserDashboard: React.FC = () => {
                 style={{ width: `${Math.min((stats.borrowedCount / (membership?.borrowLimit || 3)) * 100, 100)}%` }}
               ></div>
             </div>
-            <div className="membership-details-action" style={{ marginTop: '1rem' }}>
+            <div className="membership-details-action membership-details-action-styled">
               <button
                 onClick={() => setShowMembershipDetails(!showMembershipDetails)}
-                className="details-toggle-btn"
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--primary-color)',
-                  fontSize: '0.85rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0'
-                }}
+                className="details-toggle-btn details-toggle-btn-styled"
               >
                 {showMembershipDetails ? 'Hide Plan Details' : 'View Plan Details'}
                 <ArrowRight size={14} style={{ transform: showMembershipDetails ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.3s ease' }} />
               </button>
 
               {showMembershipDetails && (
-                <div className="membership-features-mini-list" style={{ marginTop: '0.75rem', animation: 'fadeIn 0.3s ease' }}>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <div className="membership-features-mini-list membership-features-list">
+                  <ul className="features-ul">
                     {membership?.features?.map((feature, i) => (
-                      <li key={i} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <div style={{ width: '6px', height: '6px', background: 'var(--primary-color)', borderRadius: '50%' }}></div>
+                      <li key={i} className="feature-li">
+                        <div className="feature-dot"></div>
                         {feature}
                       </li>
                     )) || (
-                        <li style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard library access included.</li>
+                        <li className="feature-li" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard library access included.</li>
                       )}
                   </ul>
                 </div>
               )}
             </div>
-            <button onClick={() => navigate('/memberships')} className="upgrade-link-btn" style={{ marginTop: '1.25rem', width: '100%' }}>
+            <button onClick={() => navigate('/memberships')} className="upgrade-link-btn upgrade-link-btn-styled">
               {membership?.name === MembershipName.PREMIUM ? 'View Plans' : 'Upgrade Plan'}
             </button>
           </div>
@@ -182,15 +170,15 @@ const UserDashboard: React.FC = () => {
 
 
       {/* Readlist Section */}
-      <section style={{ marginTop: '0', paddingTop: '0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 className="modern-section-title" style={{ marginBottom: 0 }}>
+      <section className="readlist-section">
+        <div className="readlist-header">
+          <h2 className="modern-section-title readlist-title">
             <Bookmark size={24} className="title-icon" />
             My Library
           </h2>
           <button
             onClick={() => loadData()}
-            style={{ background: 'transparent', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}          >
+            className="sync-btn"          >
             ↻ Sync Data
           </button>
         </div>
@@ -269,7 +257,7 @@ const UserDashboard: React.FC = () => {
                     key={book._id}
                     className="modern-book-card"
                   >
-                    <div className="card-image-wrap" onClick={() => navigate(`/books/${book._id}`)} style={{ cursor: 'pointer' }}>
+                    <div className="card-image-wrap card-image-wrap-pointer" onClick={() => navigate(`/books/${book._id}`)}>
                       <div className="status-overlay">
                         <span className={`status-label ${isExpired ? 'expired' : item.status}`}>
                           {isExpired ? 'Expired' : item.status}

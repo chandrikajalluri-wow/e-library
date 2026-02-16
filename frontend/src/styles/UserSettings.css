@@ -343,6 +343,10 @@
     }
 }
 
+.last-login-info {
+    margin-bottom: 2rem;
+}
+
 /* Profile Preview Section */
 .profile-preview-section {
     display: flex;

@@ -80,3 +80,12 @@ export const downloadInvoice = async (orderId: string) => {
         throw errorMessage;
     }
 };
+
+export const submitRefundDetails = async (orderId: string, details: any) => {
+    try {
+        const response = await api.patch(`orders/${orderId}/refund-details`, details);
+        return response.data;
+    } catch (error: any) {
+        throw error.response?.data?.error || 'Failed to submit refund details';
+    }
+};

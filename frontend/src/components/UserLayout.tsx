@@ -7,6 +7,8 @@ import AdminFooter from './AdminFooter';
 import { RoleName } from '../types/enums';
 import '../styles/Home.css';
 
+import '../styles/UserLayout.css';
+
 const UserLayout: React.FC = () => {
 
     // Theme sync logic removed to prevent overriding local preference
@@ -14,9 +16,9 @@ const UserLayout: React.FC = () => {
     const role = localStorage.getItem('role');
 
     return (
-        <div className="user-layout-container saas-theme" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <div className="user-layout-container saas-theme">
             <UserNavbar />
-            <main style={{ flex: 1, backgroundColor: 'var(--bg-color)', transition: 'background-color 0.3s ease' }}>
+            <main className="user-layout-main">
                 <div className="saas-container">
                     <Outlet />
                 </div>

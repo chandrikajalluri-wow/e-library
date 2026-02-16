@@ -69,7 +69,7 @@
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
-    gap: 17rem !important;
+    gap: 15rem !important;
     box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
 }
 
@@ -797,6 +797,97 @@
 
 [data-theme='dark'] .user-dashboard-hero {
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+}
+
+/* Extracted Inline Styles */
+.membership-details-action-styled {
+    margin-top: 1rem;
+}
+
+.details-toggle-btn-styled {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0;
+}
+
+.membership-features-list {
+    margin-top: 0.75rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.features-ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.feature-li {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.feature-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--primary-color);
+    border-radius: 50%;
+}
+
+.upgrade-link-btn-styled {
+    margin-top: 1.25rem;
+    width: 100%;
+}
+
+.readlist-section {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.readlist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.readlist-title {
+    margin-bottom: 0;
+}
+
+.sync-btn {
+    background: transparent;
+    border: none;
+    color: #6366f1;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.card-image-wrap-pointer {
+    cursor: pointer;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 [data-theme='dark'] .membership-display-card {

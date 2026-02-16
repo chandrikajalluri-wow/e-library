@@ -14,6 +14,7 @@ import { useBorrowCart } from '../context/BorrowCartContext';
 import Loader from '../components/Loader';
 import ReportReviewModal from '../components/ReportReviewModal';
 import '../styles/BookDetail.css';
+import '../styles/BookDetail.css';
 
 const BookDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -435,14 +436,13 @@ const BookDetail: React.FC = () => {
 
 
           <div>
-            <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="action-buttons-col">
+              <div className="action-buttons-row">
                 {hasAccess ? (
                   book.pdf_url ? (
                     <button
                       onClick={() => navigate(`/read/${book._id}`)}
-                      className="btn-primary readlist-btn"
-                      style={{ background: 'var(--success-color)', color: 'white' }}
+                      className="btn-primary readlist-btn btn-read"
                     >
                       <BookOpen size={18} />
                       Read Book
@@ -450,8 +450,7 @@ const BookDetail: React.FC = () => {
                   ) : (
                     <button
                       disabled
-                      className="btn-primary readlist-btn disabled-btn"
-                      style={{ background: 'var(--text-secondary)', color: 'white', cursor: 'not-allowed', opacity: 0.7 }}
+                      className="btn-primary readlist-btn disabled-btn btn-read-disabled"
                       title="No PDF available for this book"
                     >
                       <BookOpen size={18} />
@@ -463,8 +462,7 @@ const BookDetail: React.FC = () => {
                     <button
                       onClick={handleAddToReadlist}
                       disabled={isSubmitting}
-                      className="btn-primary readlist-btn"
-                      style={{ background: 'var(--accent-color)' }}
+                      className="btn-primary readlist-btn btn-save"
                     >
                       <BookOpen size={18} />
                       {isSubmitting ? 'Saving...' : 'Save to Library'}
@@ -472,8 +470,7 @@ const BookDetail: React.FC = () => {
                   ) : (
                     <button
                       disabled
-                      className="btn-primary readlist-btn disabled-btn"
-                      style={{ background: 'var(--text-secondary)', color: 'white', cursor: 'not-allowed', opacity: 0.7 }}
+                      className="btn-primary readlist-btn disabled-btn btn-read-disabled"
                       title="No PDF available for this book"
                     >
                       <BookOpen size={18} />
@@ -489,16 +486,6 @@ const BookDetail: React.FC = () => {
                   }}
                   disabled={isInCart(book._id)}
                   className={`btn-primary add-to-cart-btn-detail ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 'fit-content',
-                    minWidth: '140px',
-                    height: '44px',
-                    padding: '0 1.25rem',
-                    fontSize: '0.875rem'
-                  }}
                   title={isInCart(book._id) ? 'Already in cart' : (book.noOfCopies === 0 ? 'Item out of stock, but you can add to verify later' : 'Add to cart')}
                 >
                   <ShoppingCart size={16} />
@@ -514,18 +501,6 @@ const BookDetail: React.FC = () => {
                       navigate('/checkout');
                     }}
                     className="btn-primary buy-now-btn-detail"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 'fit-content',
-                      minWidth: '140px',
-                      height: '44px',
-                      padding: '0 1.25rem',
-                      fontSize: '0.875rem',
-                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                      border: 'none'
-                    }}
                     title="Proceed to checkout immediately"
                   >
                     <Zap size={16} fill="currentColor" />
@@ -550,39 +525,39 @@ const BookDetail: React.FC = () => {
       </div>
 
       {/* Shop with Confidence Section - Moved outside */}
-      <div className="card confidence-card-wrapper" style={{ marginTop: '2rem' }}>
-        <div className="confidence-section" style={{ marginTop: 0, border: 'none', background: 'transparent', padding: 0 }}>
-          <h4 className="confidence-title" style={{ fontSize: '1.25rem', marginBottom: '1.25rem' }}>Shop with confidence</h4>
-          <ul className="confidence-list" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="card confidence-card-wrapper confidence-card-wrapper-styled">
+        <div className="confidence-section confidence-section-styled">
+          <h4 className="confidence-title confidence-title-styled">Shop with confidence</h4>
+          <ul className="confidence-list confidence-list-styled">
             <li className="confidence-card">
               <Truck size={24} className="confidence-icon" />
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontWeight: 600 }}>Fast Delivery</span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Delivered by BookStack</span>
+              <div className="confidence-item-content">
+                <span className="confidence-text-primary">Fast Delivery</span>
+                <span className="confidence-text-secondary">Delivered by BookStack</span>
               </div>
             </li>
             <li className="confidence-card">
               <ShieldCheck size={24} className="confidence-icon" />
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontWeight: 600 }}>Verified Seller</span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sold by BookStack</span>
+              <div className="confidence-item-content">
+                <span className="confidence-text-primary">Verified Seller</span>
+                <span className="confidence-text-secondary">Sold by BookStack</span>
               </div>
             </li>
             {(!userMembership || userMembership.name !== 'Premium') && (
               <li className="confidence-card">
-                <Zap size={24} className="confidence-icon" style={{ color: '#eab308' }} />
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontWeight: 600 }}>Premium Delivery</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Free for Premium members</span>
+                <Zap size={24} className="confidence-icon confidence-icon-yellow" />
+                <div className="confidence-item-content">
+                  <span className="confidence-text-primary">Premium Delivery</span>
+                  <span className="confidence-text-secondary">Free for Premium members</span>
                 </div>
               </li>
             )}
             {userMembership?.name === 'Premium' && (
-              <li className="confidence-card" style={{ borderColor: '#eab308', background: 'rgba(234, 179, 8, 0.05)' }}>
-                <Zap size={24} className="confidence-icon" style={{ color: '#eab308' }} />
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontWeight: 600, color: '#eab308' }}>Premium Applied</span>
-                  <span style={{ fontSize: '0.8rem', color: '#eab308' }}>Free delivery included</span>
+              <li className="confidence-card confidence-card-premium">
+                <Zap size={24} className="confidence-icon confidence-icon-yellow" />
+                <div className="confidence-item-content">
+                  <span className="confidence-premium-text">Premium Applied</span>
+                  <span className="confidence-premium-subtext">Free delivery included</span>
                 </div>
               </li>
             )}
@@ -593,7 +568,7 @@ const BookDetail: React.FC = () => {
       {/* Author Section - Separate Card */}
       {
         (book.author_image_url || book.author_description) && (
-          <div className="card author-card-wrapper" style={{ marginTop: '2rem' }}>
+          <div className="card author-card-wrapper author-card-wrapper-styled">
             <div className="author-section">
               <h3 className="author-section-title">About the Author</h3>
               <div className="author-content">
@@ -613,11 +588,11 @@ const BookDetail: React.FC = () => {
       {/* Similar Books Section */}
       {
         similarBooks.length > 0 && (
-          <div className="card similar-books-card-wrapper" style={{ marginTop: '2rem' }}>
-            <h3 className="section-title" style={{ marginBottom: '1.5rem', fontWeight: 700, fontSize: '1.25rem' }}>
+          <div className="card similar-books-card-wrapper similar-books-card-wrapper">
+            <h3 className="section-title similar-books-title">
               Similar Books
             </h3>
-            <div className="similar-books-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
+            <div className="similar-books-grid similar-books-grid">
               {similarBooks.map((b) => (
                 <div
                   key={b._id}
@@ -626,19 +601,18 @@ const BookDetail: React.FC = () => {
                     navigate(`/books/${b._id}`);
                     window.scrollTo(0, 0);
                   }}
-                  style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
                 >
-                  <div className="similar-book-cover" style={{ height: '260px', borderRadius: '12px', overflow: 'hidden', marginBottom: '0.75rem', border: '1px solid var(--border-color)' }}>
+                  <div className="similar-book-cover">
                     {b.cover_image_url ? (
-                      <img src={b.cover_image_url} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={b.cover_image_url} alt={b.title} className="similar-book-cover-img" />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                      <div className="similar-book-cover-placeholder">
                         No Cover
                       </div>
                     )}
                   </div>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</h4>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{b.author}</p>
+                  <h4 className="similar-book-title">{b.title}</h4>
+                  <p className="similar-book-author">{b.author}</p>
                 </div>
               ))}
             </div>
@@ -661,7 +635,7 @@ const BookDetail: React.FC = () => {
                       <strong className="reviewer-name">
                         {r.user_id?.name || 'Anonymous'}
                         {currentUser?.role === RoleName.SUPER_ADMIN && (
-                          <span className="admin-badge-small" style={{ marginLeft: '0.5rem', fontSize: '0.7rem', background: 'var(--primary-color)', color: 'white', padding: '1px 6px', borderRadius: '4px' }}>ADMIN</span>
+                          <span className="admin-badge-small">ADMIN</span>
                         )}
                       </strong>
                       <div className="review-stars">

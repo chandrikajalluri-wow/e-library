@@ -44,7 +44,10 @@ export const NotificationType = {
     BORROW: 'borrow',
     RETURN: 'return',
     WISHLIST: 'wishlist',
-    SYSTEM: 'system'
+    ORDER: 'order',
+    BOOK_REQUEST: 'book_request',
+    SYSTEM: 'system',
+    STOCK_ALERT: 'stock_alert'
 } as const;
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
 

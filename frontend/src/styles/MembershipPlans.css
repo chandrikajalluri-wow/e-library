@@ -3,6 +3,14 @@
     min-height: 100vh;
 }
 
+.memberships-page .admin-header {
+    max-width: 1200px;
+    margin: 0 auto 3rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
 .memberships-header {
     text-align: center;
     padding: 4rem 1rem;

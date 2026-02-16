@@ -1,0 +1,201 @@
+/* Super Admin Queries - Dedicated Styles */
+
+/* Container for the buttons */
+.sa-query-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 0;
+    /* Removed top padding to reduce spacing */
+    border-top: none;
+    /* Removed extra separator line */
+}
+
+/* Avatar Styling */
+.query-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50% !important;
+    /* Force circular */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--primary-color);
+    background: #e0e7ff;
+    flex-shrink: 0;
+}
+
+/* Email Alignment */
+.query-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* Gap between icon and text */
+    flex-wrap: wrap;
+}
+
+.query-meta svg {
+    display: block;
+    /* Ensure icon behaves correctly */
+}
+
+.query-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    /* Keep one divider if needed, or remove */
+    padding-bottom: 1rem;
+}
+
+/* Reply to User Button */
+.sa-query-reply-start-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    background-color: #fff;
+    color: var(--primary-color, #4f46e5);
+    border: 1px solid var(--border-color, #e2e8f0);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.sa-query-reply-start-btn:hover {
+    background-color: #f8fafc;
+    border-color: var(--primary-color, #4f46e5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+/* Mark as Resolved Button */
+.sa-query-btn-resolve {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+.sa-query-btn-resolve:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    filter: brightness(1.1);
+}
+
+/* Send Reply Button (In the text area view) */
+.sa-query-btn-send {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1.8rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+.sa-query-btn-send:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    filter: brightness(1.1);
+}
+
+.sa-query-btn-send:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: #94a3b8;
+    box-shadow: none;
+}
+
+/* Cancel Button */
+.sa-btn-cancel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-secondary, #64748b);
+    border: 1px solid transparent;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sa-btn-cancel:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+    transform: translateY(-1px);
+}
+
+.query-reply-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+    align-items: center;
+}
+
+/* Re-open Button */
+.sa-query-btn-reopen {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    background: #f1f5f9;
+    color: var(--text-secondary, #64748b);
+    border: 1px solid var(--border-color, #e2e8f0);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sa-query-btn-reopen:hover {
+    background: #e2e8f0;
+    color: var(--text-primary, #1e293b);
+}
+
+.contact-filter-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] .sa-query-reply-start-btn {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #818cf8;
+}
+
+[data-theme="dark"] .sa-query-reply-start-btn:hover {
+    background-color: #0f172a;
+    border-color: #818cf8;
+}
+
+[data-theme="dark"] .sa-query-actions-row {
+    border-top-color: #334155;
+}

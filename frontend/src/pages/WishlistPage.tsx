@@ -8,6 +8,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { BookStatus } from '../types/enums';
 import { ArrowLeft, Bookmark, Search, Trash2 } from 'lucide-react';
 import '../styles/UserDashboard.css';
+import '../styles/WishlistPage.css';
 
 const WishlistPage: React.FC = () => {
     const navigate = useNavigate();
@@ -130,7 +131,7 @@ const WishlistPage: React.FC = () => {
                                             {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status.toUpperCase()}
                                         </span>
                                     </div>
-                                    <div className="book-actions-row" style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem' }}>
+                                    <div className="book-actions-row">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -143,7 +144,6 @@ const WishlistPage: React.FC = () => {
                                             }}
                                             disabled={book.noOfCopies === 0 || isInCart(book._id)}
                                             className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}
-                                            style={{ flex: 1 }}
                                         >
                                             {isInCart(book._id) ? 'In Cart' : 'Add to Cart'}
                                         </button>
@@ -152,20 +152,8 @@ const WishlistPage: React.FC = () => {
                                                 e.stopPropagation();
                                                 handleRemove(item._id);
                                             }}
-                                            className="btn-secondary"
+                                            className="btn-secondary wishlist-remove-btn"
                                             title="Remove from wishlist"
-                                            style={{
-                                                width: '44px',
-                                                minWidth: '44px',
-                                                height: '44px',
-                                                padding: 0,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                borderColor: 'rgba(239, 68, 68, 0.2)',
-                                                color: '#ef4444',
-                                                borderRadius: '12px'
-                                            }}
                                         >
                                             <Trash2 size={18} />
                                         </button>
@@ -179,15 +167,15 @@ const WishlistPage: React.FC = () => {
 
             {
                 wishlist.length === 0 && (
-                    <div className="admin-empty-state" style={{ textAlign: 'center', padding: '4rem 2rem', alignItems: 'center' }}>
-                        <div className="empty-state-icon-circle" style={{ width: '80px', height: '80px', background: 'rgba(var(--primary-rgb), 0.1)', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 0 1.5rem 0' }}>
+                    <div className="admin-empty-state">
+                        <div className="empty-state-icon-circle">
                             <Bookmark size={40} color="var(--primary-color)" />
                         </div>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>Your wishlist is empty</h2>
-                        <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto 1.5rem auto' }}>
+                        <h2 className="empty-state-title">Your wishlist is empty</h2>
+                        <p className="empty-state-description">
                             You haven't saved any books yet. Start exploring our vast collection and find your next favorite read!
                         </p>
-                        <button onClick={() => navigate('/books')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}>
+                        <button onClick={() => navigate('/books')} className="btn-primary empty-state-button">
                             <Search size={18} />
                             <span>Explore Books</span>
                         </button>

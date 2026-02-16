@@ -164,11 +164,7 @@ const UserNavbar: React.FC = () => {
                     </button>
                 </div>
 
-                <button
-                    className="hamburger-menu-btn desktop-hidden"
-                    style={{ display: 'none' }} // Placeholder if needed, but handled by mobile-action-center now
-                >
-                </button>
+
 
                 {/* Navigation Links - Sidebar on Mobile, Horizontal on Desktop */}
                 <div className={`nav-actions-icons ${isMenuOpen ? 'mobile-show' : ''}`}>

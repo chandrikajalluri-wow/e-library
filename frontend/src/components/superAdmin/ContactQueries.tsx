@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getContactQueries, updateContactQueryStatus, replyToContactQuery } from '../../services/superAdminService';
 import { CheckCircle, Clock, Mail, MessageSquare, Send, X } from 'lucide-react';
 import { toast } from 'react-toastify';
+import '../../styles/SuperAdminQueries.css'; // Import dedicated styles
 
 interface ContactQuery {
     _id: string;
@@ -87,7 +88,7 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
                         </>
                     )}
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div className="contact-filter-group">
                     {(['OPEN', 'RESOLVED', 'ALL'] as const).map(f => (
                         <button
                             key={f}
@@ -117,11 +118,15 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
                                     <div>
                                         <h4 className="query-name">{query.name}</h4>
                                         <div className="query-meta">
-                                            <Mail size={14} />
-                                            {query.email}
-                                            <span style={{ opacity: 0.5 }}>•</span>
-                                            <Clock size={14} />
-                                            {new Date(query.createdAt).toLocaleDateString()}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <Mail size={14} />
+                                                {query.email}
+                                            </div>
+                                            <span style={{ opacity: 0.5, margin: '0 0.4rem' }}>•</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <Clock size={14} />
+                                                {new Date(query.createdAt).toLocaleDateString()}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -139,17 +144,16 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
                                 {replyingTo === query._id ? (
                                     <div className="query-reply-box saas-reveal" style={{ width: '100%', marginTop: '1rem' }}>
                                         <textarea
-                                            className="admin-textarea"
+                                            className="admin-textarea query-reply-textarea"
                                             placeholder="Type your response here..."
                                             value={replyText}
                                             onChange={(e) => setReplyText(e.target.value)}
-                                            style={{ minHeight: '120px', marginBottom: '1rem', width: '100%' }}
                                             disabled={isSubmitting}
                                         />
-                                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                        <div className="query-reply-actions">
                                             <button
                                                 onClick={() => { setReplyingTo(null); setReplyText(''); }}
-                                                className="admin-btn-secondary"
+                                                className="sa-btn-cancel"
                                                 disabled={isSubmitting}
                                             >
                                                 <X size={16} />
@@ -157,7 +161,7 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
                                             </button>
                                             <button
                                                 onClick={() => handleReplySubmit(query._id)}
-                                                className="admin-btn-positive"
+                                                className="sa-query-btn-send"
                                                 disabled={isSubmitting}
                                             >
                                                 {isSubmitting ? (
@@ -172,23 +176,11 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+                                    <div className="sa-query-actions-row">
                                         {query.status === 'OPEN' && (
                                             <button
                                                 onClick={() => setReplyingTo(query._id)}
-                                                className="query-btn-reply"
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    padding: '0.5rem 1rem',
-                                                    borderRadius: '8px',
-                                                    background: 'rgba(99, 102, 241, 0.1)',
-                                                    color: 'var(--primary-color)',
-                                                    border: 'none',
-                                                    fontWeight: 600,
-                                                    cursor: 'pointer'
-                                                }}
+                                                className="sa-query-reply-start-btn"
                                             >
                                                 <MessageSquare size={16} />
                                                 Reply to User
@@ -197,7 +189,7 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
                                         {query.status === 'OPEN' ? (
                                             <button
                                                 onClick={() => handleStatusUpdate(query._id, 'RESOLVED')}
-                                                className="query-btn-resolve"
+                                                className="sa-query-btn-resolve"
                                             >
                                                 <CheckCircle size={16} />
                                                 Mark as Resolved
@@ -205,7 +197,7 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
                                         ) : (
                                             <button
                                                 onClick={() => handleStatusUpdate(query._id, 'OPEN')}
-                                                className="query-btn-reopen"
+                                                className="sa-query-btn-reopen"
                                             >
                                                 Re-open Query
                                             </button>

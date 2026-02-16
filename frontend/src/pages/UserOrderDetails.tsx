@@ -19,7 +19,7 @@ import {
     AlertCircle as WarningIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getOrderDetails, requestReturn, downloadInvoice } from '../services/userOrderService';
+import { getOrderDetails, requestReturn, downloadInvoice, submitRefundDetails } from '../services/userOrderService';
 import { OrderStatus } from '../types/enums';
 import Loader from '../components/Loader';
 import '../styles/UserOrderDetails.css';
@@ -58,6 +58,14 @@ interface OrderDetails {
     estimatedDeliveryDate?: string;
     deliveredAt?: string;
     returnReason?: string;
+    exchangeImageUrl?: string;
+    refundDetails?: {
+        accountName: string;
+        bankName: string;
+        accountNumber: string;
+        ifscCode: string;
+        submittedAt: string;
+    };
 }
 
 const UserOrderDetails: React.FC = () => {
@@ -75,6 +83,14 @@ const UserOrderDetails: React.FC = () => {
     const [exchangeImage, setExchangeImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isSubmittingExchange, setIsSubmittingExchange] = useState(false);
+    const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+    const [refundForm, setRefundForm] = useState({
+        accountName: '',
+        bankName: '',
+        accountNumber: '',
+        ifscCode: ''
+    });
+    const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
 
     useEffect(() => {
         if (orderId) {
@@ -95,6 +111,35 @@ const UserOrderDetails: React.FC = () => {
         }
     };
 
+    const isRefundFormValid = () => {
+        const { accountName, bankName, accountNumber, ifscCode } = refundForm;
+        const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+        const isAccountNumberValid = /^\d{9,18}$/.test(accountNumber);
+        return (
+            accountName.trim().length >= 3 &&
+            bankName.trim().length >= 3 &&
+            isAccountNumberValid &&
+            ifscRegex.test(ifscCode)
+        );
+    };
+
+    const handleRefundSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!order || !orderId) return;
+
+        setIsSubmittingRefund(true);
+        try {
+            await submitRefundDetails(orderId, refundForm);
+            toast.success('Refund details submitted successfully');
+            setIsRefundModalOpen(false);
+            fetchOrderDetails(orderId);
+        } catch (error: any) {
+            toast.error(error || 'Failed to submit refund details');
+        } finally {
+            setIsSubmittingRefund(false);
+        }
+    };
+
     const handleExchangeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!order) return;
@@ -110,9 +155,12 @@ const UserOrderDetails: React.FC = () => {
 
             const formData = new FormData();
             formData.append('reason', finalReason);
-            if (exchangeImage) {
-                formData.append('image', exchangeImage);
+            if (!exchangeImage) {
+                toast.error('Please upload proof (image) for the exchange request');
+                setIsSubmittingExchange(false);
+                return;
             }
+            formData.append('image', exchangeImage);
 
             await requestReturn(order._id, formData);
             toast.success('Exchange request submitted successfully');
@@ -149,61 +197,86 @@ const UserOrderDetails: React.FC = () => {
         }
     };
 
-    const getStatusSteps = (currentStatus: string, hasReturnRequest: boolean) => {
-        if (!hasReturnRequest) {
-            // Standard Flow
-            const standardSteps = [
-                { id: 'pending', label: 'Order Placed', icon: ShoppingBag },
-                { id: 'processing', label: 'Processing', icon: Box },
-                { id: 'shipped', label: 'Shipped', icon: Truck },
-                { id: 'delivered', label: 'Delivered', icon: CheckCircle2 },
-            ];
+    const getStatusSteps = (order: OrderDetails, hasReturnRequest: boolean) => {
+        const currentStatus = order.status;
+        const formatDate = (date: string | undefined) => {
+            if (!date) return '';
+            return new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        };
 
-            if (currentStatus === 'cancelled') {
-                return [{ id: 'cancelled', label: 'Cancelled', icon: AlertCircle, isError: true, isCompleted: false, isActive: false }];
-            }
-
-            const statusIndex = standardSteps.findIndex(s => s.id === currentStatus);
-            return standardSteps.map((step, index) => ({
-                ...step,
-                isCompleted: index <= statusIndex,
-                isActive: index === statusIndex,
-                isError: false
-            }));
+        if (currentStatus === 'cancelled') {
+            return [{ id: 'cancelled', label: 'Cancelled', icon: AlertCircle, isError: true, isCompleted: false, isActive: false, showToday: false }];
         }
-
-        // Detailed Exchange Flow
-        const exchangeSteps = [
-            { id: 'return_requested', label: 'Exchange Pending', icon: RotateCcw },
-            { id: 'return_accepted', label: 'Accepted', icon: CheckCircle2 },
-            { id: 'returned', label: 'Item Received', icon: Box },
-            { id: 'processing', label: 'Processed', icon: Box },
-            { id: 'shipped', label: 'Shipped', icon: Truck },
-            { id: 'delivered', label: 'Delivered', icon: CheckCircle2 },
-        ];
 
         if (currentStatus === 'return_rejected') {
-            return [{ id: 'return_rejected', label: 'Exchange Rejected', icon: AlertCircle, isError: true, isCompleted: true, isActive: true }];
+            return [{ id: 'return_rejected', label: 'Exchange Rejected', icon: AlertCircle, isError: true, isCompleted: true, isActive: true, showToday: false }];
         }
 
-        // Active index mapping for exchange journey
-        const statusMap: Record<string, number> = {
+        const standardSteps = [
+            { id: 'pending', label: `Placed on ${formatDate(order.createdAt)}`, icon: ShoppingBag, date: order.createdAt },
+            { id: 'processing', label: 'Processing', icon: Box, date: '' },
+            { id: 'shipped', label: 'Shipped', icon: Truck, date: '' },
+            { id: 'delivered', label: order.deliveredAt ? `Delivered on ${formatDate(order.deliveredAt)}` : 'Delivered', icon: CheckCircle2, date: order.deliveredAt },
+        ];
+
+        const isRefundPath = ['refund_initiated', 'refunded'].includes(currentStatus);
+
+        const exchangeSteps = [
+            { id: 'return_requested', label: `Requested on ${formatDate(order.returnReason ? order.updatedAt : '')}`, icon: RotateCcw, date: order.updatedAt },
+            { id: 'return_accepted', label: 'Accepted', icon: CheckCircle2, date: '' },
+            { id: 'returned', label: 'Item Received', icon: Box, date: '' },
+            ...(isRefundPath ? [
+                { id: 'refund_initiated', label: 'Refund Init', icon: AlertCircle, date: '' },
+                { id: 'refunded', label: 'Refunded', icon: CheckCircle2, date: '' },
+            ] : [
+                { id: 'processing', label: 'Processed', icon: Box, date: '' },
+                { id: 'shipped', label: 'Shipped', icon: Truck, date: '' },
+                { id: 'delivered', label: order.deliveredAt ? `Delivered on ${formatDate(order.deliveredAt)}` : 'Delivered', icon: CheckCircle2, date: order.deliveredAt },
+            ])
+        ];
+
+        const steps = hasReturnRequest ? exchangeSteps : standardSteps;
+
+        const statusMap: Record<string, number> = hasReturnRequest ? {
             'return_requested': 0,
             'return_accepted': 1,
             'returned': 2,
+            'refund_initiated': 3,
+            'refunded': 4,
             'processing': 3,
             'shipped': 4,
             'delivered': 5
+        } : {
+            'pending': 0,
+            'processing': 1,
+            'shipped': 2,
+            'delivered': 3
         };
 
+        // If it's refund path, adjust indices for processing/shipped if they were somehow reachable (they shouldn't be)
+        // But the current status is what matters.
         const statusIndex = statusMap[currentStatus] ?? -1;
 
-        return exchangeSteps.map((step, index) => ({
-            ...step,
-            isCompleted: index <= statusIndex,
-            isActive: index === statusIndex,
-            isError: false
-        }));
+        return steps.map((step: any, index: number) => {
+            const isCompleted = index <= statusIndex;
+            const isActive = index === statusIndex;
+
+            let showToday = false;
+            if (isActive && step.date) {
+                const stepDate = new Date(step.date);
+                const now = new Date();
+                const diff = now.getTime() - stepDate.getTime();
+                showToday = diff < 24 * 60 * 60 * 1000;
+            }
+
+            return {
+                ...step,
+                isCompleted,
+                isActive,
+                isError: false,
+                showToday
+            };
+        });
     };
 
     const containerVariants = {
@@ -240,7 +313,7 @@ const UserOrderDetails: React.FC = () => {
         ? order.items.filter(item => item.book_id?._id === bookId)
         : order.items;
 
-    const steps = getStatusSteps(order.status, !!order.returnReason);
+    const steps = getStatusSteps(order, !!order.returnReason);
 
     return (
         <motion.div
@@ -293,7 +366,7 @@ const UserOrderDetails: React.FC = () => {
                                 </div>
                                 <div className="step-info">
                                     <span className="step-label">{step.label}</span>
-                                    {step.isActive && <span className="current-badge">Today</span>}
+                                    {step.showToday && <span className="current-badge">Today</span>}
                                 </div>
                                 {idx < steps.length - 1 && <div className="step-connector"></div>}
                             </div>
@@ -313,29 +386,18 @@ const UserOrderDetails: React.FC = () => {
                             style={{ marginBottom: '1.5rem' }}
                         >
                             <div className="section-card-premium">
-                                <div className="card-header-with-icon" style={{ justifyContent: 'space-between' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div className="card-header-with-icon card-header-between">
+                                    <div className="header-title-group">
                                         <Package size={22} />
                                         <h2>Item {idx + 1}</h2>
                                     </div>
-                                    <div className="seller-badge-premium" style={{
-                                        padding: '0.4rem 0.8rem',
-                                        background: 'var(--bg-secondary)',
-                                        borderRadius: '10px',
-                                        fontSize: '0.8rem',
-                                        fontWeight: '700',
-                                        color: 'var(--primary-color)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.4rem',
-                                        border: '1px solid var(--border-color)'
-                                    }}>
+                                    <div className="seller-badge-premium">
                                         <ShoppingBag size={14} />
                                         <span>Managed By: {item.book_id?.addedBy?.name || 'Unknown'}</span>
                                     </div>
                                 </div>
                                 <div className="items-stack-details">
-                                    <div className="order-item-row-premium" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+                                    <div className="order-item-row-premium item-row-no-border">
                                         <div className="item-img-box">
                                             <img src={item.book_id?.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={item.book_id?.title || 'Deleted Book'} />
                                         </div>
@@ -348,7 +410,7 @@ const UserOrderDetails: React.FC = () => {
                                                 <span>Quantity: {item.quantity}</span>
                                                 <span className="row-total">₹{(item.priceAtOrder * item.quantity).toFixed(2)}</span>
                                             </div>
-                                            <div className="author-row" style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                            <div className="author-row author-row-styled">
                                                 <span>Author: {item.book_id?.author || 'N/A'}</span>
                                             </div>
                                         </div>
@@ -381,7 +443,7 @@ const UserOrderDetails: React.FC = () => {
                                 <span className="city-line">{order.address_id?.city}, {order.address_id?.state}</span>
                                 <span className="zip-line">{order.address_id?.zipCode}</span>
                                 <span className="country-line">{order.address_id?.country}</span>
-                                <div className="address-phone-row" style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div className="address-phone-row address-phone-row-styled">
                                     <Phone size={14} />
                                     <span>{order.address_id?.phoneNumber}</span>
                                 </div>
@@ -419,32 +481,17 @@ const UserOrderDetails: React.FC = () => {
 
                         {/* Exchange Order Button */}
                         {isExchangeAvailable() && (
-                            <div className="exchange-section-premium" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div className="exchange-section-premium exchange-section-wrapper">
                                 <motion.button
-                                    className="exchange-order-btn-premium"
+                                    className="exchange-order-btn-premium exchange-order-btn-styled"
                                     onClick={() => setIsExchangeModalOpen(true)}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.75rem',
-                                        padding: '1rem',
-                                        background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%)',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '12px',
-                                        fontWeight: '600',
-                                        width: '100%',
-                                        cursor: 'pointer',
-                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
-                                    }}
                                 >
                                     <RotateCcw size={18} />
                                     <span>Exchange Order</span>
                                 </motion.button>
-                                <p className="exchange-policy-hint" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', margin: 0, fontStyle: 'italic' }}>
+                                <p className="exchange-policy-hint exchange-policy-hint-styled">
                                     Only 7 days exchange available for damaged, missing pages, or print error books only.
                                 </p>
                             </div>
@@ -500,6 +547,51 @@ const UserOrderDetails: React.FC = () => {
                                 </div>
                             </div>
                         )}
+
+                        {order.status === 'refund_initiated' && (
+                            <div className="return-status-box warning" style={{ borderLeft: '4px solid #f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
+                                <AlertCircle size={20} color="#f59e0b" />
+                                <div>
+                                    <h4 style={{ color: '#d97706' }}>Refund Initiated (Out of Stock)</h4>
+                                    <p>The item you requested for exchange is currently out of stock. We have initiated a refund for your order.</p>
+                                    {!order.refundDetails ? (
+                                        <button
+                                            className="refund-action-btn"
+                                            onClick={() => setIsRefundModalOpen(true)}
+                                            style={{
+                                                marginTop: '0.75rem',
+                                                padding: '0.6rem 1.2rem',
+                                                background: 'var(--primary-color)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontWeight: '600',
+                                                fontSize: '0.9rem',
+                                                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
+                                            }}
+                                        >
+                                            Provide Bank Details for Refund
+                                        </button>
+                                    ) : (
+                                        <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#059669', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}>
+                                            <CheckCircle2 size={16} />
+                                            Bank details submitted. Awaiting processing.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {order.status === 'refunded' && (
+                            <div className="return-status-box success" style={{ borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.05)' }}>
+                                <CheckCircle2 size={20} color="#10b981" />
+                                <div>
+                                    <h4 style={{ color: '#059669' }}>Refund Completed</h4>
+                                    <p>Your refund has been processed successfully. Please check your bank account for the credit.</p>
+                                </div>
+                            </div>
+                        )}
                     </motion.section>
                 </div>
             </div>
@@ -528,18 +620,18 @@ const UserOrderDetails: React.FC = () => {
                                 </button>
                             </div>
                             <form onSubmit={handleExchangeSubmit}>
-                                <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto', padding: '1.5rem' }}>
-                                    <div className="exchange-policy-alert" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-secondary)', borderLeft: '4px solid var(--primary-color)', borderRadius: '8px' }}>
-                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                <div className="modal-body modal-body-scrollable">
+                                    <div className="exchange-policy-alert exchange-policy-alert-styled">
+                                        <div className="alert-content-flex">
                                             <WarningIcon size={20} color="var(--primary-color)" />
-                                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                                            <p className="alert-text-styled">
                                                 <strong>Exchange Policy:</strong> Available for damaged books, missing pages, or print errors within 7 days of delivery.
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary)' }}>Select Reason <span style={{ color: 'var(--error-color)' }}>*</span></label>
+                                    <div className="form-group form-group-mb">
+                                        <label className="form-label-styled">Select Reason <span className="required-star">*</span></label>
                                         <select
                                             value={selectedReason}
                                             onChange={(e) => {
@@ -547,16 +639,7 @@ const UserOrderDetails: React.FC = () => {
                                                 if (e.target.value !== 'Others') setExchangeReason('');
                                             }}
                                             required
-                                            className="exchange-reason-select"
-                                            style={{
-                                                width: '100%',
-                                                padding: '0.75rem',
-                                                borderRadius: '8px',
-                                                border: '1px solid var(--border-color)',
-                                                background: 'var(--bg-primary)',
-                                                color: 'var(--text-primary)',
-                                                outline: 'none'
-                                            }}
+                                            className="exchange-reason-select exchange-reason-select-styled"
                                         >
                                             <option value="" disabled>Select a reason...</option>
                                             <option value="Damaged Book">Damaged Book</option>
@@ -567,51 +650,31 @@ const UserOrderDetails: React.FC = () => {
                                     </div>
 
                                     {selectedReason === 'Others' && (
-                                        <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary)' }}>Describe Reason <span style={{ color: 'var(--error-color)' }}>*</span></label>
+                                        <div className="form-group form-group-mb">
+                                            <label className="form-label-styled">Describe Reason <span className="required-star">*</span></label>
                                             <textarea
                                                 value={exchangeReason}
                                                 onChange={(e) => setExchangeReason(e.target.value)}
                                                 placeholder="Please provide more details..."
                                                 required
-                                                className="return-reason-input"
+                                                className="return-reason-input return-reason-input-styled"
                                                 rows={3}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '0.75rem',
-                                                    borderRadius: '8px',
-                                                    border: '1px solid var(--border-color)',
-                                                    background: 'var(--bg-primary)',
-                                                    color: 'var(--text-primary)',
-                                                    outline: 'none',
-                                                    resize: 'vertical'
-                                                }}
                                             />
                                         </div>
                                     )}
 
                                     <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary)' }}>Upload Proof (Optional)</label>
+                                        <label className="form-label-styled">Upload Proof <span className="required-star">*</span></label>
                                         <div
-                                            className="image-upload-wrapper"
-                                            style={{
-                                                border: '2px dashed var(--border-color)',
-                                                borderRadius: '12px',
-                                                padding: '1.5rem',
-                                                textAlign: 'center',
-                                                cursor: 'pointer',
-                                                position: 'relative',
-                                                background: imagePreview ? 'transparent' : 'var(--bg-secondary)',
-                                                transition: 'all 0.2s ease'
-                                            }}
+                                            className={`image-upload-wrapper image-upload-wrapper-styled ${imagePreview ? 'has-preview' : ''}`}
                                             onClick={() => document.getElementById('exchange-image-input')?.click()}
                                         >
                                             {imagePreview ? (
-                                                <div style={{ position: 'relative', width: 'fit-content', margin: '0 auto' }}>
+                                                <div className="preview-container">
                                                     <img
                                                         src={imagePreview}
                                                         alt="Proof Preview"
-                                                        style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                                        className="preview-image-styled"
                                                     />
                                                     <button
                                                         type="button"
@@ -620,31 +683,16 @@ const UserOrderDetails: React.FC = () => {
                                                             setExchangeImage(null);
                                                             setImagePreview(null);
                                                         }}
-                                                        style={{
-                                                            position: 'absolute',
-                                                            top: '-10px',
-                                                            right: '-10px',
-                                                            background: 'var(--error-color)',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '50%',
-                                                            width: '24px',
-                                                            height: '24px',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            cursor: 'pointer',
-                                                            fontSize: '14px'
-                                                        }}
+                                                        className="remove-image-btn"
                                                     >
                                                         <X size={14} />
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                                                <div className="upload-placeholder">
                                                     <Upload size={32} />
-                                                    <span style={{ fontSize: '0.9rem' }}>Click to upload an image of the issue</span>
-                                                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>JPG, PNG or WEBP (Max 5MB)</span>
+                                                    <span className="upload-text-main">Click to upload an image of the issue</span>
+                                                    <span className="upload-text-sub">JPG, PNG or WEBP (Max 5MB)</span>
                                                 </div>
                                             )}
                                             <input
@@ -657,34 +705,124 @@ const UserOrderDetails: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="modal-actions" style={{ padding: '1.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                <div className="modal-actions modal-actions-styled">
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setIsExchangeModalOpen(false);
                                             resetExchangeForm();
                                         }}
-                                        className="cancel-btn"
-                                        style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontWeight: '500', cursor: 'pointer' }}
+                                        className="cancel-btn cancel-btn-styled"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="submit-btn-premium"
-                                        disabled={isSubmittingExchange || !selectedReason || (selectedReason === 'Others' && !exchangeReason)}
-                                        style={{
-                                            padding: '0.75rem 2rem',
-                                            borderRadius: '8px',
-                                            border: 'none',
-                                            background: (isSubmittingExchange || !selectedReason || (selectedReason === 'Others' && !exchangeReason)) ? 'var(--text-muted)' : 'var(--primary-color)',
-                                            color: 'white',
-                                            fontWeight: '600',
-                                            cursor: (isSubmittingExchange || !selectedReason || (selectedReason === 'Others' && !exchangeReason)) ? 'not-allowed' : 'pointer',
-                                            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
-                                        }}
+                                        className={`submit-btn-premium submit-btn-styled ${(isSubmittingExchange || !selectedReason || (selectedReason === 'Others' && !exchangeReason) || !exchangeImage) ? 'submit-btn-disabled' : 'submit-btn-active'}`}
+                                        disabled={isSubmittingExchange || !selectedReason || (selectedReason === 'Others' && !exchangeReason) || !exchangeImage}
                                     >
                                         {isSubmittingExchange ? 'Submitting...' : 'Submit Request'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Refund Details Modal */}
+            <AnimatePresence>
+                {isRefundModalOpen && (
+                    <motion.div
+                        className="modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsRefundModalOpen(false)}
+                    >
+                        <motion.div
+                            className="modal-content-premium refund-modal-size"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ maxWidth: '450px' }}
+                        >
+                            <form onSubmit={handleRefundSubmit}>
+                                <div className="modal-header">
+                                    <h3>Bank Details for Refund</h3>
+                                    <button type="button" onClick={() => setIsRefundModalOpen(false)} className="close-btn">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+                                <div className="modal-body modal-body-scrollable">
+                                    <p style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: '1.3' }}>
+                                        Please provide accurate bank details so we can process your refund as quickly as possible.
+                                    </p>
+
+                                    <div className="form-group form-group-mb">
+                                        <label className="form-label-styled">Account Holder Name <span className="required-star">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="exchange-reason-select-styled"
+                                            placeholder="e.g. Rahul Kumar"
+                                            required
+                                            value={refundForm.accountName}
+                                            onChange={(e) => setRefundForm({ ...refundForm, accountName: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="form-group form-group-mb">
+                                        <label className="form-label-styled">Bank Name <span className="required-star">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="exchange-reason-select-styled"
+                                            placeholder="e.g. State Bank of India"
+                                            required
+                                            value={refundForm.bankName}
+                                            onChange={(e) => setRefundForm({ ...refundForm, bankName: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="form-group form-group-mb">
+                                        <label className="form-label-styled">Account Number <span className="required-star">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="exchange-reason-select-styled"
+                                            placeholder="0000 0000 0000 0000"
+                                            required
+                                            value={refundForm.accountNumber}
+                                            onChange={(e) => setRefundForm({ ...refundForm, accountNumber: e.target.value })}
+                                        />
+                                        {refundForm.accountNumber && !/^\d{9,18}$/.test(refundForm.accountNumber) && (
+                                            <span className="validation-error">9-18 digit numeric account number required</span>
+                                        )}
+                                    </div>
+
+                                    <div className="form-group form-group-mb">
+                                        <label className="form-label-styled">IFSC Code <span className="required-star">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="exchange-reason-select-styled"
+                                            placeholder="e.g. SBIN0001234"
+                                            required
+                                            style={{ textTransform: 'uppercase' }}
+                                            value={refundForm.ifscCode}
+                                            onChange={(e) => setRefundForm({ ...refundForm, ifscCode: e.target.value.toUpperCase() })}
+                                        />
+                                        {refundForm.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(refundForm.ifscCode) && (
+                                            <span className="validation-error">Invalid IFSC format (e.g. SBIN0001234)</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="modal-footer" style={{ padding: '1.5rem', paddingTop: 0 }}>
+                                    <button
+                                        type="submit"
+                                        className={`submit-exchange-btn submit-btn-styled ${(!isRefundFormValid() || isSubmittingRefund) ? 'submit-btn-disabled' : 'submit-btn-active'}`}
+                                        disabled={!isRefundFormValid() || isSubmittingRefund}
+                                        style={{ width: '100%', cursor: (!isRefundFormValid() || isSubmittingRefund) ? 'not-allowed' : 'pointer' }}
+                                    >
+                                        {isSubmittingRefund ? 'Submitting...' : 'Submit Refund Details'}
                                     </button>
                                 </div>
                             </form>

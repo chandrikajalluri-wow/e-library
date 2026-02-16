@@ -18,7 +18,9 @@ export enum OrderStatus {
     RETURN_REQUESTED = 'return_requested',
     RETURN_ACCEPTED = 'return_accepted',
     RETURNED = 'returned',
-    RETURN_REJECTED = 'return_rejected'
+    RETURN_REJECTED = 'return_rejected',
+    REFUND_INITIATED = 'refund_initiated',
+    REFUNDED = 'refunded'
 }
 
 export enum BookStatus {

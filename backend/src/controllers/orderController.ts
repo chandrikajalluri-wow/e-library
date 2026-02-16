@@ -106,7 +106,8 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
             NotificationType.ORDER,
             `Order confirmed: ${totalItemsInOrder} book(s) will be delivered to ${address.city}`,
             req.user!._id as any,
-            null as any
+            null as any,
+            newOrder._id.toString()
         );
 
         // Notify Admins
@@ -130,11 +131,11 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
 // Admin: Get All Orders
 export const getAllOrders = async (req: AuthRequest, res: Response) => {
     try {
-        const { status, search, startDate, endDate, sort, membership } = req.query;
+        const { status, search, startDate, endDate, sort, membership, page, limit } = req.query;
 
-        // Build filter object
         let filter: any = {};
 
+        // Status filter
         if (status && status !== 'all') {
             if (typeof status === 'string' && status.includes(',')) {
                 filter.status = { $in: status.split(',') };
@@ -143,8 +144,7 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
             }
         }
 
-
-
+        // Date range filter
         if (startDate && endDate) {
             filter.createdAt = {
                 $gte: new Date(startDate as string),
@@ -152,15 +152,44 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
             };
         }
 
-        // Search by User Name or Order ID
+        // Base user filter logic for search and membership
+        let userIds: any[] = [];
+        let hasUserFilter = false;
+
+        // Search by User Name
         if (search) {
             const users = await User.find({
                 name: { $regex: search, $options: 'i' }
             }).select('_id');
+            userIds = users.map(user => user._id);
+            hasUserFilter = true;
+        }
 
-            const userIds = users.map(user => user._id);
+        // Membership filter (DB-level)
+        if (membership && membership !== 'all') {
+            const membershipDoc = await Membership.findOne({ name: membership });
+            if (membershipDoc) {
+                const usersWithMembership = await User.find({ membership_id: membershipDoc._id }).select('_id');
+                const membershipUserIds = usersWithMembership.map(u => u._id.toString());
 
+                if (hasUserFilter) {
+                    // Intersection of search results and membership results
+                    userIds = userIds.filter(id => membershipUserIds.includes(id.toString()));
+                } else {
+                    userIds = membershipUserIds;
+                }
+                hasUserFilter = true;
+            }
+        }
+
+        if (hasUserFilter) {
+            filter.user_id = { $in: userIds };
+        }
+
+        // Search by Order ID (Add to $or if search is present)
+        if (search) {
             filter.$or = [
+                { user_id: filter.user_id },
                 {
                     $expr: {
                         $regexMatch: {
@@ -169,11 +198,12 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
                             options: "i"
                         }
                     }
-                },
-                { user_id: { $in: userIds } }
+                }
             ];
+            delete filter.user_id; // Moved into $or
         }
 
+        // Sorting
         let sortOption: any = { createdAt: -1 };
         if (sort === 'oldest') {
             sortOption = { createdAt: 1 };
@@ -183,8 +213,25 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
             sortOption = { totalAmount: -1 };
         }
 
-        // Fetch orders and populate user
-        let orders = await Order.find(filter)
+        // Pagination
+        const pageNum = parseInt(page as string) || 1;
+        const limitNum = parseInt(limit as string) || 10;
+        const skip = (pageNum - 1) * limitNum;
+
+        const totalOrders = await Order.countDocuments(filter);
+        const totalPages = Math.ceil(totalOrders / limitNum);
+
+        // Fetch counts for stats (within the same filter)
+        const counts = {
+            total: totalOrders,
+            pending: await Order.countDocuments({ ...filter, status: 'pending' }),
+            processing: await Order.countDocuments({ ...filter, status: 'processing' }),
+            shipped: await Order.countDocuments({ ...filter, status: 'shipped' }),
+            delivered: await Order.countDocuments({ ...filter, status: 'delivered' }),
+            cancelled: await Order.countDocuments({ ...filter, status: 'cancelled' }),
+        };
+
+        const orders = await Order.find(filter)
             .populate({
                 path: 'user_id',
                 select: 'name email phone membership_id',
@@ -196,19 +243,18 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
                 populate: { path: 'addedBy', select: 'name' }
             })
             .populate('address_id')
-            .sort(sortOption);
+            .sort(sortOption)
+            .skip(skip)
+            .limit(limitNum);
 
-        // All admins now view all orders/items
-
-        // Filter by membership in memory if provided (since it's a deep population filter)
-        if (membership && membership !== 'all') {
-            orders = orders.filter((order: any) => {
-                const userMembership = order.user_id?.membership_id?.name;
-                return userMembership === membership;
-            });
-        }
-
-        res.status(200).json(orders);
+        res.status(200).json({
+            orders,
+            totalOrders,
+            totalPages,
+            currentPage: pageNum,
+            limit: limitNum,
+            counts
+        });
     } catch (error: any) {
         console.error('Get all orders error:', error);
         res.status(500).json({ error: 'Failed to fetch orders' });
@@ -237,7 +283,19 @@ const isStatusTransitionAllowed = (current: string, next: string): boolean => {
     }
 
     if (current === OrderStatus.RETURN_REQUESTED) {
-        return next === OrderStatus.RETURNED || next === OrderStatus.RETURN_REJECTED;
+        return next === OrderStatus.RETURN_ACCEPTED || next === OrderStatus.RETURN_REJECTED || next === OrderStatus.REFUND_INITIATED;
+    }
+
+    if (current === OrderStatus.RETURN_ACCEPTED) {
+        return next === OrderStatus.RETURNED || next === OrderStatus.REFUND_INITIATED;
+    }
+
+    if (current === OrderStatus.RETURNED) {
+        return next === OrderStatus.PROCESSING || next === OrderStatus.REFUND_INITIATED;
+    }
+
+    if (current === OrderStatus.REFUND_INITIATED) {
+        return next === OrderStatus.REFUNDED;
     }
 
     return false;
@@ -269,6 +327,11 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         }
 
         // All admins now update all orders
+
+        // Prevent transition to REFUNDED if refundDetails are missing
+        if (status === OrderStatus.REFUNDED && !order.refundDetails?.accountNumber) {
+            return res.status(400).json({ error: 'Cannot mark as Refunded. This user has not submitted bank details yet. Please wait for the user to provide their account info.' });
+        }
 
         order.status = status;
 
@@ -338,10 +401,26 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             }
         }
 
-        await order.save();
+        // Send In-App Notification for standard status updates
+        if ([OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.CANCELLED].includes(status as OrderStatus) && previousStatus !== status) {
+            const statusLabels: Record<string, string> = {
+                [OrderStatus.PROCESSING]: 'is being processed',
+                [OrderStatus.SHIPPED]: 'has been shipped',
+                [OrderStatus.DELIVERED]: 'has been delivered',
+                [OrderStatus.CANCELLED]: 'has been cancelled'
+            };
+
+            await sendNotification(
+                NotificationType.ORDER,
+                `Your order #${order._id.toString().slice(-8).toUpperCase()} ${statusLabels[status] || status}.`,
+                order.user_id as any,
+                null as any,
+                order._id.toString()
+            );
+        }
 
         // Send In-App Notification for Return Decisions (now Exchange)
-        if (status === OrderStatus.RETURNED || status === OrderStatus.RETURN_REJECTED) {
+        if ((status === OrderStatus.RETURNED || status === OrderStatus.RETURN_REJECTED) && previousStatus !== status) {
             const isApproved = status === OrderStatus.RETURNED;
             const message = isApproved
                 ? `Your exchange request for Order #${order._id.toString().slice(-8).toUpperCase()} has been APPROVED.`
@@ -351,18 +430,33 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
                 NotificationType.BORROW,
                 message,
                 order.user_id as any,
-                null as any
+                null as any,
+                order._id.toString()
             );
         }
+
+        // Handle Refund Notifications
+        if ((status === OrderStatus.REFUND_INITIATED || status === OrderStatus.REFUNDED) && previousStatus !== status) {
+            const message = status === OrderStatus.REFUND_INITIATED
+                ? `Refund initiated for Order #${order._id.toString().slice(-8).toUpperCase()}. Please provide your bank details for processing.`
+                : `Refund completed for Order #${order._id.toString().slice(-8).toUpperCase()} and amount has been credited.`;
+
+            await sendNotification(
+                NotificationType.ORDER,
+                message,
+                order.user_id as any,
+                null as any,
+                order._id.toString()
+            );
+        }
+
+        await order.save();
+
         await new ActivityLog({
             user_id: req.user!._id,
             action: `Order Status Updated`,
             description: `Order #${order._id} status updated to ${status} by ${req.user!.name}`,
         }).save();
-
-        // if (userRole === RoleName.ADMIN) {
-        //     await notifySuperAdmins(`Admin ${req.user!.name} updated order #${order._id} status to ${status.toUpperCase()}`);
-        // }
 
         // Send Email Notification
         const populatedOrder = await Order.findById(order._id)
@@ -411,6 +505,58 @@ Thank you for choosing BookStack!
     }
 };
 
+// User: Submit Refund Bank Details
+export const submitRefundDetails = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { accountName, bankName, accountNumber, ifscCode } = req.body;
+        const userId = req.user!._id;
+
+        if (!accountName || !bankName || !accountNumber || !ifscCode) {
+            return res.status(400).json({ error: 'All bank details are required' });
+        }
+
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Check ownership
+        if (order.user_id.toString() !== userId.toString()) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        // Check status
+        if (order.status !== OrderStatus.REFUND_INITIATED) {
+            return res.status(400).json({ error: 'Refund not initiated for this order' });
+        }
+
+        order.refundDetails = {
+            accountName,
+            bankName,
+            accountNumber,
+            ifscCode,
+            submittedAt: new Date()
+        };
+
+        await order.save();
+
+        // Notify Admins
+        await notifyAdmins(
+            `Refund Details Submitted: User ${req.user!.name} provided bank info for Order #${order._id.toString().slice(-8).toUpperCase()}`,
+            NotificationType.ORDER,
+            order.items.map(i => i.book_id.toString()),
+            order._id.toString()
+        );
+
+        res.status(200).json({ message: 'Refund details submitted successfully', order });
+    } catch (error: any) {
+        console.error('Submit refund details error:', error);
+        res.status(500).json({ error: 'Failed to submit refund details' });
+    }
+};
+
+
 // Admin: Bulk Update Order Status
 export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => {
     try {
@@ -440,6 +586,12 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
 
             // Skip if no change or invalid transition
             if (previousStatus === status || !isStatusTransitionAllowed(previousStatus, status)) {
+                skippedCount++;
+                continue;
+            }
+
+            // Prevent transition to REFUNDED if refundDetails are missing
+            if (status === OrderStatus.REFUNDED && !order.refundDetails?.accountNumber) {
                 skippedCount++;
                 continue;
             }
@@ -513,6 +665,29 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
             }
 
             await order.save();
+
+            // Send In-App Notification
+            const statusLabels: Record<string, string> = {
+                [OrderStatus.PROCESSING]: 'is being processed',
+                [OrderStatus.SHIPPED]: 'has been shipped',
+                [OrderStatus.DELIVERED]: 'has been delivered',
+                [OrderStatus.CANCELLED]: 'has been cancelled',
+                [OrderStatus.RETURNED]: 'exchange has been approved',
+                [OrderStatus.RETURN_REJECTED]: 'exchange has been rejected'
+            };
+
+            const notifType = [OrderStatus.RETURNED, OrderStatus.RETURN_REJECTED].includes(status as OrderStatus)
+                ? NotificationType.BORROW
+                : NotificationType.ORDER;
+
+            await sendNotification(
+                notifType,
+                `Your order #${order._id.toString().slice(-8).toUpperCase()} ${statusLabels[status] || status}.`,
+                order.user_id as any,
+                null as any,
+                order._id.toString()
+            );
+
             modifiedCount++;
         }
 
@@ -620,7 +795,8 @@ export const cancelOwnOrder = async (req: AuthRequest, res: Response) => {
             NotificationType.BORROW,
             `Order cancelled: Your order #${order._id.toString().slice(-8).toUpperCase()} has been cancelled and stock has been reverted.`,
             userId as any,
-            null as any
+            null as any,
+            order._id.toString()
         );
 
         res.status(200).json({ message: 'Order cancelled successfully', order });
@@ -725,7 +901,8 @@ export const requestReturnOrder = async (req: AuthRequest, res: Response) => {
             NotificationType.BORROW,
             `Exchange request submitted for Order #${order._id.toString().slice(-8).toUpperCase()}. Awaiting admin approval.`,
             userId as any,
-            null as any
+            null as any,
+            order._id.toString()
         );
 
         res.status(200).json({ message: 'Exchange request submitted successfully', order });

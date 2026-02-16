@@ -120,28 +120,19 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                 title: 'Cannot Delete User (Active Obligations)',
                 message: (
                     <div>
-                        <p style={{ marginBottom: '10px', color: 'var(--error-color)', fontWeight: 600 }}>The following items prevent deletion:</p>
-                        <ul style={{ listStyle: 'none', padding: 0, marginBottom: '20px' }}>
+                        <p className="conflict-list-title">The following items prevent deletion:</p>
+                        <ul className="deletion-conflict-list">
                             {conflictData.obligations?.map((obs, i) => (
-                                <li key={i} style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    padding: '8px 12px',
-                                    background: 'rgba(239, 68, 68, 0.05)',
-                                    borderRadius: '6px',
-                                    marginBottom: '4px',
-                                    fontSize: '0.9rem'
-                                }}>
-                                    <span style={{ color: '#ef4444' }}>•</span> {obs}
+                                <li key={i} className="deletion-conflict-item">
+                                    <span className="conflict-bullet">•</span> {obs}
                                 </li>
                             ))}
                         </ul>
 
-                        <p className="status-rejected" style={{ fontWeight: 'bold', marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                        <p className="status-rejected force-delete-warning">
                             Do you want to FORCE delete this user immediately?
                         </p>
-                        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '4px' }}>
+                        <p className="force-delete-subtext">
                             This will anonymize the account regardless of the above obligations.
                         </p>
                     </div>

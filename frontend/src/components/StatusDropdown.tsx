@@ -23,6 +23,8 @@ const exchangeStatuses = [
     { value: 'return_requested', label: 'Exchange Pending', icon: 'return_requested' },
     { value: 'return_accepted', label: 'Accepted', icon: 'return_accepted' },
     { value: 'returned', label: 'Item Received', icon: 'returned' },
+    { value: 'refund_initiated', label: 'Refund Initiated', icon: 'refund_initiated' },
+    { value: 'refunded', label: 'Refunded', icon: 'refunded' },
     { value: 'processing', label: 'Exchange Processed', icon: 'processing' },
     { value: 'shipped', label: 'Shipped', icon: 'shipped' },
     { value: 'delivered', label: 'Delivered', icon: 'delivered' },

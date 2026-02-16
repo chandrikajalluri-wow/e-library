@@ -1,0 +1,217 @@
+/* Notifications Page Styles */
+.notif-full-item {
+    padding: 1.5rem;
+    display: flex;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    position: relative;
+    background-color: var(--card-bg);
+    cursor: pointer;
+}
+
+.notif-full-item:hover {
+    background-color: var(--bg-hover) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.notif-full-item:last-child {
+    border-bottom: none;
+}
+
+.notif-full-item.unread {
+    background-color: rgba(99, 102, 241, 0.05);
+    border-left: 3px solid var(--primary-color);
+}
+
+.notif-full-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--bg-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+}
+
+.notif-full-content {
+    flex: 1;
+}
+
+.notif-full-message {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.notif-full-time {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.notif-actions {
+    margin-top: 1.25rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.view-action-btn {
+    padding: 0.6rem 1.25rem;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.order-btn {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.order-btn:hover {
+    background: #f59e0b;
+    color: white;
+}
+
+.exchange-btn {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.exchange-btn:hover {
+    background: #10b981;
+    color: white;
+}
+
+.view-action-btn.cancel-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+.view-action-btn.cancel-btn:hover {
+    background-color: #fecaca;
+}
+
+.request-btn {
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.request-btn:hover {
+    background: #8b5cf6;
+    color: white;
+}
+
+.view-book-btn {
+    padding: 0.6rem 1.25rem;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.view-book-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.unread-pulse {
+    width: 10px;
+    height: 10px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+    animation: pulse 2s infinite;
+}
+
+.empty-notifications {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 5rem 2rem;
+    min-height: 400px;
+}
+
+.empty-icon-circ {
+    background: var(--bg-color);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem auto;
+    border: 1px solid var(--border-color);
+}
+
+.empty-text {
+    color: var(--text-secondary);
+}
+
+.explore-books-btn {
+    margin-top: 1.5rem;
+    display: inline-block;
+    text-decoration: none;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    }
+}
+
+[data-theme='dark'] .notif-full-icon {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .notif-full-item.unread {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+}
+
+[data-theme='dark'] .notif-full-item.unread:hover {
+    background-color: rgba(99, 102, 241, 0.15);
+}
+
+[data-theme='dark'] .notif-full-message {
+    color: #f8fafc;
+}
+
+/* Extracted Inline Styles */
+.action-tag-styled {
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+}

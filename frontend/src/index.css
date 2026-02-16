@@ -10,6 +10,8 @@
   --bg-color: #f8fafc;
   --card-bg: #ffffff;
   --border-color: #e2e8f0;
+  --bg-hover: rgba(99, 102, 241, 0.05);
+  --text-muted: #94a3b8;
   --font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 
   /* SaaS Specific mappings */
@@ -150,6 +152,7 @@
 
   --primary-color: #818cf8;
   --primary-dark: #6366f1;
+  --text-muted: #64748b;
 }
 
 [data-theme='dark'] select option {
