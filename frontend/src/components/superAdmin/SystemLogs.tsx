@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { getSystemLogs } from '../../services/superAdminService';
-import { Activity, Clock, User, Zap } from 'lucide-react';
+import { Activity, Clock, User, Zap, Search, Filter } from 'lucide-react';
 import '../../styles/SuperAdminLogs.css';
 
 interface SystemLogsProps {
@@ -136,23 +136,27 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
             </div>
 
             <div className="system-logs-toolbar">
-                <input
-                    type="text"
-                    placeholder="Search logs..."
-                    className="logs-search-input"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <select
-                    className="logs-filter-select"
-                    value={filterAction}
-                    onChange={(e) => setFilterAction(e.target.value)}
-                >
-                    <option value="ALL">All Actions</option>
-                    <option value="CREATE">Create / Add</option>
-                    <option value="UPDATE">Update / Edit</option>
-                    <option value="DELETE">Delete / Remove</option>
-                </select>
+                <div className="admin-search-box">
+                    <Search size={18} className="search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Search logs..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="admin-filter-box">
+                    <Filter size={18} className="filter-icon" />
+                    <select
+                        value={filterAction}
+                        onChange={(e) => setFilterAction(e.target.value)}
+                    >
+                        <option value="ALL">All Actions</option>
+                        <option value="CREATE">Create / Add</option>
+                        <option value="UPDATE">Update / Edit</option>
+                        <option value="DELETE">Delete / Remove</option>
+                    </select>
+                </div>
             </div>
 
             <div className="logs-table-wrapper">

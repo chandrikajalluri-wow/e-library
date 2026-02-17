@@ -303,35 +303,27 @@
 /* Book Items Preview */
 .books-preview-list {
     display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.order-book-item {
-    display: flex;
-    gap: 1.25rem;
+    flex-direction: row;
     align-items: center;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: 16px;
-    border: 1px solid transparent;
-    transition: all 0.2s;
-}
-
-.order-book-item:hover {
-    background: var(--bg-color);
-    border-color: var(--border-color);
-    transform: translateX(4px);
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
 }
 
 .preview-book-thumb {
-    width: 64px;
-    height: 96px;
+    width: 60px;
+    height: 90px;
     border-radius: 10px;
     overflow: hidden;
     flex-shrink: 0;
-    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    transition: transform 0.3s ease;
+}
+
+.preview-book-thumb:hover {
+    transform: translateY(-4px) scale(1.05);
+    z-index: 2;
 }
 
 .preview-book-thumb img {
@@ -340,46 +332,21 @@
     object-fit: cover;
 }
 
-.book-text-info-inline {
-    flex: 1;
-    min-width: 0;
-}
-
-.book-text-info-inline h4 {
-    margin: 0;
-    font-size: 0.95rem;
+.more-books-indicator {
+    width: 60px;
+    height: 90px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 800;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.book-author-text {
-    margin: 0.25rem 0;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    font-weight: 600;
-}
-
-.book-qty-price {
-    margin: 0.25rem 0;
-    font-size: 0.8rem;
     color: var(--text-secondary);
-    font-weight: 700;
-}
-
-.book-item-price-total {
-    text-align: right;
-    flex-shrink: 0;
-}
-
-.book-item-price-total p {
-    margin: 0;
     font-size: 1rem;
-    font-weight: 800;
-    color: var(--primary-color);
 }
+
+/* Removed individual item styles as they are now covers only */
 
 /* Bottom Actions */
 .card-bottom-actions {

@@ -322,7 +322,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         // Enforce sequential status updates
         if (previousStatus !== status && !isStatusTransitionAllowed(previousStatus, status)) {
             return res.status(400).json({
-                error: `Invalid status transition from ${previousStatus} to ${status}. Updates must follow the sequential flow.`
+                error: `Invalid status transition from ${previousStatus} to ${status}. Standard orders must follow the sequential flow: Pending → Processing → Shipped → Delivered. Cancellation is allowed from Pending or Processing.`
             });
         }
 

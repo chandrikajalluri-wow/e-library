@@ -27,7 +27,7 @@ const NotificationsPage: React.FC = () => {
             } else if (filterType === 'canceled') {
                 // Fetch all relevant types for cancellation search
                 params.type = 'order,borrow,return';
-            } else if (filterType === 'new_addition') {
+            } else if (filterType === 'new_addition' || filterType === 'book_mgmt' || filterType === 'category_mgmt') {
                 params.type = 'system';
             } else if (filterType !== 'all' && filterType !== 'others') {
                 params.type = filterType;
@@ -74,17 +74,48 @@ const NotificationsPage: React.FC = () => {
                 }
             } else {
                 // Admin side refining
-                if (filterType === 'order') {
-                    data = data.filter((n: any) =>
-                        n.type === 'order' &&
-                        !n.message.toLowerCase().includes('cancelled') &&
-                        !n.message.toLowerCase().includes('canceled')
-                    );
-                } else if (filterType === 'canceled') {
-                    data = data.filter((n: any) =>
-                        n.message.toLowerCase().includes('cancelled') ||
-                        n.message.toLowerCase().includes('canceled')
-                    );
+                if (role === RoleName.SUPER_ADMIN) {
+                    // Super Admin refinements
+                    if (filterType === 'all') {
+                        // Exclude administrative and user announcements from default view
+                        data = data.filter((n: any) => {
+                            const msgLower = n.message.toLowerCase();
+                            // Exclude "New Addition" alerts
+                            if (n.message.includes('New Addition')) return false;
+                            // Exclude administrative announcements
+                            if (msgLower.startsWith('admin ') &&
+                                (msgLower.includes('added') || msgLower.includes('updated') || msgLower.includes('created') || msgLower.includes('deleted'))
+                            ) return false;
+                            // Exclude explicit announcement keywords
+                            if (msgLower.includes('announcement')) return false;
+
+                            return true;
+                        });
+                    } else if (filterType === 'book_mgmt') {
+                        data = data.filter((n: any) =>
+                            n.type === 'system' &&
+                            (n.message.toLowerCase().includes('added a new book') || n.message.toLowerCase().includes('updated book'))
+                        );
+                    } else if (filterType === 'category_mgmt') {
+                        data = data.filter((n: any) =>
+                            n.type === 'system' &&
+                            (n.message.toLowerCase().includes('created a new category') || n.message.toLowerCase().includes('updated category'))
+                        );
+                    }
+                } else {
+                    // Admin refinements
+                    if (filterType === 'order') {
+                        data = data.filter((n: any) =>
+                            n.type === 'order' &&
+                            !n.message.toLowerCase().includes('cancelled') &&
+                            !n.message.toLowerCase().includes('canceled')
+                        );
+                    } else if (filterType === 'canceled') {
+                        data = data.filter((n: any) =>
+                            n.message.toLowerCase().includes('cancelled') ||
+                            n.message.toLowerCase().includes('canceled')
+                        );
+                    }
                 }
             }
 
@@ -157,7 +188,6 @@ const NotificationsPage: React.FC = () => {
     const role = localStorage.getItem('role');
     const isAdmin = role === 'admin' || role === 'super_admin';
 
-    // if (loading) return <Loader />; // Better to show loader inside list or overlay to keep filters visible
 
     return (
         <div className="notifications-page dashboard-container saas-reveal">
@@ -165,7 +195,7 @@ const NotificationsPage: React.FC = () => {
                 <div className="admin-header-titles">
                     <h1 className="admin-header-title">{isAdmin ? 'Admin Activity Control' : 'Notifications'}</h1>
                     <p className="admin-header-subtitle">
-                        {isAdmin ? 'Monitor admin activities' : 'Stay updated with your library activities'}
+                        {isAdmin ? 'Monitor Admin Activities' : 'Stay updated with your library activities'}
                     </p>
                 </div>
                 <div className="header-actions">
@@ -187,7 +217,7 @@ const NotificationsPage: React.FC = () => {
                                 <option value="all">All Types</option>
                                 <option value="order">Orders</option>
                                 <option value="exchange">Exchange</option>
-                                <option value="canceled">Canceled</option>
+                                <option value="cancelled">Cancelled</option>
                                 <option value="new_addition">New Addition</option>
                                 <option value="wishlist">Wishlist</option>
                                 <option value="others">Others</option>
@@ -195,17 +225,26 @@ const NotificationsPage: React.FC = () => {
                             <ChevronDown size={14} className="chevron-icon" />
                         </div>
                     </div>
-                ) : role !== RoleName.SUPER_ADMIN && (
+                ) : (
                     <div className="filter-pill">
                         <Filter size={16} className="filter-icon" />
                         <div className="select-wrapper">
                             <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
                                 <option value="all">All Types</option>
-                                <option value="order">Orders</option>
-                                <option value="return">Exchanges</option>
-                                <option value="canceled">Canceled</option>
-                                <option value="book_request">Requests</option>
-                                <option value="stock_alert">Stock Updates</option>
+                                {role === RoleName.SUPER_ADMIN ? (
+                                    <>
+                                        <option value="book_mgmt">Add/Update Book</option>
+                                        <option value="category_mgmt">Add/Update Category</option>
+                                    </>
+                                ) : (
+                                    <>
+                                        <option value="order">Orders</option>
+                                        <option value="return">Exchanges</option>
+                                        <option value="cancelled">Cancelled</option>
+                                        <option value="book_request">Requests</option>
+                                        <option value="stock_alert">Stock Updates</option>
+                                    </>
+                                )}
                             </select>
                             <ChevronDown size={14} className="chevron-icon" />
                         </div>

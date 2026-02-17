@@ -212,24 +212,19 @@ const UserOrders: React.FC = () => {
                                         </div>
 
                                         <div className="books-preview-list">
-                                            {order.items.map((item, itemIdx) => {
+                                            {order.items.slice(0, 5).map((item, itemIdx) => {
                                                 const book = item.book_id;
                                                 return (
-                                                    <div key={itemIdx} className="order-book-item">
-                                                        <div className="preview-book-thumb">
-                                                            <img src={book?.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={book?.title || 'Deleted Book'} />
-                                                        </div>
-                                                        <div className="book-text-info-inline">
-                                                            <h4>{book?.title || 'Deleted Book'}</h4>
-                                                            <p className="book-author-text">{book?.author || 'N/A'}</p>
-                                                            <p className="book-qty-price">Qty: {item.quantity} × ₹{item.priceAtOrder.toFixed(2)}</p>
-                                                        </div>
-                                                        <div className="book-item-price-total">
-                                                            <p>₹{(item.priceAtOrder * item.quantity).toFixed(2)}</p>
-                                                        </div>
+                                                    <div key={itemIdx} className="preview-book-thumb" title={book?.title || 'Deleted Book'}>
+                                                        <img src={book?.cover_image_url || 'https://via.placeholder.com/150x225?text=No+Cover'} alt={book?.title || 'Deleted Book'} />
                                                     </div>
                                                 );
                                             })}
+                                            {order.items.length > 5 && (
+                                                <div className="more-books-indicator">
+                                                    +{order.items.length - 5}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

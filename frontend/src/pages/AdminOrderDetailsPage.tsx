@@ -167,7 +167,7 @@ const AdminOrderDetailsPage: React.FC = () => {
             setOrder({ ...order, status: newStatus });
             toast.success(`Order status updated to ${newStatus}`);
         } catch (error: any) {
-            toast.error('Failed to update status');
+            toast.error(error);
         } finally {
             setIsUpdating(false);
         }

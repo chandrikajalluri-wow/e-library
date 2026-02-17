@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, ShieldCheck, Minus } from 'lucide-react';
+import { MessageCircle, X, Send, ShieldCheck } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { createOrGetSession, getSessionMessages } from '../services/chatService';
 import { getProfile } from '../services/userService';
@@ -147,7 +147,7 @@ const ChatWidget: React.FC = () => {
                             </div>
                         </div>
                         <button className="minimal-close-btn" onClick={() => setIsOpen(false)}>
-                            <Minus size={20} color="white" />
+                            <X size={20} color="white" />
                         </button>
                     </div>
 

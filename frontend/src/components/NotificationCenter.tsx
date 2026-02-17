@@ -84,7 +84,7 @@ const NotificationCenter: React.FC<{ showLabel?: boolean }> = ({ showLabel }) =>
                 navigate('/admin-dashboard?tab=requests');
             } else if (type === 'book_request') {
                 navigate('/admin-dashboard?tab=user-requests');
-            } else if ((type === 'stock_alert' || type === 'wishlist') && notif.target_id) {
+            } else if ((type === 'stock_alert' || type === 'wishlist' || notif.message.toLowerCase().includes('out of stock')) && notif.target_id) {
                 navigate(`/admin-dashboard?tab=books&editBookId=${notif.target_id}`);
             } else if (notif.book_id) {
                 const bookId = notif.book_id?._id || notif.book_id;
