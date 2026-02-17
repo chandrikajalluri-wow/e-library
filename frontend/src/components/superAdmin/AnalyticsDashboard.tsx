@@ -7,6 +7,14 @@ import '../../styles/AdminDashboard.css'; // Reusing admin styles
 
 interface AnalyticsDashboardProps {
     data: {
+        totalBooks: number;
+        admins: number;
+        totalOrders: number;
+        totalRevenue: number;
+        avgFulfillmentTime: number;
+        averageOrderValue: number;
+        cancellationRate: number;
+        realizedOrderCount: number;
         userDistribution: { _id: string; count: number }[];
         membershipDistribution: { _id: string; count: number }[];
         bookDistribution: { _id: string; count: number }[];

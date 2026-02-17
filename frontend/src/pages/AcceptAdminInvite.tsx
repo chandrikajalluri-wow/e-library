@@ -63,6 +63,22 @@ const AcceptAdminInvite: React.FC = () => {
         }
     };
 
+    const handleDeclineInvite = async () => {
+        if (!token) return;
+
+        try {
+            await api.post('/admin-invite/decline-invite', { token });
+            toast.info('Invitation declined. Redirecting to login...');
+            setTimeout(() => {
+                navigate('/login', { state: { message: 'Invitation declined. You can continue as a regular user.' } });
+            }, 2000);
+        } catch (err: any) {
+            console.error('Decline invite error:', err);
+            // Even if it fails, navigate to login as the user wants out
+            navigate('/login');
+        }
+    };
+
     if (loading) {
         return (
             <div className="accept-invite-container">
@@ -174,7 +190,7 @@ const AcceptAdminInvite: React.FC = () => {
                             'Accept Invitation'
                         )}
                     </button>
-                    <button onClick={() => navigate('/')} className="btn-decline">
+                    <button onClick={handleDeclineInvite} className="btn-decline">
                         Decline
                     </button>
                 </div>

@@ -19,6 +19,9 @@ router.post('/manage-admin', auth, checkRole([RoleName.SUPER_ADMIN]), superAdmin
 // Invite Admin (Secure Invitation Flow)
 router.post('/invite-admin/:userId', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.inviteAdmin);
 
+// Invite Admin by Email (New)
+router.post('/invite-admin-by-email', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.inviteAdminByEmail);
+
 // Remove User/Admin
 router.delete('/user/:id', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.deleteUser);
 

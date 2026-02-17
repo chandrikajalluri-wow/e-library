@@ -82,3 +82,27 @@ export const acceptInvite = async (req: AuthRequest, res: Response) => {
         return res.status(500).json({ error: errorMessage });
     }
 };
+
+/**
+ * Decline an admin invitation
+ * POST /api/admin-invite/decline-invite
+ */
+export const declineInvite = async (req: AuthRequest, res: Response) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({ error: 'Token is required' });
+        }
+
+        const result = await adminInviteService.declineInvite(token);
+
+        return res.status(200).json({
+            message: result.message,
+        });
+    } catch (error: any) {
+        console.error('Error declining invite:', error);
+        return res.status(400).json({ error: error.message || 'Failed to decline invitation' });
+    }
+};
+

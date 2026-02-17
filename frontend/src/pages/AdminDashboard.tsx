@@ -18,6 +18,7 @@ import Loader from '../components/Loader';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminSupportManager from '../components/AdminSupportManager';
 import '../styles/AdminDashboard.css';
+import '../styles/Pagination.css';
 
 interface AdminDashboardProps {
   hideHeader?: boolean;
@@ -73,6 +74,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [authorImageFile, setAuthorImageFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsTotalPages, setLogsTotalPages] = useState(1);
+  const [logsTotalCount, setLogsTotalCount] = useState(0);
+  const [logSearchTerm, setLogSearchTerm] = useState('');
+  const [logActionFilter, setLogActionFilter] = useState('all');
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
 
   const [bookPage, setBookPage] = useState(1);
@@ -146,10 +152,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       inventoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (activeTab === 'borrows' && readHistoryPage > 1) {
       borrowsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (activeTab === 'requests' && exchangePage > 1) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [bookPage, readHistoryPage, activeTab]);
+  }, [bookPage, readHistoryPage, exchangePage, activeTab]);
 
   // Handle deep-linking for editing a book
   useEffect(() => {
@@ -255,8 +263,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchLogs = async () => {
     setIsDataLoading(true);
     try {
-      const data = await getActivityLogs();
-      setLogs(data);
+      const params = new URLSearchParams();
+      params.append('page', logsPage.toString());
+      params.append('limit', '15');
+      if (logSearchTerm) params.append('search', logSearchTerm);
+      if (logActionFilter !== 'all') params.append('action', logActionFilter);
+
+      const data = await getActivityLogs(params.toString());
+      setLogs(data.logs);
+      setLogsTotalPages(data.totalPages);
+      setLogsTotalCount(data.totalLogs);
     } catch (err) {
       console.error(err);
       toast.error('Failed to fetch activity logs');
@@ -292,13 +308,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   }, [exchangeStatusFilter, exchangeSearch]);
 
   useEffect(() => {
+    setLogsPage(1);
+  }, [logActionFilter]);
+
+  useEffect(() => {
     if (activeTab === 'borrows') fetchReadHistory();
     if (activeTab === 'requests') fetchOrderReturns();
-  }, [activeTab, readHistoryPage, membershipFilter, readHistoryStatusFilter]);
+    if (activeTab === 'logs') fetchLogs();
+  }, [activeTab, readHistoryPage, logsPage, membershipFilter, readHistoryStatusFilter, logActionFilter]);
 
   useEffect(() => {
     if (activeTab === 'books') fetchBooks();
-  }, [activeTab, bookPage, bookTypeFilter, categoryFilter, stockFilter, currentUser]);
+  }, [activeTab, bookPage, currentUser, bookTypeFilter, categoryFilter, stockFilter]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -306,21 +327,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         setBookPage(1);
         fetchBooks();
       }
+      if (activeTab === 'logs') {
+        setLogsPage(1);
+        fetchLogs();
+      }
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, currentUser]);
+  }, [searchTerm, logSearchTerm]);
+
+  // Filter resets
+  useEffect(() => { setBookPage(1); }, [bookTypeFilter, categoryFilter, stockFilter]);
+  useEffect(() => { setReadHistoryPage(1); }, [membershipFilter, readHistoryStatusFilter]);
+  useEffect(() => { setLogsPage(1); }, [activeTab]); // Reset logs page when entering tab
 
   useEffect(() => {
     // Prevent fetching until currentUser is loaded to avoid "flicker" with global stats
     if (!currentUser) return;
 
-    else if (activeTab === 'borrows') fetchReadHistory();
+    if (activeTab === 'borrows') fetchReadHistory();
     else if (activeTab === 'user-requests') fetchUserRequests();
     else if (activeTab === 'requests') fetchOrderReturns();
     else if (activeTab === 'books') fetchBooks();
     else if (activeTab === 'logs') fetchLogs();
     else if (activeTab === 'stats') fetchStats();
-  }, [activeTab, bookPage, readHistoryPage, membershipFilter, readHistoryStatusFilter, exchangeStatusFilter, currentUser]);
+  }, [activeTab, bookPage, readHistoryPage, logsPage, currentUser]);
 
   const handleGenerateWithAI = async () => {
     if (!newBook.title || !newBook.author) {
@@ -979,7 +1009,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 <div className="toolbar-title-box">
                   <h3 className="admin-table-title">Inventory Management</h3>
                   <div className="toolbar-title-actions">
-                    <button onClick={handleExportBooks} className="admin-btn-secondary export-csv-btn-mini">
+                    <button onClick={handleExportBooks} className="admin-export-csv-btn">
                       <Download size={16} />
                       <span>Export CSV</span>
                     </button>
@@ -1148,7 +1178,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
               {
                 bookTotalPages > 1 && (
-                  <div className="saas-pagination">
+                  <div className="admin-pagination">
                     <button
                       disabled={bookPage === 1}
                       onClick={() => setBookPage(prev => prev - 1)}
@@ -1156,8 +1186,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     >
                       Previous
                     </button>
-                    <div className="pagination-numbers">
-                      Page <strong>{bookPage}</strong> of {bookTotalPages}
+                    <div className="pagination-info">
+                      <div className="pagination-info-pages">
+                        Page <span>{bookPage}</span> of <span>{bookTotalPages}</span>
+                      </div>
                     </div>
                     <button
                       disabled={bookPage === bookTotalPages}
@@ -1425,7 +1457,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
               {/* Added pagination for exchanges */}
               {!isDataLoading && exchangeTotalPages > 1 && (
-                <div className="admin-pagination" style={{ margin: '1rem' }}>
+                <div className="admin-pagination">
                   <button
                     className="pagination-btn"
                     onClick={() => setExchangePage(prev => Math.max(1, prev - 1))}
@@ -1434,7 +1466,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     Previous
                   </button>
                   <div className="pagination-info">
-                    Page <span>{exchangePage}</span> of <span>{exchangeTotalPages}</span>
+                    <div className="pagination-info-pages">
+                      Page <span>{exchangePage}</span> of <span>{exchangeTotalPages}</span>
+                    </div>
                     <div className="total-count-mini">Total {exchangeTotalOrders} requests</div>
                   </div>
                   <button
@@ -1637,24 +1671,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 <div className="admin-empty-state">No read history records found.</div>
               )}
               {readHistoryTotalPages > 1 && (
-                <div className="pagination-controls">
+                <div className="admin-pagination">
                   <button
                     disabled={readHistoryPage === 1}
                     onClick={() => setReadHistoryPage((prev: number) => prev - 1)}
-                    className={`admin-reminder-btn ${readHistoryPage === 1 ? 'disabled-with-stop' : ''}`}
+                    className="pagination-btn"
                   >
-                    <span className="btn-text">Previous</span>
-                    <CircleSlash size={16} className="stop-icon" />
+                    Previous
                   </button>
-                  <span className="page-info">Page {readHistoryPage} of {readHistoryTotalPages}</span>
+                  <div className="pagination-info">
+                    <div className="pagination-info-pages">
+                      Page <span>{readHistoryPage}</span> of <span>{readHistoryTotalPages}</span>
+                    </div>
+                  </div>
                   <button
                     disabled={readHistoryPage === readHistoryTotalPages}
                     onClick={() => setReadHistoryPage((prev: number) => prev + 1)}
-                    className={`admin-btn-edit ${readHistoryPage === readHistoryTotalPages ? 'disabled-with-stop' : ''}`}
-                    style={{ padding: '0.45rem 1.5rem' }}
+                    className="pagination-btn"
                   >
-                    <span className="btn-text">Next</span>
-                    <CircleSlash size={16} className="stop-icon" />
+                    Next
                   </button>
                 </div>
               )}
@@ -1665,7 +1700,41 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         {
           activeTab === 'logs' && (
             <section className="card admin-table-section">
-              <div className="admin-table-header-box"><h3 className="admin-table-title">User Activity Logs</h3></div>
+              <div className="admin-table-header-box">
+                <h3 className="admin-table-title">User Activity Logs</h3>
+                <div className="admin-header-actions" style={{ gap: '1rem' }}>
+                  <div className="admin-search-box">
+                    <Search size={18} className="search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={logSearchTerm}
+                      onChange={(e) => setLogSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="admin-filter-box">
+                    <Filter size={18} className="filter-icon" />
+                    <select
+                      value={logActionFilter}
+                      onChange={(e) => setLogActionFilter(e.target.value)}
+                    >
+                      <option value="all">All Actions</option>
+                      <option value="ADD_TO_WISHLIST">Wishlist Added</option>
+                      <option value="ADD_TO_READLIST">Readlist Added</option>
+                      <option value="REVIEW_ADDED">Review Added</option>
+                      <option value="CART_CHECKOUT">Cart Checkout</option>
+                      <option value="BOOK_CREATED">Book Created</option>
+                      <option value="BOOK_UPDATED">Book Updated</option>
+                      <option value="BOOK_DELETED">Book Deleted</option>
+                      <option value="USER_UPDATED">User Updated</option>
+                      <option value="USER_DELETED">User Deleted</option>
+                      <option value="MEMBERSHIP_CANCELLED">Membership Cancelled</option>
+                      <option value="ADMIN_MGMT_PROMOTE">Promoted Admin</option>
+                      <option value="ADMIN_MGMT_DEMOTE">Demoted Admin</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
               <div className="admin-table-wrapper">
                 {isDataLoading ? (
                   <div className="admin-loading-container">
@@ -1694,6 +1763,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 )}
               </div>
               {!isDataLoading && logs.length === 0 && <div className="admin-empty-state">No logs found.</div>}
+              {!isDataLoading && logsTotalPages > 1 && (
+                <div className="admin-pagination">
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setLogsPage(prev => Math.max(1, prev - 1))}
+                    disabled={logsPage === 1}
+                  >
+                    Previous
+                  </button>
+                  <div className="pagination-info">
+                    <div className="pagination-info-pages">
+                      Page <span>{logsPage}</span> of <span>{logsTotalPages}</span>
+                    </div>
+                    <div className="total-count-mini">Total {logsTotalCount} logs</div>
+                  </div>
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setLogsPage(prev => Math.min(logsTotalPages, prev + 1))}
+                    disabled={logsPage === logsTotalPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </section>
           )
         }

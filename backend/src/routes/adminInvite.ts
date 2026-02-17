@@ -9,4 +9,7 @@ router.get('/verify-invite/:token', adminInviteController.verifyInviteToken);
 // Accept invitation (public route - no auth required)
 router.post('/accept-invite', adminInviteController.acceptInvite);
 
+// Decline invitation (public route - no auth required)
+router.post('/decline-invite', adminInviteController.declineInvite);
+
 export default router;

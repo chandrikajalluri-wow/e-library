@@ -39,7 +39,7 @@
 .admin-header-actions {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1.25rem;
     position: relative;
 }
 
@@ -685,6 +685,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 3rem;
 }
 
 [data-theme='dark'] .admin-table-header-box {
@@ -780,6 +781,95 @@
 
 .admin-search-clear-btn:hover {
     color: var(--text-primary);
+}
+
+/* Activity Log Search & Filter Modern Styling */
+.admin-search-box,
+.admin-filter-box {
+    display: flex;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    height: 48px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    padding-left: 1rem;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.admin-search-box:hover,
+.admin-filter-box:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+}
+
+.admin-search-box:focus-within,
+.admin-filter-box:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+    background: rgba(99, 102, 241, 0.01);
+}
+
+.admin-search-box .search-icon,
+.admin-filter-box .filter-icon {
+    color: var(--text-secondary);
+    pointer-events: none;
+    transition: color 0.2s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-search-box:focus-within .search-icon,
+.admin-filter-box:focus-within .filter-icon {
+    color: var(--primary-color);
+}
+
+.admin-search-box input,
+.admin-filter-box select {
+    flex: 1;
+    height: 100%;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    padding: 0 1rem !important;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: text;
+    line-height: normal;
+    display: flex;
+    align-items: center;
+}
+
+.admin-filter-box select {
+    cursor: pointer;
+    appearance: none;
+    padding-right: 2.5rem !important;
+}
+
+/* Custom arrow for the enhanced select */
+.admin-filter-box::after {
+    content: '';
+    position: absolute;
+    right: 1.15rem;
+    top: 50%;
+    margin-top: -5px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--text-secondary);
+    border-bottom: 2px solid var(--text-secondary);
+    transform: rotate(45deg);
+    pointer-events: none;
+    transition: all 0.2s;
+}
+
+.admin-filter-box:focus-within::after {
+    border-color: var(--primary-color);
 }
 
 .admin-table-wrapper {
@@ -3415,20 +3505,51 @@ body.dark-mode .report-reason-item {
     display: block;
 }
 
-.admin-search-filter-group {
+.admin-header-actions-unified {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.admin-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
     flex: 1;
-    max-width: 650px;
 }
 
-.admin-search-wrapper,
-.admin-filter-wrapper {
-    height: 50px;
+.search-bar-icon {
+    position: absolute;
+    left: 1.25rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 2;
 }
 
-.admin-search-input,
+.admin-search-input-premium {
+    box-sizing: border-box !important;
+    height: 50px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--border-color) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    transition: all 0.2s !important;
+    padding: 0 1.25rem 0 3.25rem !important;
+    width: 100% !important;
+}
+
+.admin-search-input-premium:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+    background: var(--card-bg) !important;
+}
+
 .admin-role-filter-select {
     box-sizing: border-box !important;
     height: 50px !important;
@@ -3440,14 +3561,6 @@ body.dark-mode .report-reason-item {
     font-weight: 600 !important;
     margin: 0 !important;
     transition: all 0.2s !important;
-}
-
-.admin-search-input {
-    padding: 0 1.25rem !important;
-    width: 100% !important;
-}
-
-.admin-role-filter-select {
     min-width: 160px;
     padding: 0 2.5rem 0 1rem !important;
     cursor: pointer !important;
@@ -3458,10 +3571,15 @@ body.dark-mode .report-reason-item {
     background-size: 18px !important;
 }
 
+.admin-role-filter-select:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+    outline: none !important;
+}
+
 .admin-role-filter-select:hover {
-    border-color: #10b981 !important;
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
-    z-index: 1;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.05) !important;
 }
 
 /* User Details Premium Modal */
@@ -3780,6 +3898,32 @@ body.dark-mode .report-reason-item {
     font-weight: 600 !important;
     color: var(--text-secondary) !important;
     white-space: nowrap !important;
+}
+
+.admin-export-csv-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.admin-export-csv-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.admin-export-csv-btn:active {
+    transform: translateY(0);
 }
 
 .admin-footer .footer-links a:hover {

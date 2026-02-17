@@ -1,7 +1,7 @@
 import api from '../api';
 
-export const getAllUsers = async () => {
-    const response = await api.get('/super-admin/users');
+export const getAllUsers = async (query: string = '') => {
+    const response = await api.get(`/super-admin/users?${query}`);
     return response.data;
 };
 
@@ -17,6 +17,11 @@ export const manageAdmin = async (userId: string, action: 'promote' | 'demote') 
 
 export const inviteAdmin = async (userId: string) => {
     const response = await api.post(`/super-admin/invite-admin/${userId}`);
+    return response.data;
+};
+
+export const inviteAdminByEmail = async (email: string) => {
+    const response = await api.post('/super-admin/invite-admin-by-email', { email });
     return response.data;
 };
 

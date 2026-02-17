@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { getSystemLogs } from '../../services/superAdminService';
 import { Activity, Clock, User, Zap } from 'lucide-react';
 import '../../styles/SuperAdminLogs.css';
@@ -14,6 +14,7 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [filterAction, setFilterAction] = useState('ALL');
     const itemsPerPage = 10;
+    const logsTopRef = useRef<HTMLDivElement>(null);
 
     const fetchLogs = async () => {
         setLoading(true);
@@ -30,6 +31,16 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
     useEffect(() => {
         fetchLogs();
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterAction]);
+
+    useEffect(() => {
+        if (currentPage > 1) {
+            logsTopRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [currentPage]);
 
     // Filter Logic
     const filteredLogs = logs.filter(log => {
@@ -99,7 +110,7 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
     };
 
     return (
-        <div className="system-logs-container">
+        <div className="system-logs-container" ref={logsTopRef}>
             <div className="system-logs-header">
                 {!hideTitle ? (
                     <div className="system-logs-title-group">
@@ -195,7 +206,7 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
                         </table>
 
                         {totalPages > 1 && (
-                            <div className="logs-pagination">
+                            <div className="admin-pagination">
                                 <button
                                     className="pagination-btn"
                                     disabled={currentPage === 1}
@@ -203,9 +214,11 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
                                 >
                                     Previous
                                 </button>
-                                <span className="pagination-info">
-                                    Page {currentPage} of {totalPages}
-                                </span>
+                                <div className="pagination-info">
+                                    <div className="pagination-info-pages">
+                                        Page <span>{currentPage}</span> of <span>{totalPages}</span>
+                                    </div>
+                                </div>
                                 <button
                                     className="pagination-btn"
                                     disabled={currentPage === totalPages}
