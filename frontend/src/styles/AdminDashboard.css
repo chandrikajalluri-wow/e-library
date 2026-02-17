@@ -836,14 +836,12 @@
     background: transparent !important;
     border: none !important;
     outline: none !important;
-    padding: 0 1rem !important;
+    padding: 0.5rem 0 0 1rem !important;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
     cursor: text;
-    line-height: normal;
-    display: flex;
-    align-items: center;
+    line-height: 48px;
 }
 
 .admin-filter-box select {

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download, Eye, XCircle, X } from 'lucide-react';
-import { createBook, getBooks, updateBook, deleteBook, checkBookDeletionSafety } from '../services/bookService';
+import { createBook, getBooks, getBook, updateBook, deleteBook, checkBookDeletionSafety } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
 import { getAllBookRequests, updateBookRequestStatus, getProfile, getAllReadlistEntries, getAdminDashboardStats } from '../services/userService';
@@ -98,6 +98,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   });
 
   const [isDataLoading, setIsDataLoading] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab, bookPage, exchangePage, logsPage, readHistoryPage]);
   const [isStatsLoading, setIsStatsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -162,10 +166,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   // Handle deep-linking for editing a book
   useEffect(() => {
     const editBookId = searchParams.get('editBookId');
-    if (editBookId && allBooks.length > 0) {
+    if (editBookId) {
       const bookToEdit = allBooks.find(b => b._id === editBookId);
-      if (bookToEdit && editingBookId !== editBookId) {
-        handleEditBook(bookToEdit);
+      if (bookToEdit) {
+        if (editingBookId !== editBookId) {
+          handleEditBook(bookToEdit);
+        }
+      } else {
+        // Fetch book if not in current list
+        const loadAndEdit = async () => {
+          try {
+            const book = await getBook(editBookId);
+            handleEditBook(book);
+          } catch (err) {
+            console.error("Failed to fetch book for editing", err);
+          }
+        };
+        loadAndEdit();
       }
     }
   }, [searchParams, allBooks]);
@@ -1722,15 +1739,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                       <option value="ADD_TO_WISHLIST">Wishlist Added</option>
                       <option value="ADD_TO_READLIST">Readlist Added</option>
                       <option value="REVIEW_ADDED">Review Added</option>
-                      <option value="CART_CHECKOUT">Cart Checkout</option>
-                      <option value="BOOK_CREATED">Book Created</option>
-                      <option value="BOOK_UPDATED">Book Updated</option>
-                      <option value="BOOK_DELETED">Book Deleted</option>
-                      <option value="USER_UPDATED">User Updated</option>
-                      <option value="USER_DELETED">User Deleted</option>
                       <option value="MEMBERSHIP_CANCELLED">Membership Cancelled</option>
-                      <option value="ADMIN_MGMT_PROMOTE">Promoted Admin</option>
-                      <option value="ADMIN_MGMT_DEMOTE">Demoted Admin</option>
                     </select>
                   </div>
                 </div>

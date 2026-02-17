@@ -113,17 +113,25 @@ export const getOrderStatusUpdateTemplate = (name: string, order: any, status: s
         attachmentNote = `<p>Please find your order invoice attached to this email as a PDF.</p>`;
     }
 
+    let refundNote = '';
+    if (status.toLowerCase() === 'refund_initiated') {
+        refundNote = `<p style="color: #e67e22; font-weight: bold;">Due to out of stock, we are initiating a refund.</p>`;
+    }
+
     return getBaseTemplate(`
         <h2>Order Status Update</h2>
         <p>Hi ${name},</p>
         <p>The status of your order <span class="highlight">#${order._id.toString().slice(-8).toUpperCase()}</span> has been updated to:</p>
         <div style="text-align: center; margin: 20px 0;">
-            <span style="font-size: 1.2rem; font-weight: bold; padding: 10px 20px; border-radius: 5px; background-color: ${statusColor}; color: white; display: inline-block;">
-                ${status.toUpperCase().replace(/_/g, ' ')}
-            </span>
+            <a href="${process.env.FRONTEND_URL}/orders/${order._id}" style="text-decoration: none;">
+                <span style="font-size: 1.2rem; font-weight: bold; padding: 12px 24px; border-radius: 5px; background-color: ${statusColor}; color: white; display: inline-block;">
+                    ${status.toUpperCase().replace(/_/g, ' ')}
+                </span>
+            </a>
         </div>
         ${attachmentNote}
-        <p>You can view your order details in your dashboard under "My Orders".</p>
+        ${refundNote}
+        <p>Click the button above to view your order details in your dashboard.</p>
         <p>Thank you for choosing BookStack!</p>
         <p>Best regards,<br>The BookStack Team</p>
     `);

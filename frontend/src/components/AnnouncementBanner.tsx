@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getAnnouncements } from '../services/superAdminService';
-import { AnnouncementType, TargetPage } from '../types/enums';
+import { AnnouncementType, TargetPage, RoleName } from '../types/enums';
 import { X } from 'lucide-react';
 
 interface AnnouncementBannerProps {
@@ -30,9 +30,13 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ targetPage }) =
         // Filter announcements based on current path or explicit targetPage prop
         const role = localStorage.getItem('role');
         const isAdmin = role === 'admin' || role === 'super_admin';
+        const isSuperAdmin = role === RoleName.SUPER_ADMIN;
 
         const filtered = announcements.filter(ann => {
             if (!ann.isActive) return false;
+
+            // Super Admins should not see any announcements to keep their view clean
+            if (isSuperAdmin) return false;
 
             const annTarget = ann.targetPage;
             if (!annTarget || annTarget === TargetPage.ALL) return true;

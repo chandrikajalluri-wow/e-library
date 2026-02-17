@@ -68,7 +68,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ membership, onClose, onSucc
                 </button>
 
                 <div className="payment-modal-header">
-                    <h2>Upgrade to {membership.displayName}</h2>
+                    <h2>{onSubmit ? 'Renew Plan' : `Upgrade to ${membership.displayName}`}</h2>
                     <p className="payment-modal-price">₹{membership.price}/month</p>
                 </div>
 
