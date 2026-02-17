@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { getAllUsers, manageAdmin, deleteUser, revokeUserDeletion, getUserDetails, inviteAdmin } from '../../services/superAdminService';
+import React, { useEffect, useState, useRef } from 'react';
+import { getAllUsers, manageAdmin, deleteUser, revokeUserDeletion, getUserDetails, inviteAdmin, inviteAdminByEmail } from '../../services/superAdminService';
 import { toast } from 'react-toastify';
-import { X, Download, RotateCw, Trash2, Undo2, ShieldCheck, ShieldAlert, Eye, Mail, Phone, Calendar, UserCircle, Hash } from 'lucide-react';
+import { X, Download, RotateCw, Trash2, Undo2, ShieldCheck, ShieldAlert, Eye, Mail, Phone, Calendar, UserCircle, Hash, Search } from 'lucide-react';
 import ConfirmationModal from '../ConfirmationModal';
+import '../../styles/Pagination.css';
 import { RoleName } from '../../types/enums';
 import { exportUsersToCSV } from '../../utils/csvExport';
 import { motion, AnimatePresence } from 'framer-motion';
+import '../../styles/InviteAdminModal.css';
 
 interface User {
     _id: string;
@@ -24,6 +26,11 @@ interface UserAdminManagementProps {
 const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = false }) => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalUsers, setTotalUsers] = useState(0);
+    const [limit] = useState(15);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
@@ -36,11 +43,20 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [filterRole, setFilterRole] = useState<'all' | 'user' | 'admin' | 'super_admin'>('all');
 
+    // Email Invite Modal State
+    const [emailInviteOpen, setEmailInviteOpen] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteLoading, setInviteLoading] = useState(false);
+    const tableTopRef = useRef<HTMLDivElement>(null);
+
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const data = await getAllUsers();
-            setUsers(data);
+            const query = `page=${currentPage}&limit=${limit}&search=${searchTerm}&role=${filterRole}`;
+            const data = await getAllUsers(query);
+            setUsers(data.users);
+            setTotalPages(data.totalPages);
+            setTotalUsers(data.totalUsers);
         } catch (err: any) {
             console.error(err);
             toast.error('Failed to fetch users');
@@ -66,7 +82,21 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
 
     useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [currentPage, filterRole]);
+
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            setCurrentPage(1);
+            fetchUsers();
+        }, 500);
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        if (currentPage > 1) {
+            tableTopRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [currentPage]);
 
     const confirmAction = (user: User, action: 'promote' | 'demote' | 'delete' | 'revoke' | 'invite') => {
         setSelectedUser(user);
@@ -109,6 +139,23 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
             }
             toast.error(err.response?.data?.error || 'Action failed');
             setModalOpen(false);
+        }
+    };
+
+    const handleEmailInvite = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!inviteEmail) return;
+
+        setInviteLoading(true);
+        try {
+            await inviteAdminByEmail(inviteEmail);
+            toast.success(`Admin invitation sent to ${inviteEmail}`);
+            setEmailInviteOpen(false);
+            setInviteEmail('');
+        } catch (err: any) {
+            toast.error(err.response?.data?.error || 'Failed to send invitation');
+        } finally {
+            setInviteLoading(false);
         }
     };
 
@@ -181,28 +228,21 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
 
     const modalContent = getModalContent();
 
-    const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredUsers = users.filter(user => {
-        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user._id.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesRole = filterRole === 'all' || user.role_id?.name === filterRole;
-
-        return matchesSearch && matchesRole;
-    });
+    const filteredUsers = users;
 
     return (
-        <div className="card admin-table-section">
+        <div className="card admin-table-section" ref={tableTopRef}>
             <div className="admin-table-header-box">
                 {!hideTitle && <h3 className="admin-table-title">User & Admin Management</h3>}
-                <div className="admin-search-filter-group">
+                <div className="admin-header-actions-unified">
                     <div className="admin-search-wrapper">
+                        <Search size={18} className="search-bar-icon" />
                         <input
                             type="text"
                             placeholder="Search Users..."
-                            className="admin-search-input"
+                            className="admin-search-input-premium"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -228,8 +268,6 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                             <option value="super_admin">Super Admins</option>
                         </select>
                     </div>
-                </div>
-                <div className="admin-header-actions">
                     <button onClick={fetchUsers} className="admin-refresh-stats-btn">
                         <RotateCw size={18} className={loading ? 'spin' : ''} />
                         Refresh
@@ -240,6 +278,13 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                     >
                         <Download size={18} />
                         Export CSV
+                    </button>
+                    <button
+                        onClick={() => setEmailInviteOpen(true)}
+                        className="admin-invite-trigger-btn"
+                    >
+                        <ShieldCheck size={20} />
+                        Send Admin Invite
                     </button>
                 </div>
             </div>
@@ -315,6 +360,32 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                     </table>
                 )}
             </div>
+
+            {/* Pagination Controls */}
+            {!loading && totalPages > 1 && (
+                <div className="admin-pagination" style={{ marginTop: '1.5rem', justifyContent: 'center' }}>
+                    <button
+                        className="pagination-btn"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                    >
+                        Previous
+                    </button>
+                    <div className="pagination-info">
+                        <div className="pagination-info-pages">
+                            Page <span>{currentPage}</span> of <span>{totalPages}</span>
+                        </div>
+                        <div className="total-count-mini">Total {totalUsers} users</div>
+                    </div>
+                    <button
+                        className="pagination-btn"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
 
             <ConfirmationModal
                 isOpen={modalOpen}
@@ -402,6 +473,75 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                                     </div>
                                 </div>
                             )}
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* --- Email Invite Modal --- */}
+            <AnimatePresence>
+                {emailInviteOpen && (
+                    <div className="user-details-overlay">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="admin-invite-modal-container"
+                        >
+                            <button className="admin-invite-close-button" onClick={() => setEmailInviteOpen(false)}>
+                                <X size={24} />
+                            </button>
+
+                            <div className="admin-invite-modal-header">
+                                <div className="admin-invite-icon-wrapper">
+                                    <Mail size={32} />
+                                </div>
+                                <div className="admin-invite-title-box">
+                                    <h2>Send Admin Invite</h2>
+                                    <p>Invite anyone to become an admin via email</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleEmailInvite}>
+                                <div className="admin-invite-form-group">
+                                    <label>Recipient Email Address</label>
+                                    <div className="admin-invite-input-wrapper">
+                                        <Mail size={18} style={{ opacity: 0.5, color: '#6366f1' }} />
+                                        <input
+                                            type="email"
+                                            placeholder="enter.email@example.com"
+                                            value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                            required
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="admin-invite-actions">
+                                    <button
+                                        type="submit"
+                                        className="admin-invite-submit-btn"
+                                        disabled={inviteLoading}
+                                    >
+                                        {inviteLoading ? (
+                                            <div className="spinner" style={{ width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff' }}></div>
+                                        ) : (
+                                            <>
+                                                <ShieldCheck size={20} />
+                                                Send Invitation
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEmailInviteOpen(false)}
+                                        className="admin-invite-cancel-btn"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}

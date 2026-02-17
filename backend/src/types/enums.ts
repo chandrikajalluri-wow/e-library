@@ -51,6 +51,7 @@ export enum NotificationType {
 export enum InviteStatus {
     PENDING = 'pending',
     ACCEPTED = 'accepted',
+    REJECTED = 'rejected',
     EXPIRED = 'expired'
 }
 

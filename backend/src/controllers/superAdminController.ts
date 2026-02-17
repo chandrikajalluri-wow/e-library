@@ -17,9 +17,45 @@ import { getDeletionScheduledTemplate } from '../utils/emailTemplates';
 
 export const getAllUsers = async (req: Request, res: Response) => {
     try {
-        const users = await User.find({ isDeleted: { $ne: true } }).populate('role_id').populate('membership_id');
-        res.json(users);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 15;
+        const search = req.query.search as string || '';
+        const role = req.query.role as string || 'all';
+
+        const skip = (page - 1) * limit;
+
+        const query: any = { isDeleted: { $ne: true } };
+
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        if (role !== 'all') {
+            const targetRole = await Role.findOne({ name: role });
+            if (targetRole) {
+                query.role_id = targetRole._id;
+            }
+        }
+
+        const totalUsers = await User.countDocuments(query);
+        const users = await User.find(query)
+            .populate('role_id')
+            .populate('membership_id')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            users,
+            totalUsers,
+            totalPages: Math.ceil(totalUsers / limit),
+            currentPage: page
+        });
     } catch (err) {
+        console.error('getAllUsers error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -247,7 +283,9 @@ export const getSystemLogs = async (req: Request, res: Response) => {
 
         const adminLogs = logs.filter(log => {
             const user = log.user_id as any;
-            return [RoleName.ADMIN, RoleName.SUPER_ADMIN].includes(user?.role_id?.name);
+            const isAdmin = [RoleName.ADMIN, RoleName.SUPER_ADMIN].includes(user?.role_id?.name);
+            const isInviteAction = ['ADMIN_INVITE_REJECTED', 'ADMIN_INVITE_SENT'].includes(log.action);
+            return isAdmin || isInviteAction;
         });
 
         res.json(adminLogs);
@@ -369,20 +407,61 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
         ]);
 
         const totalOrders = await Order.countDocuments();
+        const realizedOrderCount = await Order.countDocuments({ status: { $in: realizedStatuses } });
+        const cancelledOrderCount = await Order.countDocuments({ status: 'cancelled' });
+
         const revenueResult = await Order.aggregate([
             { $match: { status: { $in: realizedStatuses } } },
             { $group: { _id: null, total: { $sum: '$totalAmount' } } }
         ]);
         const totalRevenue = revenueResult[0]?.total || 0;
 
+        // Calculate Average Order Fulfillment Time (for delivered orders)
+        const fulfillmentResult = await Order.aggregate([
+            {
+                $match: {
+                    status: 'delivered',
+                    deliveredAt: { $exists: true },
+                    createdAt: { $exists: true }
+                }
+            },
+            {
+                $project: {
+                    duration: { $subtract: ['$deliveredAt', '$createdAt'] }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    avgDuration: { $avg: '$duration' }
+                }
+            }
+        ]);
+
+        const avgFulfillmentTime = fulfillmentResult[0]?.avgDuration
+            ? Math.round(fulfillmentResult[0].avgDuration / (1000 * 60 * 60)) // Convert to hours
+            : 0;
+
+        const averageOrderValue = realizedOrderCount > 0
+            ? Math.round(totalRevenue / realizedOrderCount)
+            : 0;
+
+        const cancellationRate = totalOrders > 0
+            ? parseFloat(((cancelledOrderCount / totalOrders) * 100).toFixed(1))
+            : 0;
+
         res.json({
-            version: '2026-02-03-v1', // Updated debug version tag
+            version: '2026-02-17-v1', // Updated version tag
             users: userCount,
             admins: adminCount,
             totalBooks: bookCount,
             totalActivity: logCount,
             totalOrders,
             totalRevenue,
+            avgFulfillmentTime,
+            averageOrderValue,
+            cancellationRate,
+            realizedOrderCount,
             userDistribution,
             membershipDistribution,
             bookDistribution,
@@ -554,6 +633,50 @@ export const inviteAdmin = async (req: Request, res: Response) => {
 
         if (errorMessage === 'Invitation already sent to this user') {
             return res.status(400).json({ error: 'Invitation already sent to this user' });
+        }
+
+        return res.status(500).json({ error: errorMessage });
+    }
+};
+
+/**
+ * Invite an admin by email address
+ * POST /api/super-admin/invite-admin-by-email
+ */
+export const inviteAdminByEmail = async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+        const inviterId = (req as any).user._id.toString();
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        // Import the service
+        const adminInviteService = require('../services/adminInviteService');
+
+        // Call the service to create the invitation
+        const result = await adminInviteService.createAdminInviteByEmail(email, inviterId);
+
+        return res.status(201).json({
+            message: result.message,
+            email: result.email,
+        });
+    } catch (error: any) {
+        console.error('Error inviting admin by email:', error);
+
+        const errorMessage = error.message || 'Failed to send invitation';
+
+        if (errorMessage === 'Please provide a valid email address') {
+            return res.status(400).json({ error: errorMessage });
+        }
+
+        if (errorMessage === 'User with this email is already an admin') {
+            return res.status(400).json({ error: errorMessage });
+        }
+
+        if (errorMessage === 'Invitation already sent to this email') {
+            return res.status(400).json({ error: errorMessage });
         }
 
         return res.status(500).json({ error: errorMessage });

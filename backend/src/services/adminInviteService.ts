@@ -4,6 +4,8 @@ import AdminInvite, { IAdminInvite } from '../models/AdminInvite';
 import User from '../models/User';
 import Role from '../models/Role';
 import ActivityLog from '../models/ActivityLog';
+import { notifySuperAdmins } from '../utils/notification';
+import { NotificationType } from '../types/enums';
 import { RoleName, InviteStatus, ActivityAction } from '../types/enums';
 import { sendEmail } from '../utils/mailer';
 import { getAdminInvitationTemplate } from '../utils/emailTemplates';
@@ -244,6 +246,57 @@ export const acceptInvite = async (
 };
 
 /**
+ * Decline an admin invitation
+ * @param rawToken - The token from the URL
+ * @returns Success message or throws error
+ */
+export const declineInvite = async (
+    rawToken: string
+): Promise<{ message: string }> => {
+    // 1. Verify token
+    const inviteDetails = await verifyInviteToken(rawToken);
+
+    // 2. Find the invite
+    const pendingInvites = await AdminInvite.find({
+        status: InviteStatus.PENDING,
+        email: inviteDetails.email,
+    });
+
+    let matchedInvite: IAdminInvite | null = null;
+    for (const invite of pendingInvites) {
+        const isMatch = await bcrypt.compare(rawToken, invite.token_hash);
+        if (isMatch) {
+            matchedInvite = invite;
+            break;
+        }
+    }
+
+    if (!matchedInvite) {
+        throw new Error('Invitation not found or already processed');
+    }
+
+    // 3. Update invite status
+    matchedInvite.status = InviteStatus.REJECTED;
+    await matchedInvite.save();
+
+    // 4. Log activity (Optional: if we want to track who rejected)
+    const user = await User.findOne({ email: matchedInvite.email });
+    await ActivityLog.create({
+        user_id: user?._id || null,
+        action: 'ADMIN_INVITE_REJECTED',
+        description: `${matchedInvite.email} declined the admin invitation`,
+    });
+
+    // 5. Notify Super Admins
+    await notifySuperAdmins(
+        `Admin Invitation Declined: ${matchedInvite.email} has explicitly declined the invitation to join the admin team.`,
+        NotificationType.SYSTEM
+    );
+
+    return { message: 'Invitation declined successfully' };
+};
+
+/**
  * Cleanup expired invitations (for cron job)
  * @returns Number of invites marked as expired
  */
@@ -260,4 +313,98 @@ export const cleanupExpiredInvites = async (): Promise<number> => {
 
     console.log(`Marked ${result.modifiedCount} invites as expired`);
     return result.modifiedCount;
+};
+
+/**
+ * Create an admin invitation by email (for users who may not have an account yet)
+ * @param email - Email address to invite
+ * @param invitedById - ID of super admin sending invite
+ * @returns Success message or throws error
+ */
+export const createAdminInviteByEmail = async (
+    email: string,
+    invitedById: string
+): Promise<{ message: string; email: string }> => {
+    const trimmedEmail = email.toLowerCase().trim();
+
+    // 1. Validate email format
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+        throw new Error('Please provide a valid email address');
+    }
+
+    // 2. Check if a user with this email already exists
+    const existingUser = await User.findOne({ email: trimmedEmail }).populate('role_id');
+    if (existingUser) {
+        // If user exists, check if they are already an admin
+        const userRole = (existingUser.role_id as any).name;
+        if (userRole === RoleName.ADMIN || userRole === RoleName.SUPER_ADMIN) {
+            throw new Error('User with this email is already an admin');
+        }
+    }
+
+    // 3. Check for existing pending invite
+    const existingInvite = await AdminInvite.findOne({
+        email: trimmedEmail,
+        status: InviteStatus.PENDING,
+    });
+
+    if (existingInvite) {
+        throw new Error('Invitation already sent to this email');
+    }
+
+    // 4. Generate secure token
+    const { rawToken, hashedToken } = await generateSecureToken();
+
+    // 5. Calculate expiry time (24 hours from now)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + INVITE_EXPIRY_HOURS);
+
+    // 6. Create invite record
+    await AdminInvite.create({
+        email: trimmedEmail,
+        token_hash: hashedToken,
+        invited_by: invitedById,
+        status: InviteStatus.PENDING,
+        expires_at: expiresAt,
+    });
+
+    // 7. Get inviter details for email
+    const inviter = await User.findById(invitedById);
+    const inviterName = inviter?.name || 'Super Admin';
+
+    // 8. Send invitation email
+    const acceptLink = `${process.env.FRONTEND_URL}/accept-admin?token=${rawToken}`;
+
+    // Check if we should use existing user's name or just "User"
+    const targetName = existingUser?.name || 'User';
+
+    try {
+        await sendEmail(
+            trimmedEmail,
+            'You\'ve been invited to become an Admin',
+            `You have been invited by ${inviterName} to become an admin. Click the link to accept: ${acceptLink}`,
+            getAdminInvitationTemplate(
+                targetName,
+                inviterName,
+                acceptLink,
+                expiresAt
+            )
+        );
+    } catch (emailError) {
+        console.error('Failed to send invitation email:', emailError);
+        // Invite is created, can be resent if needed
+    }
+
+    // 9. Log activity
+    await ActivityLog.create({
+        user_id: invitedById,
+        action: ActivityAction.ADMIN_INVITE_SENT,
+        description: `Invited ${trimmedEmail} to become admin`,
+    });
+
+    return {
+        message: 'Invitation sent successfully',
+        email: trimmedEmail,
+    };
 };

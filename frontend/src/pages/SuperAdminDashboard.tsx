@@ -50,7 +50,7 @@ const SuperAdminDashboard: React.FC = () => {
 
                 {activeTab === 'metrics' && metrics && (
                     <>
-                        <div className="admin-stats-grid-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                        <div className="admin-stats-grid-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '1.5rem' }}>
                             <div className="card stats-card-content">
                                 <span className="stats-label">Total Books</span>
                                 <span className="stats-value stats-value-info">{metrics.totalBooks}</span>
@@ -67,7 +67,32 @@ const SuperAdminDashboard: React.FC = () => {
                                 <span className="stats-label">Total Revenue</span>
                                 <span className="stats-value stats-value-accent">₹{metrics.totalRevenue?.toLocaleString()}</span>
                             </div>
+                        </div>
 
+                        {/* New Advanced Metrics Row */}
+                        <div className="admin-stats-grid-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                            <div className="card stats-card-content">
+                                <span className="stats-label">Avg. Fulfillment Time</span>
+                                <span className="stats-value stats-value-info">
+                                    {metrics.avgFulfillmentTime > 24
+                                        ? `${(metrics.avgFulfillmentTime / 24).toFixed(1)} Days`
+                                        : `${metrics.avgFulfillmentTime} Hours`}
+                                </span>
+                            </div>
+                            <div className="card stats-card-content">
+                                <span className="stats-label">Average Order Value</span>
+                                <span className="stats-value stats-value-accent">₹{metrics.averageOrderValue?.toLocaleString()}</span>
+                            </div>
+                            <div className="card stats-card-content">
+                                <span className="stats-label">Cancellation Rate</span>
+                                <span className="stats-value stats-value-danger" style={{ color: metrics.cancellationRate > 10 ? '#ef4444' : 'inherit' }}>
+                                    {metrics.cancellationRate}%
+                                </span>
+                            </div>
+                            <div className="card stats-card-content">
+                                <span className="stats-label">Realized Orders</span>
+                                <span className="stats-value stats-value-info">{metrics.realizedOrderCount}</span>
+                            </div>
                         </div>
                         <AnalyticsDashboard data={metrics} />
                     </>

@@ -93,6 +93,15 @@ const BookList: React.FC = () => {
     loadPersonalizedRecs();
   }, []);
 
+  useEffect(() => {
+    if (page > 1 && searchSectionRef.current) {
+      const yOffset = -120;
+      const element = searchSectionRef.current;
+      const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  }, [page]);
+
   const loadPersonalizedRecs = async () => {
     try {
       if (localStorage.getItem('token')) {
@@ -580,14 +589,6 @@ const BookList: React.FC = () => {
                   disabled={page === 1 || loading}
                   onClick={() => {
                     setPage(p => Math.max(1, p - 1));
-                    setTimeout(() => {
-                      if (searchSectionRef.current) {
-                        const yOffset = -120;
-                        const element = searchSectionRef.current;
-                        const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
-                        window.scrollTo({ top: y, behavior: 'smooth' });
-                      }
-                    }, 100);
                   }}
                 >
                   <ChevronLeft size={20} />
@@ -612,14 +613,6 @@ const BookList: React.FC = () => {
                       key={pageNum}
                       onClick={() => {
                         setPage(pageNum);
-                        setTimeout(() => {
-                          if (searchSectionRef.current) {
-                            const yOffset = -120;
-                            const element = searchSectionRef.current;
-                            const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
-                            window.scrollTo({ top: y, behavior: 'smooth' });
-                          }
-                        }, 100);
                       }}
                       className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
                       disabled={loading}
@@ -634,14 +627,6 @@ const BookList: React.FC = () => {
                   disabled={page === Math.ceil(total / 10) || loading}
                   onClick={() => {
                     setPage(p => Math.min(Math.ceil(total / 10), p + 1));
-                    setTimeout(() => {
-                      if (searchSectionRef.current) {
-                        const yOffset = -120;
-                        const element = searchSectionRef.current;
-                        const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
-                        window.scrollTo({ top: y, behavior: 'smooth' });
-                      }
-                    }, 100);
                   }}
                 >
                   <ChevronRight size={20} />

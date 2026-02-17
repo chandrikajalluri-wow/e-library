@@ -9,6 +9,8 @@
     --status-return-requested: #d97706;
     --status-returned: #8b5cf6;
     --status-return-rejected: #ef4444;
+    --status-refund-initiated: #059669;
+    --status-refunded: #10b981;
 }
 
 .admin-details-container {
@@ -1280,4 +1282,82 @@
 .pulse-urgent {
     animation: urgent-pulse 2s infinite;
     border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* -------------------------------------------------------------------------- */
+/* PREMIUM REFUND READY INDICATOR */
+/* -------------------------------------------------------------------------- */
+
+.refund-ready-indicator {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    /* Increased gap as requested */
+    padding: 0.4rem 0.85rem !important;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.15)) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    color: #10b981 !important;
+    border-radius: 10px !important;
+    font-size: 0.65rem !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    border: 1.5px solid rgba(16, 185, 129, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15) !important;
+    line-height: 1 !important;
+    animation: slideInLow 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: all 0.3s ease !important;
+}
+
+.refund-ready-indicator:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.25) !important;
+    border-color: rgba(16, 185, 129, 0.6) !important;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.2)) !important;
+}
+
+.refund-ready-indicator svg {
+    flex-shrink: 0 !important;
+    filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.3)) !important;
+}
+
+.refund-ready-indicator span {
+    display: flex !important;
+    align-items: center !important;
+    margin-top: 1px !important;
+}
+
+@keyframes slideInLow {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Highlighted Detail Card */
+.refund-details-card {
+    border: 2px solid #10b981 !important;
+    background: linear-gradient(135deg, var(--card-bg), rgba(16, 185, 129, 0.05)) !important;
+    position: relative;
+    overflow: hidden;
+    animation: refund-details-pulse 4s infinite !important;
+}
+
+@keyframes refund-details-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    50% {
+        box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+        border-color: #059669;
+    }
 }

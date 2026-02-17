@@ -14,6 +14,7 @@ import { exportOrdersToCSV } from '../utils/csvExport';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import '../styles/AdminOrders.css';
+import '../styles/Pagination.css';
 
 interface OrderItem {
     book_id: { _id: string; title: string; cover_image_url: string };
@@ -38,6 +39,13 @@ interface Order {
     status: string;
     createdAt: string;
     paymentMethod: string;
+    refundDetails?: {
+        accountName: string;
+        bankName: string;
+        accountNumber: string;
+        ifscCode: string;
+        submittedAt: string;
+    };
 }
 
 
@@ -498,7 +506,15 @@ const AdminOrders: React.FC = () => {
 
                                         <div className="order-header">
                                             <div className="order-id-info">
-                                                <h4>#{order._id.slice(-8).toUpperCase()}</h4>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <h4>#{order._id.slice(-8).toUpperCase()}</h4>
+                                                    {order.refundDetails && (
+                                                        <div className="refund-ready-indicator" title="Bank Details Submitted">
+                                                            <CreditCard size={14} fill="currentColor" fillOpacity={0.2} />
+                                                            <span>Refund Ready</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <span className="order-date">
                                                     {new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                                 </span>
@@ -624,7 +640,9 @@ const AdminOrders: React.FC = () => {
                                         Previous
                                     </button>
                                     <div className="pagination-info">
-                                        Page <span>{currentPage}</span> of <span>{totalPages}</span>
+                                        <div className="pagination-info-pages">
+                                            Page <span>{currentPage}</span> of <span>{totalPages}</span>
+                                        </div>
                                         <div className="total-count-mini">Total {totalOrders} orders</div>
                                     </div>
                                     <button
