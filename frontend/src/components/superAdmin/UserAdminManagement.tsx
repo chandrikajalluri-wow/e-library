@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { getAllUsers, manageAdmin, deleteUser, revokeUserDeletion, getUserDetails, inviteAdmin, inviteAdminByEmail } from '../../services/superAdminService';
+import { getAllUsers, manageAdmin, deleteUser, getUserDetails, inviteAdmin, inviteAdminByEmail } from '../../services/superAdminService';
 import { toast } from 'react-toastify';
-import { X, Download, RotateCw, Trash2, Undo2, ShieldCheck, ShieldAlert, Eye, Mail, Phone, Calendar, UserCircle, Hash, Search } from 'lucide-react';
+import { X, Download, RotateCw, Trash2, ShieldCheck, ShieldAlert, Eye, Mail, Phone, Calendar, UserCircle, Hash, Search } from 'lucide-react';
 import ConfirmationModal from '../ConfirmationModal';
 import '../../styles/Pagination.css';
 import { RoleName } from '../../types/enums';
@@ -16,7 +16,6 @@ interface User {
     role_id: { _id: string; name: string };
     membership_id?: { name: string };
     isVerified: boolean;
-    deletionScheduledAt?: string; // It comes as string from JSON
 }
 
 interface UserAdminManagementProps {
@@ -35,7 +34,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [modalAction, setModalAction] = useState<'promote' | 'demote' | 'delete' | 'revoke' | 'invite' | null>(null);
+    const [modalAction, setModalAction] = useState<'promote' | 'demote' | 'delete' | 'invite' | null>(null);
 
     // Details Modal State
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -98,7 +97,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
         }
     }, [currentPage]);
 
-    const confirmAction = (user: User, action: 'promote' | 'demote' | 'delete' | 'revoke' | 'invite') => {
+    const confirmAction = (user: User, action: 'promote' | 'demote' | 'delete' | 'invite') => {
         setSelectedUser(user);
         setModalAction(action);
         setModalOpen(true);
@@ -106,20 +105,13 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
 
     const [conflictData, setConflictData] = useState<{ obligations: string[] } | null>(null);
 
-    const handleAction = async (force: boolean = false) => {
+    const handleAction = async () => {
         if (!selectedUser || !modalAction) return;
 
         try {
             if (modalAction === 'delete') {
-                await deleteUser(selectedUser._id, force);
-                if (force) {
-                    toast.success('User permanently deleted');
-                } else {
-                    toast.success('User scheduled for deletion (7 days)');
-                }
-            } else if (modalAction === 'revoke') {
-                await revokeUserDeletion(selectedUser._id);
-                toast.success('User deletion revoked successfully');
+                await deleteUser(selectedUser._id);
+                toast.success('User deactivated and anonymized successfully');
             } else if (modalAction === 'invite') {
                 await inviteAdmin(selectedUser._id);
                 toast.success(`Admin invitation sent to ${selectedUser.email}`);
@@ -186,7 +178,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                 ),
                 type: 'danger' as const,
                 confirmText: 'Force Delete',
-                onConfirm: () => handleAction(true)
+                onConfirm: () => handleAction()
             };
         }
 
@@ -211,15 +203,9 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                 };
             case 'delete':
                 return {
-                    title: 'Delete User (Safe)',
-                    message: `This will schedule ${selectedUser.name} for deletion in 7 days. This action is only allowed if the user has no active premium membership, active reading sessions, or undelivered orders.`,
+                    title: 'Delete User',
+                    message: `This will immediately deactivate and anonymize ${selectedUser.name}. This action is only allowed if the user has no active premium membership, active reading sessions, or undelivered orders.`,
                     type: 'danger' as const
-                };
-            case 'revoke':
-                return {
-                    title: 'Revoke Deletion',
-                    message: `Are you sure you want to cancel the scheduled deletion for ${selectedUser.name}?`,
-                    type: 'info' as const
                 };
             default:
                 return { title: '', message: '', type: 'info' as const };
@@ -308,12 +294,6 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                                     <td>
                                         <div className="user-info-box">
                                             <span className="user-main-name">{user.name}</span>
-                                            {/* We can check deletionScheduledAt here if it was in the interface */}
-                                            {user.deletionScheduledAt && (
-                                                <span className="status-badge status-scheduled" style={{ fontSize: '0.6rem', padding: '2px 6px', marginTop: '4px' }}>
-                                                    Deletion Scheduled
-                                                </span>
-                                            )}
                                             <span className="user-id-sub">ID: {user._id}</span>
                                         </div>
                                     </td>
@@ -328,25 +308,14 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                                         <div className="admin-actions-flex">
                                             {user.role_id?.name !== RoleName.SUPER_ADMIN && (
                                                 <>
-                                                    {user.role_id?.name === RoleName.USER && (
-                                                        <button onClick={() => confirmAction(user, 'invite')} className="admin-btn-approve-icon" title="Invite as Admin">
-                                                            <ShieldCheck size={18} />
-                                                        </button>
-                                                    )}
                                                     {user.role_id?.name === RoleName.ADMIN && (
                                                         <button onClick={() => confirmAction(user, 'demote')} className="admin-btn-reject-icon" title="Remove Admin">
                                                             <ShieldAlert size={18} />
                                                         </button>
                                                     )}
-                                                    {user.deletionScheduledAt ? (
-                                                        <button onClick={() => confirmAction(user, 'revoke')} className="admin-btn-approve-icon" title="Revoke Deletion">
-                                                            <Undo2 size={18} />
-                                                        </button>
-                                                    ) : (
-                                                        <button onClick={() => confirmAction(user, 'delete')} className="admin-btn-delete-icon" title="Delete User">
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    )}
+                                                    <button onClick={() => confirmAction(user, 'delete')} className="admin-btn-delete-icon" title="Delete User">
+                                                        <Trash2 size={18} />
+                                                    </button>
                                                     <button onClick={() => fetchDetailView(user._id)} className="admin-btn-view-icon" title="View Details">
                                                         <Eye size={18} />
                                                     </button>
@@ -392,9 +361,9 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                 title={modalContent.title}
                 message={modalContent.message}
                 type={modalContent.type}
-                onConfirm={modalContent.onConfirm || (() => handleAction(false))}
+                onConfirm={modalContent.onConfirm || (() => handleAction())}
                 onCancel={() => { setModalOpen(false); setConflictData(null); }}
-                confirmText={modalContent.confirmText || (modalAction === 'delete' ? 'Schedule Delete' : 'Confirm')}
+                confirmText={modalContent.confirmText || (modalAction === 'delete' ? 'Confirm Deletion' : 'Confirm')}
             />
 
             {/* --- User Details Premium Modal --- */}

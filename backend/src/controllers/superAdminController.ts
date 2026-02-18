@@ -13,7 +13,6 @@ import Readlist from '../models/Readlist';
 import Address from '../models/Address';
 import { RoleName, ActivityAction, NotificationType, MembershipName } from '../types/enums';
 import { sendEmail } from '../utils/mailer';
-import { getDeletionScheduledTemplate } from '../utils/emailTemplates';
 
 export const getAllUsers = async (req: Request, res: Response) => {
     try {
@@ -84,34 +83,9 @@ export const manageAdmin = async (req: Request, res: Response) => {
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
-    const { force } = req.body;
-
     try {
         const user = await User.findById(req.params.id).populate('membership_id');
         if (!user) return res.status(404).json({ error: 'User not found' });
-
-        if (force === true) {
-            user.name = 'Deleted User';
-            user.email = `deleted_${Date.now()}_${user._id}@example.com`;
-            user.password = undefined;
-            user.googleId = undefined;
-            user.profileImage = undefined;
-            user.isDeleted = true;
-            user.deletedAt = new Date();
-            user.activeSessions = [];
-            user.deletionScheduledAt = undefined;
-
-            await user.save();
-
-            await ActivityLog.create({
-                user_id: (req as any).user._id,
-                action: ActivityAction.USER_DELETED,
-                description: `Soft deleted user ${user.email} (Immediate)`,
-                timestamp: new Date()
-            });
-
-            return res.json({ message: 'User deactivated and anonymized (Force)' });
-        }
 
         // Check for active reading activity
         const activeReads = await Readlist.find({
@@ -145,68 +119,33 @@ export const deleteUser = async (req: Request, res: Response) => {
             });
         }
 
-        const deletionDate = new Date();
-        deletionDate.setDate(deletionDate.getDate() + 7);
+        // Perform Immediate Anonymized Soft Delete
+        user.name = 'Deleted User';
+        user.email = `deleted_${Date.now()}_${user._id}@example.com`;
+        user.password = undefined;
+        user.googleId = undefined;
+        user.profileImage = undefined;
+        user.isDeleted = true;
+        user.deletedAt = new Date();
+        user.activeSessions = [];
+        (user as any).deletionScheduledAt = undefined;
 
-        user.deletionScheduledAt = deletionDate;
         await user.save();
-
-        await Notification.create({
-            user_id: user._id,
-            message: `Your account has been scheduled for deletion on ${deletionDate.toDateString()}.`,
-            type: NotificationType.SYSTEM
-        });
-
-        try {
-            await sendEmail(
-                user.email,
-                'Account Scheduled for Deletion',
-                `Hello ${user.name},\n\nYour account is scheduled for deletion on ${deletionDate.toDateString()}.`,
-                getDeletionScheduledTemplate(user.name, deletionDate.toDateString())
-            );
-        } catch (emailErr) {
-            console.error('Failed to send deletion email', emailErr);
-        }
 
         await ActivityLog.create({
             user_id: (req as any).user._id,
             action: ActivityAction.USER_DELETED,
-            description: `Scheduled deletion for user ${user.email}`,
+            description: `Soft deleted user ${user.email} (Immediate)`,
             timestamp: new Date()
         });
 
-        res.json({ message: `User scheduled for deletion on ${deletionDate.toDateString()}` });
+        res.json({ message: 'User deactivated and anonymized successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
 };
 
-export const revokeUserDeletion = async (req: Request, res: Response) => {
-    try {
-        const user = await User.findById(req.params.id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-
-        if (!user.deletionScheduledAt) {
-            return res.status(400).json({ error: 'User deletion is not scheduled' });
-        }
-
-        user.deletionScheduledAt = undefined;
-        await user.save();
-
-        await ActivityLog.create({
-            user_id: (req as any).user._id,
-            action: ActivityAction.USER_UPDATED,
-            description: `Revoked scheduled deletion for user ${user.email}`,
-            timestamp: new Date()
-        });
-
-        res.json({ message: 'User deletion revoked successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-};
 
 export const getAllReviews = async (req: Request, res: Response) => {
     try {

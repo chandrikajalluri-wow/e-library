@@ -15,7 +15,6 @@ export interface IUser extends Document {
   membershipExpiryDate?: Date;
   membershipCancellationReason?: string;
   membershipCancellationDate?: Date;
-  deletionScheduledAt?: Date;
   isDeleted: boolean;
   deletedAt?: Date;
   isVerified: boolean;
@@ -53,7 +52,6 @@ const userSchema = new Schema<IUser>(
     membershipExpiryDate: { type: Date },
     membershipCancellationReason: { type: String },
     membershipCancellationDate: { type: Date },
-    deletionScheduledAt: { type: Date },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date },
     isVerified: { type: Boolean, default: false },

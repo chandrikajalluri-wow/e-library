@@ -5,7 +5,6 @@ interface UserExportData {
     role: string;
     status: string;
     membership: string;
-    deletionScheduled: string;
 }
 
 interface OrderExportData {
@@ -47,11 +46,10 @@ export const exportUsersToCSV = (users: any[]) => {
         email: user.email,
         role: user.role_id?.name || 'User',
         status: user.isVerified ? 'Verified' : 'Pending',
-        membership: user.membership_id?.name || 'Basic',
-        deletionScheduled: user.deletionScheduledAt ? new Date(user.deletionScheduledAt).toLocaleDateString() : 'No'
+        membership: user.membership_id?.name || 'Basic'
     }));
 
-    const headers = ['User ID', 'Name', 'Email', 'Role', 'Status', 'Membership', 'Deletion Scheduled'];
+    const headers = ['User ID', 'Name', 'Email', 'Role', 'Status', 'Membership'];
 
     const csvRows = [
         headers.join(','),
@@ -61,8 +59,7 @@ export const exportUsersToCSV = (users: any[]) => {
             `"${row.email}"`,
             `"${row.role}"`,
             `"${row.status}"`,
-            `"${row.membership}"`,
-            `"${row.deletionScheduled}"`
+            `"${row.membership}"`
         ].join(','))
     ];
 

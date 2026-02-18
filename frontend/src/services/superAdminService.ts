@@ -34,10 +34,6 @@ export const deleteUser = async (userId: string, force: boolean = false) => {
     return response.data;
 };
 
-export const revokeUserDeletion = async (userId: string) => {
-    const response = await api.post(`/super-admin/user/${userId}/revoke-deletion`);
-    return response.data;
-};
 
 export const getSystemLogs = async () => {
     const response = await api.get('/super-admin/system-logs');
