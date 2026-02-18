@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import ChatSession, { SessionStatus } from '../models/ChatSession';
 import ChatMessage from '../models/ChatMessage';
+import { onlineUsers } from '../socket/socketManager';
 
 export const createOrGetSession = async (req: Request, res: Response) => {
     try {
@@ -46,7 +47,25 @@ export const getAllSessionsAdmin = async (req: Request, res: Response) => {
             .populate('lastMessage')
             .sort({ updatedAt: -1 });
 
-        res.status(200).json(sessions);
+        // Enhance sessions with unread counts and online status
+        const enhancedSessions = await Promise.all(sessions.map(async (session: any) => {
+            const userId = session.user_id?._id.toString();
+
+            // Count unread messages sent by the user (not by admins)
+            const unreadCount = await ChatMessage.countDocuments({
+                session_id: session._id,
+                sender_id: session.user_id?._id,
+                isRead: false
+            });
+
+            return {
+                ...session.toObject(),
+                isOnline: onlineUsers.has(userId),
+                unreadCount
+            };
+        }));
+
+        res.status(200).json(enhancedSessions);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

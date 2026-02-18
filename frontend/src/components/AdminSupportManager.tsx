@@ -60,7 +60,8 @@ const AdminSupportManager: React.FC = () => {
             const socketUrl = API_URL.replace('/api', '');
 
             socketRef.current = io(socketUrl, {
-                auth: { token }
+                auth: { token },
+                transports: ['websocket']
             });
 
             socketRef.current.on('admin_notification', (notif: any) => {
@@ -88,6 +89,15 @@ const AdminSupportManager: React.FC = () => {
                 }
             });
 
+            socketRef.current.on('presence_change', (data: { userId: string, isOnline: boolean }) => {
+                setSessions(prev => prev.map(s => {
+                    if (s.user_id?._id === data.userId) {
+                        return { ...s, isOnline: data.isOnline };
+                    }
+                    return s;
+                }));
+            });
+
         } catch (error) {
             console.error('Failed to init admin support:', error);
             toast.error('Failed to load support sessions');
@@ -104,6 +114,12 @@ const AdminSupportManager: React.FC = () => {
             const data = await getSessionMessages(sessionId);
             setMessages(data);
             socketRef.current?.emit('join_session', sessionId);
+
+            // Mark messages as read
+            socketRef.current?.emit('mark_read', { sessionId, userId: admin?._id });
+
+            // Update local session list (clear unread count for this session)
+            setSessions(prev => prev.map(s => s._id === sessionId ? { ...s, unreadCount: 0 } : s));
         } catch (error) {
             toast.error('Failed to load messages');
         }
@@ -247,11 +263,16 @@ const AdminSupportManager: React.FC = () => {
                                 ) : (
                                     <div className="avatar-placeholder">{session.user_id?.name?.charAt(0)}</div>
                                 )}
-                                <div className={`presence-dot ${session.status}`}></div>
+                                <div className={`presence-dot ${session.status === 'closed' ? 'closed' : (session.isOnline ? 'online' : 'offline')}`}></div>
                             </div>
                             <div className="session-content">
                                 <div className="session-top">
-                                    <h4>{session.user_id?.name}</h4>
+                                    <div className="name-unread">
+                                        <h4>{session.user_id?.name}</h4>
+                                        {session.unreadCount > 0 && (
+                                            <span className="unread-badge">{session.unreadCount}</span>
+                                        )}
+                                    </div>
                                     <span className="time-ago">
                                         {session.lastMessage ? new Date(session.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                                     </span>

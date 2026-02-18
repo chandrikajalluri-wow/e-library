@@ -25,8 +25,6 @@ router.post('/invite-admin-by-email', auth, checkRole([RoleName.SUPER_ADMIN]), s
 // Remove User/Admin
 router.delete('/user/:id', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.deleteUser);
 
-// Revoke Deletion
-router.post('/user/:id/revoke-deletion', auth, checkRole([RoleName.SUPER_ADMIN]), superAdminController.revokeUserDeletion);
 
 // --- Content Moderation ---
 

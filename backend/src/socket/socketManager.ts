@@ -1,10 +1,39 @@
 import { Server, Socket } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import ChatMessage, { MessageType } from '../models/ChatMessage';
 import ChatSession, { SessionStatus } from '../models/ChatSession';
+import User from '../models/User';
+
+// Tracking online users (UserId -> SocketId)
+export const onlineUsers = new Map<string, string>();
 
 export const initSocket = (io: Server) => {
+    // Middleware for authentication
+    io.use(async (socket, next) => {
+        try {
+            const token = socket.handshake.auth.token;
+            if (!token) return next(new Error('Authentication error'));
+
+            const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
+            const user = await User.findById(decoded.id).populate('role_id');
+            if (!user) return next(new Error('User not found'));
+
+            (socket as any).user = user;
+            next();
+        } catch (err) {
+            next(new Error('Authentication error'));
+        }
+    });
+
     io.on('connection', (socket: Socket) => {
-        console.log('New client connected:', socket.id);
+        const user = (socket as any).user;
+        const userId = user._id.toString();
+
+        console.log(`User connected: ${user.name} (${userId})`);
+        onlineUsers.set(userId, socket.id);
+
+        // Notify admins of presence change
+        io.emit('presence_change', { userId, isOnline: true });
 
         socket.on('join_session', async (sessionId: string) => {
             socket.join(sessionId);
@@ -25,7 +54,8 @@ export const initSocket = (io: Server) => {
                     session_id: sessionId,
                     sender_id: senderId,
                     content,
-                    messageType: type
+                    messageType: type,
+                    isRead: false
                 });
 
                 // Update session
@@ -42,19 +72,36 @@ export const initSocket = (io: Server) => {
                     await session.save();
                 }
 
-                // Emit to todos in the room
+                // Emit to participants in the room
                 io.to(sessionId).emit('new_message', newMessage);
 
-                // Also notify admins if it's a new message in an open session
-                io.emit('admin_notification', {
-                    type: 'new_chat_message',
-                    sessionId,
-                    content
-                });
+                // Notify admins if it's from a user
+                if (session && session.user_id.toString() === senderId) {
+                    io.emit('admin_notification', {
+                        type: 'new_chat_message',
+                        sessionId,
+                        content,
+                        senderName: user.name
+                    });
+                }
 
             } catch (error) {
                 console.error('Error sending message:', error);
                 socket.emit('error', 'Failed to send message');
+            }
+        });
+
+        socket.on('mark_read', async (data: { sessionId: string, userId: string }) => {
+            try {
+                // Mark all messages in this session as read IF they were sent by the other party
+                // Simplified: mark all unread messages in session as read when admin views it
+                await ChatMessage.updateMany(
+                    { session_id: data.sessionId, sender_id: { $ne: data.userId }, isRead: false },
+                    { $set: { isRead: true } }
+                );
+                // Optionally notify the sender that their messages were read
+            } catch (err) {
+                console.error('Error marking messages read:', err);
             }
         });
 
@@ -63,7 +110,9 @@ export const initSocket = (io: Server) => {
         });
 
         socket.on('disconnect', () => {
-            console.log('Client disconnected:', socket.id);
+            onlineUsers.delete(userId);
+            io.emit('presence_change', { userId, isOnline: false });
+            console.log(`User disconnected: ${user.name}`);
         });
     });
 };

@@ -47,38 +47,6 @@ export const initCronJobs = () => {
     }
   });
 
-  // 2. Daily User Deletion (Midnight)
-  cron.schedule('0 0 * * *', async () => {
-    console.log('Running scheduled deletion cron job...');
-    try {
-      const now = new Date();
-      const usersToDelete = await User.find({
-        deletionScheduledAt: { $lte: now }
-      });
-
-      for (const user of usersToDelete) {
-        user.name = 'Deleted User';
-        user.email = `deleted_${Date.now()}_${user._id}@example.com`;
-        user.password = undefined;
-        user.googleId = undefined;
-        user.profileImage = undefined;
-        user.isDeleted = true;
-        user.deletedAt = new Date();
-        user.activeSessions = [];
-        user.deletionScheduledAt = undefined;
-
-        await user.save();
-
-        await ActivityLog.create({
-          action: ActivityAction.USER_DELETED,
-          description: `System auto-deactivated user (Scheduled Soft Delete)`,
-          timestamp: new Date()
-        });
-      }
-    } catch (err) {
-      console.error('Error in deletion cron job:', err);
-    }
-  });
 
   // 3. Daily Membership Expiry Check (1:00 AM)
   cron.schedule('0 1 * * *', async () => {
