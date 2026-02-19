@@ -15,7 +15,7 @@ import ActivityLog from '../models/ActivityLog';
 import Category from '../models/Category';
 import { sendEmail } from '../utils/mailer';
 import { sendNotification, notifyAdmins } from '../utils/notification';
-import { NotificationType, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus, BookStatus } from '../types/enums';
+import { NotificationType, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus, BookStatus, ActivityAction } from '../types/enums';
 
 export const getMe = async (req: AuthRequest, res: Response) => {
     try {
@@ -243,6 +243,13 @@ export const requestBook = async (req: AuthRequest, res: Response) => {
 
 export const getAllBookRequests = async (req: AuthRequest, res: Response) => {
     try {
+        const { sort } = req.query;
+        let sortOption: any = { createdAt: -1 };
+
+        if (sort === 'oldest') {
+            sortOption = { createdAt: 1 };
+        }
+
         const requests = await BookRequest.find()
             .populate({
                 path: 'user_id',
@@ -252,7 +259,7 @@ export const getAllBookRequests = async (req: AuthRequest, res: Response) => {
                     select: 'name displayName'
                 }
             })
-            .sort({ createdAt: -1 });
+            .sort(sortOption);
         res.json(requests);
     } catch (err) {
         console.error(err);
@@ -286,6 +293,12 @@ export const updateBookRequestStatus = async (req: AuthRequest, res: Response) =
                 }
             }
         }
+
+        await new ActivityLog({
+            user_id: req.user!._id,
+            action: ActivityAction.BOOK_REQUEST_STATUS_UPDATED,
+            description: `Book request for "${request.title}" status updated to ${status} by ${req.user!.name}`,
+        }).save();
 
         res.json({ message: 'Request status updated', request });
     } catch (err) {
@@ -816,13 +829,23 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
         if (user.membershipStartDate && membership.name === MembershipName.PREMIUM) {
             const start = new Date(user.membershipStartDate);
             const now = new Date();
+            const startDay = start.getDate();
 
-            // Create a date for the current year/month but with the original start day
-            let currentCycleStart = new Date(now.getFullYear(), now.getMonth(), start.getDate());
+            // Create a date for the current year/month with the original start day
+            let currentCycleStart = new Date(now.getFullYear(), now.getMonth(), startDay);
+
+            // Handle months with fewer days than startDay (e.g. May 31 -> June 30)
+            if (currentCycleStart.getMonth() !== now.getMonth()) {
+                currentCycleStart = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            }
 
             // If that date hasn't happened yet this month, go back one month
             if (currentCycleStart > now) {
-                currentCycleStart = new Date(now.getFullYear(), now.getMonth() - 1, start.getDate());
+                currentCycleStart = new Date(now.getFullYear(), now.getMonth() - 1, startDay);
+                // Again, handle month-end rollover for the previous month
+                if (currentCycleStart.getMonth() === now.getMonth()) {
+                    currentCycleStart = new Date(now.getFullYear(), now.getMonth(), 0);
+                }
             }
 
             monthStart = currentCycleStart;
@@ -831,14 +854,24 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
 
         const monthlyCount = await Readlist.countDocuments({
             user_id: userId,
-            addedAt: { $gte: monthStart }
+            addedAt: { $gte: monthStart },
+            source: { $ne: 'order' } // EXCLUDE books added via purchases/orders
         });
 
-        const limit = membership.monthlyLimit || 0;
+        let limit = membership.monthlyLimit || 0;
+        if (limit === 0 && membership.name === MembershipName.BASIC) {
+            limit = 3;
+        }
+
         console.log(`[addToReadlist] Monthly count: ${monthlyCount}, Limit: ${limit}`);
         if (monthlyCount >= limit) {
+            const isBasic = membership.name === MembershipName.BASIC;
+            const message = isBasic
+                ? `You have reached your monthly limit of ${limit} books. Wait until next month or upgrade your plan.`
+                : `You have reached your monthly limit of ${limit} books. Please wait until next month to add more.`;
+
             return res.status(400).json({
-                error: `You have reached your monthly limit of ${limit} books. Wait until next month or upgrade your plan.`,
+                error: message,
             });
         }
 

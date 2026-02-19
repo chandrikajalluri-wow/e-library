@@ -157,7 +157,6 @@ const AdminOrders: React.FC = () => {
 
     const fetchOrders = async () => {
         setIsLoading(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
         try {
             const response = await getAllOrders({
                 status: filterStatus,
@@ -634,7 +633,7 @@ const AdminOrders: React.FC = () => {
                                 <div className="admin-pagination">
                                     <button
                                         className="pagination-btn"
-                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        onClick={() => { setCurrentPage(prev => Math.max(1, prev - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                         disabled={currentPage === 1}
                                     >
                                         Previous
@@ -647,7 +646,7 @@ const AdminOrders: React.FC = () => {
                                     </div>
                                     <button
                                         className="pagination-btn"
-                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        onClick={() => { setCurrentPage(prev => Math.min(totalPages, prev + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                         disabled={currentPage === totalPages}
                                     >
                                         Next

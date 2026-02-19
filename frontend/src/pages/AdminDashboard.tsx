@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download, Eye, XCircle, X } from 'lucide-react';
+import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download, Eye, XCircle, X, TrendingUp } from 'lucide-react';
 import { createBook, getBooks, getBook, updateBook, deleteBook, checkBookDeletionSafety } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
@@ -79,6 +79,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [logsTotalCount, setLogsTotalCount] = useState(0);
   const [logSearchTerm, setLogSearchTerm] = useState('');
   const [logActionFilter, setLogActionFilter] = useState('all');
+  const [logSortOrder, setLogSortOrder] = useState('desc');
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
 
   const [bookPage, setBookPage] = useState(1);
@@ -108,6 +109,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [exchangeStatusFilter, setExchangeStatusFilter] = useState('return_requested');
   const [suggestionSearch, setSuggestionSearch] = useState('');
   const [suggestionStatusFilter, setSuggestionStatusFilter] = useState('all');
+  const [suggestionSort, setSuggestionSort] = useState('newest');
+  const [exchangeReasonFilter, setExchangeReasonFilter] = useState('all');
+  const [exchangeSort, setExchangeSort] = useState('desc');
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
   const inventoryRef = useRef<HTMLDivElement>(null);
@@ -203,7 +207,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const fetchUserRequests = async () => {
     setIsDataLoading(true);
     try {
-      const data = await getAllBookRequests();
+      const data = await getAllBookRequests(suggestionSort);
       setUserRequests(data);
     } catch (err) {
       console.error(err);
@@ -215,14 +219,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
   const fetchOrderReturns = async () => {
     setIsDataLoading(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
       const statusToSend = exchangeStatusFilter === 'all_exchanges' ? 'return_requested,return_accepted,returned,return_rejected,refund_initiated,refunded' : exchangeStatusFilter;
       const data = await getAllOrders({
         status: statusToSend,
         search: exchangeSearch,
         page: exchangePage,
-        limit: 10
+        limit: 10,
+        reason: exchangeReasonFilter,
+        sort: exchangeSort === 'asc' ? 'oldest' : 'newest'
       });
       console.log('Fetched exchange orders:', data);
 
@@ -283,6 +288,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       const params = new URLSearchParams();
       params.append('page', logsPage.toString());
       params.append('limit', '15');
+      params.append('role', 'admin');
+      params.append('sort', logSortOrder);
       if (logSearchTerm) params.append('search', logSearchTerm);
       if (logActionFilter !== 'all') params.append('action', logActionFilter);
 
@@ -317,22 +324,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
   useEffect(() => {
     fetchOrderReturns();
-  }, [exchangeStatusFilter, exchangeSearch, exchangePage]);
+  }, [exchangeStatusFilter, exchangeSearch, exchangePage, exchangeReasonFilter, exchangeSort]);
 
   // Reset page on filter change
   useEffect(() => {
     setExchangePage(1);
-  }, [exchangeStatusFilter, exchangeSearch]);
+  }, [exchangeStatusFilter, exchangeSearch, exchangeReasonFilter, exchangeSort]);
 
   useEffect(() => {
     setLogsPage(1);
-  }, [logActionFilter]);
+  }, [logActionFilter, logSearchTerm, logSortOrder]);
 
   useEffect(() => {
     if (activeTab === 'read-history') fetchReadHistory();
     if (activeTab === 'requests') fetchOrderReturns();
     if (activeTab === 'logs') fetchLogs();
-  }, [activeTab, readHistoryPage, logsPage, membershipFilter, readHistoryStatusFilter, logActionFilter]);
+    if (activeTab === 'user-requests') fetchUserRequests();
+  }, [activeTab, readHistoryPage, logsPage, membershipFilter, readHistoryStatusFilter, logActionFilter, logSearchTerm, logSortOrder, suggestionSort]);
 
   useEffect(() => {
     if (activeTab === 'books') fetchBooks();
@@ -399,8 +407,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       isOpen: true,
       title: editingCategoryId ? 'Confirm Update' : 'Confirm New Category',
       message: editingCategoryId
-        ? `Are you sure you want to update the category "${newCategory.name}"?`
-        : `Are you sure you want to create the category "${newCategory.name}"?`,
+        ? `Are you sure you want to update the category "${newCategory.name}" ? `
+        : `Are you sure you want to create the category "${newCategory.name}" ? `,
       type: 'info',
       isLoading: false,
       onConfirm: async () => {
@@ -440,7 +448,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     setConfirmModal({
       isOpen: true,
       title: 'Delete Category',
-      message: `Are you sure you want to delete the category "${category.name}"? This action cannot be undone.`,
+      message: `Are you sure you want to delete the category "${category.name}" ? This action cannot be undone.`,
       type: 'danger',
       isLoading: false,
       onConfirm: async () => {
@@ -466,8 +474,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       isOpen: true,
       title: editingBookId ? 'Confirm Update' : 'Confirm Add Book',
       message: editingBookId
-        ? `Are you sure you want to update the details for "${newBook.title}"?`
-        : `Are you sure you want to add "${newBook.title}" to the library?`,
+        ? `Are you sure you want to update the details for "${newBook.title}" ? `
+        : `Are you sure you want to add "${newBook.title}" to the library ? `,
       type: 'info',
       isLoading: false,
       onConfirm: async () => {
@@ -655,13 +663,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
     setConfirmModal({
       isOpen: true, title: `${status.charAt(0).toUpperCase() + status.slice(1)} Request`,
-      message: `Are you sure you want to ${status} this book request?`,
+      message: `Are you sure you want to ${status} this book request ? `,
       type: status === RequestStatus.REJECTED ? 'danger' : 'info', isLoading: false,
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
           await updateBookRequestStatus(id, status);
-          toast.success(`Request ${status}`);
+          toast.success(`Request ${status} `);
           fetchUserRequests();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         } catch (err) {
@@ -751,18 +759,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   {activeTab === 'user-requests' && 'Book Requests'}
                   {activeTab === 'read-history' && 'Read History'}
                   {activeTab === 'support' && 'Customer Support'}
-                  {activeTab === 'logs' && 'User Activity Logs'}
+                  {activeTab === 'logs' && 'Admin Activity Logs'}
                 </h1>
                 <p className="admin-header-subtitle">
                   Welcome back, {currentUser?.role === RoleName.SUPER_ADMIN ? 'Super Administrator' : 'Administrator'}
                 </p>
               </div>
             )}
-            <div className={`admin-header-actions ${hideHeader ? 'actions-standalone' : ''}`}>
+            <div className={`admin - header - actions ${hideHeader ? 'actions-standalone' : ''} `}>
               {activeTab === 'books' && currentUser?.role !== RoleName.SUPER_ADMIN && (
                 <button
                   onClick={() => setShowAddBookForm(!showAddBookForm)}
-                  className={`admin-refresh-stats-btn ${showAddBookForm ? 'admin-btn-negative' : 'admin-btn-positive'}`}
+                  className={`admin - refresh - stats - btn ${showAddBookForm ? 'admin-btn-negative' : 'admin-btn-positive'} `}
                 >
                   {showAddBookForm ? (
                     <>
@@ -780,7 +788,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
               {activeTab === 'categories' && currentUser?.role !== RoleName.SUPER_ADMIN && (
                 <button
                   onClick={() => setShowCategoryForm(!showCategoryForm)}
-                  className={`admin-refresh-stats-btn ${showCategoryForm ? 'admin-btn-negative' : 'admin-btn-positive'}`}
+                  className={`admin - refresh - stats - btn ${showCategoryForm ? 'admin-btn-negative' : 'admin-btn-positive'} `}
                 >
                   {showCategoryForm ? (
                     <>
@@ -1156,14 +1164,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                             </td>
                             <td>
                               <div className="stock-info">
-                                <span className={`stock-count ${book.noOfCopies <= 2 ? 'low-stock' : ''}`}>
+                                <span className={`stock - count ${book.noOfCopies <= 2 ? 'low-stock' : ''} `}>
                                   {book.noOfCopies}
                                 </span>
                                 <span className="stock-label">Copies</span>
                               </div>
                             </td>
                             <td>
-                              <span className={`saas-status-badge status-${book.status.toLowerCase().replace(' ', '-')}`}>
+                              <span className={`saas - status - badge status - ${book.status.toLowerCase().replace(' ', '-')} `}>
                                 {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status}
                               </span>
                             </td>
@@ -1225,7 +1233,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
         {
           activeTab === 'categories' && (
-            <div className={`admin-categories-split-layout ${showCategoryForm ? 'form-open' : ''} ${currentUser?.role === RoleName.SUPER_ADMIN ? 'super-admin-categories' : ''} saas-reveal`}>
+            <div className={`admin - categories - split - layout ${showCategoryForm ? 'form-open' : ''} ${currentUser?.role === RoleName.SUPER_ADMIN ? 'super-admin-categories' : ''} saas - reveal`}>
               {showCategoryForm && (
                 <aside className="category-sidebar-panel saas-reveal-left">
                   <div className="card admin-form-section sticky-form">
@@ -1314,7 +1322,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     {categories
                       .filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
                       .map((c) => (
-                        <div key={c._id} className={`category-orb-card ${editingCategoryId === c._id ? 'is-editing' : ''}`}>
+                        <div key={c._id} className={`category - orb - card ${editingCategoryId === c._id ? 'is-editing' : ''} `}>
                           <div className="orb-card-glow"></div>
                           <div className="orb-card-content">
                             <div className="orb-header">
@@ -1369,38 +1377,64 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
             <section className="card admin-table-section saas-reveal">
               <div className="admin-table-header-box">
                 <h3 className="admin-table-title">Exchange Requests</h3>
-                <div className="admin-filter-group">
-                  <div className="search-box-premium" style={{ marginRight: '1rem' }}>
-                    <Search size={18} className="search-icon" />
-                    <input
-                      type="text"
-                      placeholder="Search Order ID, User..."
-                      value={exchangeSearch}
-                      onChange={(e) => setExchangeSearch(e.target.value)}
-                    />
-                    {exchangeSearch && (
-                      <button
-                        className="search-clear-btn"
-                        onClick={() => setExchangeSearch('')}
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
+                <div className="admin-actions-column">
+                  <div className="admin-search-row">
+                    <div className="admin-search-box">
+                      <Search size={18} className="search-icon" />
+                      <input
+                        type="text"
+                        placeholder="Search Order ID, User..."
+                        value={exchangeSearch}
+                        onChange={(e) => setExchangeSearch(e.target.value)}
+                      />
+                      {exchangeSearch && (
+                        <button
+                          className="search-clear-btn"
+                          onClick={() => setExchangeSearch('')}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="admin-filter-item">
-                    <span className="admin-filter-label">Status</span>
-                    <select
-                      value={exchangeStatusFilter}
-                      onChange={(e) => setExchangeStatusFilter(e.target.value)}
-                      className="admin-filter-select"
-                    >
-                      <option value="all_exchanges">Show All</option>
-                      <option value="return_requested">Pending approval</option>
-                      <option value="return_accepted">Accepted (Awaiting return)</option>
-                      <option value="returned">Exchanged / Received</option>
-                      <option value="return_rejected">Rejected</option>
-                      <option value="refund_initiated">Refund Initiated</option>
-                    </select>
+                  <div className="admin-filters-row">
+                    <div className="admin-filter-box">
+                      <Filter size={18} className="filter-icon" />
+                      <select
+                        value={exchangeStatusFilter}
+                        onChange={(e) => setExchangeStatusFilter(e.target.value)}
+                      >
+                        <option value="all_exchanges">Show All</option>
+                        <option value="return_requested">Pending approval</option>
+                        <option value="return_accepted">Accepted</option>
+                        <option value="returned">Exchanged</option>
+                        <option value="return_rejected">Rejected</option>
+                        <option value="refund_initiated">Refund Initiated</option>
+                      </select>
+                    </div>
+                    <div className="admin-filter-box">
+                      <BookOpen size={18} className="filter-icon" />
+                      <select
+                        value={exchangeReasonFilter}
+                        onChange={(e) => setExchangeReasonFilter(e.target.value)}
+                      >
+                        <option value="all">All Reasons</option>
+                        <option value="Damaged Book">Damaged Book</option>
+                        <option value="Pages Missing">Pages Missing</option>
+                        <option value="Print Error">Print Error</option>
+                        <option value="Others">Others</option>
+                      </select>
+                    </div>
+                    <div className="admin-filter-box">
+                      <TrendingUp size={18} className="filter-icon" />
+                      <select
+                        value={exchangeSort}
+                        onChange={(e) => setExchangeSort(e.target.value)}
+                      >
+                        <option value="desc">Newest First</option>
+                        <option value="asc">Oldest First</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1545,6 +1579,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                       <option value="rejected">Rejected</option>
                     </select>
                   </div>
+                  <div className="admin-filter-pill">
+                    <TrendingUp size={16} className="text-gray-400" />
+                    <select
+                      value={suggestionSort}
+                      onChange={(e) => setSuggestionSort(e.target.value)}
+                      className="admin-filter-field"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="oldest">Oldest First</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div className="admin-table-wrapper">
@@ -1555,12 +1600,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   </div>
                 ) : (
                   <table className="admin-table">
-                    <thead><tr><th>User</th><th>Book Details</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
+                    <thead><tr><th>User</th><th>Book Details</th><th>Reason</th><th>Status</th><th className="admin-actions-cell">Action</th></tr></thead>
                     <tbody>
                       {userRequests
                         .filter(req => {
                           const matchesSearch = req.title.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
-                            req.author.toLowerCase().includes(suggestionSearch.toLowerCase());
+                            req.author.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                            (req.user_id?.name || '').toLowerCase().includes(suggestionSearch.toLowerCase());
                           const matchesStatus = suggestionStatusFilter === 'all' || req.status === suggestionStatusFilter;
                           return matchesSearch && matchesStatus;
                         })
@@ -1582,6 +1628,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                                 </span>
                                 <span className="book-sub-meta">
                                   by {req.author}
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="book-info-box">
+                                <span className="book-sub-meta" style={{ maxWidth: '200px', display: 'block' }}>
+                                  {req.reason || 'No reason provided'}
                                 </span>
                               </div>
                             </td>
@@ -1621,7 +1674,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   </table>
                 )}
               </div>
-              {!isDataLoading && userRequests.length === 0 && <div className="admin-empty-state">No suggestions yet.</div>}
+              {!isDataLoading && (
+                userRequests.filter(req => {
+                  const matchesSearch = req.title.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                    req.author.toLowerCase().includes(suggestionSearch.toLowerCase()) ||
+                    (req.user_id?.name || '').toLowerCase().includes(suggestionSearch.toLowerCase());
+                  const matchesStatus = suggestionStatusFilter === 'all' || req.status === suggestionStatusFilter;
+                  return matchesSearch && matchesStatus;
+                }).length === 0
+              ) && (
+                  <div className="admin-empty-state">
+                    {suggestionSearch ? (
+                      <>No requests match "<span>{suggestionSearch}</span>"</>
+                    ) : suggestionStatusFilter !== 'all' ? (
+                      <>No <span>{suggestionStatusFilter}</span> book requests found.</>
+                    ) : (
+                      "No book requests found in the record."
+                    )}
+                  </div>
+                )}
             </section>
           )
         }
@@ -1718,29 +1789,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
           activeTab === 'logs' && (
             <section className="card admin-table-section">
               <div className="admin-table-header-box">
-                <h3 className="admin-table-title">User Activity Logs</h3>
-                <div className="admin-header-actions" style={{ gap: '1rem' }}>
-                  <div className="admin-search-box">
-                    <Search size={18} className="search-icon" />
-                    <input
-                      type="text"
-                      placeholder="Search by name or email..."
-                      value={logSearchTerm}
-                      onChange={(e) => setLogSearchTerm(e.target.value)}
-                    />
+                <h3 className="admin-table-title">Admin Activity Logs</h3>
+                <div className="admin-actions-column">
+                  <div className="admin-search-row">
+                    <div className="admin-search-box">
+                      <Search size={18} className="search-icon" />
+                      <input
+                        type="text"
+                        placeholder="Search name or email..."
+                        value={logSearchTerm}
+                        onChange={(e) => setLogSearchTerm(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="admin-filter-box">
-                    <Filter size={18} className="filter-icon" />
-                    <select
-                      value={logActionFilter}
-                      onChange={(e) => setLogActionFilter(e.target.value)}
-                    >
-                      <option value="all">All Actions</option>
-                      <option value="ADD_TO_WISHLIST">Wishlist Added</option>
-                      <option value="ADD_TO_READLIST">Readlist Added</option>
-                      <option value="REVIEW_ADDED">Review Added</option>
-                      <option value="MEMBERSHIP_CANCELLED">Membership Cancelled</option>
-                    </select>
+                  <div className="admin-filters-row">
+                    <div className="admin-filter-box">
+                      <Filter size={18} className="filter-icon" />
+                      <select
+                        value={logActionFilter}
+                        onChange={(e) => setLogActionFilter(e.target.value)}
+                      >
+                        <option value="all">All Actions</option>
+                        <option value="BOOK_CREATED">Book Created</option>
+                        <option value="BOOK_UPDATED">Book Updated</option>
+                        <option value="BOOK_DELETED">Book Deleted</option>
+                        <option value="CATEGORY_CREATED">Category Created</option>
+                        <option value="CATEGORY_UPDATED">Category Updated</option>
+                        <option value="CATEGORY_DELETED">Category Deleted</option>
+                        <option value="ORDER_STATUS_UPDATED">Order Updates</option>
+                        <option value="BOOK_REQUEST_STATUS_UPDATED">Book Requests</option>
+                        <option value="EXCHANGE_REQUEST_UPDATED">Exchange Request</option>
+                      </select>
+                    </div>
+                    <div className="admin-filter-box">
+                      <TrendingUp size={18} className="filter-icon" />
+                      <select
+                        value={logSortOrder}
+                        onChange={(e) => setLogSortOrder(e.target.value)}
+                      >
+                        <option value="desc">Newest First</option>
+                        <option value="asc">Oldest First</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1757,11 +1847,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                       <tr key={log._id}>
                         <td>
                           <div className="user-info-box">
-                            <span className="user-main-name">{log.user_id?.name}</span>
-                            <span className="user-sub-email">{log.user_id?.email}</span>
-                            <span className={`membership-pill ${((log.user_id as any)?.membership_id?.name || '').toLowerCase().includes(MembershipName.PREMIUM.toLowerCase()) ? 'membership-premium' : ''}`}>
-                              {(log.user_id as any)?.membership_id?.name || MembershipName.BASIC.charAt(0).toUpperCase() + MembershipName.BASIC.slice(1)}
-                            </span>
+                            <span className="user-main-name">{log.user_id?.name || 'Unknown Admin'}</span>
+                            <span className="user-sub-email">{log.user_id?.email || 'System Action'}</span>
                           </div>
                         </td>
                         <td><span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{log.action}</span></td>

@@ -41,6 +41,7 @@
     align-items: center;
     gap: 1.25rem;
     position: relative;
+    flex-wrap: wrap;
 }
 
 .admin-header-actions.actions-standalone {
@@ -84,6 +85,41 @@
 .admin-header-actions .admin-refresh-stats-btn {
     border-radius: 16px;
     height: 52px;
+}
+
+/* Table Header Box */
+.admin-table-header-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+}
+
+.admin-actions-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
+    min-width: 300px;
+}
+
+.admin-search-row {
+    width: 100%;
+}
+
+.admin-search-row .admin-search-box {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+}
+
+.admin-filters-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 /* CSV Export Button Premium */
@@ -728,7 +764,6 @@
     transition: all 0.2s;
     min-width: 200px;
     height: 46px;
-    /* Reduced height */
 }
 
 .admin-filter-pill:focus-within {
@@ -798,6 +833,18 @@
     padding-left: 1rem;
     position: relative;
     box-sizing: border-box;
+    min-width: 240px;
+    /* Prevent squashing */
+}
+
+.admin-search-box {
+    flex: 2;
+    min-width: 320px;
+}
+
+.admin-filter-box {
+    flex: 1;
+    min-width: 220px;
 }
 
 .admin-search-box:hover,
@@ -836,18 +883,19 @@
     background: transparent !important;
     border: none !important;
     outline: none !important;
-    padding: 0.5rem 0 0 1rem !important;
+    padding: 0 0 0 0.5rem !important;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
     cursor: text;
-    line-height: 48px;
+    display: flex;
+    align-items: center;
 }
 
 .admin-filter-box select {
     cursor: pointer;
     appearance: none;
-    padding-right: 2.5rem !important;
+    padding-right: 0.5rem !important;
 }
 
 /* Custom arrow for the enhanced select */
@@ -855,13 +903,12 @@
     content: '';
     position: absolute;
     right: 1.15rem;
-    top: 50%;
-    margin-top: -5px;
+    top: 40%;
     width: 8px;
     height: 8px;
     border-right: 2px solid var(--text-secondary);
     border-bottom: 2px solid var(--text-secondary);
-    transform: rotate(45deg);
+    transform: translateY(-50%) rotate(45deg);
     pointer-events: none;
     transition: all 0.2s;
 }
@@ -930,14 +977,14 @@
 
 .membership-pill {
     display: inline-block;
-    font-size: 0.65rem;
-    font-weight: 800;
+    font-size: 0.7rem;
+    font-weight: 850;
     text-transform: uppercase;
     background: rgba(99, 102, 241, 0.1);
     color: var(--primary-color);
-    padding: 2px 8px;
-    border-radius: 6px;
-    margin-top: 4px;
+    padding: 3px 10px;
+    border-radius: 8px;
+    margin-top: 6px;
     width: fit-content;
 }
 

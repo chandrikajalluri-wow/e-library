@@ -79,6 +79,14 @@ const AdminSupportManager: React.FC = () => {
                         return [...prev, message];
                     });
                 }
+                // If message is for a different session, update unread count immediately
+                if (!currentActive || message.session_id !== currentActive._id) {
+                    setSessions(prev => prev.map(s =>
+                        s._id === message.session_id
+                            ? { ...s, unreadCount: (s.unreadCount || 0) + 1 }
+                            : s
+                    ));
+                }
                 debouncedRefresh();
             });
 
@@ -115,8 +123,8 @@ const AdminSupportManager: React.FC = () => {
             setMessages(data);
             socketRef.current?.emit('join_session', sessionId);
 
-            // Mark messages as read
-            socketRef.current?.emit('mark_read', { sessionId, userId: admin?._id });
+            // Mark messages as read (use ref to avoid stale closure)
+            socketRef.current?.emit('mark_read', { sessionId, userId: adminRef.current?._id });
 
             // Update local session list (clear unread count for this session)
             setSessions(prev => prev.map(s => s._id === sessionId ? { ...s, unreadCount: 0 } : s));

@@ -21,11 +21,25 @@ const CartPage: React.FC = () => {
     const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
     const [isAllSelected, setIsAllSelected] = useState(true);
 
-    // Initialize/Update selection when cartItems change (usually on first load or manual add)
+    // Sync selection when cartItems change (handle removals and clearing)
     useEffect(() => {
-        if (selectedItemIds.length === 0 && cartItems.length > 0) {
-            setSelectedItemIds(cartItems.map(item => item.book._id));
+        const cartIds = cartItems.map(item => item.book._id);
+
+        setSelectedItemIds(prev => {
+            const next = prev.filter(id => cartIds.includes(id));
+            // If cart was empty and now has items, select them all
+            if (prev.length === 0 && cartItems.length > 0) {
+                return cartIds;
+            }
+            return next;
+        });
+
+        // Update "All Selected" state
+        if (cartItems.length === 0) {
             setIsAllSelected(true);
+        } else {
+            const currentSelectionFiltered = selectedItemIds.filter(id => cartIds.includes(id));
+            setIsAllSelected(currentSelectionFiltered.length === cartItems.length);
         }
     }, [cartItems]);
 
@@ -196,7 +210,7 @@ const CartPage: React.FC = () => {
                     <h1 className="cart-title-main">My Shopping Cart</h1>
                     <div className="cart-item-count-badge">
                         <ShoppingCart size={18} />
-                        <span>{selectedItemIds.length}/{cartItems.length} Selected</span>
+                        <span>{selectedCartItems.length}/{cartItems.length} Selected</span>
                     </div>
                 </header>
 

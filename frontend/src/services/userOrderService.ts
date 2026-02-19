@@ -2,9 +2,11 @@
 import api from '../api';
 import { toast } from 'react-toastify';
 
-export const getMyOrders = async () => {
+export const getMyOrders = async (status?: string, sort?: string) => {
     try {
-        const response = await api.get('orders/my-orders');
+        const response = await api.get('orders/my-orders', {
+            params: { status, sort }
+        });
         return response.data;
     } catch (error: any) {
         throw error.response?.data?.error || 'Failed to fetch your orders';

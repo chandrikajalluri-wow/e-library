@@ -10,7 +10,7 @@ import Readlist from '../models/Readlist';
 import { NotificationType, MembershipName, BookStatus, OrderStatus } from '../types/enums';
 import { sendNotification, notifySuperAdmins, notifyAdmins } from '../utils/notification';
 import { sendEmail } from '../utils/mailer';
-import { RoleName } from '../types/enums';
+import { RoleName, ActivityAction } from '../types/enums';
 import { getOrderStatusUpdateTemplate } from '../utils/emailTemplates';
 import { generateInvoicePdfBase64 } from '../utils/pdfGenerator';
 
@@ -68,11 +68,11 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        const deliveryFee = subtotal > 50 ? 0 : 50;
+        const isPremium = membership?.name === MembershipName.PREMIUM;
+        const deliveryFee = (subtotal >= 500 || isPremium) ? 0 : 50;
         const totalAmount = subtotal + deliveryFee;
 
         const estimatedDeliveryDate = new Date();
-        const isPremium = membership?.name === MembershipName.PREMIUM;
         estimatedDeliveryDate.setHours(estimatedDeliveryDate.getHours() + (isPremium ? 24 : 96)); // 24h for Premium, 4 days (96h) for Basic
 
         const newOrder = new Order({
@@ -130,9 +130,18 @@ export const placeOrder = async (req: AuthRequest, res: Response) => {
 // Admin: Get All Orders
 export const getAllOrders = async (req: AuthRequest, res: Response) => {
     try {
-        const { status, search, startDate, endDate, sort, membership, page, limit } = req.query;
+        const { status, search, startDate, endDate, sort, membership, page, limit, reason } = req.query;
 
         let filter: any = {};
+
+        // Reason filter
+        if (reason && reason !== 'all') {
+            if (reason === 'Others') {
+                filter.returnReason = { $nin: ['Damaged Book', 'Pages Missing', 'Print Error'] };
+            } else {
+                filter.returnReason = reason;
+            }
+        }
 
         // Status filter
         if (status && status !== 'all') {
@@ -371,7 +380,8 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
                     {
                         status: 'active',
                         addedAt: new Date(),
-                        dueDate: dueDate // Apply membership-based duration
+                        dueDate: dueDate, // Apply membership-based duration
+                        source: 'order'
                     },
                     { upsert: true }
                 );
@@ -431,7 +441,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
 
         await new ActivityLog({
             user_id: req.user!._id,
-            action: `Order Status Updated`,
+            action: status === OrderStatus.RETURN_REQUESTED ? ActivityAction.EXCHANGE_REQUEST_UPDATED : ActivityAction.ORDER_STATUS_UPDATED,
             description: `Order #${order._id} status updated to ${status} by ${req.user!.name}`,
         }).save();
 
@@ -600,12 +610,19 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
                         {
                             status: 'active',
                             addedAt: new Date(),
-                            dueDate: dueDate
+                            dueDate: dueDate,
+                            source: 'order'
                         },
                         { upsert: true }
                     );
                 }
             }
+
+            await new ActivityLog({
+                user_id: req.user!._id,
+                action: status === OrderStatus.RETURN_REQUESTED ? ActivityAction.EXCHANGE_REQUEST_UPDATED : ActivityAction.ORDER_STATUS_UPDATED,
+                description: `Order #${order._id} status updated to ${status} by ${req.user!.name}`,
+            }).save();
 
             await order.save();
 
@@ -671,15 +688,32 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 export const getMyOrders = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user!._id;
+        const { status, sort } = req.query;
 
-        const orders = await Order.find({ user_id: userId })
+        let query: any = { user_id: userId };
+
+        if (status && status !== 'all') {
+            if (typeof status === 'string' && status.includes(',')) {
+                query.status = { $in: status.split(',') };
+            } else {
+                query.status = status;
+            }
+        }
+
+        // Determine sort object
+        let sortObj: any = { createdAt: -1 }; // Default: Newest
+        if (sort === 'oldest') sortObj = { createdAt: 1 };
+        else if (sort === 'price_high') sortObj = { totalAmount: -1 };
+        else if (sort === 'price_low') sortObj = { totalAmount: 1 };
+
+        const orders = await Order.find(query)
             .populate({
                 path: 'items.book_id',
                 select: 'title cover_image_url price author addedBy',
                 populate: { path: 'addedBy', select: 'name' }
             })
             .populate('address_id')
-            .sort({ createdAt: -1 });
+            .sort(sortObj);
 
         res.status(200).json(orders);
     } catch (error: any) {

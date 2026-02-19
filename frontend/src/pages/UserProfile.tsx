@@ -334,7 +334,11 @@ const UserProfile: React.FC = () => {
                 )}
 
                 {user.membership_id?.name === MembershipName.BASIC && (
-                  <div className="upgrade-premium-banner">
+                  <div
+                    className="upgrade-premium-banner"
+                    onClick={() => navigate('/memberships')}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div className="u-content">
                       <Zap size={24} className="u-icon" />
                       <div>

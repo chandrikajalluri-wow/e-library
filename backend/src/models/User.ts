@@ -36,6 +36,7 @@ export interface IUser extends Document {
     book_id: Types.ObjectId;
     quantity: number;
   }[];
+  deletionScheduledAt?: Date;
   createdAt?: Date;
 }
 
@@ -77,6 +78,7 @@ const userSchema = new Schema<IUser>(
         quantity: { type: Number, default: 1 }
       }
     ],
+    deletionScheduledAt: { type: Date },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true, collection: 'users' }

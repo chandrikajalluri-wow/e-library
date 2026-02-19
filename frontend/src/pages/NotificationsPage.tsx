@@ -16,6 +16,7 @@ const NotificationsPage: React.FC = () => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [sortOrder, setSortOrder] = useState('newest');
 
     const fetchNotifications = async () => {
         try {
@@ -24,7 +25,7 @@ const NotificationsPage: React.FC = () => {
                 params.type = isAdmin ? 'return' : 'return';
             } else if (filterType === 'order') {
                 params.type = 'order';
-            } else if (filterType === 'canceled') {
+            } else if (filterType === 'cancelled') {
                 // Fetch all relevant types for cancellation search
                 params.type = 'order,return';
             } else if (filterType === 'new_addition' || filterType === 'book_mgmt' || filterType === 'category_mgmt') {
@@ -36,6 +37,7 @@ const NotificationsPage: React.FC = () => {
             if (filterStatus !== 'all') params.is_read = filterStatus === 'read' ? 'true' : 'false';
             if (startDate) params.startDate = startDate;
             if (endDate) params.endDate = endDate;
+            params.sort = sortOrder;
 
             let data = await getMyNotifications(params);
 
@@ -45,31 +47,27 @@ const NotificationsPage: React.FC = () => {
                     data = data.filter((n: any) => n.type === 'system' && n.message.includes('New Addition'));
                 } else if (filterType === 'exchange') {
                     const exchangeTypes = ['return'];
-                    // EXCLUDE canceled orders even if they are borrow/return type
+                    // EXCLUDE cancelled orders even if they are borrow/return type
                     data = data.filter((n: any) =>
                         exchangeTypes.includes(n.type?.toLowerCase()) &&
-                        !n.message.toLowerCase().includes('cancelled') &&
-                        !n.message.toLowerCase().includes('canceled')
+                        !n.message.toLowerCase().includes('cancelled')
                     );
                 } else if (filterType === 'order') {
-                    // Exclude canceled from standard order view
+                    // Exclude cancelled from standard order view
                     data = data.filter((n: any) =>
                         n.type === 'order' &&
-                        !n.message.toLowerCase().includes('cancelled') &&
-                        !n.message.toLowerCase().includes('canceled')
+                        !n.message.toLowerCase().includes('cancelled')
                     );
-                } else if (filterType === 'canceled') {
+                } else if (filterType === 'cancelled') {
                     data = data.filter((n: any) =>
-                        n.message.toLowerCase().includes('cancelled') ||
-                        n.message.toLowerCase().includes('canceled')
+                        n.message.toLowerCase().includes('cancelled')
                     );
                 } else if (filterType === 'others') {
                     const knownTypes = ['order', 'return', 'wishlist'];
                     data = data.filter((n: any) =>
                         !knownTypes.includes(n.type?.toLowerCase()) &&
                         !n.message.includes('New Addition') &&
-                        !n.message.toLowerCase().includes('cancelled') &&
-                        !n.message.toLowerCase().includes('canceled')
+                        !n.message.toLowerCase().includes('cancelled')
                     );
                 }
             } else {
@@ -107,13 +105,11 @@ const NotificationsPage: React.FC = () => {
                     if (filterType === 'order') {
                         data = data.filter((n: any) =>
                             n.type === 'order' &&
-                            !n.message.toLowerCase().includes('cancelled') &&
-                            !n.message.toLowerCase().includes('canceled')
+                            !n.message.toLowerCase().includes('cancelled')
                         );
-                    } else if (filterType === 'canceled') {
+                    } else if (filterType === 'cancelled') {
                         data = data.filter((n: any) =>
-                            n.message.toLowerCase().includes('cancelled') ||
-                            n.message.toLowerCase().includes('canceled')
+                            n.message.toLowerCase().includes('cancelled')
                         );
                     }
                 }
@@ -127,7 +123,7 @@ const NotificationsPage: React.FC = () => {
 
     useEffect(() => {
         fetchNotifications();
-    }, [filterType, filterStatus, startDate, endDate]);
+    }, [filterType, filterStatus, startDate, endDate, sortOrder]);
 
     const handleMarkRead = async (id: string) => {
         try {
@@ -263,6 +259,17 @@ const NotificationsPage: React.FC = () => {
                     </div>
                 </div>
 
+                <div className="filter-pill">
+                    <Calendar size={16} className="filter-icon" />
+                    <div className="select-wrapper">
+                        <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                        </select>
+                        <ChevronDown size={14} className="chevron-icon" />
+                    </div>
+                </div>
+
                 <div className="filter-pill date-range-pill">
                     <Calendar size={16} className="filter-icon" />
                     <input
@@ -280,7 +287,7 @@ const NotificationsPage: React.FC = () => {
                     />
                 </div>
 
-                {(filterType !== 'all' || filterStatus !== 'all' || startDate || endDate) && (
+                {(filterType !== 'all' || filterStatus !== 'all' || startDate || endDate || sortOrder !== 'newest') && (
                     <button
                         className="clear-filters-btn"
                         onClick={() => {
@@ -288,6 +295,7 @@ const NotificationsPage: React.FC = () => {
                             setFilterStatus('all');
                             setStartDate('');
                             setEndDate('');
+                            setSortOrder('newest');
                         }}
                         title="Clear Filters"
                     >
@@ -303,18 +311,18 @@ const NotificationsPage: React.FC = () => {
                         {notifications.map((notif) => {
                             const type = notif.type?.toLowerCase();
                             const message = notif.message?.toLowerCase();
-                            const isCanceled = message.includes('cancelled') || message.includes('canceled');
-                            const isActionRequired = isAdmin && !isCanceled && (type === 'return' || type === 'book_request' || type === 'order' || type === 'stock_alert');
+                            const isCancelled = message.includes('cancelled') || message.includes('canceled');
+                            const isActionRequired = isAdmin && !isCancelled && (type === 'return' || type === 'book_request' || type === 'order' || type === 'stock_alert');
 
                             return (
                                 <div
                                     key={notif._id}
-                                    className={`notif-full-item ${notif.is_read ? 'read' : 'unread'} ${isActionRequired ? 'action-required' : ''} ${isCanceled ? 'canceled-item' : ''}`}
+                                    className={`notif-full-item ${notif.is_read ? 'read' : 'unread'} ${isActionRequired ? 'action-required' : ''} ${isCancelled ? 'canceled-item' : ''}`}
                                     onClick={() => handleNotificationClick(notif)}
                                 >
                                     <div className="notif-full-icon">
-                                        {type === 'order' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isCanceled ? "#ef4444" : "#f59e0b"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>}
-                                        {type === 'return' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isCanceled ? "#ef4444" : "#10b981"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3L21 8L16 13"></path><path d="M21 8H12a4 4 0 0 0-4 4v9"></path><path d="M3 13V5a2 2 0 0 1 2-2"></path></svg>}
+                                        {type === 'order' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isCancelled ? "#ef4444" : "#f59e0b"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>}
+                                        {type === 'return' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isCancelled ? "#ef4444" : "#10b981"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3L21 8L16 13"></path><path d="M21 8H12a4 4 0 0 0-4 4v9"></path><path d="M3 13V5a2 2 0 0 1 2-2"></path></svg>}
                                         {type === 'readlist' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>}
                                         {type === 'wishlist' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z"></path></svg>}
                                         {type === 'fine' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>}
@@ -337,13 +345,13 @@ const NotificationsPage: React.FC = () => {
                                         <div className="notif-actions">
                                             {/* Admin Actions */}
                                             {isAdmin && type === 'order' && notif.target_id && (
-                                                <Link to={`/admin/orders/${notif.target_id}`} className={`view-action-btn ${isCanceled ? 'cancel-btn' : 'order-btn'}`}>
-                                                    {isCanceled ? 'View Cancelled Order' : 'View Order'}
+                                                <Link to={`/admin/orders/${notif.target_id}`} className={`view-action-btn ${isCancelled ? 'cancel-btn' : 'order-btn'}`}>
+                                                    {isCancelled ? 'View Cancelled Order' : 'View Order'}
                                                 </Link>
                                             )}
                                             {isAdmin && type === 'return' && (
-                                                <Link to="/admin-dashboard?tab=requests" className={`view-action-btn ${isCanceled ? 'cancel-btn' : 'exchange-btn'}`}>
-                                                    {isCanceled ? 'View Cancelled Request' : 'View Exchanges'}
+                                                <Link to="/admin-dashboard?tab=requests" className={`view-action-btn ${isCancelled ? 'cancel-btn' : 'exchange-btn'}`}>
+                                                    {isCancelled ? 'View Cancelled Request' : 'View Exchanges'}
                                                 </Link>
                                             )}
                                             {isAdmin && type === 'book_request' && (
@@ -359,17 +367,17 @@ const NotificationsPage: React.FC = () => {
 
                                             {!isAdmin && (type === 'order' || type === 'return' || type === 'readlist') && (() => {
                                                 const msg = notif.message.toLowerCase();
-                                                const isCanceled = msg.includes('cancelled') || msg.includes('canceled');
+                                                const isCancelled = msg.includes('cancelled') || msg.includes('canceled');
                                                 return (
                                                     <Link
                                                         to={notif.target_id ? `/orders/${notif.target_id}` : '/my-orders'}
-                                                        className={`view-action-btn ${isCanceled ? 'cancel-btn' : (type === 'order' ? 'order-btn' : 'exchange-btn')}`}
+                                                        className={`view-action-btn ${isCancelled ? 'cancel-btn' : (type === 'order' ? 'order-btn' : 'exchange-btn')}`}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             if (!notif.is_read) handleMarkRead(notif._id);
                                                         }}
                                                     >
-                                                        {isCanceled ? 'View Cancelled Order' : (type === 'order' ? 'View Order' : 'View Exchange')}
+                                                        {isCancelled ? 'View Cancelled Order' : (type === 'order' ? 'View Order' : 'View Exchange')}
                                                     </Link>
                                                 )
                                             })()}

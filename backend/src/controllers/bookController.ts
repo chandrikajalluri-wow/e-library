@@ -10,7 +10,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadToS3, getS3FileStream } from '../utils/s3Service';
 import ActivityLog from '../models/ActivityLog';
 import { notifySuperAdmins, notifyAllUsers } from '../utils/notification';
-import { RoleName, BookStatus, MembershipName, OrderStatus } from '../types/enums';
+import { RoleName, BookStatus, MembershipName, OrderStatus, ActivityAction } from '../types/enums';
 
 export const getAllBooks = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -144,7 +144,8 @@ export const createBook = async (req: AuthRequest, res: Response, next: NextFunc
 
         await new ActivityLog({
             user_id: req.user!._id,
-            action: `Added new book: ${book.title}`,
+            action: ActivityAction.BOOK_CREATED,
+            description: `Added new book: ${book.title}`,
             book_id: book._id,
         }).save();
 
@@ -195,7 +196,8 @@ export const updateBook = async (req: AuthRequest, res: Response, next: NextFunc
         try {
             await new ActivityLog({
                 user_id: req.user!._id,
-                action: `Updated book: ${book.title}`,
+                action: ActivityAction.BOOK_UPDATED,
+                description: `Updated book: ${book.title}`,
                 book_id: book._id,
             }).save();
 
@@ -241,7 +243,8 @@ export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunc
 
         await new ActivityLog({
             user_id: req.user!._id,
-            action: `Deleted book: ${book.title}`,
+            action: ActivityAction.BOOK_DELETED,
+            description: `Deleted book: ${book.title}`,
             book_id: book._id,
         }).save();
 
