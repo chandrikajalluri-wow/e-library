@@ -67,4 +67,8 @@ router.get('/admin/dashboard-stats', auth, checkRole([RoleName.ADMIN, RoleName.S
 // Book Access Check
 router.get('/book-access/:bookId', auth, userController.checkBookAccess);
 
+// Reading Progress
+router.get('/reading-progress/:bookId', auth, userController.getReadingProgress);
+router.put('/reading-progress/:bookId', auth, userController.updateReadingProgress);
+
 export default router;

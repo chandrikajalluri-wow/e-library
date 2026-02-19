@@ -5,8 +5,8 @@ export interface Membership {
     name: string;
     displayName: string;
     price: number;
-    borrowLimit: number;
-    borrowDuration: number;
+    monthlyLimit: number;
+    accessDuration: number;
     canRequestBooks: boolean;
     canAccessPremiumBooks: boolean;
     hasRecommendations: boolean;

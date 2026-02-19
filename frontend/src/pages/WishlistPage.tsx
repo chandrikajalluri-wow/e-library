@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getWishlist, removeFromWishlist } from '../services/wishlistService';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { useBorrowCart } from '../context/BorrowCartContext';
+import { useCart } from '../context/CartContext';
 import Loader from '../components/Loader';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { BookStatus } from '../types/enums';
@@ -12,7 +12,7 @@ import '../styles/WishlistPage.css';
 
 const WishlistPage: React.FC = () => {
     const navigate = useNavigate();
-    const { addToCart, isInCart } = useBorrowCart();
+    const { addToCart, isInCart } = useCart();
     const [wishlist, setWishlist] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 

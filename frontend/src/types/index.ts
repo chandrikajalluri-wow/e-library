@@ -1,4 +1,4 @@
-import { BookStatus, BorrowStatus, RoleName } from './enums';
+import { BookStatus, RoleName } from './enums';
 
 export interface Category {
   _id: string;
@@ -15,8 +15,8 @@ export interface Membership {
   name: string;
   displayName: string;
   price: number;
-  borrowLimit: number;
-  borrowDuration: number;
+  monthlyLimit: number;
+  accessDuration: number;
   canRequestBooks: boolean;
   canAccessPremiumBooks: boolean;
   hasRecommendations: boolean;
@@ -63,15 +63,7 @@ export interface User {
   membership_id?: Membership | string;
 }
 
-export interface Borrow {
-  _id: string;
-  user_id: User; // Populated in admin view
-  book_id: Book; // Populated in admin view
-  issued_date?: string;
-  return_date: string;
-  returned_at?: string;
-  status: BorrowStatus;
-}
+
 
 export interface WishlistItem {
   _id: string;

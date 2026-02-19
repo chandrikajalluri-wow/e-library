@@ -31,18 +31,9 @@ export const BookStatus = {
 } as const;
 export type BookStatus = typeof BookStatus[keyof typeof BookStatus];
 
-export const BorrowStatus = {
-    BORROWED: 'borrowed',
-    RETURNED: 'returned',
-    OVERDUE: 'overdue',
-    RETURN_REQUESTED: 'return_requested',
-    ARCHIVED: 'archived'
-} as const;
-export type BorrowStatus = typeof BorrowStatus[keyof typeof BorrowStatus];
+
 
 export const NotificationType = {
-    BORROW: 'borrow',
-    RETURN: 'return',
     WISHLIST: 'wishlist',
     ORDER: 'order',
     BOOK_REQUEST: 'book_request',

@@ -111,7 +111,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
   const inventoryRef = useRef<HTMLDivElement>(null);
-  const borrowsRef = useRef<HTMLDivElement>(null);
+  const readHistoryRef = useRef<HTMLDivElement>(null);
 
   const [exchangeSearch, setExchangeSearch] = useState('');
   const delayDebounceFn = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -154,8 +154,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   useEffect(() => {
     if (activeTab === 'books' && bookPage > 1) {
       inventoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (activeTab === 'borrows' && readHistoryPage > 1) {
-      borrowsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (activeTab === 'read-history' && readHistoryPage > 1) {
+      readHistoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (activeTab === 'requests' && exchangePage > 1) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -329,7 +329,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   }, [logActionFilter]);
 
   useEffect(() => {
-    if (activeTab === 'borrows') fetchReadHistory();
+    if (activeTab === 'read-history') fetchReadHistory();
     if (activeTab === 'requests') fetchOrderReturns();
     if (activeTab === 'logs') fetchLogs();
   }, [activeTab, readHistoryPage, logsPage, membershipFilter, readHistoryStatusFilter, logActionFilter]);
@@ -361,7 +361,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     // Prevent fetching until currentUser is loaded to avoid "flicker" with global stats
     if (!currentUser) return;
 
-    if (activeTab === 'borrows') fetchReadHistory();
+    if (activeTab === 'read-history') fetchReadHistory();
     else if (activeTab === 'user-requests') fetchUserRequests();
     else if (activeTab === 'requests') fetchOrderReturns();
     else if (activeTab === 'books') fetchBooks();
@@ -749,7 +749,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   {activeTab === 'categories' && 'Manage Categories'}
                   {activeTab === 'requests' && 'Exchange Requests'}
                   {activeTab === 'user-requests' && 'Book Requests'}
-                  {activeTab === 'borrows' && 'Read History'}
+                  {activeTab === 'read-history' && 'Read History'}
                   {activeTab === 'support' && 'Customer Support'}
                   {activeTab === 'logs' && 'User Activity Logs'}
                 </h1>
@@ -1628,8 +1628,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
 
         {
-          activeTab === 'borrows' && (
-            <section className="card admin-table-section" ref={borrowsRef}>
+          activeTab === 'read-history' && (
+            <section className="card admin-table-section" ref={readHistoryRef}>
               <div className="admin-table-header-box">
                 <h3 className="admin-table-title">Read History</h3>
                 <div className="admin-filter-group">

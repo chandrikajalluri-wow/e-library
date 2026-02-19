@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShoppingCart, Trash2, ChevronRight, Package, Truck, ArrowLeft, Plus, Minus, History, Sparkles, Zap } from 'lucide-react';
-import { useBorrowCart } from '../context/BorrowCartContext';
+import { useCart } from '../context/CartContext';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRecommendedBooks } from '../services/bookService';
 import { getMyOrders } from '../services/userOrderService';
 import { getMyMembership, type Membership } from '../services/membershipService';
 import type { Book } from '../types';
-import '../styles/BorrowCart.css';
+import '../styles/Cart.css';
 
-const BorrowCart: React.FC = () => {
+const CartPage: React.FC = () => {
     const navigate = useNavigate();
-    const { cartItems, removeFromCart, increaseQty, decreaseQty, addToCart, isInCart, clearCart } = useBorrowCart();
+    const { cartItems, removeFromCart, increaseQty, decreaseQty, addToCart, isInCart, clearCart } = useCart();
 
     const [recommendations, setRecommendations] = useState<Book[]>([]);
     const [buyAgain, setBuyAgain] = useState<Book[]>([]);
@@ -516,4 +516,4 @@ const BorrowCart: React.FC = () => {
     );
 };
 
-export default BorrowCart;
+export default CartPage;

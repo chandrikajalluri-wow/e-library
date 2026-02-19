@@ -21,12 +21,12 @@ const NotificationsPage: React.FC = () => {
         try {
             const params: any = {};
             if (filterType === 'exchange' || (isAdmin && filterType === 'return')) {
-                params.type = isAdmin ? 'return' : 'borrow,return';
+                params.type = isAdmin ? 'return' : 'return';
             } else if (filterType === 'order') {
                 params.type = 'order';
             } else if (filterType === 'canceled') {
                 // Fetch all relevant types for cancellation search
-                params.type = 'order,borrow,return';
+                params.type = 'order,return';
             } else if (filterType === 'new_addition' || filterType === 'book_mgmt' || filterType === 'category_mgmt') {
                 params.type = 'system';
             } else if (filterType !== 'all' && filterType !== 'others') {
@@ -44,7 +44,7 @@ const NotificationsPage: React.FC = () => {
                 if (filterType === 'new_addition') {
                     data = data.filter((n: any) => n.type === 'system' && n.message.includes('New Addition'));
                 } else if (filterType === 'exchange') {
-                    const exchangeTypes = ['borrow', 'return'];
+                    const exchangeTypes = ['return'];
                     // EXCLUDE canceled orders even if they are borrow/return type
                     data = data.filter((n: any) =>
                         exchangeTypes.includes(n.type?.toLowerCase()) &&
@@ -64,7 +64,7 @@ const NotificationsPage: React.FC = () => {
                         n.message.toLowerCase().includes('canceled')
                     );
                 } else if (filterType === 'others') {
-                    const knownTypes = ['order', 'borrow', 'return', 'wishlist'];
+                    const knownTypes = ['order', 'return', 'wishlist'];
                     data = data.filter((n: any) =>
                         !knownTypes.includes(n.type?.toLowerCase()) &&
                         !n.message.includes('New Addition') &&
@@ -157,7 +157,7 @@ const NotificationsPage: React.FC = () => {
         if (isAdmin) {
             if (type === 'order' && notif.target_id) {
                 navigate(`/admin/orders/${notif.target_id}`);
-            } else if (type === 'return' || (type === 'borrow' && notif.target_id)) {
+            } else if (type === 'return' || (type === 'readlist' && notif.target_id)) {
                 // Exchange requests or decisions take admin to requests tab
                 navigate('/admin-dashboard?tab=requests');
             } else if (type === 'book_request') {
@@ -170,7 +170,7 @@ const NotificationsPage: React.FC = () => {
             }
         } else {
             // Redirection logic for users
-            if (type === 'order' || type === 'return' || type === 'borrow') {
+            if (type === 'order' || type === 'return' || type === 'readlist') {
                 if (notif.target_id) {
                     navigate(`/orders/${notif.target_id}`);
                 } else {
@@ -315,7 +315,7 @@ const NotificationsPage: React.FC = () => {
                                     <div className="notif-full-icon">
                                         {type === 'order' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isCanceled ? "#ef4444" : "#f59e0b"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>}
                                         {type === 'return' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isCanceled ? "#ef4444" : "#10b981"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3L21 8L16 13"></path><path d="M21 8H12a4 4 0 0 0-4 4v9"></path><path d="M3 13V5a2 2 0 0 1 2-2"></path></svg>}
-                                        {type === 'borrow' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>}
+                                        {type === 'readlist' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>}
                                         {type === 'wishlist' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z"></path></svg>}
                                         {type === 'fine' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>}
                                         {type === 'book_request' && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>}
@@ -357,7 +357,7 @@ const NotificationsPage: React.FC = () => {
                                                 </Link>
                                             )}
 
-                                            {!isAdmin && (type === 'order' || type === 'return' || type === 'borrow') && (() => {
+                                            {!isAdmin && (type === 'order' || type === 'return' || type === 'readlist') && (() => {
                                                 const msg = notif.message.toLowerCase();
                                                 const isCanceled = msg.includes('cancelled') || msg.includes('canceled');
                                                 return (

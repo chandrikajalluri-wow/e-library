@@ -10,7 +10,7 @@ import Loader from '../components/Loader';
 
 import type { Book } from '../types';
 import { BookStatus } from '../types/enums';
-import { useBorrowCart } from '../context/BorrowCartContext';
+import { useCart } from '../context/CartContext';
 import { toast } from 'react-toastify';
 
 import '../styles/BookList.css';
@@ -20,7 +20,7 @@ const BookList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') || '';
   const searchSectionRef = React.useRef<HTMLHeadingElement>(null);
-  const { addToCart, isInCart } = useBorrowCart();
+  const { addToCart, isInCart } = useCart();
 
   const ensureHttps = (url: string) => {
     if (!url) return url;
@@ -550,7 +550,7 @@ const BookList: React.FC = () => {
                           e.stopPropagation();
                           addToCart(book);
                           toast.success(`${book.title} added to cart!`);
-                          navigate('/borrow-cart');
+                          navigate('/cart');
                         }}
                         disabled={isInCart(book._id)}
                         className={`btn-primary book-action-btn ${isInCart(book._id) ? 'btn-in-cart' : ''}`}

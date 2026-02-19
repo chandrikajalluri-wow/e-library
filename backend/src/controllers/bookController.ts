@@ -4,14 +4,13 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from '../utils/s3Service';
 import Book from '../models/Book';
 import User from '../models/User';
-import Borrow from '../models/Borrow';
 import Readlist from '../models/Readlist';
 import Order from '../models/Order';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadToS3, getS3FileStream } from '../utils/s3Service';
 import ActivityLog from '../models/ActivityLog';
 import { notifySuperAdmins, notifyAllUsers } from '../utils/notification';
-import { RoleName, BookStatus, BorrowStatus, MembershipName, OrderStatus } from '../types/enums';
+import { RoleName, BookStatus, MembershipName, OrderStatus } from '../types/enums';
 
 export const getAllBooks = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -215,17 +214,6 @@ export const updateBook = async (req: AuthRequest, res: Response, next: NextFunc
 
 export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const activeBorrow = await Borrow.findOne({
-            book_id: req.params.id,
-            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
-        });
-
-        if (activeBorrow) {
-            return res.status(400).json({
-                error: 'Cannot delete book because it is currently borrowed by a user.'
-            });
-        }
-
         const activeReadlist = await Readlist.findOne({
             book_id: req.params.id,
             status: 'active'
@@ -300,16 +288,9 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
             }
         }
 
-        // --- NEW ACCESS CHECK: DUE DATE & BORROWING STATUS ---
+        // --- NEW ACCESS CHECK: DUE DATE & READING STATUS ---
         // Skip check for admins/super admins
         if (userRole !== RoleName.ADMIN && userRole !== RoleName.SUPER_ADMIN) {
-            // 1. Check Borrow collection (Mostly for physical books via cart)
-            const activeBorrow = await Borrow.findOne({
-                user_id: userId,
-                book_id: bookId,
-                status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED, BorrowStatus.RETURNED] }
-            });
-
             // 2. Check Readlist collection (Mostly for digital additions)
             const readlistItem = await Readlist.findOne({
                 user_id: userId,
@@ -317,16 +298,16 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
                 status: { $in: ['active', 'completed'] }
             }).sort({ addedAt: -1 });
 
-            if (!activeBorrow && !readlistItem) {
-                return res.status(403).json({ error: 'You need to borrow this book before you can read it.' });
+            if (!readlistItem) {
+                return res.status(403).json({ error: 'You need to add this book to your library before you can read it.' });
             }
 
             const now = new Date();
-            const hasValidBorrow = activeBorrow && activeBorrow.return_date && new Date(activeBorrow.return_date).getTime() > now.getTime();
-            const hasValidReadlist = readlistItem && readlistItem.dueDate && new Date(readlistItem.dueDate).getTime() > now.getTime();
+            const dueDate = readlistItem.dueDate ? new Date(readlistItem.dueDate) : null;
+            const hasValidReadlist = dueDate && dueDate.getTime() > now.getTime();
 
-            if (!hasValidBorrow && !hasValidReadlist) {
-                return res.status(403).json({ error: 'Your borrowing period for this book has expired. Please renew access from the book details page.' });
+            if (!hasValidReadlist) {
+                return res.status(403).json({ error: 'Your reading access for this book has expired. Please renew access from the book details page.' });
             }
         }
         // -----------------------------------------------------
@@ -483,29 +464,27 @@ export const getRecommendedBooks = async (req: AuthRequest, res: Response, next:
     try {
         const userId = req.user!._id;
 
-        // 1. Get User Preference & History
-        // Re-fetch user to ensure we have latest favoriteGenres
-        const user = await User.findById(userId);
-        const userBorrows = await Borrow.find({ user_id: userId }).populate('book_id');
+        // 2. Extract Genres & Authors from Readlist (history)
+        // ... (existing readlist recommendations logic if any, currently only uses Borrow)
+        // Since we removed Borrow, we should use Readlist for recommendations.
+        const readlistItems = await Readlist.find({ user_id: userId }).populate('book_id');
 
-        // 2. Extract Genres & Authors from history
         const borrowedBookIds = new Set<string>();
-        const genres = new Set<string>(); // String genres
+        const genres = new Set<string>();
         const authors = new Set<string>();
-        const preferredCategoryIds = new Set<string>(); // Category ObjectIds
+        const preferredCategoryIds = new Set<string>();
 
-        // Add User's explicitly set favorite genres (Categories)
+        const user = await User.findById(userId);
         if (user && user.favoriteGenres) {
             user.favoriteGenres.forEach((catId: any) => preferredCategoryIds.add(catId.toString()));
         }
 
-        userBorrows.forEach((borrow: any) => {
-            if (borrow.book_id) {
-                borrowedBookIds.add(borrow.book_id._id.toString());
-                if (borrow.book_id.genre) genres.add(borrow.book_id.genre);
-                if (borrow.book_id.author) authors.add(borrow.book_id.author);
-                // Also add borrowed book categories to preferences
-                if (borrow.book_id.category_id) preferredCategoryIds.add(borrow.book_id.category_id.toString());
+        readlistItems.forEach((item: any) => {
+            if (item.book_id) {
+                borrowedBookIds.add(item.book_id._id.toString());
+                if (item.book_id.genre) genres.add(item.book_id.genre);
+                if (item.book_id.author) authors.add(item.book_id.author);
+                if (item.book_id.category_id) preferredCategoryIds.add(item.book_id.category_id.toString());
             }
         });
 
@@ -536,18 +515,6 @@ export const getRecommendedBooks = async (req: AuthRequest, res: Response, next:
 export const checkDeletionSafety = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const bookId = req.params.id;
     try {
-        const activeBorrow = await Borrow.findOne({
-            book_id: bookId,
-            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
-        });
-
-        if (activeBorrow) {
-            return res.json({
-                canDelete: false,
-                reason: 'This book is currently borrowed by a user.'
-            });
-        }
-
         const activeReadlist = await Readlist.findOne({
             book_id: bookId,
             status: 'active'

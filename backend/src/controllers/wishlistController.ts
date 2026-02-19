@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Response } from 'express';
 import Wishlist from '../models/Wishlist';
-import Borrow from '../models/Borrow';
 import User from '../models/User';
 import Book from '../models/Book';
 import { AuthRequest } from '../middleware/authMiddleware';
@@ -12,27 +10,7 @@ import ActivityLog from '../models/ActivityLog';
 export const getMyWishlist = async (req: AuthRequest, res: Response) => {
     try {
         const items = await Wishlist.find({ user_id: req.user!._id }).populate('book_id');
-
-        const itemsWithReturnDate = await Promise.all(
-            items.map(async (item: any) => {
-                const book = item.book_id;
-                if (book && book.noOfCopies === 0) {
-                    const nearestBorrow = await Borrow.findOne({
-                        book_id: book._id,
-                        status: { $ne: 'returned' },
-                    }).sort({ return_date: 1 });
-
-                    if (nearestBorrow) {
-                        const itemObj = item.toObject();
-                        itemObj.expectedReturnDate = nearestBorrow.return_date;
-                        return itemObj;
-                    }
-                }
-                return item.toObject();
-            })
-        );
-
-        res.json(itemsWithReturnDate);
+        res.json(items);
     } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'Server error' });
