@@ -169,16 +169,16 @@ const NotificationCenter: React.FC<{ showLabel?: boolean }> = ({ showLabel }) =>
                                                 {/* User Actions */}
                                                 {!isAdmin && (type === 'order' || type === 'return' || type === 'borrow') && (() => {
                                                     const msg = notif.message.toLowerCase();
-                                                    const isCanceled = msg.includes('cancelled') || msg.includes('canceled');
+                                                    const isCancelled = msg.includes('cancelled') || msg.includes('canceled');
                                                     return (
                                                         <button
-                                                            className={`mini-action-btn ${isCanceled ? 'cancel-btn' : (type === 'order' ? 'order-btn' : 'exchange-btn')}`}
+                                                            className={`mini-action-btn ${isCancelled ? 'cancel-btn' : (type === 'order' ? 'order-btn' : 'exchange-btn')}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleNotificationClick(notif);
                                                             }}
                                                         >
-                                                            {isCanceled ? 'View Order' : (type === 'order' ? 'View Order' : 'View Exchange')}
+                                                            {isCancelled ? 'View Order' : (type === 'order' ? 'View Order' : 'View Exchange')}
                                                         </button>
                                                     );
                                                 })()}

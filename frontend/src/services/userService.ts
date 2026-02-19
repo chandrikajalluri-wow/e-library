@@ -35,8 +35,8 @@ export const requestBook = async (requestData: any) => {
 };
 
 // Admin Methods
-export const getAllBookRequests = async () => {
-    const res = await api.get(`${BASE_URL}/admin/book-requests`);
+export const getAllBookRequests = async (sort: string = 'newest') => {
+    const res = await api.get(`${BASE_URL}/admin/book-requests?sort=${sort}`);
     return res.data;
 };
 

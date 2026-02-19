@@ -9,6 +9,7 @@ export interface IReadlist extends Document {
     completedAt?: Date;
     last_page: number;
     bookmarks: number[];
+    source: 'manual' | 'order';
 }
 
 const readlistSchema = new Schema<IReadlist>(
@@ -19,6 +20,11 @@ const readlistSchema = new Schema<IReadlist>(
             type: String,
             enum: ['active', 'completed', 'expired'],
             default: 'active'
+        },
+        source: {
+            type: String,
+            enum: ['manual', 'order'],
+            default: 'manual'
         },
         addedAt: { type: Date, default: Date.now },
         dueDate: { type: Date },

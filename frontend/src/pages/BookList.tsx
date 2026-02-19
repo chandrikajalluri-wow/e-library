@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type, ShoppingCart, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
+import { getMyMembership } from '../services/membershipService';
 import { addToReadlist } from '../services/userService';
 import Loader from '../components/Loader';
 
@@ -49,10 +50,24 @@ const BookList: React.FC = () => {
 
   const languages = ['English', 'Spanish', 'French', 'German'];
 
+  const [userMembership, setUserMembership] = useState<any | null>(null);
+
   // Sync state with URL parameter
   useEffect(() => {
     setSelectedCategory(categoryParam ? categoryParam.split(',') : []);
+    loadUserMembership();
   }, [categoryParam]);
+
+  const loadUserMembership = async () => {
+    if (localStorage.getItem('token')) {
+      try {
+        const data = await getMyMembership();
+        setUserMembership(data);
+      } catch (err) {
+        console.error('Failed to load user membership', err);
+      }
+    }
+  };
 
   useEffect(() => {
     if (search === '') {
@@ -91,22 +106,24 @@ const BookList: React.FC = () => {
   useEffect(() => {
     loadRecommendations();
     loadPersonalizedRecs();
-  }, []);
+  }, [userMembership]); // Reload if membership changes (e.g. login)
 
   useEffect(() => {
-    if (page > 1 && searchSectionRef.current) {
-      const yOffset = -120;
-      const element = searchSectionRef.current;
-      const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }
+    const timer = setTimeout(() => {
+      if (searchSectionRef.current) {
+        searchSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+    return () => clearTimeout(timer);
   }, [page]);
 
   const loadPersonalizedRecs = async () => {
     try {
-      if (localStorage.getItem('token')) {
+      if (localStorage.getItem('token') && userMembership?.hasRecommendations) {
         const data = await getRecommendedBooks();
         setPersonalizedRecs(data);
+      } else {
+        setPersonalizedRecs([]);
       }
     } catch (err) {
       console.error('Failed to load personalized recommendations', err);
@@ -115,8 +132,16 @@ const BookList: React.FC = () => {
 
   const loadRecommendations = async () => {
     try {
-      const data = await getBooks('limit=4&sort=-rating');
-      setRecommendations(data.books || data);
+      if (userMembership?.hasRecommendations !== false) { // Show top recs if premium or not logged in? 
+        // Actually user said "don't show recommendations for you for basic users"
+        // Usually "Top Recommendations" are global, and "Recommended for You" are personalized.
+        // But the membership says "hasRecommendations: false" for basic.
+        // Let's hide both for now if they don't have recommendations permission.
+        const data = await getBooks('limit=4&sort=-rating');
+        setRecommendations(data.books || data);
+      } else {
+        setRecommendations([]);
+      }
     } catch (err) {
       console.error('Failed to load recommendations', err);
     }

@@ -31,6 +31,8 @@ export enum BookStatus {
 }
 
 export enum NotificationType {
+    BORROW = 'borrow',
+    RETURN = 'return',
     WISHLIST = 'wishlist',
     ORDER = 'order',
     BOOK_REQUEST = 'book_request',
@@ -56,6 +58,12 @@ export enum ActivityAction {
     BOOK_DELETED = 'BOOK_DELETED',
     USER_UPDATED = 'USER_UPDATED',
     MEMBERSHIP_CANCELLED = 'MEMBERSHIP_CANCELLED',
+    CATEGORY_CREATED = 'CATEGORY_CREATED',
+    CATEGORY_UPDATED = 'CATEGORY_UPDATED',
+    CATEGORY_DELETED = 'CATEGORY_DELETED',
+    ORDER_STATUS_UPDATED = 'ORDER_STATUS_UPDATED',
+    BOOK_REQUEST_STATUS_UPDATED = 'BOOK_REQUEST_STATUS_UPDATED',
+    EXCHANGE_REQUEST_UPDATED = 'EXCHANGE_REQUEST_UPDATED',
 }
 
 export enum UserTheme {

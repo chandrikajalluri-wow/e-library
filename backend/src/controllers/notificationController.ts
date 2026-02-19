@@ -5,7 +5,7 @@ import { RoleName, NotificationType } from '../types/enums';
 
 export const getMyNotifications = async (req: AuthRequest, res: Response) => {
     try {
-        const { type, is_read, startDate, endDate } = req.query;
+        const { type, is_read, startDate, endDate, sort } = req.query;
         let filter: any = { user_id: req.user!._id };
 
         if (type && type !== 'all') {
@@ -28,10 +28,14 @@ export const getMyNotifications = async (req: AuthRequest, res: Response) => {
             };
         }
 
+        // Determine sort object
+        let sortObj: any = { timestamp: -1 }; // Default: Newest
+        if (sort === 'oldest') sortObj = { timestamp: 1 };
+
         const notifications = await Notification.find(filter)
             .populate('book_id', 'title cover_image_url')
-            .sort({ timestamp: -1 })
-            .limit(100); // 
+            .sort(sortObj)
+            .limit(100);
         res.json(notifications);
     } catch (err) {
         console.error('Get my notifications error:', err);

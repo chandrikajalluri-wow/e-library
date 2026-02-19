@@ -68,9 +68,12 @@
     font-weight: 600;
     text-decoration: none;
     transition: all 0.2s ease;
-    display: inline-flex;
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
+    width: fit-content !important;
+    min-width: 120px;
+    flex: none;
 }
 
 .order-btn {
@@ -96,10 +99,12 @@
 }
 
 .view-action-btn.cancel-btn {
-    padding: 0.4rem 0.8rem;
+    padding: 0.35rem 0.85rem;
     font-size: 0.75rem;
     background-color: #fee2e2;
     color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    min-width: fit-content;
 }
 
 .view-action-btn.cancel-btn:hover {

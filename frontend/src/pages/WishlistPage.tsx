@@ -88,7 +88,7 @@ const WishlistPage: React.FC = () => {
                     className="back-to-catalog-link"
                 >
                     <ArrowLeft size={18} />
-                    <span>Back to Library</span>
+                    <span>Back to Catalog</span>
                 </button>
             </div>
 

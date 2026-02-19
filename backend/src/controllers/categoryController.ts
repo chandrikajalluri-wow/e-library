@@ -3,7 +3,7 @@ import Category from '../models/Category';
 import ActivityLog from '../models/ActivityLog';
 import Book from '../models/Book';
 import { notifySuperAdmins } from '../utils/notification';
-import { RoleName } from '../types/enums';
+import { RoleName, ActivityAction } from '../types/enums';
 
 export const getAllCategories = async (req: any, res: Response) => {
     try {
@@ -47,7 +47,7 @@ export const createCategory = async (req: any, res: Response) => {
 
         await new ActivityLog({
             user_id: req.user._id,
-            action: `Created category: ${category.name}`,
+            action: ActivityAction.CATEGORY_CREATED,
             description: `Category ${category.name} created by ${req.user.name}`,
         }).save();
 
@@ -76,7 +76,7 @@ export const updateCategory = async (req: any, res: Response) => {
 
         await new ActivityLog({
             user_id: req.user._id,
-            action: `Updated category: ${category.name}`,
+            action: ActivityAction.CATEGORY_UPDATED,
             description: `Category ${category.name} updated by ${req.user.name}`,
         }).save();
 
@@ -107,7 +107,7 @@ export const deleteCategory = async (req: any, res: Response) => {
 
         await new ActivityLog({
             user_id: req.user._id,
-            action: `Deleted category: ${category.name}`,
+            action: ActivityAction.CATEGORY_DELETED,
             description: `Category ${category.name} deleted by ${req.user.name}`,
         }).save();
 

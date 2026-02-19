@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Package, Calendar, Clock, ChevronRight, XCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Package, Calendar, Clock, ChevronRight, XCircle, ShoppingBag, ArrowLeft, Filter, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getMyOrders } from '../services/userOrderService';
 import { cancelOrder } from '../services/orderService';
@@ -32,18 +32,20 @@ const UserOrders: React.FC = () => {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [sortOrder, setSortOrder] = useState('newest');
 
     useEffect(() => {
         fetchUserOrders();
-    }, []);
+    }, [statusFilter, sortOrder]);
 
     const fetchUserOrders = async () => {
         setIsLoading(true);
         try {
-            const data = await getMyOrders();
+            const data = await getMyOrders(statusFilter, sortOrder);
             setOrders(data);
         } catch (error: any) {
-            toast.error(error.response?.data?.error || 'Failed to fetch orders');
+            toast.error(error.toString() || 'Failed to fetch orders');
         } finally {
             setIsLoading(false);
         }
@@ -105,9 +107,9 @@ const UserOrders: React.FC = () => {
         >
             <div className="orders-page-header">
                 <div className="header-top-nav">
-                    <button onClick={() => navigate('/dashboard')} className="minimal-back-btn">
+                    <button onClick={() => navigate('/books')} className="minimal-back-btn">
                         <ArrowLeft size={18} />
-                        <span>Dashboard</span>
+                        <span>Back to Catalog</span>
                     </button>
                 </div>
 
@@ -116,25 +118,64 @@ const UserOrders: React.FC = () => {
                         <h1 className="admin-header-title">Purchase History</h1>
                         <p className="admin-header-subtitle">Keep track of all your reading adventures</p>
                     </div>
-                    <div className="orders-summary-badges">
-                        <div className="summary-badge total-badge">
-                            <div className="badge-icon-box">
-                                <Package size={18} />
-                            </div>
-                            <div className="badge-detail-box">
-                                <span className="badge-count-val">{orders.length}</span>
-                                <span className="badge-label-txt">Orders</span>
+                    <div className="orders-header-actions">
+                        <div className="filter-pill">
+                            <Filter size={18} className="filter-icon" />
+                            <div className="select-wrapper">
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="status-select-minimal"
+                                >
+                                    <option value="all">All Orders</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="shipped">Shipped</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="return_requested,return_accepted,returned,return_rejected">Exchanges</option>
+                                </select>
+                                <ChevronDown size={14} className="chevron-icon" />
                             </div>
                         </div>
-                        <div className="summary-badge active-badge">
-                            <div className="badge-icon-box">
-                                <ShoppingBag size={18} />
+
+                        <div className="filter-pill sort-wrapper">
+                            <Clock size={18} className="filter-icon" />
+                            <div className="select-wrapper">
+                                <select
+                                    value={sortOrder}
+                                    onChange={(e) => setSortOrder(e.target.value)}
+                                    className="status-select-minimal"
+                                >
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                    <option value="price_high">Price: High to Low</option>
+                                    <option value="price_low">Price: Low to High</option>
+                                </select>
+                                <ChevronDown size={14} className="chevron-icon" />
                             </div>
-                            <div className="badge-detail-box">
-                                <span className="badge-count-val">
-                                    {orders.filter(o => o.status !== 'cancelled' && o.status !== 'delivered').length}
-                                </span>
-                                <span className="badge-label-txt">Active</span>
+                        </div>
+
+                        <div className="orders-summary-badges">
+                            <div className="summary-badge total-badge">
+                                <div className="badge-icon-box">
+                                    <Package size={18} />
+                                </div>
+                                <div className="badge-detail-box">
+                                    <span className="badge-count-val">{orders.length}</span>
+                                    <span className="badge-label-txt">Orders</span>
+                                </div>
+                            </div>
+                            <div className="summary-badge active-badge">
+                                <div className="badge-icon-box">
+                                    <ShoppingBag size={18} />
+                                </div>
+                                <div className="badge-detail-box">
+                                    <span className="badge-count-val">
+                                        {orders.filter(o => o.status !== 'cancelled' && o.status !== 'delivered').length}
+                                    </span>
+                                    <span className="badge-label-txt">Active</span>
+                                </div>
                             </div>
                         </div>
                     </div>
