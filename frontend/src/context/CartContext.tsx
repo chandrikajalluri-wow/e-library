@@ -7,7 +7,7 @@ export interface CartItem {
     quantity: number;
 }
 
-interface BorrowCartContextType {
+interface CartContextType {
     cartItems: CartItem[];
     addToCart: (book: Book) => void;
     removeFromCart: (bookId: string) => void;
@@ -20,12 +20,12 @@ interface BorrowCartContextType {
     getItemQuantity: (bookId: string) => number;
 }
 
-const BorrowCartContext = createContext<BorrowCartContextType | undefined>(undefined);
+const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
-    const storageKey = userId ? `borrowCart_${userId}` : 'borrowCart';
+    const storageKey = userId ? `cart_${userId}` : 'cart';
 
     const [cartItems, setCartItems] = useState<CartItem[]>(() => {
         try {
@@ -169,7 +169,7 @@ export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     return (
-        <BorrowCartContext.Provider
+        <CartContext.Provider
             value={{
                 cartItems,
                 addToCart,
@@ -184,14 +184,14 @@ export const BorrowCartProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             }}
         >
             {children}
-        </BorrowCartContext.Provider>
+        </CartContext.Provider>
     );
 };
 
-export const useBorrowCart = () => {
-    const context = useContext(BorrowCartContext);
+export const useCart = () => {
+    const context = useContext(CartContext);
     if (!context) {
-        throw new Error('useBorrowCart must be used within a BorrowCartProvider');
+        throw new Error('useCart must be used within a CartProvider');
     }
     return context;
 };

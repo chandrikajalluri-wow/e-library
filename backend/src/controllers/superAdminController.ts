@@ -3,7 +3,6 @@ import User from '../models/User';
 import Role from '../models/Role';
 import Review from '../models/Review';
 import Book from '../models/Book';
-import Borrow from '../models/Borrow';
 import ActivityLog from '../models/ActivityLog';
 import Announcement from '../models/Announcement';
 import Notification from '../models/Notification';

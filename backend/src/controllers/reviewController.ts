@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import Review from '../models/Review';
-import Borrow from '../models/Borrow';
 import Book from '../models/Book';
 import User from '../models/User';
 import Order from '../models/Order';

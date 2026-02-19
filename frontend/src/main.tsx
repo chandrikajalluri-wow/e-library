@@ -5,7 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import './index.css';
 import './App.css';
 import 'react-toastify/dist/ReactToastify.css';
-import { BorrowCartProvider } from './context/BorrowCartContext';
+import { CartProvider } from './context/CartContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -18,16 +18,16 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     {clientId && !clientId.includes('your_google_client_id_here') ? (
       <GoogleOAuthProvider clientId={clientId}>
-        <BorrowCartProvider>
+        <CartProvider>
           <App />
           <ToastContainer position="top-right" autoClose={3000} />
-        </BorrowCartProvider>
+        </CartProvider>
       </GoogleOAuthProvider>
     ) : (
-      <BorrowCartProvider>
+      <CartProvider>
         <App />
         <ToastContainer position="top-right" autoClose={3000} />
-      </BorrowCartProvider>
+      </CartProvider>
     )}
   </React.StrictMode>
 );

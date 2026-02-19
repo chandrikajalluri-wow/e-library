@@ -31,24 +31,24 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer }) => {
 const HelpCenter: React.FC = () => {
     const faqs = [
         {
-            question: "How do I borrow or buy a book?",
-            answer: "Browse the Books catalog, click 'Add to Cart' on any book you like, then proceed to your Cart. Review your items, accept the Terms & Conditions, and complete checkout by providing your delivery address. You'll receive email updates on your order status."
+            question: "How do I read or buy a book?",
+            answer: "Browse the Books catalog, click 'Add to Cart' on any book you like, then proceed to your Cart. Review your items, accept the Terms & Conditions, and complete checkout. Once added, you can access the book in your Library."
         },
         {
-            question: "How long can I keep a borrowed book?",
-            answer: "Borrowing periods depend on your membership: Basic (7 days), Premium (21 days). You can view due dates in your Dashboard under 'My Library'. Premium members also get priority delivery within 24 hours."
+            question: "How long can I access a book?",
+            answer: "Access periods depend on your membership: Basic (7 days), Premium (21 days). You can view your access status in your Dashboard under 'My Library'."
         },
         {
             question: "How do I read books online?",
-            answer: "Once you've borrowed a book, go to 'My Library' in your Dashboard and click 'Read'. Our PDF viewer lets you read online, bookmark pages, track progress, and even mark books as finished when you're done."
+            answer: "Once you've added a book to your library, go to 'My Library' in your Dashboard and click 'Read'. Our PDF viewer lets you read online, bookmark pages, track progress, and even mark books as finished when you're done."
         },
         {
             question: "What happens if I mark a book as finished?",
-            answer: "Marking a book as 'Finished' automatically updates your 'Books Read' count in your profile and moves it to the 'Completed' tab. You can still re-read it anytime before your borrow period expires using 'Read Again'."
+            answer: "Marking a book as 'Finished' automatically updates your 'Books Read' count in your profile and moves it to the 'Completed' tab. You can still re-read it anytime before your access period expires."
         },
         {
             question: "How do I upgrade to Premium?",
-            answer: "Visit the Membership Plans page from the navigation menu. Premium membership offers unlimited genres, higher borrow limits (10 books/month), longer borrow periods (21 days), priority delivery, and personalized AI recommendations."
+            answer: "Visit the Membership Plans page from the navigation menu. Premium membership offers unlimited genres, higher monthly limits, longer access periods, and personalized AI recommendations."
         },
         {
             question: "Can I set reading goals?",
@@ -60,15 +60,15 @@ const HelpCenter: React.FC = () => {
         },
         {
             question: "How do I use the Wishlist?",
-            answer: "Click the heart icon on any book to add it to your Wishlist. Access your saved books anytime from your Dashboard to easily find and borrow them later."
+            answer: "Click the heart icon on any book to add it to your Wishlist. Access your saved books anytime from your Dashboard to easily find and add them to your library later."
         },
         {
             question: "How can I track my orders?",
             answer: "Go to your Dashboard and click 'My Orders'. You can see all your orders with statuses: Processing → Shipped → Delivered. You'll also receive email notifications at each stage."
         },
         {
-            question: "What if I need to return a book early?",
-            answer: "In your Dashboard under 'My Library', click 'Request Return' on the book. An admin will review and approve your return request. You'll be notified via email once it's processed."
+            question: "Can I remove a book from my library?",
+            answer: "Yes, you can manage your library from your Dashboard. If you no longer wish to have a book in your active reads, you can remove it or mark it as finished."
         },
         {
             question: "How do I filter and search for books?",

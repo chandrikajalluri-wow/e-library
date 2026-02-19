@@ -30,17 +30,7 @@ export enum BookStatus {
     DAMAGED = 'damaged'
 }
 
-export enum BorrowStatus {
-    BORROWED = 'borrowed',
-    RETURNED = 'returned',
-    OVERDUE = 'overdue',
-    RETURN_REQUESTED = 'return_requested',
-    ARCHIVED = 'archived'
-}
-
 export enum NotificationType {
-    BORROW = 'borrow',
-    RETURN = 'return',
     WISHLIST = 'wishlist',
     ORDER = 'order',
     BOOK_REQUEST = 'book_request',

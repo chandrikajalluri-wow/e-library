@@ -19,9 +19,9 @@ const UserSidebar: React.FC = () => {
         localStorage.removeItem('role');
         localStorage.removeItem('userId');
         if (userId) {
-            localStorage.removeItem(`borrowCart_${userId}`);
+            localStorage.removeItem(`cart_${userId}`);
         }
-        localStorage.removeItem('borrowCart');
+        localStorage.removeItem('cart');
         localStorage.removeItem('readlist');
         toast.info('Logged out successfully');
         navigate('/');

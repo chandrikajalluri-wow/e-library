@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, ZoomIn, ZoomOut, Maximize2, Minimize2, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, List, BadgeCheck } from 'lucide-react';
 import { getBook } from '../services/bookService';
-import { getReadingProgress, updateReadingProgress } from '../services/borrowService';
+import { getReadingProgress, updateReadingProgress } from '../services/userService';
 import { getMyMembership } from '../services/membershipService';
 import { toast } from 'react-toastify';
 import '../styles/PDFViewer.css';
@@ -177,7 +177,7 @@ const PDFViewer: React.FC = () => {
                 console.log('Set current page to:', lastPage);
                 console.log('Set bookmarks to:', savedBookmarks);
             } catch (err: any) {
-                // If user hasn't borrowed the book, they won't have progress
+                // If user hasn't added the book, they won't have progress
                 console.log('No previous progress found:', err?.response?.data?.error || err?.message);
                 setCurrentPage(1);
                 setBookmarks([]);
@@ -194,7 +194,7 @@ const PDFViewer: React.FC = () => {
             if (err.name === 'PasswordException') {
                 detailedError = 'This PDF is password protected.';
             } else if (err.name === 'UnknownErrorException' && err.message.includes('403')) {
-                detailedError = 'Access Denied: Your borrowing period may have expired or you haven\'t borrowed this book yet.';
+                detailedError = 'Access Denied: Your access period may have expired or you haven\'t added this book to your library yet.';
             }
 
             try {

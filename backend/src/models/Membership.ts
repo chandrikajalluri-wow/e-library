@@ -5,8 +5,8 @@ export interface IMembership extends Document {
     name: MembershipName;
     displayName: string; // 'Basic', 'Premium'
     price: number; // Monthly price in rupees (0 for basic, 99 for premium)
-    borrowLimit: number; // Max books that can be borrowed simultaneously
-    borrowDuration: number; // Default borrow duration in days
+    monthlyLimit: number; // Max books that can be added to library simultaneously
+    accessDuration: number; // Default access duration in days
     canRequestBooks: boolean; // Can request new books
     canAccessPremiumBooks: boolean; // Can access premium collection
     hasRecommendations: boolean; // Gets personalized recommendations
@@ -25,8 +25,8 @@ const membershipSchema = new Schema<IMembership>(
         },
         displayName: { type: String, required: true },
         price: { type: Number, required: true, default: 0 },
-        borrowLimit: { type: Number, required: true },
-        borrowDuration: { type: Number, required: true },
+        monthlyLimit: { type: Number, required: true },
+        accessDuration: { type: Number, required: true },
         canRequestBooks: { type: Boolean, default: false },
         canAccessPremiumBooks: { type: Boolean, default: false },
         hasRecommendations: { type: Boolean, default: false },

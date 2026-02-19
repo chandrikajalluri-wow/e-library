@@ -5,13 +5,13 @@ import { getProfile } from '../services/userService';
 import { RoleName } from '../types/enums';
 import ConfirmationModal from './ConfirmationModal';
 import NotificationCenter from './NotificationCenter';
-import { useBorrowCart } from '../context/BorrowCartContext';
+import { useCart } from '../context/CartContext';
 import '../styles/UserNavbar.css';
 
 const UserNavbar: React.FC = () => {
     const navigate = useNavigate();
     const role = localStorage.getItem('role');
-    const { getCartCount } = useBorrowCart();
+    const { getCartCount } = useCart();
     const cartCount = getCartCount();
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -57,9 +57,9 @@ const UserNavbar: React.FC = () => {
         localStorage.removeItem('role');
         localStorage.removeItem('userId');
         if (userId) {
-            localStorage.removeItem(`borrowCart_${userId}`);
+            localStorage.removeItem(`cart_${userId}`);
         }
-        localStorage.removeItem('borrowCart');
+        localStorage.removeItem('cart');
         localStorage.removeItem('readlist');
         setIsLogoutModalOpen(false);
         closeAll();
@@ -112,7 +112,7 @@ const UserNavbar: React.FC = () => {
     const location = useLocation();
     const currentPath = location.pathname + (location.search || '');
     const isMoreActive = currentPath.includes('tab=user-requests') ||
-        currentPath.includes('tab=borrows') ||
+        currentPath.includes('tab=read-history') ||
         currentPath.includes('tab=announcements') ||
         currentPath.includes('tab=queries') ||
         currentPath.includes('tab=reported-reviews') ||
@@ -136,7 +136,7 @@ const UserNavbar: React.FC = () => {
                 <div className="mobile-only mobile-action-center">
                     {role === RoleName.USER && (
                         <div className="mobile-streak-navbar-wrapper">
-                            <Link to="/borrow-cart" className="mobile-action-btn" onClick={closeAll}>
+                            <Link to="/cart" className="mobile-action-btn" onClick={closeAll}>
                                 <div className="cart-icon-wrapper">
                                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                                     {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
@@ -191,7 +191,7 @@ const UserNavbar: React.FC = () => {
                         <>
                             <NavIcon to="/dashboard" label="Dashboard" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /></svg>} />
                             <NavIcon to="/wishlist" label="Wishlist" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.509 4.048 3 5.5L12 21l7-7Z" /></svg>} />
-                            <Link to="/borrow-cart" className="nav-icon-link nav-cart-link desktop-only" onClick={closeAll}>
+                            <Link to="/cart" className="nav-icon-link nav-cart-link desktop-only" onClick={closeAll}>
                                 <div className="cart-icon-wrapper">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                                     {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}

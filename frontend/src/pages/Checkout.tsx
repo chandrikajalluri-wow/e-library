@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Wallet, Check, Package, Truck, ShoppingBag, X } from 'lucide-react';
-import { useBorrowCart, type CartItem } from '../context/BorrowCartContext';
+import { useCart, type CartItem } from '../context/CartContext';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getMyMembership, type Membership } from '../services/membershipService';
@@ -11,7 +11,7 @@ import '../styles/Checkout.css';
 const Checkout: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { cartItems: contextCartItems } = useBorrowCart();
+    const { cartItems: contextCartItems } = useCart();
 
     // Use items passed via state, or fall back to full cart
     const cartItems = (location.state?.checkoutItems || contextCartItems) as CartItem[];
@@ -35,7 +35,7 @@ const Checkout: React.FC = () => {
     const handleContinue = () => {
         if (availableItems.length === 0) {
             toast.error('No items available for delivery in your cart');
-            navigate('/borrow-cart');
+            navigate('/cart');
             return;
         }
         navigate('/checkout/address', { state: { checkoutItems: availableItems } });
@@ -114,7 +114,7 @@ const Checkout: React.FC = () => {
                     variants={containerVariants}
                 >
                     <header className="checkout-enhanced-header">
-                        <button onClick={() => navigate('/borrow-cart')} className="back-btn-modern">
+                        <button onClick={() => navigate('/cart')} className="back-btn-modern">
                             <ArrowLeft size={18} />
                             <span>Return to Cart</span>
                         </button>
@@ -339,14 +339,14 @@ const Checkout: React.FC = () => {
                                     <ul>
                                         <li>Hack or attempt to bypass system restrictions.</li>
                                         <li>Download files using automated tools.</li>
-                                        <li>Share login details with others or abuse the borrowing system.</li>
+                                        <li>Access content fairly and abide by membership rules.</li>
                                         <li>Upload harmful files or impersonate others.</li>
                                     </ul>
                                 </section>
 
                                 <section className="terms-section">
                                     <h3>7. Service Changes</h3>
-                                    <p>We may update features, membership benefits, borrowing rules, or remove content at our discretion. You will be notified of important changes.</p>
+                                    <p>We may update features, membership benefits, or remove content at our discretion. You will be notified of important changes.</p>
                                 </section>
 
                                 <section className="terms-section">

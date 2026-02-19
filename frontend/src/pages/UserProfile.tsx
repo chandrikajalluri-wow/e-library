@@ -288,15 +288,15 @@ const UserProfile: React.FC = () => {
                     <div className="m-mini-box">
                       <div className="m-mini-icon"><BookOpen size={16} /></div>
                       <div className="m-mini-text">
-                        <label>Monthly Limit</label>
-                        <p>{user.membership_id?.borrowLimit || 3} Books</p>
+                        <label>Monthly Reading Limit</label>
+                        <p>{user.membership_id?.monthlyLimit || 3} Books</p>
                       </div>
                     </div>
                     <div className="m-mini-box">
                       <div className="m-mini-icon"><Calendar size={16} /></div>
                       <div className="m-mini-text">
-                        <label>Due Duration</label>
-                        <p>{user.membership_id?.borrowDuration || 7} Days</p>
+                        <label>Access Duration</label>
+                        <p>{user.membership_id?.accessDuration || 7} Days</p>
                       </div>
                     </div>
                   </div>
@@ -384,7 +384,7 @@ const UserProfile: React.FC = () => {
                       <BookOpen size={16} />
                       <span>{formData.booksRead}</span>
                     </div>
-                    <p className="field-hint">Calculated from finished/returned books.</p>
+                    <p className="field-hint">Calculated from finished books in your readlist.</p>
                   </div>
                   <div className="form-group">
                     <label>Reading Target (Yearly)</label>

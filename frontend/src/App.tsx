@@ -20,7 +20,7 @@ import UserOrders from './pages/UserOrders';
 import UserOrderDetails from './pages/UserOrderDetails';
 import WishlistPage from './pages/WishlistPage';
 import BookRequestPage from './pages/BookRequestPage';
-import BorrowCart from './pages/BorrowCart';
+import CartPage from './pages/CartPage';
 import Checkout from './pages/Checkout';
 import DeliveryAddress from './pages/DeliveryAddress';
 import Home from './pages/Home';
@@ -90,7 +90,7 @@ const App: React.FC = () => {
               <Route path="/settings" element={<UserSettings />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/request-book" element={<BookRequestPage />} />
-              <Route path="/borrow-cart" element={<BorrowCart />} />
+              <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/address" element={<DeliveryAddress />} />
             </Route>

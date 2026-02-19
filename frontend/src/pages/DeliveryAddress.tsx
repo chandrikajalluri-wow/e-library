@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Plus, Check, MapPin, X, Navigation, Wallet, ShoppingBag, Truck, Edit2, Trash2, Phone } from 'lucide-react';
-import { useBorrowCart, type CartItem } from '../context/BorrowCartContext';
+import { useCart, type CartItem } from '../context/CartContext';
 import { getAddresses, addAddress, updateAddress, removeAddress } from '../services/userService';
 import { getMyMembership, type Membership } from '../services/membershipService';
 import { MembershipName } from '../types/enums';
@@ -26,7 +26,7 @@ interface Address {
 const DeliveryAddress: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { cartItems: contextCartItems, removeManyFromCart } = useBorrowCart();
+    const { cartItems: contextCartItems, removeManyFromCart } = useCart();
     // Use items passed via state, or fall back to full cart
     const cartItems = (location.state?.checkoutItems || contextCartItems) as CartItem[];
     const [addresses, setAddresses] = useState<Address[]>([]);
@@ -193,7 +193,7 @@ const DeliveryAddress: React.FC = () => {
         const availableItems = cartItems.filter(item => item.book.noOfCopies > 0);
         if (availableItems.length === 0) {
             toast.error('No items available for delivery');
-            navigate('/borrow-cart');
+            navigate('/cart');
             return;
         }
 

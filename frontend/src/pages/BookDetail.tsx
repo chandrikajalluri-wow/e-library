@@ -10,7 +10,7 @@ import { explainBook } from '../services/aiService';
 import { RoleName, BookStatus } from '../types/enums';
 import type { User } from '../types';
 import { toast } from 'react-toastify';
-import { useBorrowCart } from '../context/BorrowCartContext';
+import { useCart } from '../context/CartContext';
 import Loader from '../components/Loader';
 import ReportReviewModal from '../components/ReportReviewModal';
 import '../styles/BookDetail.css';
@@ -19,12 +19,12 @@ import '../styles/BookDetail.css';
 const BookDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addToCart, isInCart } = useBorrowCart();
+  const { addToCart, isInCart } = useCart();
   const [book, setBook] = useState<any>(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistItemId, setWishlistItemId] = useState<string | null>(null);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [hasBorrowed, setHasBorrowed] = useState(false); // Renamed to hasAccess in logic
+  const [canReview, setCanReview] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userMembership, setUserMembership] = useState<Membership | null>(null);
@@ -119,10 +119,9 @@ const BookDetail: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       const accessData = await checkBookAccess(bookId);
-      console.log(`[BookDetail] Access Debug for ${bookId}:`, accessData);
       setHasAccess(accessData.hasAccess);
-      // setHasBorrowed is used for reviews - we want it true if they EVER had book
-      setHasBorrowed(accessData.inReadlist || accessData.hasBorrow || accessData.hasPurchased || accessData.isExpired);
+      // canReview if they have access or are in readlist (even if expired)
+      setCanReview(accessData.inReadlist || accessData.hasPurchased || accessData.isExpired);
     } catch (err) {
       console.error('Error checking access status:', err);
     }
@@ -149,7 +148,6 @@ const BookDetail: React.FC = () => {
       }
       setIsSubmitting(true);
       await addToReadlist(book._id);
-      setHasBorrowed(true);
       toast.success('Saved to your Library! Happy reading.');
       // Refresh access status
       checkAccessStatus(book._id);
@@ -624,7 +622,7 @@ const BookDetail: React.FC = () => {
       <div className="reviews-section-container">
         <h2 className="reviews-title">Customer Reviews</h2>
 
-        <div className={`reviews-grid ${hasBorrowed ? 'reviews-grid-borrowed' : 'reviews-grid-guest'}`}>
+        <div className={`reviews-grid ${canReview ? 'reviews-grid-has-access' : 'reviews-grid-guest'}`}>
           {/* Reviews List */}
           <div>
             {reviews.length > 0 ? (
@@ -693,7 +691,7 @@ const BookDetail: React.FC = () => {
           </div>
 
           {/* Review Form */}
-          {(hasBorrowed || editingReviewId) && (
+          {(canReview || editingReviewId) && (
             <div>
               <div className="review-form-container">
                 <h3 className="review-form-title">

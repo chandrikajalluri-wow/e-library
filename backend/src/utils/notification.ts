@@ -3,10 +3,10 @@ import User from '../models/User';
 import Role from '../models/Role';
 import Book from '../models/Book';
 import { Types } from 'mongoose';
-import { RoleName } from '../types/enums';
+import { RoleName, NotificationType } from '../types/enums';
 
 export const sendNotification = async (
-    type: 'borrow' | 'return' | 'wishlist' | 'system' | 'order' | 'book_request' | 'stock_alert',
+    type: NotificationType | string,
     message: string,
     user_id: string | Types.ObjectId,
     book_id?: string | Types.ObjectId,
@@ -28,7 +28,7 @@ export const sendNotification = async (
 
 export const notifyAdmins = async (
     message: string,
-    type: 'system' | 'borrow' | 'return' | 'order' | 'book_request' | 'wishlist' | 'stock_alert' = 'system',
+    type: NotificationType | string = NotificationType.SYSTEM,
     affectedBookIds?: string | string[] | Types.ObjectId | Types.ObjectId[],
     target_id?: string
 ) => {
@@ -62,7 +62,7 @@ export const notifyAdmins = async (
 
 export const notifySuperAdmins = async (
     message: string,
-    type: 'system' | 'borrow' | 'return' | 'order' | 'book_request' | 'stock_alert' = 'system',
+    type: NotificationType | string = NotificationType.SYSTEM,
     target_id?: string
 ) => {
     try {
@@ -90,7 +90,7 @@ export const notifySuperAdmins = async (
 
 export const notifyAllUsers = async (
     message: string,
-    type: 'system' | 'borrow' | 'return' | 'wishlist' | 'stock_alert' = 'system',
+    type: NotificationType | string = NotificationType.SYSTEM,
     book_id?: string | Types.ObjectId,
     targetRole?: RoleName,
     target_id?: string

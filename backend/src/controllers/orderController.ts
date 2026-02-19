@@ -6,9 +6,8 @@ import ActivityLog from '../models/ActivityLog';
 import User from '../models/User';
 import Address from '../models/Address';
 import Membership from '../models/Membership';
-import Borrow from '../models/Borrow';
 import Readlist from '../models/Readlist';
-import { NotificationType, BorrowStatus, MembershipName, BookStatus, OrderStatus } from '../types/enums';
+import { NotificationType, MembershipName, BookStatus, OrderStatus } from '../types/enums';
 import { sendNotification, notifySuperAdmins, notifyAdmins } from '../utils/notification';
 import { sendEmail } from '../utils/mailer';
 import { RoleName } from '../types/enums';
@@ -335,7 +334,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
 
         order.status = status;
 
-        // Revert stock/borrows for CANCELLED/RETURNED
+        // Revert stock for CANCELLED/RETURNED
         if ((status === OrderStatus.CANCELLED || status === OrderStatus.RETURNED) && previousStatus !== status) {
             for (const item of order.items) {
                 const book = await Book.findById(item.book_id);
@@ -348,35 +347,13 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
                 }
             }
 
-            if (status === OrderStatus.RETURNED) {
-                await Borrow.updateMany(
-                    { order_id: order._id },
-                    { $set: { status: BorrowStatus.RETURNED, returned_date: new Date() } }
-                );
-                // Also remove permanent Readlist entries
+            if (status === OrderStatus.RETURNED || status === OrderStatus.CANCELLED) {
+                // Remove permanent Readlist entries
                 await Readlist.deleteMany({
                     user_id: order.user_id,
                     book_id: { $in: order.items.map(i => i.book_id) },
                     dueDate: null
                 });
-            } else if (status === OrderStatus.CANCELLED) {
-                await Borrow.deleteMany({ order_id: order._id });
-                // Also remove permanent Readlist entries
-                await Readlist.deleteMany({
-                    user_id: order.user_id,
-                    book_id: { $in: order.items.map(i => i.book_id) },
-                    dueDate: null
-                });
-            }
-        }
-
-        // Handle RETURN_REJECTED: Revert borrow status from return_requested back to borrowed
-        if (status === OrderStatus.RETURN_REJECTED && previousStatus === OrderStatus.RETURN_REQUESTED) {
-            const borrows = await Borrow.find({ order_id: order._id });
-            for (const borrow of borrows) {
-                const isOverdue = borrow.return_date < new Date();
-                borrow.status = isOverdue ? BorrowStatus.OVERDUE : BorrowStatus.BORROWED;
-                await borrow.save();
             }
         }
 
@@ -384,9 +361,9 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
             order.deliveredAt = new Date();
             const user = await User.findById(order.user_id).populate('membership_id');
             const membership = user?.membership_id as any;
-            const borrowDuration = membership?.borrowDuration || 14;
+            const accessDuration = membership?.accessDuration || 14;
             const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + borrowDuration);
+            dueDate.setDate(dueDate.getDate() + accessDuration);
 
             for (const item of order.items) {
                 await Readlist.findOneAndUpdate(
@@ -427,7 +404,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
                 : `Your exchange request for Order #${order._id.toString().slice(-8).toUpperCase()} has been REJECTED.`;
 
             await sendNotification(
-                NotificationType.BORROW,
+                NotificationType.ORDER,
                 message,
                 order.user_id as any,
                 null as any,
@@ -599,47 +576,13 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
             // Apply side effects as in updateOrderStatus
             order.status = status;
 
-            // Revert stock/borrows for CANCELLED/RETURNED
-            if ((status === OrderStatus.CANCELLED || status === OrderStatus.RETURNED) && previousStatus !== status) {
-                for (const item of order.items) {
-                    const book = await Book.findById(item.book_id);
-                    if (book) {
-                        book.noOfCopies += item.quantity;
-                        if (book.status === BookStatus.OUT_OF_STOCK && book.noOfCopies > 0) {
-                            book.status = BookStatus.AVAILABLE;
-                        }
-                        await book.save();
-                    }
-                }
-
-                if (status === OrderStatus.RETURNED) {
-                    await Borrow.updateMany(
-                        { order_id: order._id },
-                        { $set: { status: BorrowStatus.RETURNED, returned_date: new Date() } }
-                    );
-                    await Readlist.deleteMany({
-                        user_id: order.user_id,
-                        book_id: { $in: order.items.map(i => i.book_id) },
-                        dueDate: null
-                    });
-                } else if (status === OrderStatus.CANCELLED) {
-                    await Borrow.deleteMany({ order_id: order._id });
-                    await Readlist.deleteMany({
-                        user_id: order.user_id,
-                        book_id: { $in: order.items.map(i => i.book_id) },
-                        dueDate: null
-                    });
-                }
-            }
-
-            // Handle RETURN_REJECTED
-            if (status === OrderStatus.RETURN_REJECTED && previousStatus === OrderStatus.RETURN_REQUESTED) {
-                const borrows = await Borrow.find({ order_id: order._id });
-                for (const borrow of borrows) {
-                    const isOverdue = borrow.return_date && borrow.return_date < new Date();
-                    borrow.status = isOverdue ? BorrowStatus.OVERDUE : BorrowStatus.BORROWED;
-                    await borrow.save();
-                }
+            if (status === OrderStatus.RETURNED || status === OrderStatus.CANCELLED) {
+                // Remove permanent Readlist entries
+                await Readlist.deleteMany({
+                    user_id: order.user_id,
+                    book_id: { $in: order.items.map(i => i.book_id) },
+                    dueDate: null
+                });
             }
 
             // Handle DELIVERED
@@ -647,9 +590,9 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
                 order.deliveredAt = new Date();
                 const user = await User.findById(order.user_id).populate('membership_id');
                 const membership = user?.membership_id as any;
-                const borrowDuration = membership?.borrowDuration || 14;
+                const accessDuration = membership?.accessDuration || 14;
                 const dueDate = new Date();
-                dueDate.setDate(dueDate.getDate() + borrowDuration);
+                dueDate.setDate(dueDate.getDate() + accessDuration);
 
                 for (const item of order.items) {
                     await Readlist.findOneAndUpdate(
@@ -676,12 +619,8 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
                 [OrderStatus.RETURN_REJECTED]: 'exchange has been rejected'
             };
 
-            const notifType = [OrderStatus.RETURNED, OrderStatus.RETURN_REJECTED].includes(status as OrderStatus)
-                ? NotificationType.BORROW
-                : NotificationType.ORDER;
-
             await sendNotification(
-                notifType,
+                NotificationType.ORDER,
                 `Your order #${order._id.toString().slice(-8).toUpperCase()} ${statusLabels[status] || status}.`,
                 order.user_id as any,
                 null as any,
@@ -770,7 +709,7 @@ export const cancelOwnOrder = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: `Cannot cancel order in ${order.status} status` });
         }
 
-        // Revert stock and delete borrow records
+        // Revert stock
         for (const item of order.items) {
             const book = await Book.findById(item.book_id);
             if (book) {
@@ -783,16 +722,13 @@ export const cancelOwnOrder = async (req: AuthRequest, res: Response) => {
             }
         }
 
-        // Delete associated borrow records
-        await Borrow.deleteMany({ order_id: order._id });
-
         // Update order status
-        order.status = 'cancelled';
+        order.status = 'cancelled' as OrderStatus;
         await order.save();
 
         // Send Notification
         await sendNotification(
-            NotificationType.BORROW,
+            NotificationType.ORDER,
             `Order cancelled: Your order #${order._id.toString().slice(-8).toUpperCase()} has been cancelled and stock has been reverted.`,
             userId as any,
             null as any,
@@ -887,18 +823,12 @@ export const requestReturnOrder = async (req: AuthRequest, res: Response) => {
 
         await order.save();
 
-        // Update associated borrow records (optional: could mark them as return_requested too)
-        await Borrow.updateMany(
-            { order_id: order._id },
-            { $set: { status: BorrowStatus.RETURN_REQUESTED } }
-        );
-
         // Notify Admins
         // await notifySuperAdmins(`New Exchange Request for Order #${order._id.toString().slice(-8).toUpperCase()} from ${req.user!.name}`);
 
         // Notify User
         await sendNotification(
-            NotificationType.BORROW,
+            NotificationType.ORDER,
             `Exchange request submitted for Order #${order._id.toString().slice(-8).toUpperCase()}. Awaiting admin approval.`,
             userId as any,
             null as any,

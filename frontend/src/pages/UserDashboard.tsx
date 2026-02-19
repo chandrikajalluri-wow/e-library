@@ -14,7 +14,7 @@ import '../styles/BookList.css';
 
 const UserDashboard: React.FC = () => {
   const [readlist, setReadlist] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalFine: 0, borrowedCount: 0, wishlistCount: 0, streakCount: 0 });
+  const [stats, setStats] = useState({ booksRead: 0, borrowedCount: 0, wishlistCount: 0, streakCount: 0 });
   const [membership, setMembership] = useState<Membership | null>(null);
 
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -83,7 +83,7 @@ const UserDashboard: React.FC = () => {
       <section className="user-dashboard-hero">
         <div className="hero-welcome-content">
           <h1>{getTimeGreeting()}, {userProfile?.name?.split(' ')[0] || 'Reader'}! 👋</h1>
-          <p>You've read <strong>{stats.borrowedCount}</strong> books this month. Keep up the momentum!</p>
+          <p>You've added <strong>{stats.borrowedCount}</strong> books to your library this month. Keep up the momentum!</p>
         </div>
         <div className="hero-quick-stats">
           <div className="hero-stat-item">
@@ -111,13 +111,13 @@ const UserDashboard: React.FC = () => {
           </div>
           <div className="membership-progress-area">
             <div className="progress-info">
-              <span>Usage</span>
-              <span>{stats.borrowedCount} / {membership?.borrowLimit || 3} books</span>
+              <span>Reading Usage</span>
+              <span>{stats.borrowedCount} / {membership?.monthlyLimit || 3} books</span>
             </div>
             <div className="progress-track">
               <div
                 className="progress-fill"
-                style={{ width: `${Math.min((stats.borrowedCount / (membership?.borrowLimit || 3)) * 100, 100)}%` }}
+                style={{ width: `${Math.min((stats.borrowedCount / (membership?.monthlyLimit || 3)) * 100, 100)}%` }}
               ></div>
             </div>
             <div className="membership-details-action membership-details-action-styled">
@@ -151,7 +151,7 @@ const UserDashboard: React.FC = () => {
         </div>
 
         {[
-          { label: 'Books Read', value: stats.borrowedCount, icon: <BookOpen size={24} />, color: 'blue' },
+          { label: 'Books Completed', value: stats.booksRead, icon: <BookOpen size={24} />, color: 'blue' },
           { label: 'Wishlisted', value: stats.wishlistCount, icon: <Heart size={24} />, color: 'pink' },
           { label: 'Login Streak', value: stats.streakCount, icon: <Flame size={24} />, color: 'gold' }
         ].map((s, i) => (

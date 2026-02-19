@@ -132,3 +132,14 @@ export const addToReadlist = async (bookId: string) => {
     const res = await api.post(`${BASE_URL}/readlist`, { book_id: bookId });
     return res.data;
 };
+
+// Reading Progress
+export const getReadingProgress = async (bookId: string) => {
+    const res = await api.get(`${BASE_URL}/reading-progress/${bookId}`);
+    return res.data;
+};
+
+export const updateReadingProgress = async (bookId: string, progressData: any) => {
+    const res = await api.put(`${BASE_URL}/reading-progress/${bookId}`, progressData);
+    return res.data;
+};

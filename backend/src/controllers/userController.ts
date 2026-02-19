@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import User from '../models/User';
 import { IRole } from '../models/Role';
-import Borrow from '../models/Borrow';
 import Wishlist from '../models/Wishlist';
 import BookRequest from '../models/BookRequest';
 import AuthToken from '../models/AuthToken';
@@ -16,7 +15,7 @@ import ActivityLog from '../models/ActivityLog';
 import Category from '../models/Category';
 import { sendEmail } from '../utils/mailer';
 import { sendNotification, notifyAdmins } from '../utils/notification';
-import { NotificationType, BorrowStatus, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus, BookStatus } from '../types/enums';
+import { NotificationType, MembershipName, UserTheme, RequestStatus, RoleName, OrderStatus, BookStatus } from '../types/enums';
 
 export const getMe = async (req: AuthRequest, res: Response) => {
     try {
@@ -32,8 +31,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 
         // Calculate automated books read count
         const completedReadlist = await Readlist.countDocuments({ user_id: req.user!._id, status: 'completed' });
-        const returnedBorrows = await Borrow.countDocuments({ user_id: req.user!._id, status: BorrowStatus.RETURNED });
-        userObj.booksRead = completedReadlist + returnedBorrows;
+        userObj.booksRead = completedReadlist;
 
         res.json(userObj);
     } catch (err) {
@@ -56,13 +54,12 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
 
         // Calculate automated books read count
         const completedReadlist = await Readlist.countDocuments({ user_id: userId, status: 'completed' });
-        const returnedBorrows = await Borrow.countDocuments({ user_id: userId, status: BorrowStatus.RETURNED });
 
         res.json({
             borrowedCount: readlistCount,
             wishlistCount,
             streakCount: (req.user as any).streakCount || 0,
-            booksRead: completedReadlist + returnedBorrows
+            booksRead: completedReadlist
         });
     } catch (err) {
         console.error(err);
@@ -381,21 +378,14 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: 'Invalid password. Account deletion aborted.' });
         }
 
-        const activeBorrows = await mongoose.model('Borrow').findOne({
-            user_id: user._id,
-            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE] }
-        });
-
-        if (activeBorrows) {
+        const activeReads = await Readlist.find({ user_id: user._id, status: 'active' });
+        if (activeReads.length > 0) {
             return res.status(400).json({
-                error: 'You cannot delete your account while you have borrowed books. Please return all books first.'
+                error: 'You cannot delete your account while you have active reading sessions. Please finish or remove them first.'
             });
         }
 
-
-
         await mongoose.model('Wishlist').deleteMany({ user_id: user._id });
-        await mongoose.model('Borrow').deleteMany({ user_id: user._id });
         await mongoose.model('Review').deleteMany({ user_id: user._id });
         await mongoose.model('Notification').deleteMany({ user_id: user._id });
         await mongoose.model('ActivityLog').deleteMany({ user_id: user._id });
@@ -411,7 +401,6 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
         user.isDeleted = true;
         user.deletedAt = new Date();
         user.activeSessions = [];
-        user.deletionScheduledAt = undefined;
 
         await user.save();
 
@@ -564,28 +553,20 @@ export const checkBookAccess = async (req: AuthRequest, res: Response) => {
             status: 'active'
         }).sort({ addedAt: -1 });
 
-        const borrowRecord = await Borrow.findOne({
-            user_id: userId,
-            book_id: bookId,
-            status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE, BorrowStatus.RETURN_REQUESTED] }
-        }).sort({ issued_date: -1 });
-
-        // 2. Validate Access (Strictly Borrow/Readlist based)
-        const hasValidBorrow = borrowRecord && borrowRecord.return_date && new Date(borrowRecord.return_date).getTime() > nowTime;
         const hasValidReadlist = readlistItem && readlistItem.dueDate && new Date(readlistItem.dueDate).getTime() > nowTime;
 
         // Access is granted ONLY if an active record is NOT expired
-        const hasAccess = !!hasValidBorrow || !!hasValidReadlist;
+        const hasAccess = !!hasValidReadlist;
 
         // Determination for UI feedback: show "Expired" if they HAVE a record but none are currently valid
-        const isExpired = (!!borrowRecord || !!readlistItem) && !hasValidBorrow && !hasValidReadlist;
+        const isExpired = !!readlistItem && !hasValidReadlist;
 
-        const effectiveDueDate = (readlistItem?.dueDate || borrowRecord?.return_date) || null;
+        const effectiveDueDate = readlistItem?.dueDate || null;
 
         res.json({
             hasAccess,
             inReadlist: !!readlistItem,
-            hasBorrow: !!borrowRecord,
+            hasBorrow: false,
             hasPurchased: false,
             isExpired,
             dueDate: effectiveDueDate
@@ -610,33 +591,10 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
 
         // 2. Reads Stats
         let readlistQuery: any = {};
-        let borrowQuery: any = {};
-
-        if (addedBy && false) {
-            // Include ALL books by this admin (Existing, Archived, and even Deleted)
-            // We use the same discovery logic as revenue for consistency
-            const adminLogs = await ActivityLog.find({
-                user_id: addedBy,
-                action: { $regex: /Added new book/i }
-            }).select('book_id');
-            const logBookIds = adminLogs.map(log => log.book_id?.toString()).filter(id => !!id);
-            const currentBookIds = (await Book.find({ addedBy }).select('_id')).map(b => b._id.toString());
-
-            const adminBookIds = Array.from(new Set([...logBookIds, ...currentBookIds]));
-
-            readlistQuery.book_id = { $in: adminBookIds };
-            borrowQuery.book_id = { $in: adminBookIds };
-        }
-
-        const [statsReadlist, statsBorrow, activeReadlistCount, activeBorrowCount] = await Promise.all([
+        const [totalReads, activeReads] = await Promise.all([
             Readlist.countDocuments(readlistQuery),
-            Borrow.countDocuments(borrowQuery),
-            Readlist.countDocuments({ ...readlistQuery, status: 'active' }),
-            Borrow.countDocuments({ ...borrowQuery, status: { $in: [BorrowStatus.BORROWED, BorrowStatus.OVERDUE] } })
+            Readlist.countDocuments({ ...readlistQuery, status: 'active' })
         ]);
-
-        const totalReads = statsReadlist + statsBorrow;
-        const activeReads = activeReadlistCount + activeBorrowCount;
 
         // 3. Order Stats
         let totalOrders = 0;
@@ -876,7 +834,7 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
             addedAt: { $gte: monthStart }
         });
 
-        const limit = membership.borrowLimit || 0;
+        const limit = membership.monthlyLimit || 0;
         console.log(`[addToReadlist] Monthly count: ${monthlyCount}, Limit: ${limit}`);
         if (monthlyCount >= limit) {
             return res.status(400).json({
@@ -896,9 +854,9 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
             }
 
             // If expired, update the existing entry instead of creating a new one
-            const borrowDuration = membership.borrowDuration || 14;
+            const accessDuration = membership.accessDuration || 14;
             const newDueDate = new Date();
-            newDueDate.setDate(newDueDate.getDate() + borrowDuration);
+            newDueDate.setDate(newDueDate.getDate() + accessDuration);
 
             existingEntry.status = 'active';
             existingEntry.addedAt = new Date();
@@ -921,9 +879,9 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
             res.json({ message: 'Book added to readlist successfully' });
         } else {
             // 6. Create new entry if none exists
-            const borrowDuration = membership.borrowDuration || 14;
+            const accessDuration = membership.accessDuration || 14;
             const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + borrowDuration);
+            dueDate.setDate(dueDate.getDate() + accessDuration);
 
             console.log(`[addToReadlist] Creating new entry with dueDate: ${dueDate}`);
             const newEntry = new Readlist({
@@ -954,6 +912,54 @@ export const addToReadlist = async (req: AuthRequest, res: Response) => {
     } catch (err) {
         console.error('addToReadlist error details:', err);
         res.status(500).json({ error: 'Server error adding to readlist' });
+    }
+};
+
+export const getReadingProgress = async (req: AuthRequest, res: Response) => {
+    try {
+        const { bookId } = req.params;
+        const userId = req.user!._id;
+
+        const progress = await Readlist.findOne({ user_id: userId, book_id: bookId }).sort({ addedAt: -1 });
+        if (!progress) {
+            return res.status(404).json({ error: 'No reading progress found for this book' });
+        }
+
+        res.json({
+            last_page: progress.last_page,
+            bookmarks: progress.bookmarks,
+            status: progress.status
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const updateReadingProgress = async (req: AuthRequest, res: Response) => {
+    const { bookId } = req.params;
+    const { last_page, bookmarks, status } = req.body;
+    try {
+        const userId = req.user!._id;
+
+        const progress = await Readlist.findOne({ user_id: userId, book_id: bookId }).sort({ addedAt: -1 });
+        if (!progress) {
+            return res.status(404).json({ error: 'No reading progress found for this book' });
+        }
+
+        if (last_page !== undefined) progress.last_page = last_page;
+        if (bookmarks !== undefined) progress.bookmarks = bookmarks;
+        if (status !== undefined) progress.status = status;
+
+        if (status === 'completed' && !progress.completedAt) {
+            progress.completedAt = new Date();
+        }
+
+        await progress.save();
+        res.json({ message: 'Reading progress updated', progress });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
