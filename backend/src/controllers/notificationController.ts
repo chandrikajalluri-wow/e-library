@@ -1,41 +1,10 @@
 import { Request, Response } from 'express';
-import Notification from '../models/Notification';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { RoleName, NotificationType } from '../types/enums';
+import * as notificationService from '../services/notificationService';
 
 export const getMyNotifications = async (req: AuthRequest, res: Response) => {
     try {
-        const { type, is_read, startDate, endDate, sort } = req.query;
-        let filter: any = { user_id: req.user!._id };
-
-        if (type && type !== 'all') {
-            const types = (type as string).split(',');
-            if (types.length > 1) {
-                filter.type = { $in: types };
-            } else {
-                filter.type = type;
-            }
-        }
-
-        if (is_read !== undefined && is_read !== 'all') {
-            filter.is_read = is_read === 'true';
-        }
-
-        if (startDate && endDate) {
-            filter.timestamp = {
-                $gte: new Date(startDate as string),
-                $lte: new Date(endDate as string)
-            };
-        }
-
-        // Determine sort object
-        let sortObj: any = { timestamp: -1 }; // Default: Newest
-        if (sort === 'oldest') sortObj = { timestamp: 1 };
-
-        const notifications = await Notification.find(filter)
-            .populate('book_id', 'title cover_image_url')
-            .sort(sortObj)
-            .limit(100);
+        const notifications = await notificationService.getMyNotifications(req.user!._id, req.query);
         res.json(notifications);
     } catch (err) {
         console.error('Get my notifications error:', err);
@@ -45,60 +14,26 @@ export const getMyNotifications = async (req: AuthRequest, res: Response) => {
 
 export const markMyNotificationAsRead = async (req: AuthRequest, res: Response) => {
     try {
-        const notification = await Notification.findOneAndUpdate(
-            { _id: req.params.id, user_id: req.user!._id },
-            { is_read: true },
-            { new: true }
-        );
-        if (!notification) return res.status(404).json({ error: 'Notification not found' });
+        const notification = await notificationService.markAsRead(req.params.id, req.user!._id);
         res.json(notification);
-    } catch (err) {
-        res.status(500).json({ error: 'Server error' });
+    } catch (err: any) {
+        res.status(err.message === 'Notification not found' ? 404 : 500).json({ error: err.message });
     }
 };
 
 export const markAllMyNotificationsAsRead = async (req: AuthRequest, res: Response) => {
     try {
-        await Notification.updateMany(
-            { user_id: req.user!._id, is_read: false },
-            { is_read: true }
-        );
+        await notificationService.markAllAsRead(req.user!._id);
         res.json({ message: 'All notifications marked as read' });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 };
 
-export const getAllNotifications = async (req: Request, res: Response) => {
+export const getAllNotifications = async (req: AuthRequest, res: Response) => {
     try {
-        const adminRelevantTypes = [
-            NotificationType.BORROW,
-            NotificationType.RETURN,
-            NotificationType.WISHLIST,
-            NotificationType.ORDER,
-            NotificationType.BOOK_REQUEST,
-            NotificationType.STOCK_ALERT
-        ];
-
-        const notifications = await Notification.find({ type: { $in: adminRelevantTypes } })
-            .populate({
-                path: 'user_id',
-                select: 'name email role_id',
-                populate: {
-                    path: 'role_id',
-                    select: 'name'
-                }
-            })
-            .populate('book_id', 'title cover_image_url')
-            .sort({ timestamp: -1 })
-            .limit(50);
-
-        const userSideNotifications = notifications.filter(notif => {
-            const user = notif.user_id as any;
-            return user?.role_id?.name === RoleName.USER;
-        });
-
-        res.json(userSideNotifications);
+        const notifications = await notificationService.getAllNotificationsAdmin(req.user!._id, req.query);
+        res.json(notifications);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
@@ -106,54 +41,31 @@ export const getAllNotifications = async (req: Request, res: Response) => {
 
 export const markNotificationAsReadAdmin = async (req: Request, res: Response) => {
     try {
-        const notification = await Notification.findByIdAndUpdate(
-            req.params.id,
-            { is_read: true },
-            { new: true }
-        );
+        const notification = await notificationService.markAsReadAdmin(req.params.id);
         res.json(notification);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 };
 
-export const markAllNotificationsAsReadAdmin = async (req: Request, res: Response) => {
+export const markAllNotificationsAsReadAdmin = async (req: AuthRequest, res: Response) => {
     try {
-        await Notification.updateMany({ is_read: false }, { is_read: true });
+        await notificationService.markAllAsReadAdmin(req.user!._id);
         res.json({ message: 'All notifications marked as read' });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 };
 
-import Book from '../models/Book';
-import User from '../models/User';
-import { notifyAdmins } from '../utils/notification';
-
 export const notifyStockAlert = async (req: AuthRequest, res: Response) => {
     try {
         const { book_id } = req.body;
         if (!book_id) return res.status(400).json({ error: 'Book ID is required' });
-
-        const book = await Book.findById(book_id);
-        if (!book) return res.status(404).json({ error: 'Book not found' });
-
-        if (book.noOfCopies > 0) {
-            return res.status(400).json({ error: 'Book is still in stock' });
-        }
-
-        const user = await User.findById(req.user!._id);
-
-        await notifyAdmins(
-            `Low Stock Alert: ${user?.name || 'A user'} added "${book.title}" to their cart, but it is out of stock.`,
-            NotificationType.STOCK_ALERT,
-            book._id as any,
-            book._id.toString()
-        );
-
+        await notificationService.notifyStockAlert(req.user!._id, book_id);
         res.json({ message: 'Stock alert sent to admin' });
-    } catch (err) {
+    } catch (err: any) {
         console.error('Stock alert error:', err);
-        res.status(500).json({ error: 'Server error' });
+        res.status(err.message.includes('not found') ? 404 : 400).json({ error: err.message });
     }
 };
+

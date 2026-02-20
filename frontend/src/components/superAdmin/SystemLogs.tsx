@@ -13,6 +13,7 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [filterAction, setFilterAction] = useState('ALL');
+    const [sortOrder, setSortOrder] = useState('DESC');
     const itemsPerPage = 10;
     const logsTopRef = useRef<HTMLDivElement>(null);
 
@@ -42,21 +43,58 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
         }
     }, [currentPage]);
 
-    // Filter Logic
-    const filteredLogs = logs.filter(log => {
-        const matchesSearch =
-            log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (log.user_id?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (log.user_id?.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+    // Sorting and Filtering Logic
+    const processedLogs = [...logs]
+        .sort((a, b) => {
+            const dateA = new Date(a.timestamp).getTime();
+            const dateB = new Date(b.timestamp).getTime();
+            return sortOrder === 'DESC' ? dateB - dateA : dateA - dateB;
+        })
+        .filter(log => {
+            if (!log.action) return false;
+            const action = log.action.toUpperCase();
 
-        const matchesFilter = filterAction === 'ALL' ? true :
-            filterAction === 'CREATE' ? (log.action.toLowerCase().includes('create') || log.action.toLowerCase().includes('add') || log.action.toLowerCase().includes('accepted')) :
-                filterAction === 'UPDATE' ? (log.action.toLowerCase().includes('update') || log.action.toLowerCase().includes('edit')) :
-                    filterAction === 'DELETE' ? (log.action.toLowerCase().includes('delete') || log.action.toLowerCase().includes('remove') || log.action.toLowerCase().includes('ban')) :
-                        true;
+            const matchesSearch =
+                action.includes(searchTerm.toUpperCase()) ||
+                (log.user_id?.name || '').toUpperCase().includes(searchTerm.toUpperCase()) ||
+                (log.user_id?.email || '').toUpperCase().includes(searchTerm.toUpperCase());
 
-        return matchesSearch && matchesFilter;
-    });
+            if (!matchesSearch) return false;
+
+            if (filterAction === 'ALL') return true;
+
+            switch (filterAction) {
+                case 'ADMIN':
+                    return action.includes('ADMIN') || action.includes('ROLE');
+                case 'USER':
+                    return action.includes('USER') || action.includes('PROFILE') || action.includes('LOGIN') || action.includes('REGISTER');
+                case 'BOOK':
+                    return (
+                        action.includes('BOOK') ||
+                        action.includes('CATEGORY') ||
+                        action.includes('REVIEW') ||
+                        action.includes('WISHLIST') ||
+                        action.includes('READLIST') ||
+                        action.includes('EXCHANGE') ||
+                        action.includes('REQUEST')
+                    );
+                case 'ORDER':
+                    return action.includes('ORDER');
+                case 'MEMBERSHIP':
+                    return action.includes('MEMBERSHIP');
+                case 'SYSTEM':
+                    return (
+                        action.includes('CONTACT') ||
+                        action.includes('ANNOUNCEMENT') ||
+                        action.includes('SYSTEM') ||
+                        action.includes('INVITE')
+                    );
+                default:
+                    return true;
+            }
+        });
+
+    const filteredLogs = processedLogs;
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
@@ -152,9 +190,22 @@ const SystemLogs: React.FC<SystemLogsProps> = ({ hideTitle = false }) => {
                         onChange={(e) => setFilterAction(e.target.value)}
                     >
                         <option value="ALL">All Actions</option>
-                        <option value="CREATE">Create / Add</option>
-                        <option value="UPDATE">Update / Edit</option>
-                        <option value="DELETE">Delete / Remove</option>
+                        <option value="ADMIN">Admin Actions</option>
+                        <option value="USER">User Activities</option>
+                        <option value="BOOK">Book Management</option>
+                        <option value="ORDER">Orders</option>
+                        <option value="MEMBERSHIP">Memberships</option>
+                        <option value="SYSTEM">System/Support</option>
+                    </select>
+                </div>
+                <div className="admin-filter-box">
+                    <Clock size={18} className="filter-icon" />
+                    <select
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value)}
+                    >
+                        <option value="DESC">Newest First</option>
+                        <option value="ASC">Oldest First</option>
                     </select>
                 </div>
             </div>

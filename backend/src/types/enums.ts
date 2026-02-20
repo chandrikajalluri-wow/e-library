@@ -37,7 +37,13 @@ export enum NotificationType {
     ORDER = 'order',
     BOOK_REQUEST = 'book_request',
     SYSTEM = 'system',
-    STOCK_ALERT = 'stock_alert'
+    STOCK_ALERT = 'stock_alert',
+    REVIEW_REPORT = 'review_report',
+    CONTACT_QUERY = 'contact_query',
+    BOOK_CREATED = 'book_created',
+    BOOK_UPDATED = 'book_updated',
+    CATEGORY_CREATED = 'category_created',
+    CATEGORY_UPDATED = 'category_updated'
 }
 
 export enum InviteStatus {

@@ -20,13 +20,6 @@ export const generateBookContent = async (
         console.log('[AI Service] API Key present: true');
         console.log('[AI Service] Generating content for:', title, 'by', author);
 
-        /**
-         * Using direct REST API instead of SDK to access v1 API
-         * This allows us to use gemini-2.5-flash which is the current stable model
-         * 
-         * The SDK uses v1beta which has deprecated model names
-         * Direct REST API gives us access to v1 with current models
-         */
         const model = 'gemini-2.5-flash';
         const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;
 

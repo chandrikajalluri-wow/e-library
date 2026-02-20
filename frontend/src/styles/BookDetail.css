@@ -787,15 +787,44 @@
 .ai-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.75rem;
     margin-bottom: 1rem;
     color: var(--primary-color);
+}
+
+.ai-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .ai-header h4 {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 700;
+}
+
+.ai-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.ai-close-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #ef4444;
+}
+
+[data-theme='dark'] .ai-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .ai-explanation-card p {
