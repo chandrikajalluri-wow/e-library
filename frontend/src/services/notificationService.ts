@@ -22,8 +22,8 @@ export const markAllNotificationsRead = async () => {
 
 // --- Admin Notification Services ---
 
-export const getNotifications = async () => {
-    const res = await api.get(`${BASE_URL}`);
+export const getNotifications = async (params?: any) => {
+    const res = await api.get(`${BASE_URL}`, { params });
     return res.data;
 };
 

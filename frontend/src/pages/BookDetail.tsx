@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBook, getSimilarBooks } from '../services/bookService';
-import { Heart, ShoppingCart, ThumbsUp, ThumbsDown, Zap, Truck, ShieldCheck, BookOpen, Flag, ArrowLeft, Sparkles, Bot } from 'lucide-react';
+import { Heart, ShoppingCart, ThumbsUp, ThumbsDown, Zap, Truck, ShieldCheck, BookOpen, Flag, ArrowLeft, Sparkles, Bot, X } from 'lucide-react';
 import { addToWishlist, removeFromWishlist, getWishlist } from '../services/wishlistService';
 import { getBookReviews, addReview, likeReview, dislikeReview, updateReview, reportReview } from '../services/reviewService';
 import { getMyMembership, type Membership } from '../services/membershipService';
@@ -349,6 +349,10 @@ const BookDetail: React.FC = () => {
     }
   };
 
+  const handleClearAI = () => {
+    setExplanation(null);
+  };
+
 
 
 
@@ -410,22 +414,27 @@ const BookDetail: React.FC = () => {
             {!explanation && !isExplaining && (
               <button onClick={handleAskAI} className="ask-ai-btn">
                 <Sparkles size={18} />
-                Ask AI About This Book
+                Know more with AI
               </button>
             )}
 
             {isExplaining && (
               <div className="ai-loading">
                 <div className="spinner-mini"></div>
-                <span>Asking the librarian...</span>
+                <span>Generating...</span>
               </div>
             )}
 
             {explanation && (
               <div className="ai-explanation-card">
                 <div className="ai-header">
-                  <Bot size={20} className="ai-icon" />
-                  <h4>Librarian's Insight</h4>
+                  <div className="ai-title-wrapper">
+                    <Bot size={20} className="ai-icon" />
+                    <h4>More about this book</h4>
+                  </div>
+                  <button onClick={handleClearAI} className="ai-close-btn" title="Close">
+                    <X size={18} />
+                  </button>
                 </div>
                 <p>{explanation}</p>
               </div>
