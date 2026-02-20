@@ -44,7 +44,10 @@ export const getAllSessionsAdmin = async (req: Request, res: Response) => {
         const sessions = await ChatSession.find()
             .populate('user_id', 'name email profileImage')
             .populate('admin_id', 'name')
-            .populate('lastMessage')
+            .populate({
+                path: 'lastMessage',
+                populate: { path: 'sender_id', select: 'name' }
+            })
             .sort({ updatedAt: -1 });
 
         // Enhance sessions with unread counts and online status

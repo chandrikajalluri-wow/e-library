@@ -3,7 +3,7 @@ import { IUser } from './User';
 import { IBook } from './Book';
 
 export interface IActivityLog extends Document {
-  user_id: Types.ObjectId | IUser;
+  user_id?: Types.ObjectId | IUser;
   action: string;
   timestamp: Date;
   book_id?: Types.ObjectId | IBook;
@@ -12,7 +12,7 @@ export interface IActivityLog extends Document {
 }
 
 const activityLogSchema = new Schema<IActivityLog>({
-  user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  user_id: { type: Schema.Types.ObjectId, ref: 'User', required: false },
   action: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
   book_id: { type: Schema.Types.ObjectId, ref: 'Book' }, // optional

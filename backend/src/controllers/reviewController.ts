@@ -8,6 +8,7 @@ import { maskProfanity } from '../utils/profanityFilter';
 import { notifySuperAdmins } from '../utils/notification';
 import ActivityLog from '../models/ActivityLog';
 import Readlist from '../models/Readlist';
+import { ActivityAction } from '../types/enums';
 
 export const getReviewsForBook = async (req: Request, res: Response) => {
     try {
@@ -188,6 +189,14 @@ export const reportReview = async (req: AuthRequest, res: Response) => {
         await notifySuperAdmins(
             `Review reported by ${req.user!.name} for book "${bookTitle}". Reason: ${reason}`
         );
+
+        // Log the activity
+        await ActivityLog.create({
+            user_id: req.user!._id,
+            action: ActivityAction.REVIEW_REPORTED,
+            description: `Reported review for "${bookTitle}". Reason: ${reason}`,
+            timestamp: new Date()
+        });
 
         res.json({ message: 'Review reported successfully' });
     } catch (err) {

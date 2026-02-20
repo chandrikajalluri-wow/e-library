@@ -41,6 +41,7 @@ const AdminSupportManager: React.FC = () => {
         if (activeSession) {
             loadSessionMessages(activeSession._id);
         }
+        setUserTyping(null);
     }, [activeSession]);
 
     useEffect(() => {
@@ -72,21 +73,29 @@ const AdminSupportManager: React.FC = () => {
 
             socketRef.current.on('new_message', (message: any) => {
                 const currentActive = activeSessionRef.current;
+                const senderId = typeof message.sender_id === 'object' ? message.sender_id?._id : message.sender_id;
+                const isAdminMessage = senderId === adminRef.current?._id;
+
                 if (currentActive && message.session_id === currentActive._id) {
                     setMessages(prev => {
-                        // Avoid duplicates if any
                         if (prev.some(m => m._id === message._id)) return prev;
                         return [...prev, message];
                     });
                 }
-                // If message is for a different session, update unread count immediately
-                if (!currentActive || message.session_id !== currentActive._id) {
-                    setSessions(prev => prev.map(s =>
-                        s._id === message.session_id
-                            ? { ...s, unreadCount: (s.unreadCount || 0) + 1 }
-                            : s
-                    ));
-                }
+
+                // If message is for a different session and not from admin, or it's the current session but unread logic needs updating
+                setSessions(prev => prev.map(s => {
+                    if (s._id === message.session_id) {
+                        const isNewUnread = (!currentActive || s._id !== currentActive._id) && !isAdminMessage;
+                        return {
+                            ...s,
+                            lastMessage: message,
+                            unreadCount: isNewUnread ? (s.unreadCount || 0) + 1 : (currentActive?._id === s._id ? 0 : s.unreadCount),
+                            updatedAt: message.createdAt
+                        };
+                    }
+                    return s;
+                }));
                 debouncedRefresh();
             });
 
@@ -134,7 +143,7 @@ const AdminSupportManager: React.FC = () => {
     };
 
     const handleSendMessage = () => {
-        if (!inputValue.trim() || !socketRef.current || !activeSession || !admin) return;
+        if (!inputValue.trim() || !socketRef.current || !activeSession || !admin || activeSession.status === 'closed') return;
 
         const messageData = {
             sessionId: activeSession._id,
@@ -262,7 +271,7 @@ const AdminSupportManager: React.FC = () => {
                     {filteredSessions.map(session => (
                         <div
                             key={session._id}
-                            className={`session-item ${activeSession?._id === session._id ? 'active' : ''}`}
+                            className={`session-item ${activeSession?._id === session._id ? 'active' : ''} ${session.unreadCount > 0 ? 'unread' : ''}`}
                             onClick={() => setActiveSession(session)}
                         >
                             <div className="user-avatar-premium">
@@ -274,18 +283,29 @@ const AdminSupportManager: React.FC = () => {
                                 <div className={`presence-dot ${session.status === 'closed' ? 'closed' : (session.isOnline ? 'online' : 'offline')}`}></div>
                             </div>
                             <div className="session-content">
-                                <div className="session-top">
-                                    <div className="name-unread">
+                                <div className="session-main-info">
+                                    <div className="session-top-row">
                                         <h4>{session.user_id?.name}</h4>
+                                        <span className={`time-ago ${session.unreadCount > 0 ? 'unread' : ''}`}>
+                                            {session.lastMessage ? new Date(session.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                        </span>
+                                    </div>
+                                    <div className="session-bottom-row">
+                                        <p className="last-msg">
+                                            {session.lastMessage ? (
+                                                <>
+                                                    <span className="last-sender-name">
+                                                        {(typeof session.lastMessage.sender_id === 'object' ? session.lastMessage.sender_id?._id : session.lastMessage.sender_id) === admin?._id ? 'You: ' : `${session.lastMessage.sender_id?.name || 'User'}: `}
+                                                    </span>
+                                                    {session.lastMessage.content}
+                                                </>
+                                            ) : 'Started a new session'}
+                                        </p>
                                         {session.unreadCount > 0 && (
-                                            <span className="unread-badge">{session.unreadCount}</span>
+                                            <span className="support-unread-badge">{session.unreadCount}</span>
                                         )}
                                     </div>
-                                    <span className="time-ago">
-                                        {session.lastMessage ? new Date(session.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                                    </span>
                                 </div>
-                                <p className="last-msg">{session.lastMessage?.content || 'Started a new session'}</p>
                             </div>
                         </div>
                     ))}
@@ -369,9 +389,10 @@ const AdminSupportManager: React.FC = () => {
                             <div className="input-group-enhanced">
                                 <input
                                     type="text"
-                                    placeholder="Write your response..."
+                                    placeholder={activeSession.status === 'closed' ? "This session is closed and is now read-only" : "Write your response..."}
                                     value={inputValue}
                                     onChange={(e) => {
+                                        if (activeSession.status === 'closed') return;
                                         setInputValue(e.target.value);
                                         socketRef.current?.emit('typing', {
                                             sessionId: activeSession._id,
@@ -380,11 +401,12 @@ const AdminSupportManager: React.FC = () => {
                                         });
                                     }}
                                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                    disabled={activeSession.status === 'closed'}
                                 />
                                 <button
                                     className="btn-send-premium"
                                     onClick={handleSendMessage}
-                                    disabled={!inputValue.trim()}
+                                    disabled={!inputValue.trim() || activeSession.status === 'closed'}
                                 >
                                     <Send size={18} />
                                 </button>

@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { getAllUsers, manageAdmin, deleteUser, getUserDetails, inviteAdmin, inviteAdminByEmail } from '../../services/superAdminService';
 import { toast } from 'react-toastify';
-import { X, Download, RotateCw, Trash2, ShieldCheck, ShieldAlert, Eye, Mail, Phone, Calendar, UserCircle, Hash, Search } from 'lucide-react';
+import { X, Trash2, ShieldCheck, ShieldAlert, Eye, Mail, Phone, Calendar, UserCircle, Hash, Search, Users } from 'lucide-react';
 import ConfirmationModal from '../ConfirmationModal';
 import '../../styles/Pagination.css';
 import { RoleName } from '../../types/enums';
-import { exportUsersToCSV } from '../../utils/csvExport';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../../styles/InviteAdminModal.css';
 
@@ -16,13 +15,14 @@ interface User {
     role_id: { _id: string; name: string };
     membership_id?: { name: string };
     isVerified: boolean;
+    isDeleted?: boolean;
 }
 
 interface UserAdminManagementProps {
-    hideTitle?: boolean;
+    onUsersUpdate?: (users: User[]) => void;
 }
 
-const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = false }) => {
+const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate }) => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -41,6 +41,8 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
     const [userDetails, setUserDetails] = useState<any>(null);
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [filterRole, setFilterRole] = useState<'all' | 'user' | 'admin' | 'super_admin'>('all');
+    const [filterMembership, setFilterMembership] = useState<'all' | 'basic' | 'premium' | 'none'>('all');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'verified' | 'pending' | 'deleted'>('all');
 
     // Email Invite Modal State
     const [emailInviteOpen, setEmailInviteOpen] = useState(false);
@@ -51,11 +53,14 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const query = `page=${currentPage}&limit=${limit}&search=${searchTerm}&role=${filterRole}`;
+            const query = `page=${currentPage}&limit=${limit}&search=${searchTerm}&role=${filterRole}&membership=${filterMembership}&status=${filterStatus}`;
             const data = await getAllUsers(query);
             setUsers(data.users);
             setTotalPages(data.totalPages);
             setTotalUsers(data.totalUsers);
+            if (onUsersUpdate) {
+                onUsersUpdate(data.users);
+            }
         } catch (err: any) {
             console.error(err);
             toast.error('Failed to fetch users');
@@ -80,8 +85,11 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
     };
 
     useEffect(() => {
+        if (filterRole === 'admin' || filterRole === 'super_admin') {
+            setFilterMembership('all');
+        }
         fetchUsers();
-    }, [currentPage, filterRole]);
+    }, [currentPage, filterRole, filterMembership, filterStatus]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -218,11 +226,12 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
 
     const filteredUsers = users;
 
+    const isMembershipDisabled = filterRole === 'admin' || filterRole === 'super_admin';
+
     return (
         <div className="card admin-table-section" ref={tableTopRef}>
             <div className="admin-table-header-box">
-                {!hideTitle && <h3 className="admin-table-title">User & Admin Management</h3>}
-                <div className="admin-header-actions-unified">
+                <div className="admin-header-actions-unified" style={{ borderTop: 'none', paddingTop: 0 }}>
                     <div className="admin-search-wrapper">
                         <Search size={18} className="search-bar-icon" />
                         <input
@@ -242,29 +251,46 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                             </button>
                         )}
                     </div>
-                    <div className="admin-filter-wrapper">
-                        <select
-                            className="admin-role-filter-select"
-                            value={filterRole}
-                            onChange={(e) => setFilterRole(e.target.value as any)}
-                        >
-                            <option value="all">All Roles</option>
-                            <option value="user">Users</option>
-                            <option value="admin">Admins</option>
-                            <option value="super_admin">Super Admins</option>
-                        </select>
+                    <div className="admin-filter-wrapper-flex" style={{ display: 'flex', gap: '0.75rem' }}>
+                        <div className="admin-filter-wrapper">
+                            <select
+                                className="admin-role-filter-select"
+                                value={filterRole}
+                                onChange={(e) => setFilterRole(e.target.value as any)}
+                            >
+                                <option value="all">All Roles</option>
+                                <option value="user">Users</option>
+                                <option value="admin">Admins</option>
+                                <option value="super_admin">Super Admins</option>
+                            </select>
+                        </div>
+                        <div className="admin-filter-wrapper">
+                            <select
+                                className="admin-role-filter-select"
+                                value={filterMembership}
+                                onChange={(e) => setFilterMembership(e.target.value as any)}
+                                disabled={isMembershipDisabled}
+                                style={{ opacity: isMembershipDisabled ? 0.5 : 1, cursor: isMembershipDisabled ? 'not-allowed' : 'pointer' }}
+                            >
+                                <option value="all">All Plans</option>
+                                <option value="basic">Basic Plan</option>
+                                <option value="premium">Premium Plan</option>
+                                <option value="none">No Plan</option>
+                            </select>
+                        </div>
+                        <div className="admin-filter-wrapper">
+                            <select
+                                className="admin-role-filter-select"
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value as any)}
+                            >
+                                <option value="all">All Status</option>
+                                <option value="verified">Verified</option>
+                                <option value="pending">Pending</option>
+                                <option value="deleted">Deleted</option>
+                            </select>
+                        </div>
                     </div>
-                    <button onClick={fetchUsers} className="admin-refresh-stats-btn">
-                        <RotateCw size={18} className={loading ? 'spin' : ''} />
-                        Refresh
-                    </button>
-                    <button
-                        onClick={() => exportUsersToCSV(filteredUsers)}
-                        className="admin-export-csv-btn"
-                    >
-                        <Download size={18} />
-                        Export CSV
-                    </button>
                     <button
                         onClick={() => setEmailInviteOpen(true)}
                         className="admin-invite-trigger-btn"
@@ -277,6 +303,28 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
             <div className="admin-table-wrapper">
                 {loading ? (
                     <div className="admin-loading-container"><div className="spinner"></div></div>
+                ) : filteredUsers.length === 0 ? (
+                    <div className="admin-empty-state-container" style={{ padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', color: 'rgba(255,255,255,0.5)' }}>
+                        <div className="empty-state-icon-box" style={{ padding: '1.5rem', borderRadius: '50%', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', marginBottom: '0.5rem' }}>
+                            <Users size={48} />
+                        </div>
+                        <h3 className="empty-state-title" style={{ color: '#fff', margin: 0, fontSize: '1.25rem' }}>No Matching Users</h3>
+                        <p className="empty-state-message" style={{ margin: 0, maxWidth: '300px' }}>
+                            We couldn't find any users matching your current role or plan filters.
+                        </p>
+                        <button
+                            onClick={() => {
+                                setSearchTerm('');
+                                setFilterRole('all');
+                                setFilterMembership('all');
+                                setFilterStatus('all');
+                            }}
+                            className="admin-invite-submit-btn"
+                            style={{ marginTop: '0.5rem', padding: '0.6rem 1.2rem', fontSize: '0.9rem' }}
+                        >
+                            Reset All Filters
+                        </button>
+                    </div>
                 ) : (
                     <table className="admin-table">
                         <thead>
@@ -294,7 +342,13 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                                     <td>
                                         <div className="user-info-box">
                                             <span className="user-main-name">{user.name}</span>
-                                            <span className="user-id-sub">ID: {user._id}</span>
+                                            {(user.role_id?.name === RoleName.ADMIN || user.role_id?.name === RoleName.SUPER_ADMIN || !user.isVerified) ? (
+                                                <span className="user-id-sub">ID: {user._id}</span>
+                                            ) : (
+                                                <span className={`membership-label-badge ${user.membership_id?.name.toLowerCase().includes('premium') ? 'membership-label-premium' : 'membership-label-basic'}`}>
+                                                    {user.membership_id?.name || 'No Plan'}
+                                                </span>
+                                            )}
                                         </div>
                                     </td>
                                     <td>{user.email}</td>
@@ -303,22 +357,30 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                                             {user.role_id?.name || 'User'}
                                         </span>
                                     </td>
-                                    <td>{user.isVerified ? <span className="status-badge status-available">Verified</span> : <span className="status-badge status-pending">Pending</span>}</td>
+                                    <td>
+                                        {user.isDeleted ? (
+                                            <span className="status-badge status-deleted">Deleted</span>
+                                        ) : user.isVerified ? (
+                                            <span className="status-badge status-available">Verified</span>
+                                        ) : (
+                                            <span className="status-badge status-pending">Pending</span>
+                                        )}
+                                    </td>
                                     <td className="admin-actions-cell">
                                         <div className="admin-actions-flex">
                                             {user.role_id?.name !== RoleName.SUPER_ADMIN && (
                                                 <>
-                                                    {user.role_id?.name === RoleName.ADMIN && (
-                                                        <button onClick={() => confirmAction(user, 'demote')} className="admin-btn-reject-icon" title="Remove Admin">
-                                                            <ShieldAlert size={18} />
-                                                        </button>
-                                                    )}
                                                     <button onClick={() => confirmAction(user, 'delete')} className="admin-btn-delete-icon" title="Delete User">
                                                         <Trash2 size={18} />
                                                     </button>
                                                     <button onClick={() => fetchDetailView(user._id)} className="admin-btn-view-icon" title="View Details">
                                                         <Eye size={18} />
                                                     </button>
+                                                    {user.role_id?.name === RoleName.ADMIN && (
+                                                        <button onClick={() => confirmAction(user, 'demote')} className="admin-btn-reject-icon" title="Remove Admin">
+                                                            <ShieldAlert size={18} />
+                                                        </button>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -404,9 +466,16 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ hideTitle = f
                                                 <UserCircle size={16} />
                                                 <span>{userDetails.user.role_id?.name || 'Customer'}</span>
                                             </div>
-                                            <div className={`details-status-pill ${userDetails.user.isVerified ? 'verified' : 'unverified'}`}>
-                                                {userDetails.user.isVerified ? 'Active Account' : 'Pending Verification'}
+                                            <div className={`details-status-pill ${userDetails.user.isDeleted ? 'deleted' : userDetails.user.isVerified ? 'verified' : 'unverified'}`}>
+                                                {userDetails.user.isDeleted ? 'Account Deleted' : userDetails.user.isVerified ? 'Active Account' : 'Pending Verification'}
                                             </div>
+                                            {userDetails.user.role_id?.name !== RoleName.ADMIN && userDetails.user.role_id?.name !== RoleName.SUPER_ADMIN && userDetails.user.isVerified && (
+                                                <div style={{ marginTop: '0.5rem' }}>
+                                                    <span className={`membership-label-badge ${userDetails.user.membership_id?.name.toLowerCase().includes('premium') ? 'membership-label-premium' : 'membership-label-basic'}`}>
+                                                        {userDetails.user.membership_id?.name || 'No Plan'}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

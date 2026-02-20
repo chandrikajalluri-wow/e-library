@@ -2,11 +2,11 @@ import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import User from '../models/User';
+import Membership from '../models/Membership';
 import { IRole } from '../models/Role';
 import Wishlist from '../models/Wishlist';
 import BookRequest from '../models/BookRequest';
 import AuthToken from '../models/AuthToken';
-import Membership from '../models/Membership';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Book from '../models/Book';
 import Order from '../models/Order';
@@ -52,14 +52,22 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
             addedAt: { $gte: monthStart }
         });
 
-        // Calculate automated books read count
         const completedReadlist = await Readlist.countDocuments({ user_id: userId, status: 'completed' });
+
+        // Calculate active reads (active status + not expired)
+        const now = new Date();
+        const activeReads = await Readlist.countDocuments({
+            user_id: userId,
+            status: 'active',
+            dueDate: { $gt: now }
+        });
 
         res.json({
             borrowedCount: readlistCount,
             wishlistCount,
             streakCount: (req.user as any).streakCount || 0,
-            booksRead: completedReadlist
+            booksRead: completedReadlist,
+            activeReads
         });
     } catch (err) {
         console.error(err);
@@ -405,9 +413,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
         await mongoose.model('BookRequest').deleteMany({ user_id: user._id });
         await AuthToken.deleteMany({ user_id: user._id });
 
-        // Perform Anonymized Soft Delete
-        user.name = 'Deleted User';
-        user.email = `deleted_${Date.now()}_${user._id}@example.com`;
+        // Perform Soft Delete (Preserving Name and Email)
         user.password = undefined;
         user.googleId = undefined;
         user.profileImage = undefined;
@@ -618,7 +624,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
         const realizedStatuses = ['delivered', 'completed', 'returned'];
         const pendingStatuses = ['pending', 'processing', 'shipped'];
 
-        if (addedBy && false) {
+        if (addedBy) {
             // Include ALL books by this admin (Existing, Archived, and even Deleted)
             // We use ActivityLog to find all book IDs ever added by this admin
             const adminLogs = await ActivityLog.find({
@@ -655,6 +661,20 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response) =>
             // Global stats for Super Admin if addedBy is not provided
             const orders = await Order.find({});
             totalOrders = orders.length;
+
+            // Add Membership Revenue to Total Revenue (Global)
+            const premiumMembership = await Membership.findOne({ name: new RegExp(`^${MembershipName.PREMIUM}$`, 'i') });
+
+            if (premiumMembership) {
+                const premiumMemberCount = await User.countDocuments({
+                    membership_id: premiumMembership._id,
+                    isDeleted: false
+                });
+
+                const membershipRevenue = (premiumMembership.price || 99) * premiumMemberCount;
+
+                totalRevenue += membershipRevenue;
+            }
 
             orders.forEach(order => {
                 // For Super Admin, we consider totalAmount (item totals + fees) realized upon delivery

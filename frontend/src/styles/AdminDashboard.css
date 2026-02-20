@@ -85,6 +85,17 @@
 .admin-header-actions .admin-refresh-stats-btn {
     border-radius: 16px;
     height: 52px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.admin-btn-positive:hover {
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3) !important;
+    filter: brightness(1.05);
+}
+
+.admin-btn-danger:hover {
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3) !important;
+    filter: brightness(1.05);
 }
 
 /* Table Header Box */
@@ -960,6 +971,7 @@
 .user-info-box {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 0.25rem;
 }
 
@@ -1312,6 +1324,31 @@ body.dark-mode .pagination-controls {
 .admin-btn-positive {
     background: linear-gradient(135deg, #10b981, #059669) !important;
     border-color: #10b981 !important;
+    color: white !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-btn-positive::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.admin-btn-positive:hover::after {
+    opacity: 1;
+}
+
+.admin-btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    border-color: #ef4444 !important;
     color: white !important;
 }
 
@@ -3986,4 +4023,39 @@ body.dark-mode .report-reason-item {
 
 [data-theme="dark"] .admin-footer {
     background: #0f172a !important;
+}
+
+/* Membership Labels */
+.membership-label-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 0.35rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.membership-label-basic {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.membership-label-premium {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.08) 100%);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+}
+
+.status-deleted {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
 }
