@@ -8,12 +8,15 @@ import ReportedReviews from '../components/superAdmin/ReportedReviews';
 import AdminDashboard from './AdminDashboard';
 import AnalyticsDashboard from '../components/superAdmin/AnalyticsDashboard';
 import { getSystemMetrics } from '../services/superAdminService';
+import { Download } from 'lucide-react';
+import { exportUsersToCSV } from '../utils/csvExport';
 import '../styles/AdminDashboard.css';
 
 const SuperAdminDashboard: React.FC = () => {
     const [searchParams] = useSearchParams();
     const activeTab = searchParams.get('tab') || 'metrics';
     const [metrics, setMetrics] = useState<any>(null);
+    const [users, setUsers] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchMetrics = async () => {
@@ -33,18 +36,31 @@ const SuperAdminDashboard: React.FC = () => {
             <main className="admin-main-content">
                 {/* Dashboard Title */}
                 <header className="admin-header">
-                    <div className="admin-header-titles">
-                        <h1 className="admin-header-title">
-                            {activeTab === 'metrics' && 'Super Admin Dashboard'}
-                            {activeTab === 'users' && 'User & Admin Management'}
-                            {activeTab === 'books' && 'Library Collection'}
-                            {activeTab === 'categories' && 'Library Categories'}
-                            {activeTab === 'announcements' && 'System Announcements'}
-                            {activeTab === 'queries' && 'User Queries'}
-                            {activeTab === 'reported-reviews' && 'Review Reports'}
-                            {activeTab === 'logs' && 'System Activity Logs'}
-                        </h1>
-                        <p className="admin-header-subtitle">Welcome back, Super Administrator</p>
+                    <div className="admin-header-titles" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                        <div>
+                            <h1 className="admin-header-title">
+                                {activeTab === 'metrics' && 'Super Admin Dashboard'}
+                                {activeTab === 'users' && 'User & Admin Management'}
+                                {activeTab === 'books' && 'Library Collection'}
+                                {activeTab === 'categories' && 'Library Categories'}
+                                {activeTab === 'announcements' && 'System Announcements'}
+                                {activeTab === 'queries' && 'User Queries'}
+                                {activeTab === 'reported-reviews' && 'Review Reports'}
+                                {activeTab === 'logs' && 'System Activity Logs'}
+                            </h1>
+                            <p className="admin-header-subtitle">Welcome back, Super Administrator</p>
+                        </div>
+
+                        {activeTab === 'users' && (
+                            <button
+                                onClick={() => exportUsersToCSV(users)}
+                                className="admin-export-csv-btn"
+                                style={{ transform: 'none', marginLeft: 'auto' }}
+                            >
+                                <Download size={18} />
+                                Export CSV
+                            </button>
+                        )}
                     </div>
                 </header>
 
@@ -80,8 +96,8 @@ const SuperAdminDashboard: React.FC = () => {
                                 </span>
                             </div>
                             <div className="card stats-card-content">
-                                <span className="stats-label">Average Order Value</span>
-                                <span className="stats-value stats-value-accent">₹{metrics.averageOrderValue?.toLocaleString()}</span>
+                                <span className="stats-label">Premium Members</span>
+                                <span className="stats-value stats-value-accent">{metrics.premiumMemberCount}</span>
                             </div>
                             <div className="card stats-card-content">
                                 <span className="stats-label">Cancellation Rate</span>
@@ -98,7 +114,7 @@ const SuperAdminDashboard: React.FC = () => {
                     </>
                 )}
 
-                {activeTab === 'users' && <UserAdminManagement hideTitle={true} />}
+                {activeTab === 'users' && <UserAdminManagement onUsersUpdate={setUsers} />}
                 {(activeTab === 'books' || activeTab === 'categories') && <AdminDashboard hideHeader={true} />}
                 {activeTab === 'announcements' && <Announcements />}
                 {activeTab === 'queries' && <ContactQueries />}

@@ -768,22 +768,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
             )}
             <div className={`admin - header - actions ${hideHeader ? 'actions-standalone' : ''} `}>
               {activeTab === 'books' && currentUser?.role !== RoleName.SUPER_ADMIN && (
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02, translateY: -2 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setShowAddBookForm(!showAddBookForm)}
-                  className={`admin - refresh - stats - btn ${showAddBookForm ? 'admin-btn-negative' : 'admin-btn-positive'} `}
+                  className={`admin-refresh-stats-btn ${showAddBookForm ? 'admin-btn-danger' : 'admin-btn-positive'}`}
                 >
-                  {showAddBookForm ? (
-                    <>
-                      <Minus size={18} />
-                      <span>Hide Form</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={18} />
-                      <span>{editingBookId ? 'Edit Book' : 'Add New Book'}</span>
-                    </>
-                  )}
-                </button>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={showAddBookForm ? 'minus' : 'plus'}
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ display: 'flex', alignItems: 'center' }}
+                    >
+                      {showAddBookForm ? <Minus size={18} /> : <Plus size={18} />}
+                    </motion.div>
+                  </AnimatePresence>
+                  <span>{showAddBookForm ? 'Hide Form' : (editingBookId ? 'Edit Book' : 'Add New Book')}</span>
+                </motion.button>
               )}
               {activeTab === 'categories' && currentUser?.role !== RoleName.SUPER_ADMIN && (
                 <button

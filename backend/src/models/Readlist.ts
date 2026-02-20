@@ -21,11 +21,6 @@ const readlistSchema = new Schema<IReadlist>(
             enum: ['active', 'completed', 'expired'],
             default: 'active'
         },
-        source: {
-            type: String,
-            enum: ['manual', 'order'],
-            default: 'manual'
-        },
         addedAt: { type: Date, default: Date.now },
         dueDate: { type: Date },
         completedAt: { type: Date },

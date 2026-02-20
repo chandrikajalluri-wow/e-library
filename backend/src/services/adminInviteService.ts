@@ -177,12 +177,16 @@ export const verifyInviteToken = async (
 };
 
 /**
- * Accept an admin invitation
+ * Accept an admin invitation and create/update user account
  * @param rawToken - The token from the URL
+ * @param name - Full name of the admin
+ * @param password - Password for the admin account
  * @returns Success message or throws error
  */
 export const acceptInvite = async (
-    rawToken: string
+    rawToken: string,
+    name: string,
+    password?: string
 ): Promise<{ message: string; email: string }> => {
     // 1. Verify token (this also checks expiry)
     const inviteDetails = await verifyInviteToken(rawToken);
@@ -207,40 +211,63 @@ export const acceptInvite = async (
         throw new Error('Invitation not found or already used');
     }
 
-    // 3. Find user by email
-    const user = await User.findOne({ email: matchedInvite.email });
-    if (!user) {
-        throw new Error('User account no longer exists');
-    }
-
-    if (user.isDeleted) {
-        throw new Error('User account has been deleted');
-    }
-
-    // 4. Get admin role ID
+    // 3. Get admin role ID
     const adminRole = await Role.findOne({ name: RoleName.ADMIN });
     if (!adminRole) {
         throw new Error('Admin role not found in system');
     }
 
-    // 5. Update user role
-    user.role_id = adminRole._id;
-    await user.save();
+    // 4. Find user by email or create new
+    let user = await User.findOne({ email: matchedInvite.email });
+    let isPromotion = !!user;
 
-    // 6. Update invite status
+    // Hash password if provided
+    let hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+
+    if (user) {
+        if (user.isDeleted) {
+            throw new Error('User account has been deleted');
+        }
+        // Promote existing user
+        user.role_id = adminRole._id;
+        user.name = name || user.name;
+        if (hashedPassword) {
+            user.password = hashedPassword;
+        }
+        user.isVerified = true;
+        await user.save();
+    } else {
+        // Create new admin user
+        if (!password) {
+            throw new Error('Password is required for new accounts');
+        }
+        user = await User.create({
+            name,
+            email: matchedInvite.email,
+            password: hashedPassword,
+            role_id: adminRole._id,
+            isVerified: true
+        });
+    }
+
+    // 5. Update invite status
     matchedInvite.status = InviteStatus.ACCEPTED;
     matchedInvite.accepted_at = new Date();
     await matchedInvite.save();
 
-    // 7. Log activity
+    // 6. Log activity
     await ActivityLog.create({
         user_id: user._id,
         action: ActivityAction.ADMIN_INVITE_ACCEPTED,
-        description: `Accepted admin invitation from ${inviteDetails.inviterName}`,
+        description: isPromotion
+            ? `Accepted admin invitation and promoted from user to admin`
+            : `Accepted admin invitation and created new admin account`,
     });
 
     return {
-        message: 'Admin invitation accepted successfully',
+        message: isPromotion
+            ? 'Account promoted to Admin successfully'
+            : 'Admin account created successfully',
         email: user.email,
     };
 };

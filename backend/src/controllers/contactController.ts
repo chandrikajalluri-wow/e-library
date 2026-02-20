@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { sendEmail } from '../utils/mailer';
 import Contact from '../models/Contact';
+import User from '../models/User';
+import ActivityLog from '../models/ActivityLog';
+import { ActivityAction } from '../types/enums';
 import { notifySuperAdmins } from '../utils/notification';
 import { getContactResponseTemplate } from '../utils/emailTemplates';
 
@@ -28,6 +31,15 @@ export const submitContactForm = async (req: Request, res: Response) => {
             `New Query Received: ${message.substring(0, 30)}${message.length > 30 ? '...' : ''} from ${name}`,
             'system' as any
         );
+
+        // Log the activity
+        const user = await User.findOne({ email });
+        await ActivityLog.create({
+            user_id: user?._id,
+            action: ActivityAction.CONTACT_FORM_SUBMITTED,
+            description: `Contact form submitted by ${name} (${email}): "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`,
+            timestamp: new Date()
+        });
 
         res.json({ message: 'Message sent successfully. An automated response has been sent to your email.' });
     } catch (err) {

@@ -10,6 +10,7 @@ import Order from '../models/Order';
 import Contact from '../models/Contact';
 import Readlist from '../models/Readlist';
 import Address from '../models/Address';
+import Membership from '../models/Membership';
 import { RoleName, ActivityAction, NotificationType, MembershipName } from '../types/enums';
 import { sendEmail } from '../utils/mailer';
 
@@ -19,10 +20,28 @@ export const getAllUsers = async (req: Request, res: Response) => {
         const limit = parseInt(req.query.limit as string) || 15;
         const search = req.query.search as string || '';
         const role = req.query.role as string || 'all';
+        const membershipFilter = req.query.membership as string || 'all';
+        const status = req.query.status as string || 'all';
 
         const skip = (page - 1) * limit;
 
-        const query: any = { isDeleted: { $ne: true } };
+        const query: any = {};
+
+        if (status === 'verified') {
+            query.isVerified = true;
+            query.isDeleted = false;
+        } else if (status === 'pending') {
+            query.isVerified = false;
+            query.isDeleted = false;
+        } else if (status === 'deleted') {
+            query.isDeleted = true;
+        } else {
+            // 'all' status - show everything? User said "when user is deleted also he should be displayed in the user table"
+            // I'll default to showing non-deleted users for 'all' roles/memberships unless specifically 'all' status is selected.
+            // Wait, if status is 'all', I should show both deleted and non-deleted? 
+            // The request says "when user is deleted also he should be displayed in the user table". 
+            // So 'all' status should include deleted users.
+        }
 
         if (search) {
             query.$or = [
@@ -35,6 +54,49 @@ export const getAllUsers = async (req: Request, res: Response) => {
             const targetRole = await Role.findOne({ name: role });
             if (targetRole) {
                 query.role_id = targetRole._id;
+            }
+        }
+
+        if (membershipFilter !== 'all') {
+            // Ensure we only show 'user' role when filtering by plan, per user requirements
+            const userRole = await Role.findOne({ name: RoleName.USER });
+            if (userRole) {
+                query.role_id = userRole._id;
+            }
+
+            const targetMembership = await Membership.findOne({
+                name: { $regex: `^${membershipFilter}$`, $options: 'i' }
+            });
+
+            if (membershipFilter === 'premium') {
+                if (targetMembership) {
+                    query.membership_id = targetMembership._id;
+                } else {
+                    query.membership_id = '000000000000000000000000'; // Return none if plan not found
+                }
+            } else if (membershipFilter === 'basic') {
+                if (targetMembership) {
+                    query.membership_id = targetMembership._id;
+                } else {
+                    query.membership_id = '000000000000000000000000';
+                }
+            } else if (membershipFilter === 'none') {
+                const noneCriteria: any[] = [
+                    { membership_id: { $exists: false } },
+                    { membership_id: null },
+                    { isVerified: false }
+                ];
+
+                if (query.$or) {
+                    const searchOr = query.$or;
+                    delete query.$or;
+                    query.$and = [
+                        { $or: searchOr },
+                        { $or: noneCriteria }
+                    ];
+                } else {
+                    query.$or = noneCriteria;
+                }
             }
         }
 
@@ -118,9 +180,7 @@ export const deleteUser = async (req: Request, res: Response) => {
             });
         }
 
-        // Perform Immediate Anonymized Soft Delete
-        user.name = 'Deleted User';
-        user.email = `deleted_${Date.now()}_${user._id}@example.com`;
+        // Perform Soft Delete (Preserving Name and Email)
         user.password = undefined;
         user.googleId = undefined;
         user.profileImage = undefined;
@@ -315,12 +375,15 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
             },
             {
                 $group: {
-                    _id: { $month: '$addedAt' },
-                    month: { $first: { $dateToString: { format: "%Y-%m", date: "$addedAt" } } },
+                    _id: {
+                        year: { $year: '$addedAt' },
+                        month: { $month: '$addedAt' }
+                    },
+                    month: { $first: { $dateToString: { format: "%m/%Y", date: "$addedAt" } } },
                     count: { $sum: 1 }
                 }
             },
-            { $sort: { month: 1 } }
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
         ]);
 
         const realizedStatuses = ['delivered', 'completed', 'returned'];
@@ -335,13 +398,16 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
             },
             {
                 $group: {
-                    _id: { $month: '$createdAt' },
-                    month: { $first: { $dateToString: { format: "%Y-%m", date: "$createdAt" } } },
+                    _id: {
+                        year: { $year: '$createdAt' },
+                        month: { $month: '$createdAt' }
+                    },
+                    month: { $first: { $dateToString: { format: "%m/%Y", date: "$createdAt" } } },
                     count: { $sum: 1 },
                     revenue: { $sum: '$totalAmount' }
                 }
             },
-            { $sort: { month: 1 } }
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
         ]);
 
         const totalOrders = await Order.countDocuments();
@@ -352,7 +418,18 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
             { $match: { status: { $in: realizedStatuses } } },
             { $group: { _id: null, total: { $sum: '$totalAmount' } } }
         ]);
-        const totalRevenue = revenueResult[0]?.total || 0;
+        let totalRevenue = revenueResult[0]?.total || 0;
+
+        let premiumMemberCount = 0;
+        const premiumMembership = await Membership.findOne({ name: MembershipName.PREMIUM });
+        if (premiumMembership) {
+            premiumMemberCount = await User.countDocuments({
+                membership_id: premiumMembership._id,
+                isDeleted: false
+            });
+            const membershipRevenue = (premiumMembership.price || 99) * premiumMemberCount;
+            totalRevenue += membershipRevenue;
+        }
 
         // Calculate Average Order Fulfillment Time (for delivered orders)
         const fulfillmentResult = await Order.aggregate([
@@ -389,13 +466,14 @@ export const getUsageMetrics = async (req: Request, res: Response) => {
             : 0;
 
         res.json({
-            version: '2026-02-17-v1', // Updated version tag
+            version: '2026-02-20-v1', // Updated version tag
             users: userCount,
             admins: adminCount,
             totalBooks: bookCount,
             totalActivity: logCount,
             totalOrders,
             totalRevenue,
+            premiumMemberCount,
             avgFulfillmentTime,
             averageOrderValue,
             cancellationRate,

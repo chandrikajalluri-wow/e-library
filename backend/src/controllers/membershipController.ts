@@ -50,6 +50,14 @@ export const upgradeMyMembership = async (req: AuthRequest, res: Response) => {
 
         await user.save();
 
+        // Log the activity
+        await ActivityLog.create({
+            user_id: user._id,
+            action: ActivityAction.MEMBERSHIP_UPGRADED,
+            description: `Upgraded to ${membership.displayName} membership`,
+            timestamp: new Date()
+        });
+
         const updatedUser = await User.findById(req.user!._id).populate('membership_id');
 
         res.json({
@@ -77,6 +85,14 @@ export const updateUserMembershipAdmin = async (req: AuthRequest, res: Response)
 
         user.membership_id = membership._id;
         await user.save();
+
+        // Log the activity
+        await ActivityLog.create({
+            user_id: user._id,
+            action: ActivityAction.MEMBERSHIP_UPGRADED,
+            description: `Admin updated user membership to ${membership.displayName}`,
+            timestamp: new Date()
+        });
 
         const updatedUser = await User.findById(userId).populate('membership_id');
 

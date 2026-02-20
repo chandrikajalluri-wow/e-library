@@ -11,6 +11,8 @@ import { IRole } from '../models/Role';
 import { RoleName, MembershipName } from '../types/enums';
 import { OAuth2Client } from 'google-auth-library';
 import { getVerificationEmailTemplate, getPasswordResetTemplate } from '../utils/emailTemplates';
+import ActivityLog from '../models/ActivityLog';
+import { ActivityAction } from '../types/enums';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -69,6 +71,14 @@ export const signup = async (req: Request, res: Response) => {
         }
 
         await user.save();
+
+        // Log registration
+        await ActivityLog.create({
+            user_id: user._id,
+            action: ActivityAction.USER_REGISTERED,
+            timestamp: new Date()
+        });
+
         res.json({
             message: 'Signup successful. Please check your email to verify account.',
         });
@@ -165,6 +175,13 @@ export const login = async (req: Request, res: Response) => {
         }
 
         await user.save();
+
+        // Log login
+        await ActivityLog.create({
+            user_id: user._id,
+            action: ActivityAction.USER_LOGIN,
+            timestamp: new Date()
+        });
 
         res.json({ token, role: roleDoc.name, userId: user._id, theme: user.theme });
     } catch (err) {
@@ -302,6 +319,14 @@ export const googleLogin = async (req: Request, res: Response) => {
 
             await user.save();
             user = await user.populate('role_id');
+
+            // Log registration for new Google user
+            await ActivityLog.create({
+                user_id: user._id,
+                action: ActivityAction.USER_REGISTERED,
+                timestamp: new Date(),
+                description: 'Registered via Google Login'
+            });
         } else if (!user.googleId) {
             // Link existing account with Google if not already linked
             user.googleId = sub;
@@ -336,6 +361,14 @@ export const googleLogin = async (req: Request, res: Response) => {
         }
 
         await user.save();
+
+        // Log login for Google user
+        await ActivityLog.create({
+            user_id: user._id,
+            action: ActivityAction.USER_LOGIN,
+            timestamp: new Date(),
+            description: 'Logged in via Google'
+        });
 
         res.json({ token, role: roleDoc.name, userId: user._id, theme: user.theme });
     } catch (err) {

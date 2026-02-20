@@ -42,13 +42,17 @@ export const verifyInviteToken = async (req: AuthRequest, res: Response) => {
  */
 export const acceptInvite = async (req: AuthRequest, res: Response) => {
     try {
-        const { token } = req.body;
+        const { token, name, password } = req.body;
 
         if (!token) {
             return res.status(400).json({ error: 'Token is required' });
         }
 
-        const result = await adminInviteService.acceptInvite(token);
+        if (!name) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+
+        const result = await adminInviteService.acceptInvite(token, name, password);
 
         return res.status(200).json({
             message: result.message,

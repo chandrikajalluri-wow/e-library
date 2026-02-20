@@ -9,16 +9,19 @@ import { MembershipName } from '../types/enums';
 import { toast } from 'react-toastify';
 import { BookOpen, Flame, Heart, Bookmark, ArrowRight, Zap } from 'lucide-react';
 import Loader from '../components/Loader';
+import { getCategories } from '../services/categoryService';
+import { type Category } from '../types';
 import '../styles/UserDashboard.css';
 import '../styles/BookList.css';
 
 const UserDashboard: React.FC = () => {
   const [readlist, setReadlist] = useState<any[]>([]);
-  const [stats, setStats] = useState({ booksRead: 0, borrowedCount: 0, wishlistCount: 0, streakCount: 0 });
+  const [stats, setStats] = useState({ booksRead: 0, borrowedCount: 0, wishlistCount: 0, streakCount: 0, activeReads: 0 });
   const [membership, setMembership] = useState<Membership | null>(null);
 
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'reading' | 'completed'>('reading');
+  const [activeTab, setActiveTab] = useState<'reading' | 'completed' | 'expired'>('reading');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -35,16 +38,17 @@ const UserDashboard: React.FC = () => {
         setUserProfile(profile);
       } catch (e) { console.error('Profile fetch failed', e); }
 
-      // Fetch other data pieces individually or via Promise.allSettled for resilience
       const results = await Promise.allSettled([
         getReadlist(),
         getDashboardStats(),
-        getMyMembership()
+        getMyMembership(),
+        getCategories()
       ]);
 
       if (results[0].status === 'fulfilled') setReadlist(Array.isArray(results[0].value) ? results[0].value : []);
       if (results[1].status === 'fulfilled') setStats(results[1].value);
       if (results[2].status === 'fulfilled') setMembership(results[2].value);
+      if (results[3].status === 'fulfilled') setCategories(results[3].value.slice(0, 5));
 
 
     } catch (err) {
@@ -91,7 +95,7 @@ const UserDashboard: React.FC = () => {
             <span className="hero-stat-label">Day Streak</span>
           </div>
           <div className="hero-stat-item">
-            <span className="hero-stat-value">{readlist.filter(item => item.book || item.title).length}</span>
+            <span className="hero-stat-value">{stats.activeReads}</span>
             <span className="hero-stat-label">Active Reads</span>
           </div>
         </div>
@@ -196,11 +200,21 @@ const UserDashboard: React.FC = () => {
           >
             Completed
           </button>
+          <button
+            className={`library-tab ${activeTab === 'expired' ? 'active' : ''}`}
+            onClick={() => setActiveTab('expired')}
+          >
+            Expired
+          </button>
         </div>
 
         <div className="grid-books">
           {readlist.filter(item => {
-            if (activeTab === 'reading') return item.status === 'active';
+            const isDateExpired = item.dueDate && new Date(item.dueDate) < new Date();
+            const isExpired = item.status === 'expired' || (item.status === 'active' && isDateExpired);
+
+            if (activeTab === 'reading') return item.status === 'active' && !isDateExpired;
+            if (activeTab === 'expired') return isExpired;
             if (activeTab === 'completed') return item.status === 'completed';
             return true;
           }).length === 0 ? (
@@ -220,15 +234,27 @@ const UserDashboard: React.FC = () => {
               <div className="discovery-chips-container">
                 <p className="chips-label">Quick Discovery</p>
                 <div className="discovery-chips">
-                  {['Fantasy', 'Technology', 'Business', 'Romance', 'Sci-Fi'].map((cat) => (
-                    <button
-                      key={cat}
-                      className="discovery-chip"
-                      onClick={() => navigate(`/books?search=${cat}`)}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+                  {categories.length > 0 ? (
+                    categories.map((cat) => (
+                      <button
+                        key={cat._id}
+                        className="discovery-chip"
+                        onClick={() => navigate(`/books?category=${cat._id}`)}
+                      >
+                        {cat.name}
+                      </button>
+                    ))
+                  ) : (
+                    ['Fantasy', 'Technology', 'Business', 'Romance', 'Sci-Fi'].map((cat) => (
+                      <button
+                        key={cat}
+                        className="discovery-chip"
+                        onClick={() => navigate(`/books?search=${cat}`)}
+                      >
+                        {cat}
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -242,7 +268,11 @@ const UserDashboard: React.FC = () => {
           ) : (
             readlist
               .filter(item => {
-                if (activeTab === 'reading') return item.status === 'active';
+                const isDateExpired = item.dueDate && new Date(item.dueDate) < new Date();
+                const isExpired = item.status === 'expired' || (item.status === 'active' && isDateExpired);
+
+                if (activeTab === 'reading') return item.status === 'active' && !isDateExpired;
+                if (activeTab === 'expired') return isExpired;
                 if (activeTab === 'completed') return item.status === 'completed';
                 return true;
               })
@@ -250,7 +280,7 @@ const UserDashboard: React.FC = () => {
                 const book = item.book || (item.title ? item : null);
                 if (!book) return null;
                 const isDateExpired = item.dueDate && new Date(item.dueDate) < new Date();
-                const isExpired = item.status === 'active' && isDateExpired;
+                const isExpired = item.status === 'expired' || (item.status === 'active' && isDateExpired);
 
                 return (
                   <div
@@ -288,7 +318,7 @@ const UserDashboard: React.FC = () => {
                             disabled={isExpired}
                             className="read-btn-premium"
                           >
-                            {isExpired ? 'Renew' : (item.status === 'completed' ? 'Read Again' : 'Read')}
+                            {item.status === 'completed' ? 'Read Again' : 'Read'}
                           </button>
                         )}
                       </div>

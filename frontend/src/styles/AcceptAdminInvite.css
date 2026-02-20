@@ -252,6 +252,83 @@
     color: var(--text-primary);
 }
 
+.account-setup-form {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.account-setup-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: left;
+}
+
+.account-setup-form label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.account-setup-form .input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.account-setup-form input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.account-setup-form input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.account-setup-form input:disabled {
+    background: var(--bg-secondary);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    transition: color 0.2s ease;
+}
+
+.toggle-password:hover {
+    color: var(--primary-color);
+}
+
+.input-note {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
 @media (max-width: 768px) {
     .accept-invite-card {
         padding: 2rem 1.5rem;
@@ -266,7 +343,8 @@
     }
 
     .btn-accept,
-    .btn-decline {
+    .btn-decline,
+    .btn-secondary {
         width: 100%;
     }
 }

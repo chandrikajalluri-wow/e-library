@@ -531,9 +531,14 @@
 }
 
 .read-btn-premium:disabled {
-    background: var(--border-color);
-    cursor: not-allowed;
-    box-shadow: none;
+    background: #94a3b8 !important;
+    /* Muted Slate Gray */
+    color: rgba(255, 255, 255, 0.8) !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    opacity: 0.6 !important;
+    transform: none !important;
+    filter: grayscale(0.5);
 }
 
 /* Premium Discovery Zone Empty State */

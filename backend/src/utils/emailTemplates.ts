@@ -239,8 +239,8 @@ export const getAdminInvitationTemplate = (
             <ul style="margin: 10px 0; padding-left: 20px;">
                 <li>Manage the book collection</li>
                 <li>Handle user requests and orders</li>
-                <li>Monitor system activity</li>
-                <li>Access advanced analytics</li>
+                <li>Manage categories</li>
+                <li>Handling chat support</li>
             </ul>
         </div>
 
