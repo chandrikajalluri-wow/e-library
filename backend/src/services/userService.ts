@@ -230,6 +230,12 @@ export const requestBook = async (userId: string, title: string, author: string,
     return newRequest;
 };
 
+export const getMyBookRequests = async (userId: string) => {
+    return await BookRequest.find({ user_id: userId })
+        .populate('book_id', 'title author coverImage description')
+        .sort({ createdAt: -1 });
+};
+
 export const getAllBookRequests = async (sort?: string) => {
     let sortOption: any = { createdAt: -1 };
     if (sort === 'oldest') sortOption = { createdAt: 1 };
@@ -243,12 +249,13 @@ export const getAllBookRequests = async (sort?: string) => {
                 select: 'name displayName'
             }
         })
+        .populate('book_id', 'title')
         .sort(sortOption);
 
     return requests;
 };
 
-export const updateBookRequestStatus = async (requestId: string, status: string, adminUser: any) => {
+export const updateBookRequestStatus = async (requestId: string, status: string, adminUser: any, bookId?: string) => {
     if (!Object.values(RequestStatus).includes(status as any)) {
         throw new Error('Invalid status');
     }
@@ -258,6 +265,9 @@ export const updateBookRequestStatus = async (requestId: string, status: string,
 
     const oldStatus = request.status;
     request.status = status as any;
+    if (bookId) {
+        request.book_id = bookId as any;
+    }
     await request.save();
 
     if (status === RequestStatus.APPROVED && oldStatus !== RequestStatus.APPROVED) {

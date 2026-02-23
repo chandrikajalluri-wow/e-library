@@ -13,7 +13,7 @@ import Loader from "../components/Loader";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 import ConfirmationModal from "../components/ConfirmationModal";
 import "../styles/UserSettings.css";
-import "../styles/UserProfile.css"; // Reuse some basic form styles
+import "../styles/UserProfile.css";
 
 type SettingsTab = 'profile' | 'account' | 'security' | 'sessions' | 'danger-zone';
 

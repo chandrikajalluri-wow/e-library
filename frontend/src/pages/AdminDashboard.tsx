@@ -25,8 +25,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) => {
-  const [searchParams] = useSearchParams();
-  // const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'stats';
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -229,7 +228,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         reason: exchangeReasonFilter,
         sort: exchangeSort === 'asc' ? 'oldest' : 'newest'
       });
-      console.log('Fetched exchange orders:', data);
+
 
       // Handle paginated response
       if (data && data.orders) {
@@ -516,12 +515,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
             toast.success('Book updated successfully');
             setEditingBookId(null);
           } else {
-            await createBook(formData);
+            const createdBook = await createBook(formData);
             toast.success('Book created successfully');
 
             // Auto-approve if coming from a suggestion
-            if (selectedRequestId) {
-              handleBookRequestStatus(selectedRequestId, RequestStatus.APPROVED, true);
+            if (selectedRequestId && createdBook?._id) {
+              handleBookRequestStatus(selectedRequestId, RequestStatus.APPROVED, true, createdBook._id);
               setSelectedRequestId(null);
             }
           }
@@ -654,9 +653,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
 
 
-  const handleBookRequestStatus = (id: string, status: string, silent = false) => {
+  const handleBookRequestStatus = (id: string, status: string, silent = false, bookId?: string) => {
     if (silent) {
-      return updateBookRequestStatus(id, status)
+      return updateBookRequestStatus(id, status, bookId)
         .then(() => fetchUserRequests())
         .catch(err => console.error('Failed to update request status silently', err));
     }
@@ -668,7 +667,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
-          await updateBookRequestStatus(id, status);
+          await updateBookRequestStatus(id, status, bookId);
           toast.success(`Request ${status} `);
           fetchUserRequests();
           setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
@@ -790,22 +789,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 </motion.button>
               )}
               {activeTab === 'categories' && currentUser?.role !== RoleName.SUPER_ADMIN && (
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02, translateY: -2 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setShowCategoryForm(!showCategoryForm)}
-                  className={`admin - refresh - stats - btn ${showCategoryForm ? 'admin-btn-negative' : 'admin-btn-positive'} `}
+                  className={`admin-refresh-stats-btn ${showCategoryForm ? 'admin-btn-negative' : 'admin-btn-positive'}`}
                 >
-                  {showCategoryForm ? (
-                    <>
-                      <Minus size={18} />
-                      <span>Hide Form</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={18} />
-                      <span>Add Category</span>
-                    </>
-                  )}
-                </button>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={showCategoryForm ? 'minus' : 'plus'}
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ display: 'flex', alignItems: 'center' }}
+                    >
+                      {showCategoryForm ? <Minus size={18} /> : <Plus size={18} />}
+                    </motion.div>
+                  </AnimatePresence>
+                  <span>{showCategoryForm ? 'Hide Form' : (editingCategoryId ? 'Edit Category' : 'Add Category')}</span>
+                </motion.button>
               )}
             </div>
           </div>
@@ -1466,21 +1469,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     <tbody>
                       {orderReturns.map(order => (
                         <tr key={order._id}>
-                          <td>
+                          <td data-label="Customer">
                             <div className="user-info-box">
                               <span className="user-main-name">{order.user_id?.name || 'Unknown'}</span>
                               <span className="user-sub-email">{order.user_id?.email}</span>
                             </div>
                           </td>
-                          <td><span className="book-main-title">#{order._id.slice(-8).toUpperCase()}</span></td>
-                          <td><span className="book-sub-meta">{order.items?.length || 0} items</span></td>
-                          <td><span className="admin-fine-amount">₹{order.totalAmount?.toFixed(2)}</span></td>
-                          <td>
+                          <td data-label="Order ID"><span className="book-main-title">#{order._id.slice(-8).toUpperCase()}</span></td>
+                          <td data-label="Items"><span className="book-sub-meta">{order.items?.length || 0} items</span></td>
+                          <td data-label="Total"><span className="admin-fine-amount">₹{order.totalAmount?.toFixed(2)}</span></td>
+                          <td data-label="Exchange Reason">
                             <div className="book-info-box">
                               <span className="book-sub-meta">{order.returnReason || 'No reason provided'}</span>
                             </div>
                           </td>
-                          <td>
+                          <td data-label="Proof">
                             {order.exchangeImageUrl ? (
                               <div
                                 className="admin-proof-thumb"
@@ -1496,7 +1499,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                             )}
                           </td>
                           {exchangeStatusFilter === 'return_requested' && (
-                            <td className="admin-actions-cell">
+                            <td data-label="Action" className="admin-actions-cell">
                               <div className="admin-actions-flex">
                                 <button onClick={() => handleApproveOrderReturn(order._id)} className="admin-btn-edit">Approve</button>
                                 <button onClick={() => handleDeclineOrderReturn(order._id)} className="admin-btn-delete">Reject</button>
@@ -1616,7 +1619,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                         })
                         .map(req => (
                           <tr key={req._id}>
-                            <td>
+                            <td data-label="User">
                               <div className="user-info-box">
                                 <span className="user-main-name">{req.user_id?.name || 'Unknown'}</span>
                                 <span className="user-sub-email">{req.user_id?.email}</span>
@@ -1625,7 +1628,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                                 </span>
                               </div>
                             </td>
-                            <td>
+                            <td data-label="Book Details">
                               <div className="book-info-box">
                                 <span className="book-main-title">
                                   {req.title}
@@ -1635,15 +1638,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                                 </span>
                               </div>
                             </td>
-                            <td>
+                            <td data-label="Reason">
                               <div className="book-info-box">
                                 <span className="book-sub-meta" style={{ maxWidth: '200px', display: 'block' }}>
                                   {req.reason || 'No reason provided'}
                                 </span>
                               </div>
                             </td>
-                            <td><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
-                            <td className="admin-actions-cell" style={{ paddingLeft: '4rem' }}>
+                            <td data-label="Status"><span className={`status-badge status-${req.status}`}>{req.status}</span></td>
+                            <td data-label="Action" className="admin-actions-cell" style={{ paddingLeft: '4rem' }}>
                               <div className="admin-actions-flex">
                                 {req.status === RequestStatus.PENDING ? (
                                   <>
@@ -1656,6 +1659,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                                         });
                                         setSelectedRequestId(req._id);
                                         setShowAddBookForm(true);
+                                        setSearchParams({ tab: 'books' });
                                         window.scrollTo({ top: 0, behavior: 'smooth' });
                                       }}
                                       className="admin-btn-edit"
@@ -1742,7 +1746,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
                       return (
                         <tr key={r._id}>
-                          <td>
+                          <td data-label="Reader">
                             <div className="user-info-box">
                               <span className="user-main-name">{r.user_id?.name}</span>
                               <span className={`membership-pill ${isPremiumUser ? 'membership-premium' : ''}`}>
@@ -1750,9 +1754,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                               </span>
                             </div>
                           </td>
-                          <td><div className="book-info-box"><span className="book-main-title">{r.book_id?.title}</span></div></td>
-                          <td><div className="book-info-box"><div>Started: {r.addedAt ? new Date(r.addedAt).toLocaleDateString() : 'N/A'}</div><div>Due: {r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'N/A'}</div></div></td>
-                          <td><span className={`status-badge status-${r.status}`}>{r.status}</span></td>
+                          <td data-label="Book"><div className="book-info-box"><span className="book-main-title">{r.book_id?.title}</span></div></td>
+                          <td data-label="Dates"><div className="book-info-box"><div>Started: {r.addedAt ? new Date(r.addedAt).toLocaleDateString() : 'N/A'}</div><div>Due: {r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'N/A'}</div></div></td>
+                          <td data-label="Status"><span className={`status-badge status-${r.status}`}>{r.status}</span></td>
                         </tr>
                       );
                     })}</tbody>
@@ -1849,14 +1853,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     <thead><tr><th>User</th><th>Action</th><th>Timestamp</th></tr></thead>
                     <tbody>{logs.map(log => (
                       <tr key={log._id}>
-                        <td>
+                        <td data-label="User">
                           <div className="user-info-box">
                             <span className="user-main-name">{log.user_id?.name || 'Unknown Admin'}</span>
                             <span className="user-sub-email">{log.user_id?.email || 'System Action'}</span>
                           </div>
                         </td>
-                        <td><span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{log.action}</span></td>
-                        <td><span className="book-sub-meta">{new Date(log.timestamp).toLocaleString()}</span></td>
+                        <td data-label="Action"><span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{log.action}</span></td>
+                        <td data-label="Timestamp"><span className="book-sub-meta">{new Date(log.timestamp).toLocaleString()}</span></td>
                       </tr>
                     ))}</tbody>
                   </table>

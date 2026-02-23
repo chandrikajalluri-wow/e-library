@@ -36,8 +36,8 @@ const SuperAdminDashboard: React.FC = () => {
             <main className="admin-main-content">
                 {/* Dashboard Title */}
                 <header className="admin-header">
-                    <div className="admin-header-titles" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
-                        <div>
+                    <div className="admin-header-row">
+                        <div className="admin-header-titles">
                             <h1 className="admin-header-title">
                                 {activeTab === 'metrics' && 'Super Admin Dashboard'}
                                 {activeTab === 'users' && 'User & Admin Management'}
@@ -55,7 +55,6 @@ const SuperAdminDashboard: React.FC = () => {
                             <button
                                 onClick={() => exportUsersToCSV(users)}
                                 className="admin-export-csv-btn"
-                                style={{ transform: 'none', marginLeft: 'auto' }}
                             >
                                 <Download size={18} />
                                 Export CSV
@@ -66,7 +65,7 @@ const SuperAdminDashboard: React.FC = () => {
 
                 {activeTab === 'metrics' && metrics && (
                     <>
-                        <div className="admin-stats-grid-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '1.5rem' }}>
+                        <div className="admin-stats-grid-container" style={{ marginBottom: '1.5rem' }}>
                             <div className="card stats-card-content">
                                 <span className="stats-label">Total Books</span>
                                 <span className="stats-value stats-value-info">{metrics.totalBooks}</span>
@@ -86,7 +85,7 @@ const SuperAdminDashboard: React.FC = () => {
                         </div>
 
                         {/* New Advanced Metrics Row */}
-                        <div className="admin-stats-grid-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                        <div className="admin-stats-grid-container">
                             <div className="card stats-card-content">
                                 <span className="stats-label">Avg. Fulfillment Time</span>
                                 <span className="stats-value stats-value-info">

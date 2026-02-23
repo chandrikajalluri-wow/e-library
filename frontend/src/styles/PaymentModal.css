@@ -170,40 +170,71 @@
     cursor: not-allowed;
 }
 
-/* Dark mode support */
+/* Dark mode support - Priority to app-wide [data-theme='dark'] */
+[data-theme='dark'] .payment-modal-content {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme='dark'] .payment-modal-header h2 {
+    color: #f8fafc;
+}
+
+[data-theme='dark'] .payment-modal-close {
+    color: #94a3b8;
+}
+
+[data-theme='dark'] .payment-modal-close:hover {
+    color: #f8fafc;
+}
+
+[data-theme='dark'] .payment-form-group label {
+    color: #cbd5e1;
+}
+
+[data-theme='dark'] .payment-form-group input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f8fafc;
+}
+
+[data-theme='dark'] .payment-form-group input:focus {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+}
+
+[data-theme='dark'] .payment-info {
+    background: #334155;
+    color: #94a3b8;
+}
+
+/* Fallback for OS preference if app theme is not explicitly set */
 @media (prefers-color-scheme: dark) {
-    .payment-modal-content {
-        background: #1f2937;
+    :root:not([data-theme='light']) .payment-modal-content {
+        background: #1e293b;
     }
 
-    .payment-modal-header h2 {
-        color: #f9fafb;
+    :root:not([data-theme='light']) .payment-modal-header h2 {
+        color: #f8fafc;
     }
 
-    .payment-modal-close {
-        color: #9ca3af;
+    :root:not([data-theme='light']) .payment-modal-close {
+        color: #94a3b8;
     }
 
-    .payment-modal-close:hover {
-        color: #f9fafb;
+    :root:not([data-theme='light']) .payment-form-group label {
+        color: #cbd5e1;
     }
 
-    .payment-form-group label {
-        color: #d1d5db;
+    :root:not([data-theme='light']) .payment-form-group input {
+        background: #0f172a;
+        border-color: #334155;
+        color: #f8fafc;
     }
 
-    .payment-form-group input {
-        background: #374151;
-        border-color: #4b5563;
-        color: #f9fafb;
-    }
-
-    .payment-form-group input:focus {
-        border-color: #667eea;
-    }
-
-    .payment-info {
-        background: #374151;
-        color: #9ca3af;
+    :root:not([data-theme='light']) .payment-info {
+        background: #334155;
+        color: #94a3b8;
     }
 }

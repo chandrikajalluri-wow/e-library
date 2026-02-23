@@ -165,20 +165,21 @@ const NotificationsPage: React.FC = () => {
         const type = notif.type?.toLowerCase();
 
         if (isAdmin) {
+            const isSuperAdmin = role === RoleName.SUPER_ADMIN;
+            const targetPath = isSuperAdmin ? '/super-admin-dashboard' : '/admin-dashboard';
+
             if (type === 'order' && notif.target_id) {
                 navigate(`/admin/orders/${notif.target_id}`);
-            } else if (type === 'return' || (type === 'readlist' && notif.target_id)) {
+            } else if (type === 'return' || (type === 'borrow' && notif.target_id) || (type === 'readlist' && notif.target_id)) {
                 // Exchange requests or decisions take admin to requests tab
-                navigate('/admin-dashboard?tab=requests');
+                navigate(`${targetPath}?tab=requests`);
             } else if (type === 'book_request') {
-                navigate('/admin-dashboard?tab=user-requests');
-            } else if ((type === 'stock_alert' || type === 'wishlist') && notif.target_id) {
-                navigate(`/admin-dashboard?tab=books&editBookId=${notif.target_id}`);
+                navigate(`${targetPath}?tab=user-requests`);
+            } else if ((type === 'stock_alert' || type === 'wishlist' || notif.message.toLowerCase().includes('out of stock')) && notif.target_id) {
+                navigate(`${targetPath}?tab=books&editBookId=${notif.target_id}`);
             } else if (type === 'book_created' || type === 'book_updated') {
-                const targetPath = role === RoleName.SUPER_ADMIN ? '/super-admin-dashboard' : '/admin-dashboard';
                 navigate(`${targetPath}?tab=books&editBookId=${notif.target_id}`);
             } else if (type === 'category_created' || type === 'category_updated') {
-                const targetPath = role === RoleName.SUPER_ADMIN ? '/super-admin-dashboard' : '/admin-dashboard';
                 navigate(`${targetPath}?tab=categories`);
             } else if (type === 'review_report') {
                 navigate('/super-admin-dashboard?tab=reported-reviews');

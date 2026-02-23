@@ -118,8 +118,9 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
 
         try {
             if (modalAction === 'delete') {
-                await deleteUser(selectedUser._id);
-                toast.success('User deactivated and anonymized successfully');
+                const isForce = !!conflictData;
+                await deleteUser(selectedUser._id, isForce);
+                toast.success(`User deactivated and anonymized successfully${isForce ? ' (Forced)' : ''}`);
             } else if (modalAction === 'invite') {
                 await inviteAdmin(selectedUser._id);
                 toast.success(`Admin invitation sent to ${selectedUser.email}`);
@@ -212,7 +213,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
             case 'delete':
                 return {
                     title: 'Delete User',
-                    message: `This will immediately deactivate and anonymize ${selectedUser.name}. This action is only allowed if the user has no active premium membership, active reading sessions, or undelivered orders.`,
+                    message: `This will immediately deactivate and anonymize ${selectedUser.name}. This action is only allowed if the user has no undelivered orders.`,
                     type: 'danger' as const
                 };
             default:
@@ -251,7 +252,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                             </button>
                         )}
                     </div>
-                    <div className="admin-filter-wrapper-flex" style={{ display: 'flex', gap: '0.75rem' }}>
+                    <div className="admin-filter-wrapper-flex">
                         <div className="admin-filter-wrapper">
                             <select
                                 className="admin-role-filter-select"
@@ -266,11 +267,10 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                         </div>
                         <div className="admin-filter-wrapper">
                             <select
-                                className="admin-role-filter-select"
+                                className={`admin-role-filter-select ${isMembershipDisabled ? 'disabled' : ''}`}
                                 value={filterMembership}
                                 onChange={(e) => setFilterMembership(e.target.value as any)}
                                 disabled={isMembershipDisabled}
-                                style={{ opacity: isMembershipDisabled ? 0.5 : 1, cursor: isMembershipDisabled ? 'not-allowed' : 'pointer' }}
                             >
                                 <option value="all">All Plans</option>
                                 <option value="basic">Basic Plan</option>
@@ -304,12 +304,12 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                 {loading ? (
                     <div className="admin-loading-container"><div className="spinner"></div></div>
                 ) : filteredUsers.length === 0 ? (
-                    <div className="admin-empty-state-container" style={{ padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', color: 'rgba(255,255,255,0.5)' }}>
-                        <div className="empty-state-icon-box" style={{ padding: '1.5rem', borderRadius: '50%', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', marginBottom: '0.5rem' }}>
+                    <div className="admin-empty-state-container">
+                        <div className="empty-state-icon-box">
                             <Users size={48} />
                         </div>
-                        <h3 className="empty-state-title" style={{ color: '#fff', margin: 0, fontSize: '1.25rem' }}>No Matching Users</h3>
-                        <p className="empty-state-message" style={{ margin: 0, maxWidth: '300px' }}>
+                        <h3 className="empty-state-title">No Matching Users</h3>
+                        <p className="empty-state-message">
                             We couldn't find any users matching your current role or plan filters.
                         </p>
                         <button
@@ -320,7 +320,6 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                                 setFilterStatus('all');
                             }}
                             className="admin-invite-submit-btn"
-                            style={{ marginTop: '0.5rem', padding: '0.6rem 1.2rem', fontSize: '0.9rem' }}
                         >
                             Reset All Filters
                         </button>
@@ -339,7 +338,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                         <tbody>
                             {filteredUsers.map(user => (
                                 <tr key={user._id}>
-                                    <td>
+                                    <td data-label="Name">
                                         <div className="user-info-box">
                                             <span className="user-main-name">{user.name}</span>
                                             {(user.role_id?.name === RoleName.ADMIN || user.role_id?.name === RoleName.SUPER_ADMIN || !user.isVerified) ? (
@@ -351,13 +350,13 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                                             )}
                                         </div>
                                     </td>
-                                    <td>{user.email}</td>
-                                    <td>
+                                    <td data-label="Email">{user.email}</td>
+                                    <td data-label="Role">
                                         <span className={`status-badge ${user.role_id?.name === RoleName.ADMIN ? 'status-borrowed' : (user.role_id?.name === RoleName.SUPER_ADMIN ? 'status-returned' : 'status-pending')}`}>
                                             {user.role_id?.name || 'User'}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td data-label="Status">
                                         {user.isDeleted ? (
                                             <span className="status-badge status-deleted">Deleted</span>
                                         ) : user.isVerified ? (
@@ -366,7 +365,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                                             <span className="status-badge status-pending">Pending</span>
                                         )}
                                     </td>
-                                    <td className="admin-actions-cell">
+                                    <td data-label="Actions" className="admin-actions-cell">
                                         <div className="admin-actions-flex">
                                             {user.role_id?.name !== RoleName.SUPER_ADMIN && (
                                                 <>
@@ -394,7 +393,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
 
             {/* Pagination Controls */}
             {!loading && totalPages > 1 && (
-                <div className="admin-pagination" style={{ marginTop: '1.5rem', justifyContent: 'center' }}>
+                <div className="admin-pagination">
                     <button
                         className="pagination-btn"
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}

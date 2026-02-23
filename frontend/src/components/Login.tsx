@@ -31,7 +31,8 @@ const Login: React.FC = () => {
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
 
-      if (theme) {
+      // Only apply backend theme if no local preference exists
+      if (theme && !localStorage.getItem('theme')) {
         setTheme(theme);
         localStorage.setItem('theme', theme);
       }
@@ -66,7 +67,8 @@ const Login: React.FC = () => {
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
 
-      if (theme) {
+      // Only apply backend theme if no local preference exists
+      if (theme && !localStorage.getItem('theme')) {
         setTheme(theme);
         localStorage.setItem('theme', theme);
       }

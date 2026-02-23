@@ -1,35 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { requestBook } from '../services/userService';
+import { getMyBookRequests, requestBook } from '../services/userService';
 import { getBooks } from '../services/bookService';
 import { getMyMembership } from '../services/membershipService';
-import { MembershipName } from '../types/enums';
+import { MembershipName, RequestStatus } from '../types/enums';
 import { toast } from 'react-toastify';
-import { Lock, Send, BookOpen, User as UserIcon, MessageSquare, ChevronRight } from 'lucide-react';
+import { Lock, Send, BookOpen, User as UserIcon, MessageSquare, ChevronRight, Clock, CheckCircle2, XCircle, ExternalLink, Filter, ArrowUpDown } from 'lucide-react';
 import Loader from '../components/Loader';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/BookRequest.css';
 
 const BookRequestPage: React.FC = () => {
     const [request, setRequest] = useState({ title: '', author: '', reason: '' });
+    const [requests, setRequests] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [membership, setMembership] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [sortOrder, setSortOrder] = useState<string>('newest');
     const navigate = useNavigate();
 
+    const fetchRequests = async () => {
+        try {
+            const data = await getMyBookRequests();
+            setRequests(data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     useEffect(() => {
-        const fetchMembership = async () => {
+        const fetchData = async () => {
+            setLoading(true);
             try {
-                const data = await getMyMembership();
-                setMembership(data);
+                const [membershipData, requestsData] = await Promise.all([
+                    getMyMembership(),
+                    getMyBookRequests()
+                ]);
+                setMembership(membershipData);
+                setRequests(requestsData);
             } catch (err) {
                 console.error(err);
-                toast.error('Failed to verify membership status');
+                toast.error('Failed to load data');
             } finally {
                 setLoading(false);
             }
         };
-        fetchMembership();
+        fetchData();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -52,6 +69,7 @@ const BookRequestPage: React.FC = () => {
             await requestBook(request);
             toast.success('Book request submitted successfully');
             setRequest({ title: '', author: '', reason: '' });
+            fetchRequests();
         } catch (err: any) {
             toast.error(err.response?.data?.error || 'Failed to submit request');
         } finally {
@@ -140,19 +158,113 @@ const BookRequestPage: React.FC = () => {
                             placeholder="Help our curation team understand the value of this book..."
                         />
                     </div>
-                    <button type="submit" className="request-submit-btn" disabled={isSubmitting}>
-                        {isSubmitting ? (
-                            'Processing...'
-                        ) : (
-                            <>
-                                <span>Submit Request</span>
-                                <Send size={20} />
-                            </>
-                        )}
-                    </button>
+                    <div className="request-form-actions">
+                        <button type="submit" className="request-submit-btn" disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                'Processing...'
+                            ) : (
+                                <>
+                                    <span>Submit Request</span>
+                                    <Send size={20} />
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </form>
             </div>
-        </motion.div>
+
+            <div className="requests-history-section">
+                <div className="section-header-row">
+                    <div className="section-title-group">
+                        <h2 className="section-title">Your Requests</h2>
+                        <p className="section-subtitle">Track the status of your suggestions</p>
+                    </div>
+                    <div className="requests-filter-bar">
+                        <div className="request-filter-pill">
+                            <Filter size={14} className="filter-pill-icon" />
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="request-filter-select"
+                            >
+                                <option value="all">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                        </div>
+                        <div className="request-filter-pill">
+                            <ArrowUpDown size={14} className="filter-pill-icon" />
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value)}
+                                className="request-filter-select"
+                            >
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="requests-grid">
+                    <AnimatePresence>
+                        {(() => {
+                            let filtered = [...requests];
+                            if (filterStatus !== 'all') {
+                                filtered = filtered.filter(r => r.status === filterStatus);
+                            }
+                            if (sortOrder === 'newest') {
+                                filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                            } else {
+                                filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                            }
+                            return filtered.length > 0 ? (
+                                filtered.map((req, index) => (
+                                    <motion.div
+                                        key={req._id}
+                                        className="user-request-card"
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: index * 0.1 }}
+                                    >
+                                        <div className="request-status-badge-container">
+                                            <span className={`request-status-badge status-${req.status}`}>
+                                                {req.status === RequestStatus.PENDING && <Clock size={14} />}
+                                                {req.status === RequestStatus.APPROVED && <CheckCircle2 size={14} />}
+                                                {req.status === RequestStatus.REJECTED && <XCircle size={14} />}
+                                                {req.status}
+                                            </span>
+                                        </div>
+                                        <div className="request-info">
+                                            <h3 className="request-book-title">{req.title}</h3>
+                                            <p className="request-book-author">by {req.author}</p>
+                                            <div className="request-date">
+                                                Requested on {new Date(req.createdAt).toLocaleDateString()}
+                                            </div>
+                                        </div>
+
+                                        {req.status === RequestStatus.APPROVED && req.book_id && (
+                                            <div className="request-actions">
+                                                <Link to={`/books/${req.book_id._id || req.book_id}`} className="view-book-btn">
+                                                    <span>View Book</span>
+                                                    <ExternalLink size={16} />
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                ))
+                            ) : (
+                                <div className="no-requests-state">
+                                    <BookOpen size={48} />
+                                    <p>{filterStatus !== 'all' ? `No ${filterStatus} requests found.` : "You haven't made any book requests yet."}</p>
+                                </div>
+                            );
+                        })()}
+                    </AnimatePresence>
+                </div>
+            </div>
+        </motion.div >
     );
 };
 

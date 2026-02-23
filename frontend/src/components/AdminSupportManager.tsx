@@ -347,6 +347,7 @@ const AdminSupportManager: React.FC = () => {
                                         className="btn-close-action"
                                         onClick={() => handleCloseSession(activeSession._id)}
                                     >
+                                        <X size={14} style={{ marginRight: '4px' }} />
                                         <span>End Session</span>
                                     </button>
                                 )}
@@ -434,6 +435,15 @@ const AdminSupportManager: React.FC = () => {
             <div className="user-details-sidebar">
                 {activeSession ? (
                     <>
+                        <div className="sidebar-close-row">
+                            <button
+                                className="sidebar-close-btn"
+                                onClick={() => setShowUserDetails(false)}
+                                aria-label="Close details"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
                         <div className="user-profile-summary">
                             <div className="user-avatar-premium large">
                                 {activeSession.user_id?.profileImage ? (

@@ -400,6 +400,7 @@ const BookDetail: React.FC = () => {
 
           <div className="book-specs-grid">
             <strong>Genre:</strong> <span>{book.genre}</span>
+            <strong>Language:</strong> <span>{book.language}</span>
             <strong>Pages:</strong> <span>{book.pages}</span>
             <strong>Price:</strong> <span>₹{book.price}</span>
             <strong>Published:</strong> <span>{book.publishedYear}</span>
@@ -655,14 +656,6 @@ const BookDetail: React.FC = () => {
                       <small className="review-date">
                         {new Date(r.reviewed_at).toLocaleDateString()}
                       </small>
-                      {(r.user_id?._id === currentUserId || r.user_id === currentUserId) && (
-                        <button
-                          onClick={() => handleEditReview(r)}
-                          className="btn-link-edit"
-                        >
-                          Edit
-                        </button>
-                      )}
                     </div>
                     <div className="review-interactions">
                       <div className="interaction-left">
@@ -680,6 +673,16 @@ const BookDetail: React.FC = () => {
                           <ThumbsDown size={16} />
                           <span>{r.dislikes?.length || 0}</span>
                         </button>
+                        {(r.user_id?._id === currentUserId || r.user_id === currentUserId) && (
+                          <button
+                            className="interaction-btn edit-btn"
+                            onClick={() => handleEditReview(r)}
+                            title="Edit your review"
+                          >
+                            <Bot size={16} />
+                            <span>Edit</span>
+                          </button>
+                        )}
                       </div>
                       <button
                         className="interaction-btn report-btn"
@@ -702,7 +705,7 @@ const BookDetail: React.FC = () => {
           {/* Review Form */}
           {(canReview || editingReviewId) && (
             <div>
-              <div className="review-form-container">
+              <div className={`review-form-container ${editingReviewId ? 'is-editing' : ''}`}>
                 <h3 className="review-form-title">
                   {editingReviewId ? 'Edit Your Review' : 'Write a Review'}
                 </h3>

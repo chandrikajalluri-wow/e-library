@@ -78,14 +78,25 @@ const NotificationCenter: React.FC<{ showLabel?: boolean }> = ({ showLabel }) =>
         const type = notif.type?.toLowerCase();
 
         if (isAdmin) {
+            const isSuperAdmin = role === RoleName.SUPER_ADMIN;
+            const targetPath = isSuperAdmin ? '/super-admin-dashboard' : '/admin-dashboard';
+
             if (type === 'order' && notif.target_id) {
                 navigate(`/admin/orders/${notif.target_id}`);
             } else if (type === 'return' || (type === 'borrow' && notif.target_id)) {
-                navigate('/admin-dashboard?tab=requests');
+                navigate(`${targetPath}?tab=requests`);
             } else if (type === 'book_request') {
-                navigate('/admin-dashboard?tab=user-requests');
+                navigate(`${targetPath}?tab=user-requests`);
             } else if ((type === 'stock_alert' || type === 'wishlist' || notif.message.toLowerCase().includes('out of stock')) && notif.target_id) {
-                navigate(`/admin-dashboard?tab=books&editBookId=${notif.target_id}`);
+                navigate(`${targetPath}?tab=books&editBookId=${notif.target_id}`);
+            } else if (type === 'book_created' || type === 'book_updated') {
+                navigate(`${targetPath}?tab=books&editBookId=${notif.target_id}`);
+            } else if (type === 'category_created' || type === 'category_updated') {
+                navigate(`${targetPath}?tab=categories`);
+            } else if (type === 'review_report') {
+                navigate('/super-admin-dashboard?tab=reported-reviews');
+            } else if (type === 'contact_query') {
+                navigate('/super-admin-dashboard?tab=queries');
             } else if (notif.book_id) {
                 const bookId = notif.book_id?._id || notif.book_id;
                 navigate(`/books/${bookId}`);

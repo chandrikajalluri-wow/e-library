@@ -78,6 +78,16 @@ export const requestBook = async (req: AuthRequest, res: Response) => {
     }
 };
 
+export const getMyBookRequests = async (req: AuthRequest, res: Response) => {
+    try {
+        const requests = await userService.getMyBookRequests(req.user!._id);
+        res.json(requests);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
 export const getAllBookRequests = async (req: AuthRequest, res: Response) => {
     try {
         const requests = await userService.getAllBookRequests(req.query.sort as string);
@@ -90,7 +100,8 @@ export const getAllBookRequests = async (req: AuthRequest, res: Response) => {
 
 export const updateBookRequestStatus = async (req: AuthRequest, res: Response) => {
     try {
-        const request = await userService.updateBookRequestStatus(req.params.id, req.body.status, req.user);
+        const { status, bookId } = req.body;
+        const request = await userService.updateBookRequestStatus(req.params.id, status, req.user, bookId);
         res.json({ message: 'Request status updated', request });
     } catch (err: any) {
         console.error(err);
