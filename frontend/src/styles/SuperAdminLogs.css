@@ -417,6 +417,37 @@
     color: #e2e8f0;
 }
 
+[data-theme="dark"] .admin-search-box,
+[data-theme="dark"] .admin-filter-box {
+    background: #0f172a;
+    border-color: #334155;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .admin-search-box input,
+[data-theme="dark"] .admin-filter-box select {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .admin-search-box:hover,
+[data-theme="dark"] .admin-filter-box:hover {
+    border-color: #6366f1;
+    background: #1e293b;
+}
+
+[data-theme="dark"] .admin-search-box:focus-within,
+[data-theme="dark"] .admin-filter-box:focus-within {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+    background: #1e293b;
+}
+
+[data-theme="dark"] .system-logs-count {
+    background: #1e293b;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
 [data-theme="dark"] .logs-refresh-btn {
     color: #94a3b8;
 }

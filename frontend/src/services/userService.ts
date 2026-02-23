@@ -34,14 +34,19 @@ export const requestBook = async (requestData: any) => {
     return res.data;
 };
 
+export const getMyBookRequests = async () => {
+    const res = await api.get(`${BASE_URL}/book-requests/me`);
+    return res.data;
+};
+
 // Admin Methods
 export const getAllBookRequests = async (sort: string = 'newest') => {
     const res = await api.get(`${BASE_URL}/admin/book-requests?sort=${sort}`);
     return res.data;
 };
 
-export const updateBookRequestStatus = async (id: string, status: string) => {
-    const res = await api.put(`${BASE_URL}/admin/book-requests/${id}`, { status });
+export const updateBookRequestStatus = async (id: string, status: string, bookId?: string) => {
+    const res = await api.put(`${BASE_URL}/admin/book-requests/${id}`, { status, bookId });
     return res.data;
 };
 

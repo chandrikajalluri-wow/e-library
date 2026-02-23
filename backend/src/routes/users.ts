@@ -29,6 +29,7 @@ router.post('/renew-membership', auth, userController.renewMembership);
 router.put('/change-password', auth, userController.changePassword);
 
 // Request New Book
+router.get('/book-requests/me', auth, userController.getMyBookRequests);
 router.post('/book-requests', auth, userController.requestBook);
 
 // ADMIN: Get All Book Requests

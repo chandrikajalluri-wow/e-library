@@ -49,6 +49,7 @@ export const getAllBooks = async (filters: any, pagination: { page: number; limi
         .populate('category_id', 'name')
         .populate('addedBy', 'name email')
         .sort(sort)
+        .collation({ locale: 'en', strength: 2 })
         .skip(skip)
         .limit(pagination.limit);
 

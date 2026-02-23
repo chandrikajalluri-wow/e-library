@@ -106,30 +106,22 @@ export const manageAdmin = async (userId: string, action: string, performerId: s
     return user;
 };
 
-export const deleteUser = async (targetId: string, performerId: string) => {
+export const deleteUser = async (targetId: string, performerId: string, force: boolean = false) => {
     const user = await User.findById(targetId).populate('membership_id');
     if (!user) throw new Error('User not found');
 
-    const activeReads = await Readlist.find({ user_id: user._id, status: 'active' });
-    const undeliveredOrders = await Order.find({
-        user_id: user._id,
-        status: { $in: ['pending', 'processing', 'shipped', 'return_requested', 'return_accepted'] }
-    });
+    if (!force) {
+        const undeliveredOrders = await Order.find({
+            user_id: user._id,
+            status: { $in: ['pending', 'processing', 'shipped', 'return_requested', 'return_accepted'] }
+        });
 
-    const hasActivePremium = user.membership_id &&
-        (user.membership_id as any).name === MembershipName.PREMIUM &&
-        user.membershipExpiryDate &&
-        user.membershipExpiryDate > new Date();
-
-    if (activeReads.length > 0 || undeliveredOrders.length > 0 || hasActivePremium) {
-        const obligations: string[] = [];
-        if (activeReads.length > 0) obligations.push(`${activeReads.length} active reading sessions`);
-        if (undeliveredOrders.length > 0) obligations.push(`${undeliveredOrders.length} undelivered orders`);
-        if (hasActivePremium) obligations.push('Active Premium Membership');
-
-        const err: any = new Error('User has pending obligations');
-        err.details = { obligations };
-        throw err;
+        if (undeliveredOrders.length > 0) {
+            const obligations = [`${undeliveredOrders.length} undelivered orders`];
+            const err: any = new Error('User has pending obligations');
+            err.details = { obligations };
+            throw err;
+        }
     }
 
     user.password = undefined;

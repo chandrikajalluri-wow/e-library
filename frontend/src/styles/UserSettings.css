@@ -518,6 +518,8 @@
 .status-locked-badge {
     position: absolute;
     right: 12px;
+    top: 40%;
+    transform: translateY(-50%);
     background: var(--border-color);
     color: var(--text-secondary);
     font-size: 0.65rem;

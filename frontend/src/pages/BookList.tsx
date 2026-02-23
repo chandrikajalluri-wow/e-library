@@ -39,7 +39,8 @@ const BookList: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState('all'); // 'all', 'premium', 'free'
   const [selectedLanguage, setSelectedLanguage] = useState<string[]>([]);
-  const [sortOrder, setSortOrder] = useState(''); // Default empty for placeholder
+  const [sortOrder, setSortOrder] = useState(searchParams.get('sort') || '');
+  const currentSort = searchParams.get('sort') || '';
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
@@ -55,8 +56,10 @@ const BookList: React.FC = () => {
   // Sync state with URL parameter
   useEffect(() => {
     setSelectedCategory(categoryParam ? categoryParam.split(',') : []);
+    const sortParam = searchParams.get('sort') || '';
+    setSortOrder(sortParam);
     loadUserMembership();
-  }, [categoryParam]);
+  }, [categoryParam, searchParams]);
 
   const loadUserMembership = async () => {
     if (localStorage.getItem('token')) {
@@ -84,15 +87,15 @@ const BookList: React.FC = () => {
   useEffect(() => {
     setPage(1);
 
-    // Update URL if category changed from dropdown
+    const paramsObj: any = {};
+    if (search) paramsObj.search = search;
     const categoryQuery = selectedCategory.join(',');
-    if (categoryQuery !== categoryParam) {
-      if (categoryQuery) {
-        setSearchParams({ category: categoryQuery });
-      } else {
-        setSearchParams({});
-      }
-    }
+    if (categoryQuery) paramsObj.category = categoryQuery;
+    if (sortOrder) paramsObj.sort = sortOrder;
+    if (filterType !== 'all') paramsObj.isPremium = filterType === 'premium' ? 'true' : 'false';
+    if (selectedLanguage.length > 0) paramsObj.language = selectedLanguage.join(',');
+
+    setSearchParams(paramsObj);
 
     // Scroll to results when filter changes
     if (searchSectionRef.current) {
@@ -434,7 +437,7 @@ const BookList: React.FC = () => {
       </AnimatePresence>
 
       {/* Top Recommendations Section */}
-      {!search && selectedCategory.length === 0 && selectedLanguage.length === 0 && recommendations.length > 0 && (
+      {!search && selectedCategory.length === 0 && selectedLanguage.length === 0 && !currentSort && recommendations.length > 0 && (
         <section className="recommendations-section">
           <h2 className="section-title-h2">Top Recommendations</h2>
           <div className="recommendations-grid">
@@ -455,7 +458,7 @@ const BookList: React.FC = () => {
       )}
 
       {/* Personalized Recommendations Section */}
-      {!search && selectedCategory.length === 0 && selectedLanguage.length === 0 && personalizedRecs.length > 0 && (
+      {!search && selectedCategory.length === 0 && selectedLanguage.length === 0 && !currentSort && personalizedRecs.length > 0 && (
         <section className="recommendations-section personalized-section">
           <h2 className="section-title-h2">Recommended for You</h2>
           <div className="recommendations-grid">
@@ -476,7 +479,7 @@ const BookList: React.FC = () => {
       )}
 
       <h2 ref={searchSectionRef} className="section-title-h2">
-        {search || selectedCategory.length > 0 || selectedLanguage.length > 0 || filterType !== 'all' ? 'Search Results' : 'All Books'}
+        {search || selectedCategory.length > 0 || selectedLanguage.length > 0 || filterType !== 'all' || currentSort ? 'Search Results' : 'All Books'}
       </h2>
 
       {loading && books.length === 0 ? (

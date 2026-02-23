@@ -90,21 +90,21 @@
 }
 
 .request-submit-btn {
-    width: 100%;
-    padding: 1.25rem;
+    width: auto;
+    padding: 0.9rem 2.5rem;
     background: linear-gradient(135deg, var(--primary-color) 0%, #4f46e5 100%);
     color: white;
     border: none;
     border-radius: 16px;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 800;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
     box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
     transition: all 0.3s;
-    margin-top: 1rem;
+    cursor: pointer;
 }
 
 .request-submit-btn:hover:not(:disabled) {
@@ -194,16 +194,271 @@
 }
 
 @media (max-width: 768px) {
+    .request-page {
+        padding: 0 1rem 3rem;
+    }
+
+    .admin-header {
+        margin-bottom: 2rem;
+    }
+
+    .admin-header-title {
+        font-size: 2rem;
+    }
+
     .form-group-flex {
         grid-template-columns: 1fr;
         gap: 0;
     }
 
     .request-card {
-        padding: 2rem;
+        padding: 2rem 1.5rem;
+        border-radius: 24px;
     }
 
+    .locked-feature-card {
+        padding: 3rem 1.5rem;
+        border-radius: 24px;
+    }
+
+    .locked-title {
+        font-size: 1.5rem;
+    }
+
+    .lock-sphere {
+        width: 80px;
+        height: 80px;
+    }
+
+    .upgrade-link-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* User Requests History */
+.requests-history-section {
+    margin-top: 5rem;
+}
+
+
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.section-title-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.section-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.section-subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.request-form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Filter Bar */
+.requests-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.request-filter-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem 0 0 0.5rem;
+    transition: border-color 0.2s;
+}
+
+.request-filter-pill:focus-within {
+    border-color: var(--primary-color);
+}
+
+.filter-pill-icon {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.request-filter-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0 center;
+    border: none !important;
+    outline: none !important;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding-right: 1.1rem;
+    line-height: 1.4;
+}
+
+.requests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.user-request-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.user-request-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    border-color: var(--primary-color);
+}
+
+.request-status-badge-container {
+    display: flex;
+}
+
+.request-status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    letter-spacing: 0.5px;
+}
+
+.status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.status-approved {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.status-rejected {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.request-book-title {
+    font-size: 1.15rem;
+    font-weight: 750;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    line-height: 1.4;
+}
+
+.request-book-author {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+}
+
+.request-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.request-actions {
+    margin-top: auto;
+}
+
+.view-book-btn {
+    width: 100%;
+    padding: 0.875rem;
+    background: rgba(var(--primary-rgb), 0.1);
+    color: var(--primary-color);
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+    text-decoration: none;
+}
+
+.view-book-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.no-requests-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 5rem 2rem;
+    background: rgba(var(--primary-rgb), 0.03);
+    border-radius: 32px;
+    border: 2px dashed var(--border-color);
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+    .requests-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
     .admin-header-title {
-        font-size: 2rem;
+        font-size: 1.75rem;
+    }
+
+    .request-card {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .request-form input,
+    .request-form textarea {
+        padding: 0.875rem 1rem;
+    }
+
+    .locked-feature-card {
+        padding: 2.5rem 1rem;
+    }
+
+    .locked-description {
+        font-size: 1rem;
+        margin-bottom: 2rem;
     }
 }

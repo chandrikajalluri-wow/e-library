@@ -23,8 +23,9 @@ export const manageAdmin = async (req: Request, res: Response) => {
 
 export const deleteUser = async (req: Request, res: Response) => {
     try {
-        await superAdminService.deleteUser(req.params.id, (req as any).user._id);
-        res.json({ message: 'User deactivated and anonymized successfully' });
+        const { force } = req.body;
+        await superAdminService.deleteUser(req.params.id, (req as any).user._id, force);
+        res.json({ message: `User deactivated and anonymized successfully${force ? ' (Forced)' : ''}` });
     } catch (err: any) {
         console.error(err);
         if (err.message === 'User has pending obligations') {
