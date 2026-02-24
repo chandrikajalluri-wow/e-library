@@ -61,7 +61,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
                             <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6' }}>
                                 All your data including:
                                 <ul style={{ marginTop: '0.5rem', marginLeft: '1.5rem' }}>
-                                    <li>Borrowed books history</li>
+                                    <li>Read history</li>
                                     <li>Wishlist items</li>
                                     <li>Reviews & ratings</li>
                                     <li>Notifications</li>

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type, ShoppingCart, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { Filter, X, ChevronDown, SlidersHorizontal, Search as SearchIcon, RotateCcw, Clock, ArrowUpNarrowWide, ArrowDownWideNarrow, Star, Type, ShoppingCart, BookOpen } from 'lucide-react';
 import { getBooks, getRecommendedBooks } from '../services/bookService';
 import { getCategories } from '../services/categoryService';
 import { getMyMembership } from '../services/membershipService';
@@ -15,6 +15,7 @@ import { useCart } from '../context/CartContext';
 import { toast } from 'react-toastify';
 
 import '../styles/BookList.css';
+import '../styles/Pagination.css';
 
 const BookList: React.FC = () => {
   const navigate = useNavigate();
@@ -611,53 +612,32 @@ const BookList: React.FC = () => {
           }
           {
             books.length > 0 && total > 10 && (
-              <div className="pagination-container">
+              <div className="admin-pagination">
                 <button
                   className="pagination-btn"
                   disabled={page === 1 || loading}
                   onClick={() => {
                     setPage(p => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                 >
-                  <ChevronLeft size={20} />
+                  Previous
                 </button>
-
-                {(() => {
-                  const totalPages = Math.ceil(total / 10);
-                  let startPage = page;
-
-                  // If on last page and there's more than 1 page, show previous one too
-                  if (page === totalPages && totalPages > 1) {
-                    startPage = page - 1;
-                  }
-
-                  // Ensure we don't go out of bounds
-                  const pages = [];
-                  if (startPage <= totalPages) pages.push(startPage);
-                  if (startPage + 1 <= totalPages) pages.push(startPage + 1);
-
-                  return pages.map((pageNum) => (
-                    <button
-                      key={pageNum}
-                      onClick={() => {
-                        setPage(pageNum);
-                      }}
-                      className={`pagination-btn ${page === pageNum ? 'active' : ''}`}
-                      disabled={loading}
-                    >
-                      {pageNum}
-                    </button>
-                  ));
-                })()}
-
+                <div className="pagination-info">
+                  <div className="pagination-info-pages">
+                    Page <span>{page}</span> of <span>{Math.ceil(total / 10)}</span>
+                  </div>
+                  <div className="total-count-mini">Total {total} books</div>
+                </div>
                 <button
                   className="pagination-btn"
                   disabled={page === Math.ceil(total / 10) || loading}
                   onClick={() => {
                     setPage(p => Math.min(Math.ceil(total / 10), p + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                 >
-                  <ChevronRight size={20} />
+                  Next
                 </button>
               </div>
             )

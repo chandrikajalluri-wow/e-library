@@ -29,7 +29,6 @@ export const initSocket = (io: Server) => {
         const user = (socket as any).user;
         const userId = user._id.toString();
 
-        console.log(`User connected: ${user.name} (${userId})`);
         onlineUsers.set(userId, socket.id);
 
         // Notify admins of presence change
@@ -112,7 +111,6 @@ export const initSocket = (io: Server) => {
         socket.on('disconnect', () => {
             onlineUsers.delete(userId);
             io.emit('presence_change', { userId, isOnline: false });
-            console.log(`User disconnected: ${user.name}`);
         });
     });
 };

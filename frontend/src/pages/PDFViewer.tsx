@@ -126,7 +126,6 @@ const PDFViewer: React.FC = () => {
             }
 
             // Check if pdf.js is loaded
-            console.log('Checking pdf.js availability...', typeof pdfjsLib);
             if (typeof pdfjsLib === 'undefined') {
                 console.error('pdf.js library is not loaded from CDN');
                 toast.warning('PDF library not loaded. Using fallback viewer...');
@@ -135,12 +134,10 @@ const PDFViewer: React.FC = () => {
                 return;
             }
 
-            console.log('pdf.js loaded successfully, version:', pdfjsLib.version);
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
             // Use backend proxy URL to avoid CORS issues
             const proxyPdfUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/books/${bookId}/view`;
-            console.log('Loading PDF through backend proxy:', proxyPdfUrl);
 
             // Load PDF with CORS mode
             const loadingTask = pdfjsLib.getDocument({
@@ -158,13 +155,8 @@ const PDFViewer: React.FC = () => {
 
             // Fetch reading progress
             try {
-                console.log('Fetching reading progress for book:', bookId);
                 const progress = await getReadingProgress(bookId);
-                console.log('Raw API response:', JSON.stringify(progress, null, 2));
-                console.log('Progress object:', progress);
-                console.log('Progress.bookmarks type:', typeof progress.bookmarks);
-                console.log('Progress.bookmarks value:', progress.bookmarks);
-                console.log('Progress.bookmarks is array?:', Array.isArray(progress.bookmarks));
+
 
                 const lastPage = progress.last_page || 1;
                 const savedBookmarks = Array.isArray(progress.bookmarks) ? progress.bookmarks : [];
@@ -174,11 +166,8 @@ const PDFViewer: React.FC = () => {
                 setBookmarks(savedBookmarks);
                 setIsCompleted(status === 'completed' || status === 'returned');
 
-                console.log('Set current page to:', lastPage);
-                console.log('Set bookmarks to:', savedBookmarks);
             } catch (err: any) {
                 // If user hasn't added the book, they won't have progress
-                console.log('No previous progress found:', err?.response?.data?.error || err?.message);
                 setCurrentPage(1);
                 setBookmarks([]);
             }

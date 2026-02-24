@@ -232,7 +232,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
     return (
         <div className="card admin-table-section" ref={tableTopRef}>
             <div className="admin-table-header-box">
-                <div className="admin-header-actions-unified" style={{ borderTop: 'none', paddingTop: 0 }}>
+                <div className="admin-header-actions-unified border-t-0 pt-0">
                     <div className="admin-search-wrapper">
                         <Search size={18} className="search-bar-icon" />
                         <input
@@ -469,7 +469,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                                                 {userDetails.user.isDeleted ? 'Account Deleted' : userDetails.user.isVerified ? 'Active Account' : 'Pending Verification'}
                                             </div>
                                             {userDetails.user.role_id?.name !== RoleName.ADMIN && userDetails.user.role_id?.name !== RoleName.SUPER_ADMIN && userDetails.user.isVerified && (
-                                                <div style={{ marginTop: '0.5rem' }}>
+                                                <div className="mt-2">
                                                     <span className={`membership-label-badge ${userDetails.user.membership_id?.name.toLowerCase().includes('premium') ? 'membership-label-premium' : 'membership-label-basic'}`}>
                                                         {userDetails.user.membership_id?.name || 'No Plan'}
                                                     </span>
@@ -543,7 +543,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                                 <div className="admin-invite-form-group">
                                     <label>Recipient Email Address</label>
                                     <div className="admin-invite-input-wrapper">
-                                        <Mail size={18} style={{ opacity: 0.5, color: '#6366f1' }} />
+                                        <Mail size={18} className="opacity-50 text-primary-color" />
                                         <input
                                             type="email"
                                             placeholder="enter.email@example.com"
@@ -562,7 +562,7 @@ const UserAdminManagement: React.FC<UserAdminManagementProps> = ({ onUsersUpdate
                                         disabled={inviteLoading}
                                     >
                                         {inviteLoading ? (
-                                            <div className="spinner" style={{ width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff' }}></div>
+                                            <div className="spinner-white"></div>
                                         ) : (
                                             <>
                                                 <ShieldCheck size={20} />

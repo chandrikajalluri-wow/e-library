@@ -185,7 +185,7 @@ const AdminOrderDetailsPage: React.FC = () => {
     };
 
     if (isLoading) return <Loader />;
-    if (!order) return <div style={{ padding: '2rem', textAlign: 'center' }}>Order not found</div>;
+    if (!order) return <div className="p-8 text-center text-lg">Order not found</div>;
 
     const orderDate = new Date(order.createdAt);
 
@@ -223,7 +223,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                         <ArrowLeft size={18} />
                         <span>Back to Orders</span>
                     </Link>
-                    <div className="order-id-display" style={{ cursor: 'pointer' }} onClick={() => {
+                    <div className="order-id-display cursor-pointer" onClick={() => {
                         navigator.clipboard.writeText(order._id);
                         toast.info('Order ID copied to clipboard');
                     }} title="Click to copy Order ID">
@@ -234,7 +234,7 @@ const AdminOrderDetailsPage: React.FC = () => {
 
                 <div className="topbar-right">
                     {order.user_id?.membership_id?.name === 'premium' && (order.status === 'pending' || order.status === 'processing') && (
-                        <div style={{ marginRight: '1rem' }}>
+                        <div className="mr-4">
                             <CircularCountdown date={order.createdAt} membership="premium" currentTime={currentTime} />
                         </div>
                     )}
@@ -254,19 +254,15 @@ const AdminOrderDetailsPage: React.FC = () => {
             </div>
 
             {order.returnReason && (
-                <div className="exchange-details-card saas-reveal" style={{
-                    borderLeft: '5px solid var(--status-return-requested)',
-                    background: 'var(--bg-secondary)',
-                    borderRadius: '24px',
-                }}>
+                <div className="exchange-details-card saas-reveal exchange-details-card-highlight">
                     <div className="exchange-card-header">
                         <div className="header-label">
-                            <div style={{ background: 'rgba(217, 119, 6, 0.1)', padding: '0.6rem', borderRadius: '12px' }}>
+                            <div className="header-accent-bg">
                                 <ExchangeIcon size={20} className="icon-pulse text-amber-600" />
                             </div>
-                            <span style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-primary)' }}>Exchange Request</span>
+                            <span className="header-label-text">Exchange Request</span>
                         </div>
-                        <div className={`status-badge-premium ${order.status}`} style={{ margin: 0 }}>
+                        <div className={`status-badge-premium ${order.status} m-0`}>
                             {order.status === 'return_requested' ? 'Exchange Pending' :
                                 order.status === 'return_accepted' ? 'Accepted' :
                                     order.status === 'returned' ? 'Exchanged' :
@@ -275,19 +271,18 @@ const AdminOrderDetailsPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="exchange-card-content" style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--card-bg)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+                    <div className="exchange-card-content exchange-card-content-premium">
                         <div className="reason-section">
-                            <span className="section-label" style={{ color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.7rem' }}>Reason for exchange</span>
-                            <p className="reason-text-main" style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--text-primary)', marginTop: '0.5rem' }}>"{order.returnReason}"</p>
+                            <span className="section-label section-label-muted">Reason for exchange</span>
+                            <p className="reason-text-main reason-text-highlight">"{order.returnReason}"</p>
                         </div>
 
                         {order.exchangeImageUrl && (
-                            <div className="proof-section-premium" style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '2rem' }}>
-                                <span className="section-label" style={{ color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.7rem' }}>Photographic Evidence</span>
+                            <div className="proof-section-premium proof-section-bordered">
+                                <span className="section-label section-label-muted">Photographic Evidence</span>
                                 <div
-                                    className="proof-card-mini"
+                                    className="proof-card-mini proof-card-mini-custom"
                                     onClick={() => setPreviewImage(order.exchangeImageUrl!)}
-                                    style={{ marginTop: '0.75rem', width: '120px', height: '120px', borderRadius: '16px' }}
                                 >
                                     <img src={order.exchangeImageUrl} alt="Exchange Proof" />
                                     <div className="proof-overlay-premium">
@@ -328,36 +323,36 @@ const AdminOrderDetailsPage: React.FC = () => {
             </AnimatePresence>
 
             {/* Compact Progress Stepper */}
-            <div className="compact-stepper-container" style={{ margin: '2rem 0' }}>
+            <div className="compact-stepper-container mb-8">
                 <div className="stepper-track">
                     {!order.returnReason ? (
                         // Standard Flow
                         <>
                             <div className={`stepper-step ${currentStep >= 1 ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                 <span className="step-label">Order Placed</span>
-                                <span style={{ fontSize: '0.65rem', opacity: 0.6, fontWeight: '700' }}>{orderDate.toLocaleDateString()}</span>
+                                <span className="stepper-label-sub">{orderDate.toLocaleDateString()}</span>
                             </div>
-                            <div className={`stepper-line ${currentStep >= 2 ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                            <div className={`stepper-line ${currentStep >= 2 ? 'active' : ''} stepper-line-offset`}></div>
                             <div className={`stepper-step ${currentStep >= 2 ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                 <span className="step-label">Processing</span>
                             </div>
-                            <div className={`stepper-line ${currentStep >= 3 ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                            <div className={`stepper-line ${currentStep >= 3 ? 'active' : ''} stepper-line-offset`}></div>
                             <div className={`stepper-step ${currentStep >= 3 ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                 <span className="step-label">Shipped</span>
                             </div>
-                            <div className={`stepper-line ${currentStep >= 4 ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                            <div className={`stepper-line ${currentStep >= 4 ? 'active' : ''} stepper-line-offset`}></div>
                             <div className={`stepper-step ${currentStep >= 4 ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                 <span className="step-label">Delivered</span>
                             </div>
                             {order.status === 'cancelled' && (
                                 <>
-                                    <div className="stepper-line cancelled" style={{ marginTop: '-2.2rem' }}></div>
+                                    <div className="stepper-line cancelled stepper-line-offset"></div>
                                     <div className="stepper-step active cancelled">
-                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><XCircle size={14} /></div>
+                                        <div className="step-dot stepper-dot-l"><XCircle size={14} /></div>
                                         <span className="step-label">Cancelled</span>
                                     </div>
                                 </>
@@ -366,52 +361,52 @@ const AdminOrderDetailsPage: React.FC = () => {
                     ) : (
                         // Detailed Exchange Flow
                         <>
-                            <div className={`stepper-step ${['return_requested', 'return_accepted', 'returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                            <div className={`stepper-step ${['return_requested', 'return_accepted', 'returned', 'refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
+                                <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                 <span className="step-label">Request</span>
                             </div>
-                            <div className={`stepper-line ${['return_accepted', 'returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                            <div className={`stepper-line ${['return_accepted', 'returned', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''} stepper-line-offset`}></div>
 
                             <div className={`stepper-step ${['return_accepted', 'returned', 'refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                 <span className="step-label">Approved</span>
                             </div>
-                            <div className={`stepper-line ${['returned', 'refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                            <div className={`stepper-line ${['returned', 'refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''} stepper-line-offset`}></div>
 
                             <div className={`stepper-step ${['returned', 'refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
-                                <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                 <span className="step-label">Item In</span>
                             </div>
-                            <div className={`stepper-line ${['refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                            <div className={`stepper-line ${['refund_initiated', 'refunded', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''} stepper-line-offset`}></div>
 
                             {['refund_initiated', 'refunded'].includes(order.status) ? (
                                 <>
                                     <div className={`stepper-step ${['refund_initiated', 'refunded'].includes(order.status) ? 'active' : ''}`}>
-                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                         <span className="step-label">Refund Init</span>
                                     </div>
-                                    <div className={`stepper-line ${order.status === 'refunded' ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                                    <div className={`stepper-line ${order.status === 'refunded' ? 'active' : ''} stepper-line-offset`}></div>
                                     <div className={`stepper-step ${order.status === 'refunded' ? 'active' : ''}`}>
-                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                         <span className="step-label">Refunded</span>
                                     </div>
                                 </>
                             ) : (
                                 <>
                                     <div className={`stepper-step ${['processing', 'shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
-                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                         <span className="step-label">Packed</span>
                                     </div>
-                                    <div className={`stepper-line ${['shipped', 'delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                                    <div className={`stepper-line ${['shipped', 'delivered'].includes(order.status) ? 'active' : ''} stepper-line-offset`}></div>
 
                                     <div className={`stepper-step ${['shipped', 'delivered'].includes(order.status) ? 'active' : ''}`}>
-                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                         <span className="step-label">Transit</span>
                                     </div>
-                                    <div className={`stepper-line ${['delivered'].includes(order.status) ? 'active' : ''}`} style={{ marginTop: '-2.2rem' }}></div>
+                                    <div className={`stepper-line ${['delivered'].includes(order.status) ? 'active' : ''} stepper-line-offset`}></div>
 
                                     <div className={`stepper-step ${['delivered'].includes(order.status) ? 'active' : ''}`}>
-                                        <div className="step-dot" style={{ width: '28px', height: '28px' }}><div className="dot-inner" style={{ width: '10px', height: '10px' }}></div></div>
+                                        <div className="step-dot stepper-dot-l"><div className="dot-inner stepper-dot-inner-l"></div></div>
                                         <span className="step-label">Done</span>
                                     </div>
                                 </>
@@ -427,7 +422,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                 <aside className="details-sidebar">
                     <div className="sidebar-card">
                         <div className="card-header">
-                            <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '0.6rem', borderRadius: '12px' }}>
+                            <div className="sidebar-card-accent-bg">
                                 <User size={20} className="text-indigo-600" />
                             </div>
                             <h3>Customer Profile</h3>
@@ -435,11 +430,11 @@ const AdminOrderDetailsPage: React.FC = () => {
                         <div className="card-content">
                             <div className="info-row">
                                 <span className="label">Full Name</span>
-                                <span className="value" style={{ fontSize: '1.2rem', marginTop: '0.25rem' }}>{order.user_id?.name}</span>
+                                <span className="value info-row-large-value">{order.user_id?.name}</span>
                             </div>
-                            <div className="info-row row-center" style={{ marginTop: '0.5rem' }}>
+                            <div className="info-row row-center info-row-mt-2">
                                 <Mail size={16} className="text-muted" />
-                                <span className="value-sub" style={{ fontWeight: '700' }}>{order.user_id?.email}</span>
+                                <span className="value-sub info-row-font-700">{order.user_id?.email}</span>
                             </div>
                             <div className="info-row row-center">
                                 <Phone size={16} className="text-muted" />
@@ -452,28 +447,28 @@ const AdminOrderDetailsPage: React.FC = () => {
 
                     <div className="sidebar-card">
                         <div className="card-header">
-                            <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '0.6rem', borderRadius: '12px' }}>
+                            <div className="sidebar-card-accent-bg-blue">
                                 <MapPin size={20} className="text-blue-600" />
                             </div>
                             <h3>Shipping Destination</h3>
                         </div>
                         <div className="card-content">
-                            <p className="address-text" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
-                                <span style={{ display: 'block', marginBottom: '0.4rem' }}>{order.address_id?.street}</span>
-                                <span style={{ color: 'var(--text-secondary)' }}>
+                            <p className="address-text line-height-1-6">
+                                <span className="display-block mb-1">{order.address_id?.street}</span>
+                                <span className="text-secondary">
                                     {order.address_id?.city}, {order.address_id?.state}<br />
                                     {order.address_id?.zipCode}, {order.address_id?.country}
                                 </span>
                             </p>
-                            <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: '10px', fontSize: '0.85rem' }}>
-                                <strong style={{ color: 'var(--text-secondary)' }}>Contact:</strong> {maskPhoneNumber(order.address_id?.phoneNumber)}
+                            <div className="mt-3 p-3 bg-secondary br-10 text-xs">
+                                <strong className="text-secondary">Contact:</strong> {maskPhoneNumber(order.address_id?.phoneNumber)}
                             </div>
                         </div>
                     </div>
 
                     <div className="sidebar-card highlight">
                         <div className="card-header">
-                            <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '0.6rem', borderRadius: '12px' }}>
+                            <div className="sidebar-card-accent-bg-purple">
                                 <CreditCard size={20} className="text-purple-600" />
                             </div>
                             <h3>Payment Gateway</h3>
@@ -481,22 +476,33 @@ const AdminOrderDetailsPage: React.FC = () => {
                         <div className="card-content">
                             <div className="info-row">
                                 <span className="label">Method</span>
-                                <span className="value uppercase" style={{ color: 'var(--primary-color)', letterSpacing: '1px' }}>{order.paymentMethod || 'Cash on Delivery'}</span>
+                                <span className="value uppercase text-primary letter-spacing-1">{order.paymentMethod || 'Cash on Delivery'}</span>
                             </div>
-                            <div className="info-row status-info" style={{ marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="info-row status-info info-row-border-t">
+                                <div className="flex-between">
                                     <span className="label">Status</span>
-                                    <span className={`status-badge-mini ${order.status === 'delivered' ? 'delivered' : 'pending'}`}>
-                                        {order.status === 'delivered' ? 'Transaction Paid' : 'Payment Pending'}
-                                    </span>
+                                    {(() => {
+                                        if (order.status === 'refunded') return <span className="status-badge-mini delivered">Refunded</span>;
+                                        if (order.status === 'refund_initiated') return <span className="status-badge-mini pending">Refund Initiated</span>;
+
+                                        const isPaid = order.status === 'delivered' ||
+                                            !!order.returnReason ||
+                                            ['return_requested', 'return_accepted', 'returned'].includes(order.status);
+
+                                        return (
+                                            <span className={`status-badge-mini ${isPaid ? 'delivered' : 'pending'}`}>
+                                                {isPaid ? 'Transaction Paid' : 'Payment Pending'}
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
                     </div>
                     {order.refundDetails && (
                         <div className="sidebar-card refund-details-card">
-                            <div className="card-header" style={{ color: 'var(--status-refunded)' }}>
-                                <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '0.6rem', borderRadius: '12px' }}>
+                            <div className="card-header text-success-dark">
+                                <div className="sidebar-card-accent-bg-emerald">
                                     <CreditCard size={20} className="text-emerald-600" />
                                 </div>
                                 <h3>Refund Bank Details</h3>
@@ -518,7 +524,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                                     <span className="label">IFSC Code</span>
                                     <span className="value uppercase">{order.refundDetails.ifscCode}</span>
                                 </div>
-                                <div className="info-row" style={{ marginTop: '0.5rem', fontSize: '0.75rem', opacity: 0.6 }}>
+                                <div className="info-row mt-2 text-xs opacity-60">
                                     <span>Submitted on {new Date(order.refundDetails.submittedAt).toLocaleDateString()}</span>
                                 </div>
                             </div>
@@ -538,69 +544,38 @@ const AdminOrderDetailsPage: React.FC = () => {
                     </div>
 
                     {/* Order Items - Individual Cards */}
-                    <div className="items-cards-column" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div className="items-cards-column item-card-column-gap">
                         {displayItems.map((item, idx) => (
-                            <div className="admin-item-card-premium" key={idx} style={{
-                                background: 'var(--card-bg)',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: '24px',
-                                padding: '1.5rem',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-                            }}>
-                                <div className="card-top-info" style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    marginBottom: '1.5rem',
-                                    borderBottom: '1px solid var(--border-color)',
-                                    paddingBottom: '1rem'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div className="admin-item-card-premium item-card-premium-p1-5" key={idx}>
+                                <div className="card-top-info item-card-header-flex">
+                                    <div className="flex-center-row gap-3">
                                         <Package size={20} className="text-indigo-600" />
-                                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800' }}>Item {idx + 1}</h3>
+                                        <h3 className="m-0 text-lg font-extrabold">Item {idx + 1}</h3>
                                     </div>
-                                    <div className="seller-badge-admin" style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem',
-                                        fontSize: '0.85rem',
-                                        fontWeight: '700',
-                                        color: 'var(--primary-color)',
-                                        background: 'rgba(99, 102, 241, 0.1)',
-                                        padding: '0.5rem 1rem',
-                                        borderRadius: '10px'
-                                    }}>
+                                    <div className="seller-badge-admin seller-badge-premium-admin">
                                         <User size={14} />
                                         <span>Managed By: {item.book_id?.addedBy?.name || 'Unknown'}</span>
                                     </div>
                                 </div>
-                                <div className="item-main-content" style={{ display: 'flex', gap: '1.5rem' }}>
+                                <div className="item-main-content flex gap-6">
                                     <img
                                         src={item.book_id?.cover_image_url || 'https://via.placeholder.com/150?text=NA'}
                                         alt={item.book_id?.title || 'Book'}
-                                        style={{ width: '80px', height: '110px', borderRadius: '12px', objectFit: 'cover' }}
+                                        className="item-img-l"
                                     />
-                                    <div className="item-details-expanded" style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                            <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-primary)' }}>{item.book_id?.title || 'Deleted Book'}</h4>
-                                            <span style={{ fontWeight: '700', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>₹{item.priceAtOrder.toLocaleString('en-IN', { minimumFractionDigits: 2 })} / unit</span>
+                                    <div className="item-details-expanded flex-1">
+                                        <div className="flex-between mb-2">
+                                            <h4 className="item-title-l">{item.book_id?.title || 'Deleted Book'}</h4>
+                                            <span className="item-price-l">₹{item.priceAtOrder.toLocaleString('en-IN', { minimumFractionDigits: 2 })} / unit</span>
                                         </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
-                                            <div className="qty-info" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Quantity</span>
-                                                <span style={{
-                                                    background: 'var(--bg-secondary)',
-                                                    padding: '0.35rem 0.75rem',
-                                                    borderRadius: '10px',
-                                                    fontWeight: '800',
-                                                    fontSize: '1rem',
-                                                    color: 'var(--primary-color)',
-                                                    border: '1px solid var(--border-color)'
-                                                }}>× {item.quantity}</span>
+                                        <div className="flex-between items-center mt-6">
+                                            <div className="qty-info flex-center-row gap-3">
+                                                <span className="text-xs text-muted font-bold uppercase letter-spacing-0-5">Quantity</span>
+                                                <span className="item-qty-box">× {item.quantity}</span>
                                             </div>
-                                            <div className="item-total" style={{ textAlign: 'right' }}>
-                                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Item Subtotal</p>
-                                                <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-primary)' }}>₹{(item.priceAtOrder * item.quantity).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                                            <div className="item-total text-right">
+                                                <p className="m-0 text-xs text-muted font-bold uppercase mb-1">Item Subtotal</p>
+                                                <p className="m-0 text-3xl font-black text-primary">₹{(item.priceAtOrder * item.quantity).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -610,33 +585,26 @@ const AdminOrderDetailsPage: React.FC = () => {
                     </div>
 
                     {/* Grand Summary Card */}
-                    <div className="grand-summary-card" style={{
-                        marginTop: '2rem',
-                        background: 'linear-gradient(135deg, var(--card-bg), var(--bg-secondary))',
-                        borderRadius: '24px',
-                        padding: '2rem',
-                        border: '1px solid var(--border-color)',
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)'
-                    }}>
+                    <div className="grand-summary-card summary-card-gradient">
                         <div className="summary-details">
-                            <div className="row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                            <div className="row summary-row-bold">
                                 <span>Cart Subtotal</span>
                                 <span>₹{displayItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
-                            <div className="row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                            <div className="row summary-row-bold-last">
                                 <span>Shipping & Handling</span>
-                                <span className={order.deliveryFee === 0 ? 'free' : ''} style={{ color: order.deliveryFee === 0 ? '#10b981' : 'inherit' }}>
+                                <span className={`${order.deliveryFee === 0 ? 'free text-success' : ''}`}>
                                     {order.deliveryFee === 0 ? 'FREE' : `₹${order.deliveryFee.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                                 </span>
                             </div>
                         </div>
-                        <div className="divider" style={{ height: '1px', background: 'var(--border-color)', marginBottom: '1.5rem' }}></div>
-                        <div className="final-total" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div className="divider summary-divider-l"></div>
+                        <div className="final-total summary-final-flex">
                             <div className="total-label-group">
-                                <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Grand Total</h3>
-                                <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Net payable amount inclusive of tax</p>
+                                <h3 className="m-0 text-xs text-secondary uppercase letter-spacing-1">Grand Total</h3>
+                                <p className="mt-1 text-xs text-muted">Net payable amount inclusive of tax</p>
                             </div>
-                            <span className="total-value" style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--primary-color)', letterSpacing: '-0.5px' }}>
+                            <span className="total-value text-3xl font-black text-primary letter-spacing-neg-0-5">
                                 ₹{(displayItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0) + order.deliveryFee).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </span>
                         </div>

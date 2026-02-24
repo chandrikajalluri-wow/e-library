@@ -381,9 +381,8 @@ const UserOrderDetails: React.FC = () => {
                     {displayItems.map((item, idx) => (
                         <motion.section
                             key={idx}
-                            className="order-items-listing-individual"
+                            className="order-items-listing-individual mb-6"
                             variants={itemVariants}
-                            style={{ marginBottom: '1.5rem' }}
                         >
                             <div className="section-card-premium">
                                 <div className="card-header-with-icon card-header-between">
@@ -549,32 +548,20 @@ const UserOrderDetails: React.FC = () => {
                         )}
 
                         {order.status === 'refund_initiated' && (
-                            <div className="return-status-box warning" style={{ borderLeft: '4px solid #f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
+                            <div className="return-status-box warning status-box-warning">
                                 <AlertCircle size={20} color="#f59e0b" />
                                 <div>
-                                    <h4 style={{ color: '#d97706' }}>Refund Initiated (Out of Stock)</h4>
+                                    <h4 className="text-warning-dark">Refund Initiated (Out of Stock)</h4>
                                     <p>The item you requested for exchange is currently out of stock. We have initiated a refund for your order.</p>
                                     {!order.refundDetails ? (
                                         <button
-                                            className="refund-action-btn"
+                                            className="refund-action-btn mt-3 p-3 btn-primary text-white br-8 cursor-pointer font-semibold text-sm shadow-sm"
                                             onClick={() => setIsRefundModalOpen(true)}
-                                            style={{
-                                                marginTop: '0.75rem',
-                                                padding: '0.6rem 1.2rem',
-                                                background: 'var(--primary-color)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer',
-                                                fontWeight: '600',
-                                                fontSize: '0.9rem',
-                                                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
-                                            }}
                                         >
                                             Provide Bank Details for Refund
                                         </button>
                                     ) : (
-                                        <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#059669', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}>
+                                        <div className="mt-3 text-sm text-success-dark flex-items-center gap-2 font-semibold">
                                             <CheckCircle2 size={16} />
                                             Bank details submitted. Awaiting processing.
                                         </div>
@@ -584,10 +571,10 @@ const UserOrderDetails: React.FC = () => {
                         )}
 
                         {order.status === 'refunded' && (
-                            <div className="return-status-box success" style={{ borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.05)' }}>
+                            <div className="return-status-box success status-box-success">
                                 <CheckCircle2 size={20} color="#10b981" />
                                 <div>
-                                    <h4 style={{ color: '#059669' }}>Refund Completed</h4>
+                                    <h4 className="text-success-dark">Refund Completed</h4>
                                     <p>Your refund has been processed successfully. Please check your bank account for the credit.</p>
                                 </div>
                             </div>
@@ -741,12 +728,11 @@ const UserOrderDetails: React.FC = () => {
                         onClick={() => setIsRefundModalOpen(false)}
                     >
                         <motion.div
-                            className="modal-content-premium refund-modal-size"
+                            className="modal-content-premium refund-modal-size max-w-450"
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            style={{ maxWidth: '450px' }}
                         >
                             <form onSubmit={handleRefundSubmit}>
                                 <div className="modal-header">
@@ -756,7 +742,7 @@ const UserOrderDetails: React.FC = () => {
                                     </button>
                                 </div>
                                 <div className="modal-body modal-body-scrollable">
-                                    <p style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: '1.3' }}>
+                                    <p className="mb-2 text-secondary text-xs line-height-1-3">
                                         Please provide accurate bank details so we can process your refund as quickly as possible.
                                     </p>
 
@@ -803,10 +789,9 @@ const UserOrderDetails: React.FC = () => {
                                         <label className="form-label-styled">IFSC Code <span className="required-star">*</span></label>
                                         <input
                                             type="text"
-                                            className="exchange-reason-select-styled"
+                                            className="exchange-reason-select-styled uppercase"
                                             placeholder="e.g. SBIN0001234"
                                             required
-                                            style={{ textTransform: 'uppercase' }}
                                             value={refundForm.ifscCode}
                                             onChange={(e) => setRefundForm({ ...refundForm, ifscCode: e.target.value.toUpperCase() })}
                                         />
@@ -815,12 +800,11 @@ const UserOrderDetails: React.FC = () => {
                                         )}
                                     </div>
                                 </div>
-                                <div className="modal-footer" style={{ padding: '1.5rem', paddingTop: 0 }}>
+                                <div className="modal-footer p-6 pt-0">
                                     <button
                                         type="submit"
-                                        className={`submit-exchange-btn submit-btn-styled ${(!isRefundFormValid() || isSubmittingRefund) ? 'submit-btn-disabled' : 'submit-btn-active'}`}
+                                        className={`submit-exchange-btn submit-btn-styled w-full ${(!isRefundFormValid() || isSubmittingRefund) ? 'submit-btn-disabled cursor-not-allowed' : 'submit-btn-active cursor-pointer'}`}
                                         disabled={!isRefundFormValid() || isSubmittingRefund}
-                                        style={{ width: '100%', cursor: (!isRefundFormValid() || isSubmittingRefund) ? 'not-allowed' : 'pointer' }}
                                     >
                                         {isSubmittingRefund ? 'Submitting...' : 'Submit Refund Details'}
                                     </button>

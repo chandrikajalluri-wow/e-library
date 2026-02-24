@@ -19,8 +19,8 @@ const createSuperAdmin = async () => {
             process.exit(1);
         }
 
-        const email = 'superadmin@example.com';
-        const password = 'SuperAdmin@123';
+        const email = 'o190019@rguktong.ac.in';
+        const password = 'Chandrika@19';
 
         // Check if user exists
         const basicMembership = await Membership.findOne({ name: MembershipName.BASIC });

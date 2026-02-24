@@ -5,7 +5,7 @@ import { getBooks } from '../services/bookService';
 import { getMyMembership } from '../services/membershipService';
 import { MembershipName, RequestStatus } from '../types/enums';
 import { toast } from 'react-toastify';
-import { Lock, Send, BookOpen, User as UserIcon, MessageSquare, ChevronRight, Clock, CheckCircle2, XCircle, ExternalLink, Filter, ArrowUpDown } from 'lucide-react';
+import { Lock, Send, BookOpen, User as UserIcon, MessageSquare, ChevronRight, Clock, CheckCircle2, XCircle, ExternalLink, Filter, ArrowUpDown, ChevronDown } from 'lucide-react';
 import Loader from '../components/Loader';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/BookRequest.css';
@@ -180,29 +180,36 @@ const BookRequestPage: React.FC = () => {
                         <p className="section-subtitle">Track the status of your suggestions</p>
                     </div>
                     <div className="requests-filter-bar">
-                        <div className="request-filter-pill">
-                            <Filter size={14} className="filter-pill-icon" />
-                            <select
-                                value={filterStatus}
-                                onChange={(e) => setFilterStatus(e.target.value)}
-                                className="request-filter-select"
-                            >
-                                <option value="all">All Status</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                            </select>
+                        <div className="filter-pill">
+                            <Filter size={18} className="filter-icon" />
+                            <div className="select-wrapper">
+                                <select
+                                    value={filterStatus}
+                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                    className="status-select-minimal"
+                                >
+                                    <option value="all">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                                <ChevronDown size={14} className="chevron-icon" />
+                            </div>
                         </div>
-                        <div className="request-filter-pill">
-                            <ArrowUpDown size={14} className="filter-pill-icon" />
-                            <select
-                                value={sortOrder}
-                                onChange={(e) => setSortOrder(e.target.value)}
-                                className="request-filter-select"
-                            >
-                                <option value="newest">Newest First</option>
-                                <option value="oldest">Oldest First</option>
-                            </select>
+
+                        <div className="filter-pill sort-wrapper">
+                            <ArrowUpDown size={18} className="filter-icon" />
+                            <div className="select-wrapper">
+                                <select
+                                    value={sortOrder}
+                                    onChange={(e) => setSortOrder(e.target.value)}
+                                    className="status-select-minimal"
+                                >
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                </select>
+                                <ChevronDown size={14} className="chevron-icon" />
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -21,7 +21,7 @@ const About: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="mission-grid" style={{ marginBottom: '4rem' }}>
+                <div className="mission-grid mb-16">
                     <div className="mission-card saas-reveal">
                         <h3 className="mission-card-title">Seamless Organization</h3>
                         <p className="mission-card-text">Manage your personal collection with ease. Save books to your library, track your progress, and pick up exactly where you left off across any device.</p>
@@ -32,12 +32,12 @@ const About: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="about-intro-card saas-reveal" style={{ background: 'var(--saas-bg-light)', borderColor: 'var(--primary-color)' }}>
-                    <h2 className="mission-card-title" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Flexible Access & Ownership</h2>
-                    <p className="static-text-p" style={{ textAlign: 'center' }}>
+                <div className="about-intro-card saas-reveal about-intro-card-highlight">
+                    <h2 className="mission-card-title text-center mb-6">Flexible Access & Ownership</h2>
+                    <p className="static-text-p text-center">
                         At Bookstack, we offer multiple ways to access knowledge. Choose a <strong>Membership Plan</strong> that fits your reading habits, providing unlimited access to our vast digital collection.
                     </p>
-                    <p className="static-text-p" style={{ textAlign: 'center', marginBottom: 0 }}>
+                    <p className="static-text-p text-center mb-0">
                         Looking for something permanent? You can also <strong>purchase physical copies</strong> of your favorite titles, allowing you to build your own tangible library that you can cherish forever.
                     </p>
                 </div>

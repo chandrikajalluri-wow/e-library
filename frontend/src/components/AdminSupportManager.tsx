@@ -347,7 +347,7 @@ const AdminSupportManager: React.FC = () => {
                                         className="btn-close-action"
                                         onClick={() => handleCloseSession(activeSession._id)}
                                     >
-                                        <X size={14} style={{ marginRight: '4px' }} />
+                                        <X size={14} className="mr-1" />
                                         <span>End Session</span>
                                     </button>
                                 )}
@@ -476,7 +476,7 @@ const AdminSupportManager: React.FC = () => {
                                 </div>
                                 <div className="meta-content">
                                     <label>Status</label>
-                                    <span style={{ textTransform: 'capitalize' }}>{activeSession.status.replace('_', ' ')}</span>
+                                    <span className="text-capitalize">{activeSession.status.replace('_', ' ')}</span>
                                 </div>
                             </div>
                         </div>

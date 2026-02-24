@@ -375,6 +375,8 @@ const AdminOrders: React.FC = () => {
                             <option value="return_accepted">Accepted</option>
                             <option value="returned">Exchanged</option>
                             <option value="return_rejected">Exchange Rejected</option>
+                            <option value="refund_initiated">Refund Initiated</option>
+                            <option value="refunded">Refunded</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
                     </div>

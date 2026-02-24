@@ -76,7 +76,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
                                                         fill="#64748b"
                                                         textAnchor={textAnchor}
                                                         dominantBaseline="central"
-                                                        style={{ fontSize: '11px', fontWeight: 500 }}
+                                                        className="chart-label-text"
                                                     >
                                                         {`${name} ${(percent * 100).toFixed(0)}%`}
                                                     </text>
@@ -125,7 +125,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
                                                         fill="#64748b"
                                                         textAnchor={textAnchor}
                                                         dominantBaseline="central"
-                                                        style={{ fontSize: '11px', fontWeight: 500 }}
+                                                        className="chart-label-text"
                                                     >
                                                         {`${name} ${(percent * 100).toFixed(0)}%`}
                                                     </text>

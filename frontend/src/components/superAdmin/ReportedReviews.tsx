@@ -95,8 +95,8 @@ const ReportedReviews: React.FC<ReportedReviewsProps> = ({ hideTitle = false }) 
             <div className="reports-grid">
                 {reviews.length === 0 ? (
                     <div className="admin-empty-state">
-                        <CheckCircle size={48} className="text-green-500 mb-3" style={{ color: '#10b981', marginBottom: '1rem' }} />
-                        <p style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>All caught up!</p>
+                        <CheckCircle size={48} className="text-success mb-4" />
+                        <p className="mb-2" style={{ color: 'var(--text-primary)' }}>All caught up!</p>
                         <p className="section-subtitle">No reported reviews pending moderation.</p>
                     </div>
                 ) : (
@@ -110,13 +110,13 @@ const ReportedReviews: React.FC<ReportedReviewsProps> = ({ hideTitle = false }) 
                             <div className="report-content">
                                 <div className="report-book-info">
                                     <div className="report-book-title">
-                                        <BookOpen size={18} style={{ opacity: 0.5 }} />
+                                        <BookOpen size={18} className="opacity-50" />
                                         <span>{review.book_id?.title}</span>
                                     </div>
                                     <div className="book-info-meta">
                                         <span>by {review.user_id?.name}</span>
                                         <span>•</span>
-                                        <span style={{ color: '#f59e0b' }}>{'★'.repeat(review.rating)}</span>
+                                        <span className="text-warning">{'★'.repeat(review.rating)}</span>
                                     </div>
                                 </div>
 
@@ -125,12 +125,12 @@ const ReportedReviews: React.FC<ReportedReviewsProps> = ({ hideTitle = false }) 
                                     <div>"{review.comment}"</div>
                                 </div>
 
-                                <div style={{ marginBottom: '1rem' }}>
+                                <div className="mb-4">
                                     <h5 className="report-reasons-title">Report Reasons</h5>
                                     {review.reports.map((report, idx) => (
                                         <div key={idx} className="report-reason-item">
-                                            <AlertTriangle size={14} style={{ marginTop: '2px', flexShrink: 0 }} />
-                                            <span><span style={{ fontWeight: 700 }}>{report.user_id?.name}:</span> {report.reason}</span>
+                                            <AlertTriangle size={14} className="mt-xs flex-shrink-0" />
+                                            <span><span className="font-semibold">{report.user_id?.name}:</span> {report.reason}</span>
                                         </div>
                                     ))}
                                 </div>

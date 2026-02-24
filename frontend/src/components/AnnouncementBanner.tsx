@@ -97,29 +97,20 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ targetPage }) =
     if (finalAnnouncements.length === 0) return null;
 
     return (
-        <div className="announcement-container" style={{ display: 'flex', flexDirection: 'column', width: '100%', zIndex: 1000 }}>
+        <div className="announcement-priority-stack flex-column full-width z-1000">
             {finalAnnouncements.map(ann => (
                 <div
                     key={ann._id}
-                    className={`announcement-banner type-${ann.type?.toLowerCase() || 'info'}`}
-                    style={{
-                        padding: '0.75rem 1rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        color: 'white',
-                        fontWeight: 500,
-                        fontSize: '0.95rem',
-                        background: getBackgroundColor(ann.type)
-                    }}
+                    className={`announcement-item-standard type-${ann.type?.toLowerCase() || 'info'}`}
+                    style={{ background: getBackgroundColor(ann.type) }}
                 >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, justifyContent: 'center' }}>
+                    <div className="flex-center gap-2 flex-1">
                         {getIcon(ann.type)}
                         <span>{ann.content}</span>
                     </div>
                     <button
                         onClick={() => handleDismiss(ann._id)}
-                        style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        className="btn-reset flex-center text-white pointer"
                     >
                         <X size={18} />
                     </button>
