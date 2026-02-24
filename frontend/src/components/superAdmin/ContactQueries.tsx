@@ -104,7 +104,7 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
             <div className="queries-grid">
                 {filteredQueries.length === 0 ? (
                     <div className="admin-empty-state">
-                        <MessageSquare className="mx-auto h-12 w-12 text-gray-300 mb-3" size={48} style={{ opacity: 0.5, marginBottom: '1rem' }} />
+                        <MessageSquare className="mx-auto h-12 w-12 text-gray-300 opacity-50 mb-4" size={48} />
                         <p>No {filter !== 'ALL' ? filter.toLowerCase() : ''} queries found.</p>
                     </div>
                 ) : (
@@ -118,12 +118,12 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
                                     <div>
                                         <h4 className="query-name">{query.name}</h4>
                                         <div className="query-meta">
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            <div className="flex-center-row gap-2">
                                                 <Mail size={14} />
                                                 {query.email}
                                             </div>
-                                            <span style={{ opacity: 0.5, margin: '0 0.4rem' }}>•</span>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            <span className="opacity-50 mx-2">•</span>
+                                            <div className="flex-center-row gap-2">
                                                 <Clock size={14} />
                                                 {new Date(query.createdAt).toLocaleDateString()}
                                             </div>
@@ -142,7 +142,7 @@ const ContactQueries: React.FC<ContactQueriesProps> = ({ hideTitle = false }) =>
 
                             <div className="query-actions">
                                 {replyingTo === query._id ? (
-                                    <div className="query-reply-box saas-reveal" style={{ width: '100%', marginTop: '1rem' }}>
+                                    <div className="query-reply-box saas-reveal full-width mt-4">
                                         <textarea
                                             className="admin-textarea query-reply-textarea"
                                             placeholder="Type your response here..."

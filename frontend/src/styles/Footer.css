@@ -1,6 +1,6 @@
 .footer {
     background: var(--saas-bg);
-    padding: 3rem 5% 2rem;
+    padding: 2rem 5% 1.5rem;
     border-top: 1px solid var(--saas-border);
     color: var(--saas-text);
     position: relative;
@@ -12,7 +12,7 @@
     margin: 0 auto;
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 4rem;
+    gap: 2.5rem;
     position: relative;
     z-index: 1;
 }
@@ -23,9 +23,10 @@
 }
 
 .footer-title {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 900;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+
     background: linear-gradient(to right, var(--primary-color), #8b5cf6);
     -webkit-background-clip: text;
     background-clip: text;

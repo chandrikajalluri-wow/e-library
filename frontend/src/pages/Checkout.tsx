@@ -136,9 +136,8 @@ const Checkout: React.FC = () => {
                                     {cartItems.map((item) => (
                                         <motion.div
                                             key={item.book._id}
-                                            className={`checkout-item-premium ${item.book.noOfCopies <= 0 ? 'out-of-stock-item' : ''}`}
+                                            className={`checkout-item-premium ${item.book.noOfCopies <= 0 ? 'out-of-stock-item opacity-60' : ''}`}
                                             variants={itemVariants}
-                                            style={item.book.noOfCopies <= 0 ? { opacity: 0.6 } : {}}
                                         >
                                             <div className="item-img-box">
                                                 <img
@@ -149,7 +148,7 @@ const Checkout: React.FC = () => {
                                             <div className="item-info-box">
                                                 <h3 className="item-title">
                                                     {item.book.title}
-                                                    {item.book.noOfCopies <= 0 && <span className="oos-label" style={{ color: 'var(--danger-color)', fontSize: '0.7rem', marginLeft: '8px' }}>(Out of Stock)</span>}
+                                                    {item.book.noOfCopies <= 0 && <span className="oos-label text-danger text-xs ml-2">(Out of Stock)</span>}
                                                 </h3>
                                                 <span className="item-author-label">by {item.book.author}</span>
                                                 <div className="item-meta-row">
@@ -164,7 +163,7 @@ const Checkout: React.FC = () => {
                                     ))}
                                 </AnimatePresence>
                                 {hasOutOfStockItems && (
-                                    <p className="oos-warning" style={{ fontSize: '0.8rem', color: 'var(--danger-color)', padding: '10px 0', borderTop: '1px dashed var(--border-color)' }}>
+                                    <p className="oos-warning text-xs text-danger pt-2 border-t border-dashed">
                                         * Items marked as Out of Stock are excluded from the order summary.
                                     </p>
                                 )}

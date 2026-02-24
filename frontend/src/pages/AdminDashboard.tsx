@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download, Eye, XCircle, X, TrendingUp } from 'lucide-react';
+import { CircleSlash, RefreshCw, Plus, Minus, Search, Filter, BookOpen, Layers, Tag, FileText, Download, Eye, XCircle, X, TrendingUp, Globe } from 'lucide-react';
 import { createBook, getBooks, getBook, updateBook, deleteBook, checkBookDeletionSafety } from '../services/bookService';
 import { getCategories, updateCategory, createCategory, deleteCategory as removeCategory } from '../services/categoryService';
 import { getAllOrders, updateOrderStatus } from '../services/adminOrderService';
@@ -39,6 +39,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   const [bookTypeFilter, setBookTypeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
+  const [languageFilter, setLanguageFilter] = useState('all');
   const [readHistoryStatusFilter, setReadHistoryStatusFilter] = useState('all');
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
@@ -270,6 +271,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
         params.append('stock', stockFilter);
       }
 
+      if (languageFilter !== 'all') {
+        params.append('language', languageFilter);
+      }
+
       const data = await getBooks(params.toString());
       setAllBooks(data.books);
       setBookTotalPages(data.pages);
@@ -343,7 +348,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
   useEffect(() => {
     if (activeTab === 'books') fetchBooks();
-  }, [activeTab, bookPage, currentUser, bookTypeFilter, categoryFilter, stockFilter]);
+  }, [activeTab, bookPage, currentUser, bookTypeFilter, categoryFilter, stockFilter, languageFilter]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -360,7 +365,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
   }, [searchTerm, logSearchTerm]);
 
   // Filter resets
-  useEffect(() => { setBookPage(1); }, [bookTypeFilter, categoryFilter, stockFilter]);
+  useEffect(() => { setBookPage(1); }, [bookTypeFilter, categoryFilter, stockFilter, languageFilter]);
   useEffect(() => { setReadHistoryPage(1); }, [membershipFilter, readHistoryStatusFilter]);
   useEffect(() => { setLogsPage(1); }, [activeTab]); // Reset logs page when entering tab
 
@@ -646,6 +651,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
     setBookTypeFilter('all');
     setCategoryFilter('all');
     setStockFilter('all');
+    setLanguageFilter('all');
     setBookPage(1);
     toast.info('Filters cleared');
   };
@@ -1101,14 +1107,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                         <option value="lowStock">Low Stock (≤ 2)</option>
                       </select>
                     </div>
-                    {(searchTerm || bookTypeFilter !== 'all' || categoryFilter !== 'all' || stockFilter !== 'all') && (
+                    <div className="filter-item-box">
+                      <Globe size={16} />
+                      <select value={languageFilter} onChange={(e) => setLanguageFilter(e.target.value)} className="admin-filter-select">
+                        <option value="all">All Languages</option>
+                        <option value="English">English</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="French">French</option>
+                        <option value="German">German</option>
+                        <option value="Hindi">Hindi</option>
+                      </select>
+                    </div>
+                    {(searchTerm || bookTypeFilter !== 'all' || categoryFilter !== 'all' || stockFilter !== 'all' || languageFilter !== 'all') && (
                       <button
                         onClick={handleClearFilters}
-                        className="admin-btn-secondary clear-filters-btn"
+                        className="admin-clear-mini-btn"
                         title="Clear all filters"
                       >
-                        <XCircle size={18} />
-                        <span>Clear</span>
+                        <X size={20} />
                       </button>
                     )}
                   </div>
@@ -1308,15 +1324,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                         className="admin-search-clear-btn"
                         onClick={() => setCategorySearch('')}
                         aria-label="Clear category search"
-                        style={{
-                          position: 'absolute',
-                          right: '18px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
                       >
                         <X size={18} />
                       </button>

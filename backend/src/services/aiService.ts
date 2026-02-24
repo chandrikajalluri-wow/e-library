@@ -16,10 +16,6 @@ export const generateBookContent = async (
         if (!apiKey) {
             throw new Error('GEMINI_API_KEY is not set in environment variables');
         }
-
-        console.log('[AI Service] API Key present: true');
-        console.log('[AI Service] Generating content for:', title, 'by', author);
-
         const model = 'gemini-2.5-flash';
         const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;
 
@@ -52,8 +48,6 @@ REQUIREMENTS:
 
 Return ONLY valid JSON with these exact keys: description, authorBio, summary`;
 
-        console.log('[AI Service] Calling Gemini API with model:', model);
-
         const response = await axios.post(
             apiUrl,
             {
@@ -73,7 +67,6 @@ Return ONLY valid JSON with these exact keys: description, authorBio, summary`;
             }
         );
 
-        console.log('[AI Service] Received response from Gemini');
 
         // Extract text from response
         const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -106,7 +99,6 @@ Return ONLY valid JSON with these exact keys: description, authorBio, summary`;
             summary: generatedContent.summary ? validateWordCount(generatedContent.summary) : undefined
         };
 
-        console.log('[AI Service] Successfully generated and validated content');
         return result_data;
 
     } catch (error: any) {
@@ -141,8 +133,6 @@ export const explainBook = async (
         if (!apiKey) {
             throw new Error('GEMINI_API_KEY is not set in environment variables');
         }
-
-        console.log('[AI Service] Explaining book:', title, 'by', author);
 
         const model = 'gemini-2.5-flash';
         const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;

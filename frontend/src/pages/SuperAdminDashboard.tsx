@@ -22,7 +22,6 @@ const SuperAdminDashboard: React.FC = () => {
         const fetchMetrics = async () => {
             try {
                 const data = await getSystemMetrics();
-                console.log('Fetched Metrics Data:', data);
                 setMetrics(data);
             } catch (err) {
                 console.error('Failed to fetch metrics:', err);

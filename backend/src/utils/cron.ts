@@ -11,7 +11,6 @@ import Readlist from '../models/Readlist';
 export const initCronJobs = () => {
   // 3. Daily Membership Expiry Check (1:00 AM)
   cron.schedule('0 1 * * *', async () => {
-    console.log('Running membership expiry check cron job...');
     try {
       const now = new Date();
 
@@ -66,7 +65,6 @@ export const initCronJobs = () => {
           user.membershipExpiryDate = undefined;
           await user.save();
 
-          console.log(`Downgraded expired user: ${user.email}`);
         }
       }
 
@@ -77,7 +75,6 @@ export const initCronJobs = () => {
 
   // 4. Daily Readlist Expiry Check (Midnight)
   cron.schedule('0 0 * * *', async () => {
-    console.log('Running readlist expiry check cron job...');
     try {
       const now = new Date();
       const result = await Readlist.updateMany(
@@ -89,10 +86,6 @@ export const initCronJobs = () => {
           $set: { status: 'expired' }
         }
       );
-
-      if (result.modifiedCount > 0) {
-        console.log(`Expired ${result.modifiedCount} overdue readlist items.`);
-      }
     } catch (err) {
       console.error('Error in readlist expiry cron job:', err);
     }

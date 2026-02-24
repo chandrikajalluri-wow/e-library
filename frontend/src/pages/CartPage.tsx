@@ -250,8 +250,8 @@ const CartPage: React.FC = () => {
                         <div key="content" className="cart-main-grid">
                             <div className="cart-content-left">
                                 <div className="cart-items-card">
-                                    <div className="card-header-minimal" style={{ justifyContent: 'space-between' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div className="card-header-minimal flex-between">
+                                        <div className="flex-center-row gap-3">
                                             <Package size={20} />
                                             <h3>Shipping Items</h3>
                                         </div>
@@ -309,7 +309,7 @@ const CartPage: React.FC = () => {
                                                                 <span className="item-author-sub">by {item.book.author}</span>
                                                             </div>
                                                             <div className="price-tag-premium">
-                                                                {item.book.noOfCopies > 0 ? `₹${item.book.price.toFixed(2)}` : <span style={{ color: 'var(--danger-color)', fontSize: '0.8rem' }}>Out of Stock</span>}
+                                                                {item.book.noOfCopies > 0 ? `₹${item.book.price.toFixed(2)}` : <span className="text-danger text-xs">Out of Stock</span>}
                                                             </div>
                                                         </div>
 
@@ -353,8 +353,7 @@ const CartPage: React.FC = () => {
 
                                                                 {item.book.noOfCopies > 0 && (
                                                                     <button
-                                                                        className="minimal-remove-btn"
-                                                                        style={{ marginLeft: '1rem', color: 'var(--primary-color)', borderColor: 'var(--primary-color)' }}
+                                                                        className="minimal-remove-btn ml-4 text-primary-color border-primary"
                                                                         onClick={() => navigate('/checkout', { state: { checkoutItems: [item] } })}
                                                                     >
                                                                         <Zap size={16} />
@@ -374,31 +373,21 @@ const CartPage: React.FC = () => {
                             <aside className="cart-sidebar-right">
                                 {hasSelectedOutOfStock ? (
                                     <motion.div
-                                        className="out-of-stock-warning"
+                                        className="out-of-stock-warning warning-banner-soft p-6 flex-column gap-4"
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        style={{
-                                            padding: '1.5rem',
-                                            background: 'rgba(239, 68, 68, 0.05)',
-                                            border: '1px solid var(--danger-color)',
-                                            borderRadius: '16px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '1rem'
-                                        }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--danger-color)' }}>
+                                        <div className="flex-center-row gap-3 text-danger">
                                             <Zap size={24} />
-                                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Checkout Restricted</h3>
+                                            <h3 className="m-0 text-lg font-semibold">Checkout Restricted</h3>
                                         </div>
-                                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                        <p className="m-0 text-sm opacity-70">
                                             Some items in your cart are currently <strong>out of stock</strong>.
                                             Please remove these items to proceed with your order.
                                         </p>
                                         <button
                                             onClick={() => navigate('/books')}
-                                            className="btn-link"
-                                            style={{ alignSelf: 'flex-start', color: 'var(--primary-color)', fontSize: '0.9rem', fontWeight: 600, padding: 0 }}
+                                            className="btn-reset text-sm font-semibold text-primary-color"
                                         >
                                             Find alternative books
                                         </button>
