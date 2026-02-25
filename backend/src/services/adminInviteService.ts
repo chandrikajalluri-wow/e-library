@@ -31,7 +31,8 @@ export const generateSecureToken = async (): Promise<{
 };
 
 /**
- * Create an admin invitation for a target user
+ * Create an admin invitation for a target user (by userId)
+ * Validates userId-specific checks, then delegates to createAdminInviteByEmail
  * @param targetUserId - ID of user to invite
  * @param invitedById - ID of super admin sending invite
  * @returns Success message or throws error
@@ -55,73 +56,8 @@ export const createAdminInvite = async (
         throw new Error('Cannot invite deleted user');
     }
 
-    // 3. Check if user is already admin or super admin
-    const userRole = (targetUser.role_id as any).name;
-    if (userRole === RoleName.ADMIN || userRole === RoleName.SUPER_ADMIN) {
-        throw new Error('User is already an admin');
-    }
-
-    // 4. Check for existing pending invite
-    const existingInvite = await AdminInvite.findOne({
-        email: targetUser.email,
-        status: InviteStatus.PENDING,
-    });
-
-    if (existingInvite) {
-        throw new Error('Invitation already sent to this user');
-    }
-
-    // 5. Generate secure token
-    const { rawToken, hashedToken } = await generateSecureToken();
-
-    // 6. Calculate expiry time (24 hours from now)
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + INVITE_EXPIRY_HOURS);
-
-    // 7. Create invite record
-    const invite = await AdminInvite.create({
-        email: targetUser.email,
-        token_hash: hashedToken,
-        invited_by: invitedById,
-        status: InviteStatus.PENDING,
-        expires_at: expiresAt,
-    });
-
-    // 8. Get inviter details for email
-    const inviter = await User.findById(invitedById);
-    const inviterName = inviter?.name || 'Super Admin';
-
-    // 9. Send invitation email
-    const acceptLink = `${process.env.FRONTEND_URL}/accept-admin?token=${rawToken}`;
-
-    try {
-        await sendEmail(
-            targetUser.email,
-            'You\'ve been invited to become an Admin',
-            `You have been invited by ${inviterName} to become an admin. Click the link to accept: ${acceptLink}`,
-            getAdminInvitationTemplate(
-                targetUser.name,
-                inviterName,
-                acceptLink,
-                expiresAt
-            )
-        );
-    } catch (emailError) {
-        console.error('Failed to send invitation email:', emailError);
-        // Don't throw - invite is created, can be resent manually
-    }
-
-    // 10. Log activity
-    await ActivityLog.create({
-        user_id: invitedById,
-        action: ActivityAction.ADMIN_INVITE_SENT,
-        description: `Invited ${targetUser.email} to become admin`,
-    });
-
-    return {
-        message: 'Invitation sent successfully',
-        email: targetUser.email,
-    };
+    // 3. Delegate to the email-based invite function (handles role check, duplicate check, token, email, logging)
+    return createAdminInviteByEmail(targetUser.email, invitedById);
 };
 
 /**

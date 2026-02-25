@@ -143,7 +143,7 @@ export const login = async (email: string, password: string, userAgent: string =
         timestamp: new Date()
     });
 
-    return { token, role: roleDoc.name, userId: user._id, theme: user.theme };
+    return { token, role: roleDoc.name, userId: user._id };
 };
 
 export const forgotPassword = async (email: string) => {
@@ -293,5 +293,5 @@ export const googleLogin = async (credential: string, userAgent: string = 'Unkno
         description: 'Logged in via Google'
     });
 
-    return { token, role: roleDoc.name, userId: user._id, theme: user.theme };
+    return { token, role: roleDoc.name, userId: user._id };
 };

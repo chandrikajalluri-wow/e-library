@@ -59,28 +59,4 @@ export const updateUserMembershipAdmin = async (userId: string, membershipId: st
     return await User.findById(userId).populate('membership_id');
 };
 
-export const cancelMembership = async (userId: string, reason: string) => {
-    if (!reason) throw new Error('Cancellation reason is required');
 
-    const basicPlan = await Membership.findOne({ name: MembershipName.BASIC });
-    if (!basicPlan) throw new Error('Basic membership plan not found');
-
-    const user = await User.findById(userId);
-    if (!user) throw new Error('User not found');
-
-    user.membership_id = (basicPlan._id as any);
-    user.membershipCancellationReason = reason;
-    user.membershipCancellationDate = new Date();
-    user.membershipStartDate = undefined;
-    user.membershipExpiryDate = undefined;
-
-    await user.save();
-
-    await ActivityLog.create({
-        user_id: user._id,
-        action: ActivityAction.MEMBERSHIP_CANCELLED,
-        timestamp: new Date()
-    });
-
-    return await User.findById(userId).populate('membership_id');
-};
