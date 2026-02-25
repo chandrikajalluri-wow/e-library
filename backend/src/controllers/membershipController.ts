@@ -51,17 +51,3 @@ export const updateUserMembershipAdmin = async (req: AuthRequest, res: Response)
     }
 };
 
-export const cancelMyMembership = async (req: AuthRequest, res: Response) => {
-    try {
-        const { reason } = req.body;
-        const updatedUser = await membershipService.cancelMembership(req.user!._id, reason);
-        res.json({
-            message: `Membership cancelled. You have been switched to ${(updatedUser?.membership_id as any).displayName} plan.`,
-            membership: updatedUser?.membership_id
-        });
-    } catch (err: any) {
-        console.error(err);
-        res.status(err.message === 'Cancellation reason is required' ? 400 : 500).json({ error: err.message });
-    }
-};
-

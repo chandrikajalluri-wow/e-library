@@ -1,7 +1,6 @@
 import Notification from '../models/Notification';
 import User from '../models/User';
 import Role from '../models/Role';
-import Book from '../models/Book';
 import { Types } from 'mongoose';
 import { RoleName, NotificationType } from '../types/enums';
 

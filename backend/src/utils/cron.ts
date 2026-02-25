@@ -1,7 +1,5 @@
 import cron from 'node-cron';
 import User from '../models/User';
-import ActivityLog from '../models/ActivityLog';
-import { ActivityAction } from '../types/enums';
 import { sendEmail } from './mailer';
 import Membership from '../models/Membership';
 import { MembershipName } from '../types/enums';
