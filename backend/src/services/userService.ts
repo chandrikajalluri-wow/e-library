@@ -101,8 +101,7 @@ export const updateProfile = async (userId: string, profileData: any, profileIma
         favoriteGenres: user.favoriteGenres,
         readingTarget: user.readingTarget,
         membershipStartDate: user.membershipStartDate,
-        membershipExpiryDate: user.membershipExpiryDate,
-        theme: user.theme
+        membershipExpiryDate: user.membershipExpiryDate
     };
 };
 
