@@ -68,7 +68,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Removed overflow: hidden to allow crown to peek out */
 }
 
 .profile-avatar-item {
@@ -202,7 +201,6 @@
     border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-/* Quick Stats */
 .quick-stats-card {
     padding: 1.5rem;
 }
@@ -413,7 +411,6 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     margin-top: 1rem;
-    /* Added space between label and tags */
 }
 
 .genre-tag {

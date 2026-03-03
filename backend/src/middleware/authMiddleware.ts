@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 import { IRole } from '../models/Role';
 import { RoleName } from '../types/enums';
+import { isTokenBlacklisted, isValidSession } from '../utils/sessionManager';
+import { UnauthorizedError } from '../utils/errors';
 
 export interface AuthRequest extends Request {
   user?: IUser;
@@ -15,52 +17,64 @@ export const auth = async (
 ) => {
   let token: string | undefined;
 
-  if (
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  } else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-        id: string;
-      };
+    token = req.headers.authorization.split(' ')[1];
+  }
 
-      const user = await User.findById(decoded.id)
-        .populate('role_id')
-        .populate('membership_id');
-      if (!user)
-        return res
-          .status(401)
-          .json({ error: 'Not authorized, user not found' });
+  if (!token) {
+    return next(new UnauthorizedError('Not authorized, no token'));
+  }
 
-      if (user.isDeleted) {
-        return res.status(401).json({ error: 'Account has been deleted' });
-      }
-
-      // Session Revocation Check
-      const isSessionActive = user.activeSessions && user.activeSessions.length > 0
-        ? user.activeSessions.some(session => session.token === token)
-        : true; // If no sessions recorded, allow the token (fallback for older/seeded users)
-
-      if (!isSessionActive) {
-        console.warn(`[Auth] Session mismatch for user ${user.email}. Token not found in activeSessions.`);
-        return res.status(401).json({ error: 'Session has been revoked or expired. Please login again.' });
-      }
-
-      req.user = user;
-      next();
-    } catch (error) {
-      console.error(error);
-      res.status(401).json({ error: 'Not authorized, token failed' });
+  try {
+    // 1. Check Blacklist
+    if (await isTokenBlacklisted(token)) {
+      return next(new UnauthorizedError('Token has been revoked. Please login again.'));
     }
-  } else {
-    res.status(401).json({ error: 'Not authorized, no token' });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: string;
+    };
+
+    const user = await User.findById(decoded.id)
+      .populate('role_id')
+      .populate('membership_id');
+
+    if (!user) {
+      return next(new UnauthorizedError('Not authorized, user not found'));
+    }
+
+    if (user.isDeleted) {
+      return next(new UnauthorizedError('Account has been deleted'));
+    }
+
+    // 2. Redis Session Check
+    const isSessionActive = await isValidSession(user._id.toString(), token);
+
+    if (!isSessionActive) {
+      // Fallback: If Redis doesn't have it, check database activeSessions (for transition)
+      const isDbSessionActive = user.activeSessions?.some(s => s.token === token);
+
+      if (!isDbSessionActive) {
+        return next(new UnauthorizedError('Session has been revoked or expired. Please login again.'));
+      }
+    }
+
+    req.user = user as IUser;
+    next();
+  } catch (error) {
+    console.error('[AuthMiddleware] Error:', error);
+    next(new UnauthorizedError('Not authorized, token failed'));
   }
 };
 
 export const checkRole = (roles: RoleName[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user) return res.status(401).json({ error: 'Not authorized' });
+    if (!req.user) return next(new UnauthorizedError('Not authorized'));
 
     const userRole = (req.user.role_id as IRole).name;
     if (!roles.includes(userRole)) {

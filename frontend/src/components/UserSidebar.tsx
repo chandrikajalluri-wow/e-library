@@ -15,7 +15,6 @@ const UserSidebar: React.FC = () => {
 
     const confirmLogout = () => {
         const userId = localStorage.getItem('userId');
-        localStorage.removeItem('token');
         localStorage.removeItem('role');
         localStorage.removeItem('userId');
         if (userId) {

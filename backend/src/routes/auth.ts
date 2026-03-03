@@ -1,5 +1,6 @@
 import express from 'express';
 import * as authController from '../controllers/authController';
+import { auth } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -20,5 +21,8 @@ router.post('/reset/:token', authController.resetPassword);
 
 // Google Login
 router.post('/google-login', authController.googleLogin);
+
+// Logout
+router.post('/logout', auth, authController.logout);
 
 export default router;

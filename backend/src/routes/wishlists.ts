@@ -1,20 +1,20 @@
 import express from 'express';
 import { auth, checkRole } from '../middleware/authMiddleware';
 import { RoleName } from '../types/enums';
-import * as wishlistController from '../controllers/wishlistController';
+import * as userProfileController from '../controllers/userProfileController';
 
 const router = express.Router();
 
 // Get My Wishlist
-router.get('/', auth, wishlistController.getMyWishlist);
+router.get('/', auth, userProfileController.getMyWishlist);
 
 // Get All Wishlists (Admin - for Stats)
-router.get('/all', auth, checkRole([RoleName.ADMIN]), wishlistController.getAllWishlists);
+router.get('/all', auth, checkRole([RoleName.ADMIN]), userProfileController.getAllWishlists);
 
 // Add to Wishlist
-router.post('/', auth, wishlistController.addToWishlist);
+router.post('/', auth, userProfileController.addToWishlist);
 
 // Remove from Wishlist
-router.delete('/:id', auth, wishlistController.removeFromWishlist);
+router.delete('/:id', auth, userProfileController.removeFromWishlist);
 
 export default router;

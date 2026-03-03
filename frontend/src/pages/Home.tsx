@@ -31,7 +31,7 @@ const Home: React.FC = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
   const [isDowngradeModalOpen, setIsDowngradeModalOpen] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
-  const isAuthenticated = !!localStorage.getItem('token');
+  const isAuthenticated = !!localStorage.getItem('userId');
 
   React.useEffect(() => {
     const role = localStorage.getItem('role');
@@ -499,7 +499,7 @@ const Home: React.FC = () => {
         title="Sign Out"
         message="Are you sure you want to sign out from Bookstack?"
         onConfirm={() => {
-          localStorage.removeItem('token');
+          localStorage.removeItem('role');
           localStorage.removeItem('role');
           localStorage.removeItem('userId');
           window.location.reload();

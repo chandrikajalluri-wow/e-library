@@ -2,12 +2,14 @@ import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { initCronJobs } from './utils/cron';
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 
 // Connect to MongoDB
 connectDB();
@@ -16,7 +18,7 @@ app.use(
   cors({
     origin: process.env.ALLOWED_ORIGINS
       ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-      : ["http://localhost:5173", "http://localhost:5174", "https://e-library-three-pi.vercel.app"],
+      : ["http://localhost:5173", "https://e-library-three-pi.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "Range"],
     exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length"],
@@ -27,43 +29,55 @@ app.use(
 
 // Routes
 import authRoutes from './routes/auth';
-import categoryRoutes from './routes/categories';
-import bookRoutes from './routes/books';
+import catalogRoutes from './routes/catalog';
 import wishlistRoutes from './routes/wishlists';
 import reviewRoutes from './routes/reviews';
 import activityLogRoutes from './routes/activityLogs';
 import userRoutes from './routes/users';
-import contactRoutes from './routes/contact';
+import communicationRoutes from './routes/communication';
 import notificationRoutes from './routes/notifications';
 import membershipRoutes from './routes/memberships';
 import superAdminRoutes from './routes/superAdmin';
 import orderRoutes from './routes/orders';
 import aiRoutes from './routes/ai';
-import chatRoutes from './routes/chat';
-import adminInviteRoutes from './routes/adminInvite';
+
+app.use('/api', catalogRoutes);
+app.use('/api', communicationRoutes);
+app.use('/api', superAdminRoutes); // Handles /super-admin AND /admin-invite
 
 app.use('/api/auth', authRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/books', bookRoutes);
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/logs', activityLogRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/contact', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/memberships', membershipRoutes);
-app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ai', aiRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/admin-invite', adminInviteRoutes);
+
+import { AppError } from './utils/errors';
 
 // Global Error Handler
-app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error("GLOBAL ERROR:", err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  let statusCode = 500;
+  let message = 'Internal Server Error';
+  let stack = process.env.NODE_ENV === 'development' ? (err as Error).stack : undefined;
+
+  if (err instanceof AppError) {
+    statusCode = err.statusCode;
+    message = err.message;
+  } else if (err instanceof Error) {
+    // Handle other standard errors but keep status 500
+    message = err.message;
+    console.error("SYSTEM ERROR:", err);
+  } else {
+    // Unknown error type
+    console.error("UNKNOWN ERROR:", err);
+  }
+
+  res.status(statusCode).json({
+    error: message,
+    stack
   });
 });
 

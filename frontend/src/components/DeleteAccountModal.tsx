@@ -30,7 +30,6 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
             const res = await deleteAccount(password);
             toast.success(res.message);
             // Logout and redirect
-            localStorage.removeItem('token');
             localStorage.removeItem('role');
             localStorage.removeItem('userId');
             navigate('/');

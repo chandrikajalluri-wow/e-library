@@ -23,8 +23,8 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
+    const hasUser = !!userId;
     const storageKey = userId ? `cart_${userId}` : 'cart';
 
     const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -40,15 +40,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Mark as loaded once initialization is done (immediately or after remote fetch)
     useEffect(() => {
-        if (!token) {
+        if (!hasUser) {
             setIsLoaded(true);
         }
-    }, [token]);
+    }, [hasUser]);
 
     // Load cart from remote on login or refresh
     useEffect(() => {
         const fetchRemoteCart = async () => {
-            if (token) {
+            if (hasUser) {
                 try {
                     const remoteCart = await getCart();
                     const formattedCart: CartItem[] = (remoteCart || []).map((item: any) => ({
@@ -69,7 +69,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         };
         fetchRemoteCart();
-    }, [token, storageKey]);
+    }, [hasUser, storageKey]);
 
     // Save cart to localStorage and backend whenever it changes
     useEffect(() => {
@@ -83,7 +83,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Sync to backend if logged in
-        if (token) {
+        if (hasUser) {
             const syncWithBackend = async () => {
                 try {
                     await syncCart(cartItems);
@@ -93,7 +93,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             syncWithBackend();
         }
-    }, [cartItems, token, isLoaded]);
+    }, [cartItems, hasUser, isLoaded]);
 
     const addToCart = (book: Book) => {
         // Trigger stock alert if out of stock

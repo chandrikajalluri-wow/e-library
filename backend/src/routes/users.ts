@@ -2,74 +2,71 @@ import express from 'express';
 import { auth, checkRole } from '../middleware/authMiddleware';
 import { RoleName } from '../types/enums';
 import { upload } from '../middleware/uploadMiddleware';
-import * as userController from '../controllers/userController';
-import * as addressController from '../controllers/addressController';
+import * as userProfileController from '../controllers/userProfileController';
 
 const router = express.Router();
 
 // User Addresses
-router.get('/addresses', auth, addressController.getAddresses);
-router.post('/addresses', auth, addressController.addAddress);
-router.put('/addresses/:id', auth, addressController.updateAddress);
-router.delete('/addresses/:id', auth, addressController.deleteAddress);
+router.get('/addresses', auth, userProfileController.getAddresses);
+router.post('/addresses', auth, userProfileController.addAddress);
+router.put('/addresses/:id', auth, userProfileController.updateAddress);
+router.delete('/addresses/:id', auth, userProfileController.deleteAddress);
 
 // Get Current User Profile
-router.get('/me', auth, userController.getMe);
+router.get('/me', auth, userProfileController.getMe);
 
 // Get Dashboard Stats
-router.get('/dashboard-stats', auth, userController.getDashboardStats);
+router.get('/dashboard-stats', auth, userProfileController.getDashboardStats);
 
 // Update Profile
-router.put('/profile', auth, upload.single('profileImage'), userController.updateProfile);
+router.put('/profile', auth, upload.single('profileImage'), userProfileController.updateProfile);
 
 // Renew Membership
-router.post('/renew-membership', auth, userController.renewMembership);
+router.post('/renew-membership', auth, userProfileController.renewMembership);
 
 // Change Password
-router.put('/change-password', auth, userController.changePassword);
+router.put('/change-password', auth, userProfileController.changePassword);
 
 // Request New Book
-router.get('/book-requests/me', auth, userController.getMyBookRequests);
-router.post('/book-requests', auth, userController.requestBook);
+router.get('/book-requests/me', auth, userProfileController.getMyBookRequests);
+router.post('/book-requests', auth, userProfileController.requestBook);
 
 // ADMIN: Get All Book Requests
-router.get('/admin/book-requests', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userController.getAllBookRequests);
+router.get('/admin/book-requests', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userProfileController.getAllBookRequests);
 
 // ADMIN: Update Book Request Status
-router.put('/admin/book-requests/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userController.updateBookRequestStatus);
-
-
+router.put('/admin/book-requests/:id', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userProfileController.updateBookRequestStatus);
 
 // Get Active Sessions
-router.get('/sessions', auth, userController.getSessions);
-router.post('/sessions/revoke', auth, userController.revokeSession);
+router.get('/sessions', auth, userProfileController.getSessions);
+router.post('/sessions/revoke', auth, userProfileController.revokeSession);
 
 // Logout from all devices
-router.post('/logout-all', auth, userController.logoutAll);
+router.post('/logout-all', auth, userProfileController.logoutAll);
 
 // Delete Account
-router.delete('/me', auth, userController.deleteAccount);
+router.delete('/me', auth, userProfileController.deleteAccount);
 
 // Cart Sync
-router.get('/cart', auth, userController.getCart);
-router.post('/cart/sync', auth, userController.syncCart);
-router.delete('/cart', auth, userController.clearCartLocally);
+router.get('/cart', auth, userProfileController.getCart);
+router.post('/cart/sync', auth, userProfileController.syncCart);
+router.delete('/cart', auth, userProfileController.clearCartLocally);
 
 // Readlist
-router.get('/readlist', auth, userController.getReadlist);
-router.post('/readlist', auth, userController.addToReadlist);
+router.get('/readlist', auth, userProfileController.getReadlist);
+router.post('/readlist', auth, userProfileController.addToReadlist);
 
 // ADMIN: Get All Readlist Entries (Read History)
-router.get('/admin/readlist', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userController.getAllReadlistEntries);
+router.get('/admin/readlist', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userProfileController.getAllReadlistEntries);
 
 // ADMIN: Dashboard Stats
-router.get('/admin/dashboard-stats', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userController.getAdminDashboardStats);
+router.get('/admin/dashboard-stats', auth, checkRole([RoleName.ADMIN, RoleName.SUPER_ADMIN]), userProfileController.getAdminDashboardStats);
 
 // Book Access Check
-router.get('/book-access/:bookId', auth, userController.checkBookAccess);
+router.get('/book-access/:bookId', auth, userProfileController.checkBookAccess);
 
 // Reading Progress
-router.get('/reading-progress/:bookId', auth, userController.getReadingProgress);
-router.put('/reading-progress/:bookId', auth, userController.updateReadingProgress);
+router.get('/reading-progress/:bookId', auth, userProfileController.getReadingProgress);
+router.put('/reading-progress/:bookId', auth, userProfileController.updateReadingProgress);
 
 export default router;

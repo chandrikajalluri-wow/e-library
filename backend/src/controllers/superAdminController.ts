@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/authMiddleware';
 import * as superAdminService from '../services/superAdminService';
 
 export const getAllUsers = async (req: Request, res: Response) => {
@@ -167,12 +168,11 @@ export const getUserDetails = async (req: Request, res: Response) => {
     }
 };
 
-export const inviteAdmin = async (req: Request, res: Response) => {
+export const inviteAdmin = async (req: AuthRequest, res: Response) => {
     try {
         const { userId } = req.params;
-        const inviterId = (req as any).user._id.toString();
-        const adminInviteService = require('../services/adminInviteService');
-        const result = await adminInviteService.createAdminInvite(userId, inviterId);
+        const inviterId = req.user!._id.toString();
+        const result = await superAdminService.createAdminInvite(userId, inviterId);
         return res.status(201).json({ message: result.message, email: result.email });
     } catch (error: any) {
         console.error('Error inviting admin:', error);
@@ -182,13 +182,12 @@ export const inviteAdmin = async (req: Request, res: Response) => {
     }
 };
 
-export const inviteAdminByEmail = async (req: Request, res: Response) => {
+export const inviteAdminByEmail = async (req: AuthRequest, res: Response) => {
     try {
         const { email } = req.body;
-        const inviterId = (req as any).user._id.toString();
+        const inviterId = req.user!._id.toString();
         if (!email) return res.status(400).json({ error: 'Email is required' });
-        const adminInviteService = require('../services/adminInviteService');
-        const result = await adminInviteService.createAdminInviteByEmail(email, inviterId);
+        const result = await superAdminService.createAdminInviteByEmail(email, inviterId);
         return res.status(201).json({ message: result.message, email: result.email });
     } catch (error: any) {
         console.error('Error inviting admin by email:', error);
@@ -197,3 +196,45 @@ export const inviteAdminByEmail = async (req: Request, res: Response) => {
     }
 };
 
+
+
+// --- Admin Invite Public Flow ---
+
+export const verifyInviteToken = async (req: AuthRequest, res: Response) => {
+    try {
+        const { token } = req.params;
+        if (!token) return res.status(400).json({ error: 'Token is required' });
+        const inviteDetails = await superAdminService.verifyInviteToken(token);
+        return res.status(200).json({ message: 'Invitation is valid', ...inviteDetails });
+    } catch (error: any) {
+        console.error('Error verifying invite token:', error);
+        const status = ['Invalid invitation link', 'Invitation has expired'].includes(error.message) ? 400 : 500;
+        return res.status(status).json({ error: error.message || 'Failed to verify invitation' });
+    }
+};
+
+export const acceptInvite = async (req: AuthRequest, res: Response) => {
+    try {
+        const { token, name, password } = req.body;
+        if (!token) return res.status(400).json({ error: 'Token is required' });
+        if (!name) return res.status(400).json({ error: 'Name is required' });
+        const result = await superAdminService.acceptInvite(token, name, password);
+        return res.status(200).json({ message: result.message, email: result.email });
+    } catch (error: any) {
+        console.error('Error accepting invite:', error);
+        const errorMessage = error.message || 'Failed to accept invitation';
+        return res.status(400).json({ error: errorMessage });
+    }
+};
+
+export const declineInvite = async (req: AuthRequest, res: Response) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ error: 'Token is required' });
+        const result = await superAdminService.declineInvite(token);
+        return res.status(200).json({ message: result.message });
+    } catch (error: any) {
+        console.error('Error declining invite:', error);
+        return res.status(400).json({ error: error.message || 'Failed to decline invitation' });
+    }
+};
