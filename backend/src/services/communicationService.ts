@@ -9,6 +9,7 @@ import { notifySuperAdmins } from '../utils/notification';
 import { getContactResponseTemplate } from '../utils/emailTemplates';
 import { onlineUsers } from '../socket/socketManager';
 import { BaseService } from './baseService';
+import { Types } from 'mongoose';
 
 const chatSessionRepo = new BaseService(ChatSession);
 const chatMessageRepo = new BaseService(ChatMessage);
@@ -24,9 +25,9 @@ export const createOrGetSession = async (userId: string) => {
 
     if (!session) {
         session = await chatSessionRepo.create({
-            user_id: userId,
+            user_id: new Types.ObjectId(userId),
             status: SessionStatus.OPEN
-        });
+        } as any);
     }
 
     return session;
@@ -36,7 +37,7 @@ export const getSessionMessages = async (sessionId: string) => {
     return await chatMessageRepo.findAll({ session_id: sessionId }, {
         sort: { createdAt: 1 },
         populate: { path: 'sender_id', select: 'name profileImage role_id' }
-    }).then(res => res.data);
+    });
 };
 
 export const getAllSessionsAdmin = async () => {
