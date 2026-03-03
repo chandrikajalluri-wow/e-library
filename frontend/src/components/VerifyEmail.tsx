@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import '../styles/VerifyEmail.css';
 
 const VerifyEmail: React.FC = () => {
@@ -18,7 +18,7 @@ const VerifyEmail: React.FC = () => {
             hasCalledVerify.current = true;
 
             try {
-                await axios.get(`https://e-library-7k5l.onrender.com/api/auth/verify/${token}`);
+                await api.get(`auth/verify/${token}`);
                 setStatus('success');
                 setTimeout(() => {
                     navigate('/login');

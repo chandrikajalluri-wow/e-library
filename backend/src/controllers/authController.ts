@@ -27,7 +27,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         res.cookie('token', result.token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
         res.json(result);
@@ -69,7 +69,7 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
         res.cookie('token', result.token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
         res.json(result);
@@ -89,7 +89,7 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
         });
         res.json({ message: 'Logged out successfully' });
     } catch (err) {
