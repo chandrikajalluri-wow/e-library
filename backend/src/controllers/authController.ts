@@ -1,85 +1,98 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import * as authService from '../services/authService';
+import { BadRequestError } from '../utils/errors';
+import { revokeSession, blacklistToken } from '../utils/sessionManager';
+import { AuthRequest } from '../middleware/authMiddleware';
 
-export const signup = async (req: Request, res: Response) => {
+export const signup = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { name, email, password } = req.body;
         if (!name || !email || !password) {
-            return res.status(400).json({ error: 'Missing required fields' });
+            throw new BadRequestError('Missing required fields');
         }
 
         await authService.signup(name, email, password);
         res.json({
             message: 'Signup successful. Please check your email to verify account.',
         });
-    } catch (err: any) {
-        console.error(err);
-        if (err.message.includes('Invalid email') || err.message.includes('Password must') || err.message.includes('already exists')) {
-            return res.status(400).json({ error: err.message });
-        }
-        res.status(500).json({ error: 'Server error' });
+    } catch (err) {
+        next(err);
     }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, password } = req.body;
-        const result = await authService.login(email, password, req.headers['user-agent']);
+        const result = await authService.login(email, password, req.headers['user-agent'] as string);
+        res.cookie('token', result.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
         res.json(result);
-    } catch (err: any) {
-        console.error(err);
-        if (err.message === 'Invalid credentials' || err.message === 'This account has been deleted' || err.notVerified) {
-            return res.status(400).json({ error: err.message });
-        }
-        res.status(500).json({ error: 'Server error' });
+    } catch (err) {
+        next(err);
     }
 };
 
-export const forgotPassword = async (req: Request, res: Response) => {
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
         await authService.forgotPassword(req.body.email);
         res.json({ message: 'Reset link sent' });
-    } catch (err: any) {
-        console.error(err);
-        if (err.message === 'User not found') return res.status(400).json({ error: err.message });
-        res.status(500).json({ error: 'Server error' });
+    } catch (err) {
+        next(err);
     }
 };
 
-export const verifyEmail = async (req: Request, res: Response) => {
+export const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
     try {
         await authService.verifyEmail(req.params.token);
         res.json({ message: 'Email verified successfully' });
-    } catch (err: any) {
-        console.error(err);
-        if (err.message === 'Invalid token') return res.status(400).json({ error: err.message });
-        res.status(500).json({ error: 'Server error' });
+    } catch (err) {
+        next(err);
     }
 };
 
-export const resetPassword = async (req: Request, res: Response) => {
+export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
         await authService.resetPassword(req.params.token, req.body.password);
         res.json({ message: 'Password reset successful' });
-    } catch (err: any) {
-        console.error(err);
-        if (err.message.includes('Password must') || err.message.includes('Invalid or expired') || err.message === 'User not found') {
-            return res.status(400).json({ error: err.message });
-        }
-        res.status(500).json({ error: 'Server error' });
+    } catch (err) {
+        next(err);
     }
 };
 
-export const googleLogin = async (req: Request, res: Response) => {
+export const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const result = await authService.googleLogin(req.body.credential, req.headers['user-agent']);
+        const result = await authService.googleLogin(req.body.credential, req.headers['user-agent'] as string);
+        res.cookie('token', result.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
         res.json(result);
-    } catch (err: any) {
-        console.error(err);
-        if (err.message === 'Invalid Google token' || err.message === 'This account has been deleted') {
-            return res.status(400).json({ error: err.message });
-        }
-        res.status(500).json({ error: 'Google authentication failed' });
+    } catch (err) {
+        next(err);
     }
 };
 
+export const logout = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+        if (token && req.user) {
+            await revokeSession(req.user._id.toString(), token);
+            await blacklistToken(token, 7 * 24 * 60 * 60); // Blacklist for 7 days
+        }
+
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        });
+        res.json({ message: 'Logged out successfully' });
+    } catch (err) {
+        next(err);
+    }
+};

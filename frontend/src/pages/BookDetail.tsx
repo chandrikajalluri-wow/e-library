@@ -116,8 +116,8 @@ const BookDetail: React.FC = () => {
 
   const checkAccessStatus = async (bookId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      const userId = localStorage.getItem('userId');
+      if (!userId) return;
       const accessData = await checkBookAccess(bookId);
       setHasAccess(accessData.hasAccess);
       // canReview if they have access or are in readlist (even if expired)
@@ -140,8 +140,8 @@ const BookDetail: React.FC = () => {
 
   const handleAddToReadlist = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
         toast.error('Please login to add to library');
         navigate('/login');
         return;
@@ -165,7 +165,7 @@ const BookDetail: React.FC = () => {
   };
 
   const handleToggleWishlist = async () => {
-    if (!localStorage.getItem('token')) {
+    if (!localStorage.getItem('userId')) {
       toast.info('Please sign in to add books to your wishlist');
       navigate('/login');
       return;
@@ -230,7 +230,7 @@ const BookDetail: React.FC = () => {
   };
 
   const handleLike = async (reviewId: string) => {
-    if (!localStorage.getItem('token') || !currentUserId) {
+    if (!currentUserId) {
       toast.info('Please sign in to like reviews');
       return;
     }
@@ -274,7 +274,7 @@ const BookDetail: React.FC = () => {
   };
 
   const handleDislike = async (reviewId: string) => {
-    if (!localStorage.getItem('token') || !currentUserId) {
+    if (!currentUserId) {
       toast.info('Please sign in to dislike reviews');
       return;
     }
@@ -316,7 +316,7 @@ const BookDetail: React.FC = () => {
   };
 
   const handleReport = (reviewId: string) => {
-    if (!localStorage.getItem('token')) {
+    if (!localStorage.getItem('userId')) {
       toast.info('Please sign in to report reviews');
       return;
     }

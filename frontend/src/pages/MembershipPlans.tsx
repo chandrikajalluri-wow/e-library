@@ -15,7 +15,7 @@ const MembershipPlans: React.FC = () => {
     const [selectedMembership, setSelectedMembership] = useState<Membership | null>(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
-    const isAuthenticated = !!localStorage.getItem('token');
+    const isAuthenticated = !!localStorage.getItem('userId');
 
     useEffect(() => {
         loadData();

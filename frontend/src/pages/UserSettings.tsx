@@ -325,7 +325,7 @@ const UserSettings: React.FC = () => {
                             )}
                             <div className="sessions-list">
                                 {sessions.map((session, index) => {
-                                    const isCurrentSession = session.token === localStorage.getItem('token');
+                                    const isCurrentSession = false; // Cannot reliably determine from token anymore
                                     return (
                                         <div key={index} className={`session-item ${isCurrentSession ? 'current-session' : ''}`}>
                                             <div className="session-icon">

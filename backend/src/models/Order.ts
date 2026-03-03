@@ -62,4 +62,17 @@ const orderSchema = new Schema<IOrder>(
     { timestamps: true, collection: 'orders' }
 );
 
+// --- Indexes ---
+// User order history: most common query (my orders, sorted newest first)
+orderSchema.index({ user_id: 1, createdAt: -1 });
+
+// Admin dashboard: filter orders by status
+orderSchema.index({ status: 1 });
+
+// Admin: filter by status + date (e.g., "pending orders this week")
+orderSchema.index({ status: 1, createdAt: -1 });
+
+// Find active orders for a specific book (used in deletion safety check)
+orderSchema.index({ 'items.book_id': 1, status: 1 });
+
 export default mongoose.model<IOrder>('Order', orderSchema);

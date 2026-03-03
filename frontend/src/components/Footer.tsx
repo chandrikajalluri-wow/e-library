@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import '../styles/Footer.css';
 
 const Footer: React.FC = () => {
-    const isAuthenticated = !!localStorage.getItem('token');
+    const isAuthenticated = !!localStorage.getItem('userId');
     return (
         <footer className="footer">
             <div className="footer-container">

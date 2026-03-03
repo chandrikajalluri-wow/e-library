@@ -63,7 +63,7 @@ const BookList: React.FC = () => {
   }, [categoryParam, searchParams]);
 
   const loadUserMembership = async () => {
-    if (localStorage.getItem('token')) {
+    if (localStorage.getItem('userId')) {
       try {
         const data = await getMyMembership();
         setUserMembership(data);
@@ -123,7 +123,7 @@ const BookList: React.FC = () => {
 
   const loadPersonalizedRecs = async () => {
     try {
-      if (localStorage.getItem('token') && userMembership?.hasRecommendations) {
+      if (localStorage.getItem('userId') && userMembership?.hasRecommendations) {
         const data = await getRecommendedBooks();
         setPersonalizedRecs(data);
       } else {
@@ -539,7 +539,7 @@ const BookList: React.FC = () => {
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
-                          if (!localStorage.getItem('token')) {
+                          if (!localStorage.getItem('userId')) {
                             toast.info('Please sign in to add books to your library');
                             navigate('/login');
                             return;

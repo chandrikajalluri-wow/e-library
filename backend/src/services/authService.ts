@@ -11,25 +11,28 @@ import { OAuth2Client } from 'google-auth-library';
 import { getVerificationEmailTemplate, getPasswordResetTemplate } from '../utils/emailTemplates';
 import ActivityLog from '../models/ActivityLog';
 
+import { BadRequestError, UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../utils/errors';
+import { saveSession } from '../utils/sessionManager';
+
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const signup = async (name: string, email: string, password: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) throw new Error('Invalid email format');
+    if (!emailRegex.test(email)) throw new BadRequestError('Invalid email format');
 
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(password)) {
-        throw new Error('Password must be at least 8 characters long and contain at least one uppercase letter, one number, and one special character');
+        throw new BadRequestError('Password must be at least 8 characters long and contain at least one uppercase letter, one number, and one special character');
     }
 
     const existing = await User.findOne({ email });
-    if (existing) throw new Error('User already exists');
+    if (existing) throw new ConflictError('User already exists');
 
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
 
     const userRole = await Role.findOne({ name: RoleName.USER });
-    if (!userRole) throw new Error('Default role not found');
+    if (!userRole) throw new NotFoundError('Default role not found');
 
     const user = new User({
         name,
@@ -49,10 +52,10 @@ export const signup = async (name: string, email: string, password: string) => {
     );
 
     const basicMembership = await Membership.findOne({ name: MembershipName.BASIC });
-    if (basicMembership) {
-        user.membership_id = basicMembership._id;
-        user.membershipStartDate = new Date();
-    }
+    if (!basicMembership) throw new NotFoundError('Basic membership not found');
+
+    user.membership_id = basicMembership._id;
+    user.membershipStartDate = new Date();
 
     await user.save();
 
@@ -67,9 +70,9 @@ export const signup = async (name: string, email: string, password: string) => {
 
 export const login = async (email: string, password: string, userAgent: string = 'Unknown Device') => {
     const user = await User.findOne({ email }).populate('role_id');
-    if (!user) throw new Error('Invalid credentials');
+    if (!user) throw new UnauthorizedError('Invalid credentials');
 
-    if (user.isDeleted) throw new Error('This account has been deleted');
+    if (user.isDeleted) throw new ForbiddenError('This account has been deleted');
 
     if (!user.isVerified) {
         user.verificationToken = crypto.randomBytes(20).toString('hex');
@@ -84,15 +87,13 @@ export const login = async (email: string, password: string, userAgent: string =
         );
 
         await user.save();
-        const err: any = new Error('Account not verified. A new verification email has been sent to your inbox. Please verify to continue.');
-        err.notVerified = true;
-        throw err;
+        throw new BadRequestError('Account not verified. A new verification email has been sent to your inbox. Please verify to continue.');
     }
 
-    if (!user.password) throw new Error('Invalid credentials. Please login with Google if you signed up with social account.');
+    if (!user.password) throw new UnauthorizedError('Invalid credentials. Please login with Google if you signed up with social account.');
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) throw new Error('Invalid credentials');
+    if (!match) throw new UnauthorizedError('Invalid credentials');
 
     const roleDoc = user.role_id as IRole;
     const token = jwt.sign(
@@ -137,6 +138,8 @@ export const login = async (email: string, password: string, userAgent: string =
 
     await user.save();
 
+    await saveSession(user._id.toString(), token);
+
     await ActivityLog.create({
         user_id: user._id,
         action: ActivityAction.USER_LOGIN,
@@ -148,7 +151,7 @@ export const login = async (email: string, password: string, userAgent: string =
 
 export const forgotPassword = async (email: string) => {
     const user = await User.findOne({ email });
-    if (!user) throw new Error('User not found');
+    if (!user) throw new NotFoundError('User not found');
 
     const token = crypto.randomBytes(20).toString('hex');
     const expiresAt = new Date(Date.now() + 3600000);
@@ -174,7 +177,7 @@ export const forgotPassword = async (email: string) => {
 
 export const verifyEmail = async (token: string) => {
     const user = await User.findOne({ verificationToken: token });
-    if (!user) throw new Error('Invalid token');
+    if (!user) throw new BadRequestError('Invalid token');
 
     user.isVerified = true;
     user.verificationToken = undefined;
@@ -186,7 +189,7 @@ export const verifyEmail = async (token: string) => {
 export const resetPassword = async (token: string, password: string) => {
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(password)) {
-        throw new Error('Password must be at least 8 characters long and contain at least one uppercase letter, one number, and one special character');
+        throw new BadRequestError('Password must be at least 8 characters long and contain at least one uppercase letter, one number, and one special character');
     }
 
     const authToken = await AuthToken.findOne({
@@ -196,10 +199,10 @@ export const resetPassword = async (token: string, password: string) => {
         expires_at: { $gt: Date.now() },
     });
 
-    if (!authToken) throw new Error('Invalid or expired token');
+    if (!authToken) throw new BadRequestError('Invalid or expired token');
 
     const user = await User.findById(authToken.user_id);
-    if (!user) throw new Error('User not found');
+    if (!user) throw new NotFoundError('User not found');
 
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
@@ -218,7 +221,7 @@ export const googleLogin = async (credential: string, userAgent: string = 'Unkno
     });
 
     const payload = ticket.getPayload();
-    if (!payload) throw new Error('Invalid Google token');
+    if (!payload) throw new BadRequestError('Invalid Google token');
 
     const { sub, email, name, picture } = payload;
 
@@ -226,11 +229,11 @@ export const googleLogin = async (credential: string, userAgent: string = 'Unkno
         $or: [{ googleId: sub }, { email }]
     }).populate('role_id');
 
-    if (user && user.isDeleted) throw new Error('This account has been deleted');
+    if (user && user.isDeleted) throw new ForbiddenError('This account has been deleted');
 
     if (!user) {
         const userRole = await Role.findOne({ name: RoleName.USER });
-        if (!userRole) throw new Error('Default role not found');
+        if (!userRole) throw new NotFoundError('Default role not found');
 
         user = new User({
             name: name || 'Google User',
@@ -285,6 +288,8 @@ export const googleLogin = async (credential: string, userAgent: string = 'Unkno
     if (user.activeSessions.length > 5) user.activeSessions = user.activeSessions.slice(-5);
 
     await user.save();
+
+    await saveSession(user._id.toString(), token);
 
     await ActivityLog.create({
         user_id: user._id,

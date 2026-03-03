@@ -10,11 +10,11 @@ const AxiosInterceptor: React.FC = () => {
         const interceptor = api.interceptors.response.use(
             (response) => response,
             (error) => {
-                const token = localStorage.getItem('token');
+                const userId = localStorage.getItem('userId');
 
-                // Only trigger "Session expired" if the user WAS supposed to be logged in (has token)
+                // Only trigger "Session expired" if the user WAS supposed to be logged in (has userId)
                 // AND we got a 401, AND they aren't already on a public page.
-                if (error.response && error.response.status === 401 && token) {
+                if (error.response && error.response.status === 401 && userId) {
                     const publicPaths = ['/login', '/', '/signup', '/about', '/contact', '/help', '/memberships'];
                     if (!publicPaths.includes(window.location.pathname)) {
                         localStorage.removeItem('token');

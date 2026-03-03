@@ -142,10 +142,7 @@ const PDFViewer: React.FC = () => {
             // Load PDF with CORS mode
             const loadingTask = pdfjsLib.getDocument({
                 url: proxyPdfUrl,
-                httpHeaders: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                withCredentials: false,
+                withCredentials: true,
             });
 
             const pdf = await loadingTask.promise;

@@ -58,4 +58,27 @@ const bookSchema = new Schema<IBook>(
   { timestamps: true, collection: 'books' }
 );
 
+// --- Indexes ---
+// Compound: browsing by category + filtering archived books (most common query)
+bookSchema.index({ category_id: 1, status: 1 });
+
+// Compound: admin dashboard - filter by who added the book + status/date
+bookSchema.index({ addedBy: 1, createdAt: -1 });
+
+// Sort/filter by popular metrics
+bookSchema.index({ rating: -1 });
+bookSchema.index({ isPremium: 1, status: 1 });
+
+// Language filter (used in BookList filters)
+bookSchema.index({ language: 1 });
+
+// Full-text search index for title, author, and description
+bookSchema.index({ title: 'text', author: 'text', description: 'text' }, {
+  weights: { title: 10, author: 5, description: 1 },
+  name: 'book_text_search'
+});
+
+// Single-field for author lookups (similar books, author filters)
+bookSchema.index({ author: 1 });
+
 export default mongoose.model<IBook>('Book', bookSchema);

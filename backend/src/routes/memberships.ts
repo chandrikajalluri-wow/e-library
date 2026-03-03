@@ -1,20 +1,20 @@
 import express from 'express';
 import { auth, checkRole } from '../middleware/authMiddleware';
 import { RoleName } from '../types/enums';
-import * as membershipController from '../controllers/membershipController';
+import * as userProfileController from '../controllers/userProfileController';
 
 const router = express.Router();
 
 // Get all membership plans
-router.get('/', membershipController.getAllMemberships);
+router.get('/', userProfileController.getAllMemberships);
 
 // Get current user's membership
-router.get('/my', auth, membershipController.getMyMembership);
+router.get('/my', auth, userProfileController.getMyMembership);
 
 // User: Upgrade own membership
-router.put('/upgrade', auth, membershipController.upgradeMyMembership);
+router.put('/upgrade', auth, userProfileController.upgradeMyMembership);
 
 // Admin: Update user's membership
-router.put('/admin/users/:userId/membership', auth, checkRole([RoleName.ADMIN]), membershipController.updateUserMembershipAdmin);
+router.put('/admin/users/:userId/membership', auth, checkRole([RoleName.ADMIN]), userProfileController.updateUserMembershipAdmin);
 
 export default router;

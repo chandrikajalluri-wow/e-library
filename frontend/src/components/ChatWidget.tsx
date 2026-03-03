@@ -34,8 +34,8 @@ const ChatWidget: React.FC = () => {
 
     const initChat = async () => {
         try {
-            const token = localStorage.getItem('token');
-            if (!token || role !== RoleName.USER) return;
+            const userId = localStorage.getItem('userId');
+            if (!userId || role !== RoleName.USER) return;
 
             // Fetch user profile if not already set
             if (!user) {
@@ -57,7 +57,7 @@ const ChatWidget: React.FC = () => {
 
             if (!socketRef.current) {
                 socketRef.current = io(socketUrl, {
-                    auth: { token }
+                    withCredentials: true
                 });
 
                 socketRef.current.emit('join_session', sessionData._id);
@@ -127,7 +127,7 @@ const ChatWidget: React.FC = () => {
 
     const groupedMessages = React.useMemo(() => groupMessagesByDate(messages), [messages]);
 
-    if (!localStorage.getItem('token') || role !== RoleName.USER) return null;
+    if (!localStorage.getItem('userId') || role !== RoleName.USER) return null;
 
     return (
         <div className="chat-widget-container">

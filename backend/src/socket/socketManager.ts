@@ -11,7 +11,19 @@ export const initSocket = (io: Server) => {
     // Middleware for authentication
     io.use(async (socket, next) => {
         try {
-            const token = socket.handshake.auth.token;
+            let token = socket.handshake.auth.token;
+            const cookieHeader = socket.handshake.headers.cookie;
+            if (cookieHeader) {
+                const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+                    const [key, value] = cookie.trim().split('=');
+                    acc[key] = value;
+                    return acc;
+                }, {} as Record<string, string>);
+                if (cookies.token) {
+                    token = cookies.token;
+                }
+            }
+
             if (!token) return next(new Error('Authentication error'));
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };

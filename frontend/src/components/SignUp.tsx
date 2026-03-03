@@ -66,8 +66,7 @@ const Signup: React.FC = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true);
     try {
-      const { token, role, userId } = await googleLogin(credentialResponse.credential);
-      localStorage.setItem('token', token);
+      const { role, userId } = await googleLogin(credentialResponse.credential);
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
 

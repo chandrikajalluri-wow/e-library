@@ -9,9 +9,17 @@ import Contact from '../models/Contact';
 import Readlist from '../models/Readlist';
 import Address from '../models/Address';
 import Membership from '../models/Membership';
-import { RoleName, ActivityAction, MembershipName } from '../types/enums';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import AdminInvite, { IAdminInvite } from '../models/AdminInvite';
+import { RoleName, ActivityAction, MembershipName, InviteStatus, NotificationType } from '../types/enums';
 import { sendEmail } from '../utils/mailer';
-const { getQueryReplyTemplate } = require('../utils/emailTemplates');
+const { getQueryReplyTemplate, getAdminInvitationTemplate } = require('../utils/emailTemplates');
+import { revokeAllUserSessions } from '../utils/sessionManager';
+import { notifySuperAdmins } from '../utils/notification';
+
+const INVITE_EXPIRY_HOURS = 24;
+const TOKEN_LENGTH = 32;
 
 export const getAllUsers = async (query: any) => {
     const page = parseInt(query.page as string) || 1;
@@ -130,6 +138,7 @@ export const deleteUser = async (targetId: string, performerId: string, force: b
     user.isDeleted = true;
     user.deletedAt = new Date();
     user.activeSessions = [];
+    await revokeAllUserSessions(user._id.toString());
     (user as any).deletionScheduledAt = undefined;
 
     await user.save();
@@ -347,4 +356,285 @@ export const getUserDetails = async (userId: string) => {
 
     const addresses = await Address.find({ user_id: userId }).sort({ isDefault: -1, createdAt: -1 });
     return { user, addresses };
+};
+
+// --- Admin Invite Logic ---
+
+export const generateSecureToken = async (): Promise<{
+    rawToken: string;
+    hashedToken: string;
+}> => {
+    const rawToken = crypto.randomBytes(TOKEN_LENGTH).toString('hex');
+    const hashedToken = await bcrypt.hash(rawToken, 10);
+    return { rawToken, hashedToken };
+};
+
+export const createAdminInvite = async (
+    targetUserId: string,
+    invitedById: string
+): Promise<{ message: string; email: string }> => {
+    if (targetUserId === invitedById) {
+        throw new Error('Cannot invite yourself');
+    }
+
+    const targetUser = await User.findById(targetUserId).populate('role_id');
+    if (!targetUser) {
+        throw new Error('Target user not found');
+    }
+
+    if (targetUser.isDeleted) {
+        throw new Error('Cannot invite deleted user');
+    }
+
+    return createAdminInviteByEmail(targetUser.email, invitedById);
+};
+
+export const createAdminInviteByEmail = async (
+    email: string,
+    invitedById: string
+): Promise<{ message: string; email: string }> => {
+    const trimmedEmail = email.toLowerCase().trim();
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+        throw new Error('Please provide a valid email address');
+    }
+
+    const existingUser = await User.findOne({ email: trimmedEmail }).populate('role_id');
+    if (existingUser) {
+        const userRole = (existingUser.role_id as any).name;
+        if (userRole === RoleName.ADMIN || userRole === RoleName.SUPER_ADMIN) {
+            throw new Error('User with this email is already an admin');
+        }
+    }
+
+    const existingInvite = await AdminInvite.findOne({
+        email: trimmedEmail,
+        status: InviteStatus.PENDING,
+    });
+
+    if (existingInvite) {
+        throw new Error('Invitation already sent to this email');
+    }
+
+    const { rawToken, hashedToken } = await generateSecureToken();
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + INVITE_EXPIRY_HOURS);
+
+    await AdminInvite.create({
+        email: trimmedEmail,
+        token_hash: hashedToken,
+        invited_by: invitedById,
+        status: InviteStatus.PENDING,
+        expires_at: expiresAt,
+    });
+
+    const inviter = await User.findById(invitedById);
+    const inviterName = inviter?.name || 'Super Admin';
+    const acceptLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/accept-admin?token=${rawToken}`;
+    const targetName = existingUser?.name || 'User';
+
+    try {
+        await sendEmail(
+            trimmedEmail,
+            'You\'ve been invited to become an Admin',
+            `You have been invited by ${inviterName} to become an admin. Click the link to accept: ${acceptLink}`,
+            getAdminInvitationTemplate(
+                targetName,
+                inviterName,
+                acceptLink,
+                expiresAt
+            )
+        );
+    } catch (emailError) {
+        console.error('Failed to send invitation email:', emailError);
+    }
+
+    await ActivityLog.create({
+        user_id: invitedById,
+        action: ActivityAction.ADMIN_INVITE_SENT,
+        description: `Invited ${trimmedEmail} to become admin`,
+    });
+
+    return {
+        message: 'Invitation sent successfully',
+        email: trimmedEmail,
+    };
+};
+
+export const verifyInviteToken = async (
+    rawToken: string
+): Promise<{
+    email: string;
+    inviterName: string;
+    expiresAt: Date;
+    isValid: boolean;
+}> => {
+    const pendingInvites = await AdminInvite.find({
+        status: InviteStatus.PENDING,
+    }).populate('invited_by');
+
+    let matchedInvite: IAdminInvite | null = null;
+
+    for (const invite of pendingInvites) {
+        const isMatch = await bcrypt.compare(rawToken, invite.token_hash);
+        if (isMatch) {
+            matchedInvite = invite;
+            break;
+        }
+    }
+
+    if (!matchedInvite) {
+        throw new Error('Invalid invitation link');
+    }
+
+    if (new Date() > matchedInvite.expires_at) {
+        matchedInvite.status = InviteStatus.EXPIRED;
+        await matchedInvite.save();
+        throw new Error('Invitation has expired');
+    }
+
+    const inviter = matchedInvite.invited_by as any;
+    const inviterName = inviter?.name || 'Super Admin';
+
+    return {
+        email: matchedInvite.email,
+        inviterName,
+        expiresAt: matchedInvite.expires_at,
+        isValid: true,
+    };
+};
+
+export const acceptInvite = async (
+    rawToken: string,
+    name: string,
+    password?: string
+): Promise<{ message: string; email: string }> => {
+    const inviteDetails = await verifyInviteToken(rawToken);
+
+    const pendingInvites = await AdminInvite.find({
+        status: InviteStatus.PENDING,
+        email: inviteDetails.email,
+    });
+
+    let matchedInvite: IAdminInvite | null = null;
+    for (const invite of pendingInvites) {
+        const isMatch = await bcrypt.compare(rawToken, invite.token_hash);
+        if (isMatch) {
+            matchedInvite = invite;
+            break;
+        }
+    }
+
+    if (!matchedInvite) {
+        throw new Error('Invitation not found or already used');
+    }
+
+    const adminRole = await Role.findOne({ name: RoleName.ADMIN });
+    if (!adminRole) {
+        throw new Error('Admin role not found in system');
+    }
+
+    let user = await User.findOne({ email: matchedInvite.email });
+    let isPromotion = !!user;
+
+    let hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+
+    if (user) {
+        if (user.isDeleted) {
+            throw new Error('User account has been deleted');
+        }
+        user.role_id = adminRole._id;
+        user.name = name || user.name;
+        if (hashedPassword) {
+            user.password = hashedPassword;
+        }
+        user.isVerified = true;
+        await user.save();
+    } else {
+        if (!password) {
+            throw new Error('Password is required for new accounts');
+        }
+        user = await User.create({
+            name,
+            email: matchedInvite.email,
+            password: hashedPassword,
+            role_id: adminRole._id,
+            isVerified: true
+        });
+    }
+
+    matchedInvite.status = InviteStatus.ACCEPTED;
+    matchedInvite.accepted_at = new Date();
+    await matchedInvite.save();
+
+    await ActivityLog.create({
+        user_id: user._id,
+        action: ActivityAction.ADMIN_INVITE_ACCEPTED,
+        description: isPromotion
+            ? `Accepted admin invitation and promoted from user to admin`
+            : `Accepted admin invitation and created new admin account`,
+    });
+
+    return {
+        message: isPromotion
+            ? 'Account promoted to Admin successfully'
+            : 'Admin account created successfully',
+        email: user.email,
+    };
+};
+
+export const declineInvite = async (
+    rawToken: string
+): Promise<{ message: string }> => {
+    const inviteDetails = await verifyInviteToken(rawToken);
+
+    const pendingInvites = await AdminInvite.find({
+        status: InviteStatus.PENDING,
+        email: inviteDetails.email,
+    });
+
+    let matchedInvite: IAdminInvite | null = null;
+    for (const invite of pendingInvites) {
+        const isMatch = await bcrypt.compare(rawToken, invite.token_hash);
+        if (isMatch) {
+            matchedInvite = invite;
+            break;
+        }
+    }
+
+    if (!matchedInvite) {
+        throw new Error('Invitation not found or already processed');
+    }
+
+    matchedInvite.status = InviteStatus.REJECTED;
+    await matchedInvite.save();
+
+    const user = await User.findOne({ email: matchedInvite.email });
+    await ActivityLog.create({
+        user_id: user?._id || null,
+        action: 'ADMIN_INVITE_REJECTED',
+        description: `${matchedInvite.email} declined the admin invitation`,
+    });
+
+    await notifySuperAdmins(
+        `Admin Invitation Declined: ${matchedInvite.email} has explicitly declined the invitation to join the admin team.`,
+        NotificationType.SYSTEM
+    );
+
+    return { message: 'Invitation declined successfully' };
+};
+
+export const cleanupExpiredInvites = async (): Promise<number> => {
+    const result = await AdminInvite.updateMany(
+        {
+            status: InviteStatus.PENDING,
+            expires_at: { $lt: new Date() },
+        },
+        {
+            $set: { status: InviteStatus.EXPIRED },
+        }
+    );
+
+    console.log(`Marked ${result.modifiedCount} invites as expired`);
+    return result.modifiedCount;
 };

@@ -26,22 +26,18 @@ const Login: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { token, role, userId, theme } = await login(email, password);
-      localStorage.setItem('token', token);
+      const { role, userId, theme } = await login(email, password);
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
 
-      // Only apply backend theme if no local preference exists
       if (theme && !localStorage.getItem('theme')) {
         setTheme(theme);
         localStorage.setItem('theme', theme);
       }
 
       setError('');
-
       toast.success(`Welcome, ${email}!`);
 
-      // Role-based redirect with reload to refresh all context states
       if (role === RoleName.SUPER_ADMIN) {
         window.location.href = '/super-admin-dashboard';
       } else if (role === RoleName.ADMIN) {
@@ -49,9 +45,8 @@ const Login: React.FC = () => {
       } else {
         window.location.href = '/books';
       }
-    } catch (err: unknown) {
-      const msg =
-        (err as any)?.response?.data?.error || 'Login failed, please try again';
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Login failed, please try again';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -62,12 +57,10 @@ const Login: React.FC = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true);
     try {
-      const { token, role, userId, theme } = await googleLogin(credentialResponse.credential);
-      localStorage.setItem('token', token);
+      const { role, userId, theme } = await googleLogin(credentialResponse.credential);
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
 
-      // Only apply backend theme if no local preference exists
       if (theme && !localStorage.getItem('theme')) {
         setTheme(theme);
         localStorage.setItem('theme', theme);
@@ -82,8 +75,8 @@ const Login: React.FC = () => {
       } else {
         window.location.href = '/books';
       }
-    } catch (err: unknown) {
-      const msg = (err as any)?.response?.data?.error || 'Google Login failed';
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Google Login failed';
       toast.error(msg);
     } finally {
       setIsLoading(false);

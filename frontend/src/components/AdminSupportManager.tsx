@@ -56,12 +56,11 @@ const AdminSupportManager: React.FC = () => {
             const allSessions = await getAllSessionsAdmin();
             setSessions(allSessions);
 
-            const token = localStorage.getItem('token');
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const socketUrl = API_URL.replace('/api', '');
 
             socketRef.current = io(socketUrl, {
-                auth: { token },
+                withCredentials: true,
                 transports: ['websocket']
             });
 

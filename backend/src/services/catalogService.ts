@@ -1,12 +1,102 @@
+import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import Book from '../models/Book';
 import Readlist from '../models/Readlist';
 import Order from '../models/Order';
 import ActivityLog from '../models/ActivityLog';
 import User from '../models/User';
+import Category, { ICategory } from '../models/Category';
 import { notifySuperAdmins, notifyAllUsers } from '../utils/notification';
 import { uploadToS3 } from '../utils/s3Service';
 import { RoleName, BookStatus, OrderStatus, ActivityAction, NotificationType } from '../types/enums';
+import { BaseService } from './baseService';
 
+const bookRepo = new BaseService(Book);
+const categoryRepo = new BaseService(Category);
+
+// --- Category Logic ---
+
+export const getAllCategories = async () => {
+    const categories: any[] = await categoryRepo.findAll({}, { sort: { name: 1 } });
+
+    const categoriesWithStats = await Promise.all(
+        categories.map(async (cat: any) => {
+            const bookCount = await Book.countDocuments({ category_id: cat._id });
+            return {
+                ...cat.toObject(),
+                bookCount
+            };
+        })
+    );
+
+    return categoriesWithStats;
+};
+
+export const createCategory = async (name: string, description: string, user: any) => {
+    const existing = await categoryRepo.findOne({ name });
+    if (existing) {
+        throw new Error('Category already exists');
+    }
+
+    const category = await categoryRepo.create({
+        name,
+        description,
+        addedBy: user._id
+    } as any);
+
+    await new ActivityLog({
+        user_id: user._id,
+        action: ActivityAction.CATEGORY_CREATED,
+        description: `Category ${category.name} created by ${user.name}`,
+    }).save();
+
+    const userRole = (user.role_id as any).name;
+    if (userRole === RoleName.ADMIN) {
+        await notifySuperAdmins(`Admin ${user.name} created a new category: ${category.name}`, NotificationType.CATEGORY_CREATED);
+    }
+
+    return category;
+};
+
+export const updateCategory = async (id: string, name: string, description: string, user: any) => {
+    const category = await categoryRepo.update(id, { name, description });
+
+    await new ActivityLog({
+        user_id: user._id,
+        action: ActivityAction.CATEGORY_UPDATED,
+        description: `Category ${category.name} updated by ${user.name}`,
+    }).save();
+
+    const userRole = (user.role_id as any).name;
+    if (userRole === RoleName.ADMIN) {
+        await notifySuperAdmins(`Admin ${user.name} updated category: ${category.name}`, NotificationType.CATEGORY_UPDATED);
+    }
+
+    return category;
+};
+
+export const deleteCategory = async (id: string, user: any) => {
+    const bookCount = await Book.countDocuments({ category_id: id });
+    if (bookCount > 0) {
+        throw new Error('Cannot delete category because there are books assigned to it.');
+    }
+
+    const category = await categoryRepo.delete(id);
+
+    await new ActivityLog({
+        user_id: user._id,
+        action: ActivityAction.CATEGORY_DELETED,
+        description: `Category ${category.name} deleted by ${user.name}`,
+    }).save();
+
+    const userRole = (user.role_id as any).name;
+    if (userRole === RoleName.ADMIN) {
+        await notifySuperAdmins(`Admin ${user.name} deleted category: ${category.name}`);
+    }
+
+    return { message: 'Category deleted' };
+};
+
+// --- Book Logic ---
 
 export const getAllBooks = async (filters: any, pagination: { page: number; limit: number }, sort: any) => {
     const { search, category, genre, showArchived, isPremium, addedBy, language, stock } = filters;
@@ -43,41 +133,36 @@ export const getAllBooks = async (filters: any, pagination: { page: number; limi
         query.status = { $ne: BookStatus.ARCHIVED };
     }
 
-    const skip = (pagination.page - 1) * pagination.limit;
-
-    const books = await Book.find(query)
-        .populate('category_id', 'name')
-        .populate('addedBy', 'name email')
-        .sort(sort)
-        .collation({ locale: 'en', strength: 2 })
-        .skip(skip)
-        .limit(pagination.limit);
-
-    const total = await Book.countDocuments(query);
+    const result = await bookRepo.findAll(query, {
+        pagination,
+        sort,
+        populate: [
+            { path: 'category_id', select: 'name' },
+            { path: 'addedBy', select: 'name email' }
+        ]
+    });
 
     return {
-        books,
-        total,
-        page: pagination.page,
-        pages: Math.ceil(total / pagination.limit),
+        books: result.data,
+        total: result.total,
+        page: result.page,
+        pages: result.pages,
     };
 };
 
 export const getBookById = async (id: string) => {
-    const book = await Book.findById(id).populate('category_id', 'name');
-    if (!book) throw new Error('Book not found');
-    return book;
+    return await bookRepo.findById(id, 'category_id');
 };
 
 export const createBook = async (bookData: any, files: any, user: any) => {
     const { title } = bookData;
 
     if (title) {
-        const existingBook = await Book.findOne({
+        const existingBook = await bookRepo.findOne({
             title: { $regex: new RegExp(`^${title.trim()}$`, 'i') }
         });
         if (existingBook) {
-            throw new Error(`A book with the title "${title}" already exists.`);
+            throw new BadRequestError(`A book with the title "${title}" already exists.`);
         }
     }
 
@@ -103,8 +188,7 @@ export const createBook = async (bookData: any, files: any, user: any) => {
         bookData.pdf_url = await uploadToS3(pdfFile.buffer, fileName, pdfFile.mimetype);
     }
 
-    const book = new Book(bookData);
-    await book.save();
+    const book = await bookRepo.create(bookData);
 
     await new ActivityLog({
         user_id: user._id,
@@ -141,12 +225,7 @@ export const updateBook = async (id: string, bookData: any, files: any, user: an
         bookData.pdf_url = await uploadToS3(pdfFile.buffer, fileName, pdfFile.mimetype);
     }
 
-    const book = await Book.findByIdAndUpdate(id, bookData, {
-        new: true,
-        runValidators: true,
-    });
-
-    if (!book) throw new Error('Book not found');
+    const book = await bookRepo.update(id, bookData);
 
     try {
         await new ActivityLog({
@@ -173,7 +252,7 @@ export const deleteBook = async (id: string, user: any) => {
     });
 
     if (activeReadlist) {
-        throw new Error('Cannot delete book because it is currently in a user\'s active readlist.');
+        throw new BadRequestError('Cannot delete book because it is currently in a user\'s active readlist.');
     }
 
     const activeOrder = await Order.findOne({
@@ -182,11 +261,10 @@ export const deleteBook = async (id: string, user: any) => {
     });
 
     if (activeOrder) {
-        throw new Error('Cannot delete book because it is part of an active order checkout.');
+        throw new BadRequestError('Cannot delete book because it is part of an active order checkout.');
     }
 
-    const book = await Book.findByIdAndDelete(id);
-    if (!book) throw new Error('Book not found');
+    const book = await bookRepo.delete(id);
 
     await new ActivityLog({
         user_id: user._id,
@@ -203,8 +281,7 @@ export const deleteBook = async (id: string, user: any) => {
 };
 
 export const getSimilarBooks = async (id: string) => {
-    const book = await Book.findById(id);
-    if (!book) throw new Error('Book not found');
+    const book = await bookRepo.findById(id);
 
     const similarBooks = await Book.find({
         _id: { $ne: id },
@@ -291,10 +368,9 @@ export const checkDeletionSafety = async (id: string) => {
 };
 
 export const validatePdfAccess = async (bookId: string, user: any) => {
-    const book = await Book.findById(bookId);
-    if (!book) throw new Error('Book not found in database');
+    const book = await bookRepo.findById(bookId);
 
-    if (!book.pdf_url) throw new Error('PDF URL is missing for this book');
+    if (!book.pdf_url) throw new NotFoundError('PDF URL is missing for this book');
 
     const userRole = (user?.role_id as any)?.name;
     const userId = user?._id;
@@ -302,7 +378,7 @@ export const validatePdfAccess = async (bookId: string, user: any) => {
     if (book.isPremium) {
         const membership = user?.membership_id as any;
         if (userRole !== RoleName.ADMIN && userRole !== RoleName.SUPER_ADMIN && !membership?.canAccessPremiumBooks) {
-            throw new Error('This is a premium book. Upgrade to Premium membership to read this book.');
+            throw new ForbiddenError('This is a premium book. Upgrade to Premium membership to read this book.');
         }
     }
 
@@ -314,7 +390,7 @@ export const validatePdfAccess = async (bookId: string, user: any) => {
         }).sort({ addedAt: -1 });
 
         if (!readlistItem) {
-            throw new Error('You need to add this book to your library before you can read it.');
+            throw new ForbiddenError('You need to add this book to your library before you can read it.');
         }
 
         const now = new Date();
@@ -322,7 +398,7 @@ export const validatePdfAccess = async (bookId: string, user: any) => {
         const hasValidReadlist = dueDate && dueDate.getTime() > now.getTime();
 
         if (!hasValidReadlist) {
-            throw new Error('Your reading access for this book has expired. Please renew access from the book details page.');
+            throw new ForbiddenError('Your reading access for this book has expired. Please renew access from the book details page.');
         }
     }
 
