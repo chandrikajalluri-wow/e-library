@@ -59,6 +59,7 @@ const UserNavbar: React.FC = () => {
             console.error("Logout API failed", err);
         }
         const userId = localStorage.getItem('userId');
+        localStorage.removeItem('token');
         localStorage.removeItem('role');
         localStorage.removeItem('userId');
         if (userId) {

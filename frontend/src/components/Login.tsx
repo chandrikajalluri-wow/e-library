@@ -26,7 +26,8 @@ const Login: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { role, userId, theme } = await login(email, password);
+      const { role, userId, theme, token } = await login(email, password);
+      localStorage.setItem('token', token);
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
 
@@ -57,7 +58,8 @@ const Login: React.FC = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true);
     try {
-      const { role, userId, theme } = await googleLogin(credentialResponse.credential);
+      const { role, userId, theme, token } = await googleLogin(credentialResponse.credential);
+      localStorage.setItem('token', token);
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
 

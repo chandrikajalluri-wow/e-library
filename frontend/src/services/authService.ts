@@ -32,4 +32,7 @@ export const googleLogin = async (credential: string) => {
 // Logout
 export const logout = async () => {
   await api.post(`${BASE_URL}/logout`);
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('userId');
 };
