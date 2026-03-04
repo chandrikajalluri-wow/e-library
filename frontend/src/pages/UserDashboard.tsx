@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDashboardStats, getReadlist, getProfile } from '../services/userService';
 import { getMyMembership, type Membership } from '../services/membershipService';
-import { MembershipName } from '../types/enums';
 
 
 import { toast } from 'react-toastify';
@@ -68,7 +67,6 @@ const UserDashboard: React.FC = () => {
     return "Good Evening";
   };
 
-  const [showMembershipDetails, setShowMembershipDetails] = useState(false);
 
   if (isLoading) {
     return <Loader />;
@@ -101,57 +99,35 @@ const UserDashboard: React.FC = () => {
         </div>
       </section>
 
-      {/* Stats Grid */}
+      {/* Top Stats Row */}
       <div className="stats-grid">
         <div className="dashboard-stat-card membership-display-card">
-          <div className="membership-header">
-            <div className="stat-info-box">
-              <h3>Current Plan</h3>
-              <p className="stat-value">{isLoading ? '...' : (membership?.displayName || 'Basic')}</p>
-            </div>
-            <span className="membership-badge">
-              {membership?.name || 'FREE'}
-            </span>
+          <span className="card-mini-label">CURRENT PLAN</span>
+          <div className="membership-title-row">
+            <h2 className="membership-name-display">{membership?.displayName || 'Basic'}</h2>
+            <span className="premium-badge-pill">{membership?.name || 'FREE'}</span>
           </div>
-          <div className="membership-progress-area">
-            <div className="progress-info">
+
+          <div className="membership-usage-section">
+            <div className="usage-labels">
               <span>Reading Usage</span>
-              <span>{stats.borrowedCount} / {membership?.monthlyLimit || 3} books</span>
+              <span>{stats.borrowedCount}/{membership?.monthlyLimit || 3} books</span>
             </div>
-            <div className="progress-track">
+            <div className="usage-progress-bar">
               <div
-                className="progress-fill"
+                className="usage-progress-fill"
                 style={{ width: `${Math.min((stats.borrowedCount / (membership?.monthlyLimit || 3)) * 100, 100)}%` }}
               ></div>
             </div>
-            <div className="membership-details-action membership-details-action-styled">
-              <button
-                onClick={() => setShowMembershipDetails(!showMembershipDetails)}
-                className="details-toggle-btn details-toggle-btn-styled"
-              >
-                {showMembershipDetails ? 'Hide Plan Details' : 'View Plan Details'}
-                <ArrowRight size={14} style={{ transform: showMembershipDetails ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.3s ease' }} />
-              </button>
-
-              {showMembershipDetails && (
-                <div className="membership-features-mini-list membership-features-list">
-                  <ul className="features-ul">
-                    {membership?.features?.map((feature, i) => (
-                      <li key={i} className="feature-li">
-                        <div className="feature-dot"></div>
-                        {feature}
-                      </li>
-                    )) || (
-                        <li className="feature-li" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard library access included.</li>
-                      )}
-                  </ul>
-                </div>
-              )}
-            </div>
-            <button onClick={() => navigate('/memberships')} className="upgrade-link-btn upgrade-link-btn-styled">
-              {membership?.name === MembershipName.PREMIUM ? 'View Plans' : 'Upgrade Plan'}
-            </button>
           </div>
+
+          <button className="view-details-link" onClick={() => navigate('/memberships')}>
+            View Plan Details <span>↓</span>
+          </button>
+
+          <button onClick={() => navigate('/memberships')} className="view-plans-main-btn">
+            View Plans
+          </button>
         </div>
 
         {[
@@ -160,12 +136,12 @@ const UserDashboard: React.FC = () => {
           { label: 'Login Streak', value: stats.streakCount, icon: <Flame size={24} />, color: 'gold' }
         ].map((s, i) => (
           <div key={i} className="dashboard-stat-card">
-            <div className={`stat-icon-wrapper ${s.color}`}>
+            <div className={`stat-icon-box ${s.color}`}>
               {s.icon}
             </div>
-            <div className="stat-info-box">
-              <h3>{s.label}</h3>
-              <p className="stat-value">{s.value}</p>
+            <div className="stat-card-info">
+              <span className="stat-card-label">{s.label}</span>
+              <p className="stat-card-value">{s.value}</p>
             </div>
           </div>
         ))}
@@ -208,7 +184,15 @@ const UserDashboard: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid-books">
+        <div className={`grid-books ${readlist.filter(item => {
+          const isDateExpired = item.dueDate && new Date(item.dueDate) < new Date();
+          const isExpired = item.status === 'expired' || (item.status === 'active' && isDateExpired);
+
+          if (activeTab === 'reading') return item.status === 'active' && !isDateExpired;
+          if (activeTab === 'expired') return isExpired;
+          if (activeTab === 'completed') return item.status === 'completed';
+          return true;
+        }).length === 0 ? 'is-empty' : ''}`}>
           {readlist.filter(item => {
             const isDateExpired = item.dueDate && new Date(item.dueDate) < new Date();
             const isExpired = item.status === 'expired' || (item.status === 'active' && isDateExpired);
