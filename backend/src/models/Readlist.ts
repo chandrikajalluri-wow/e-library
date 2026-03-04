@@ -9,7 +9,6 @@ export interface IReadlist extends Document {
     completedAt?: Date;
     last_page: number;
     bookmarks: number[];
-    source: 'manual' | 'order';
 }
 
 const readlistSchema = new Schema<IReadlist>(

@@ -4,7 +4,65 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from '../utils/s3Service';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getS3FileStream } from '../utils/s3Service';
-import * as bookService from '../services/bookService';
+import * as catalogService from '../services/catalogService';
+
+// --- Category Logic ---
+
+export const getAllCategories = async (req: any, res: Response) => {
+    try {
+        const categories = await catalogService.getAllCategories();
+        res.json(categories);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const createCategory = async (req: any, res: Response) => {
+    const { name, description } = req.body;
+    try {
+        const category = await catalogService.createCategory(name, description, req.user);
+        res.status(201).json(category);
+    } catch (err: any) {
+        console.error(err);
+        if (err.message === 'Category already exists') {
+            return res.status(400).json({ error: err.message });
+        }
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const updateCategory = async (req: any, res: Response) => {
+    const { name, description } = req.body;
+    try {
+        const category = await catalogService.updateCategory(req.params.id, name, description, req.user);
+        res.json(category);
+    } catch (err: any) {
+        console.error(err);
+        if (err.message === 'Category not found') {
+            return res.status(404).json({ error: err.message });
+        }
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const deleteCategory = async (req: any, res: Response) => {
+    try {
+        const result = await catalogService.deleteCategory(req.params.id, req.user);
+        res.json(result);
+    } catch (err: any) {
+        console.error(err);
+        if (err.message === 'Category not found') {
+            return res.status(404).json({ error: err.message });
+        }
+        if (err.message === 'Cannot delete category because there are books assigned to it.') {
+            return res.status(400).json({ error: err.message });
+        }
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// --- Book Logic ---
 
 export const getAllBooks = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -34,7 +92,7 @@ export const getAllBooks = async (req: Request, res: Response, next: NextFunctio
             }
         }
 
-        const result = await bookService.getAllBooks(filters, pagination, sort);
+        const result = await catalogService.getAllBooks(filters, pagination, sort);
         res.json(result);
     } catch (err) {
         next(err);
@@ -43,51 +101,36 @@ export const getAllBooks = async (req: Request, res: Response, next: NextFunctio
 
 export const getBookById = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const book = await bookService.getBookById(req.params.id);
+        const book = await catalogService.getBookById(req.params.id);
         res.json(book);
-    } catch (err: any) {
-        if (err.message === 'Book not found') {
-            return res.status(404).json({ error: err.message });
-        }
+    } catch (err) {
         next(err);
     }
 };
 
 export const createBook = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const book = await bookService.createBook(req.body, req.files, req.user);
+        const book = await catalogService.createBook(req.body, req.files, req.user);
         res.status(201).json(book);
-    } catch (err: any) {
-        if (err.message.includes('already exists')) {
-            return res.status(400).json({ error: err.message });
-        }
+    } catch (err) {
         next(err);
     }
 };
 
 export const updateBook = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const book = await bookService.updateBook(req.params.id, req.body, req.files, req.user);
+        const book = await catalogService.updateBook(req.params.id, req.body, req.files, req.user);
         res.json(book);
-    } catch (err: any) {
-        if (err.message === 'Book not found') {
-            return res.status(404).json({ error: err.message });
-        }
+    } catch (err) {
         next(err);
     }
 };
 
 export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const result = await bookService.deleteBook(req.params.id, req.user);
+        const result = await catalogService.deleteBook(req.params.id, req.user);
         res.json(result);
-    } catch (err: any) {
-        if (err.message === 'Book not found') {
-            return res.status(404).json({ error: err.message });
-        }
-        if (err.message.includes('Readlist') || err.message.includes('active order')) {
-            return res.status(400).json({ error: err.message });
-        }
+    } catch (err) {
         next(err);
     }
 };
@@ -95,7 +138,7 @@ export const deleteBook = async (req: AuthRequest, res: Response, next: NextFunc
 export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const bookId = req.params.id;
-        const book = await bookService.validatePdfAccess(bookId, req.user);
+        const book = await catalogService.validatePdfAccess(bookId, req.user);
 
         if (!book.pdf_url) {
             return res.status(404).json({ error: 'PDF not found for this book' });
@@ -114,8 +157,6 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
 
             res.setHeader('Content-Type', s3Response.ContentType || 'application/pdf');
             res.setHeader('Content-Disposition', 'inline');
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
             res.setHeader('Accept-Ranges', 'bytes');
 
             if (s3Response.ContentLength) {
@@ -128,34 +169,18 @@ export const viewBookPdf = async (req: AuthRequest, res: Response, next: NextFun
                 res.status(404).json({ error: 'PDF content stream is empty' });
             }
         } catch (s3Err: any) {
-            const statusCode = s3Err.name === 'NoSuchKey' ? 404 : (s3Err.$metadata?.httpStatusCode || 500);
-            const message = s3Err.name === 'NoSuchKey' ? 'PDF file not found in S3 storage' : `S3 Error: ${s3Err.message}`;
-
-            res.status(statusCode).json({
-                error: message,
-                s3Key: key || 'unknown',
-                s3Error: s3Err.name
-            });
+            next(s3Err);
         }
-    } catch (err: any) {
-        if (err.message.includes('not found') || err.message.includes('missing')) {
-            return res.status(404).json({ error: err.message });
-        }
-        if (err.message.includes('premium') || err.message.includes('library') || err.message.includes('expired')) {
-            return res.status(403).json({ error: err.message });
-        }
+    } catch (err) {
         next(err);
     }
 };
 
 export const getSimilarBooks = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const similarBooks = await bookService.getSimilarBooks(req.params.id);
+        const similarBooks = await catalogService.getSimilarBooks(req.params.id);
         res.json(similarBooks);
-    } catch (err: any) {
-        if (err.message === 'Book not found') {
-            return res.status(404).json({ error: err.message });
-        }
+    } catch (err) {
         next(err);
     }
 };
@@ -210,7 +235,7 @@ export const testS3Config = async (req: Request, res: Response) => {
 
 export const getRecommendedBooks = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const recommendations = await bookService.getRecommendedBooks(req.user);
+        const recommendations = await catalogService.getRecommendedBooks(req.user);
         res.json(recommendations);
     } catch (err) {
         next(err);
@@ -219,10 +244,9 @@ export const getRecommendedBooks = async (req: AuthRequest, res: Response, next:
 
 export const checkDeletionSafety = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const result = await bookService.checkDeletionSafety(req.params.id);
+        const result = await catalogService.checkDeletionSafety(req.params.id);
         res.json(result);
     } catch (err) {
         next(err);
     }
 };
-

@@ -21,4 +21,14 @@ const notificationSchema = new Schema<INotification>({
     timestamp: { type: Date, default: Date.now },
 }, { collection: 'notifications' });
 
+// --- Indexes ---
+// Fetch unread notifications for a user (the most frequent query — the bell icon)
+notificationSchema.index({ user_id: 1, is_read: 1, timestamp: -1 });
+
+// Paginated notification feed for a user
+notificationSchema.index({ user_id: 1, timestamp: -1 });
+
+// TTL Index: Auto-delete notifications older than 30 days to prevent bloat
+notificationSchema.index({ timestamp: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
+
 export default mongoose.model<INotification>('Notification', notificationSchema);

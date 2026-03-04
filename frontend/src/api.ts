@@ -10,9 +10,11 @@ if (!API_URL.endsWith('/')) {
 
 const api = axios.create({
     baseURL: API_URL,
+    withCredentials: true,
+    timeout: 15000,
 });
 
-// Request interceptor to add the auth token
+// Add request interceptor to attach JWT token
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');

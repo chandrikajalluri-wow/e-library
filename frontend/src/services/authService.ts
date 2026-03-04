@@ -28,3 +28,11 @@ export const googleLogin = async (credential: string) => {
   const res = await api.post(`${BASE_URL}/google-login`, { credential });
   return res.data;
 };
+
+// Logout
+export const logout = async () => {
+  await api.post(`${BASE_URL}/logout`);
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('userId');
+};

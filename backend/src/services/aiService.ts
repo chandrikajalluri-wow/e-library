@@ -6,6 +6,10 @@ interface GeneratedContent {
     summary?: string;
 }
 
+const model = 'gemini-2.5-flash';
+const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;
+
+
 export const generateBookContent = async (
     title: string,
     author: string
@@ -16,9 +20,6 @@ export const generateBookContent = async (
         if (!apiKey) {
             throw new Error('GEMINI_API_KEY is not set in environment variables');
         }
-        const model = 'gemini-2.5-flash';
-        const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;
-
         const prompt = `You are a knowledgeable library content assistant. Generate compelling content for this book:
 
 Book Title: "${title}"
@@ -133,10 +134,6 @@ export const explainBook = async (
         if (!apiKey) {
             throw new Error('GEMINI_API_KEY is not set in environment variables');
         }
-
-        const model = 'gemini-2.5-flash';
-        const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;
-
         const prompt = `Act as a passionate librarian. Explain why "${title}" by ${author} is worth reading. 
         
 Use the provided description for context: "${description}".

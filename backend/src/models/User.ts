@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import { IRole } from './Role'; // your Role interface
 import { IMembership } from './Membership';
-import { UserTheme } from '../types/enums';
 
 export interface IUser extends Document {
   name: string;
@@ -13,8 +12,6 @@ export interface IUser extends Document {
   membership_id: Types.ObjectId | IMembership; // allow populated Membership
   membershipStartDate?: Date;
   membershipExpiryDate?: Date;
-  membershipCancellationReason?: string;
-  membershipCancellationDate?: Date;
   isDeleted: boolean;
   deletedAt?: Date;
   isVerified: boolean;
@@ -31,12 +28,10 @@ export interface IUser extends Document {
     lastActive: Date;
     token: string;
   }[];
-  theme?: UserTheme;
   cart?: {
     book_id: Types.ObjectId;
     quantity: number;
   }[];
-  deletionScheduledAt?: Date;
   createdAt?: Date;
 }
 
@@ -51,8 +46,6 @@ const userSchema = new Schema<IUser>(
     membership_id: { type: Schema.Types.ObjectId, ref: 'Membership' },
     membershipStartDate: { type: Date },
     membershipExpiryDate: { type: Date },
-    membershipCancellationReason: { type: String },
-    membershipCancellationDate: { type: Date },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date },
     isVerified: { type: Boolean, default: false },
@@ -71,14 +64,12 @@ const userSchema = new Schema<IUser>(
         token: { type: String },
       },
     ],
-    theme: { type: String, enum: Object.values(UserTheme), default: UserTheme.LIGHT },
     cart: [
       {
         book_id: { type: Schema.Types.ObjectId, ref: 'Book' },
         quantity: { type: Number, default: 1 }
       }
     ],
-    deletionScheduledAt: { type: Date },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true, collection: 'users' }

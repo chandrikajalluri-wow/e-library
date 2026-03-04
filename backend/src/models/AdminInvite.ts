@@ -29,7 +29,6 @@ const adminInviteSchema = new Schema<IAdminInvite>(
             index: true,
             validate: {
                 validator: function (v: string) {
-                    // Bcrypt hash is always 60 characters
                     return v.length === 60 && v.startsWith('$2');
                 },
                 message: 'Token hash must be a valid bcrypt hash',
