@@ -5,6 +5,7 @@ import { s3Client } from '../utils/s3Service';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getS3FileStream } from '../utils/s3Service';
 import * as catalogService from '../services/catalogService';
+import { clearCache } from '../middleware/cacheMiddleware';
 
 // --- Category Logic ---
 
@@ -22,6 +23,7 @@ export const createCategory = async (req: any, res: Response) => {
     const { name, description } = req.body;
     try {
         const category = await catalogService.createCategory(name, description, req.user);
+        await clearCache('cat:all');
         res.status(201).json(category);
     } catch (err: any) {
         console.error(err);
@@ -36,6 +38,7 @@ export const updateCategory = async (req: any, res: Response) => {
     const { name, description } = req.body;
     try {
         const category = await catalogService.updateCategory(req.params.id, name, description, req.user);
+        await clearCache('cat:all');
         res.json(category);
     } catch (err: any) {
         console.error(err);
@@ -49,6 +52,7 @@ export const updateCategory = async (req: any, res: Response) => {
 export const deleteCategory = async (req: any, res: Response) => {
     try {
         const result = await catalogService.deleteCategory(req.params.id, req.user);
+        await clearCache('cat:all');
         res.json(result);
     } catch (err: any) {
         console.error(err);

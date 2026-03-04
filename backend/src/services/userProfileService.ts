@@ -668,7 +668,7 @@ export const checkBookAccess = async (userId: string, bookId: string) => {
 };
 
 export const addToReadlist = async (userId: string, bookId: string) => {
-    let user = await userService.findById(userId, 'membership_id');
+    let user = await userService.findById(userId, 'membership_id createdAt membershipStartDate');
 
     let membership = user.membership_id as any;
     if (!membership) {
@@ -690,23 +690,24 @@ export const addToReadlist = async (userId: string, bookId: string) => {
         throw err;
     }
 
-    let monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    let cycleStartDate = user.createdAt || new Date();
+    if (membership.name === MembershipName.PREMIUM && user.membershipStartDate) {
+        cycleStartDate = user.membershipStartDate;
+    }
 
-    if (user.membershipStartDate && membership.name === MembershipName.PREMIUM) {
-        const start = new Date(user.membershipStartDate);
-        const now = new Date();
-        const startDay = start.getDate();
-        let currentCycleStart = new Date(now.getFullYear(), now.getMonth(), startDay);
-        if (currentCycleStart.getMonth() !== now.getMonth()) {
-            currentCycleStart = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const start = new Date(cycleStartDate);
+    const now = new Date();
+    const startDay = start.getDate();
+    let monthStart = new Date(now.getFullYear(), now.getMonth(), startDay);
+
+    if (monthStart.getMonth() !== now.getMonth()) {
+        monthStart = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    }
+    if (monthStart > now) {
+        monthStart = new Date(now.getFullYear(), now.getMonth() - 1, startDay);
+        if (monthStart.getMonth() === now.getMonth()) {
+            monthStart = new Date(now.getFullYear(), now.getMonth(), 0);
         }
-        if (currentCycleStart > now) {
-            currentCycleStart = new Date(now.getFullYear(), now.getMonth() - 1, startDay);
-            if (currentCycleStart.getMonth() === now.getMonth()) {
-                currentCycleStart = new Date(now.getFullYear(), now.getMonth(), 0);
-            }
-        }
-        monthStart = currentCycleStart;
     }
 
     const monthlyCount = await readlistService.count({

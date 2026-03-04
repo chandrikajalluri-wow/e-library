@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
 import Signup from './components/SignUp';
@@ -6,11 +6,14 @@ import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import VerifyEmail from './components/VerifyEmail';
 
-import AdminDashboard from './pages/AdminDashboard';
-import AdminOrders from './pages/AdminOrders';
-import AdminOrderDetailsPage from './pages/AdminOrderDetailsPage';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
+// Admin Components (Lazy Loaded)
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminOrders = lazy(() => import('./pages/AdminOrders'));
+const AdminOrderDetailsPage = lazy(() => import('./pages/AdminOrderDetailsPage'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
+
 import AxiosInterceptor from './components/AxiosInterceptor';
+
 
 import BookList from './pages/BookList';
 import BookDetail from './pages/BookDetail';
@@ -57,68 +60,70 @@ const App: React.FC = () => {
         <ScrollRevealHandler />
         <AxiosInterceptor />
         <AnnouncementBanner />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot" element={<ForgotPassword />} />
-          <Route path="/reset/:token" element={<ResetPassword />} />
-          <Route path="/verify/:token" element={<VerifyEmail />} />
-          <Route path="/accept-admin" element={<AcceptAdminInvite />} />
+        <Suspense fallback={<div className="loading-fallback">Loading...</div>}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot" element={<ForgotPassword />} />
+            <Route path="/reset/:token" element={<ResetPassword />} />
+            <Route path="/verify/:token" element={<VerifyEmail />} />
+            <Route path="/accept-admin" element={<AcceptAdminInvite />} />
 
-          {/* Public Pages with Navbar & Footer */}
-          <Route element={<PublicLayout />}>
-            <Route path="/about" element={<About />} />
-            <Route path="/mission" element={<OurMission />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/help" element={<HelpCenter />} />
-            <Route path="/terms" element={<TermsAndConditions />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/memberships" element={<MembershipPlans />} />
-          </Route>
-
-          {/* User Protected Routes with UserLayout */}
-          <Route element={<ProtectedRoute allowedRoles={[RoleName.USER]} />}>
-            <Route element={<UserLayout />}>
-              <Route path="/books" element={<BookList />} />
-              <Route path="/books/:id" element={<BookDetail />} />
-              <Route path="/read/:id" element={<PDFViewer />} />
-              <Route path="/dashboard" element={<UserDashboard />} />
-              <Route path="/profile" element={<UserProfile />} />
-              <Route path="/my-orders" element={<UserOrders />} />
-              <Route path="/orders/:orderId" element={<UserOrderDetails />} />
-              <Route path="/settings" element={<UserSettings />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
-              <Route path="/request-book" element={<BookRequestPage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/checkout/address" element={<DeliveryAddress />} />
+            {/* Public Pages with Navbar & Footer */}
+            <Route element={<PublicLayout />}>
+              <Route path="/about" element={<About />} />
+              <Route path="/mission" element={<OurMission />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/terms" element={<TermsAndConditions />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/memberships" element={<MembershipPlans />} />
             </Route>
-          </Route>
 
-          {/* Shared Protected Routes */}
-          <Route element={<ProtectedRoute allowedRoles={[RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN]} />}>
-            <Route element={<UserLayout />}>
-              <Route path="/notifications" element={<NotificationsPage />} />
+            {/* User Protected Routes with UserLayout */}
+            <Route element={<ProtectedRoute allowedRoles={[RoleName.USER]} />}>
+              <Route element={<UserLayout />}>
+                <Route path="/books" element={<BookList />} />
+                <Route path="/books/:id" element={<BookDetail />} />
+                <Route path="/read/:id" element={<PDFViewer />} />
+                <Route path="/dashboard" element={<UserDashboard />} />
+                <Route path="/profile" element={<UserProfile />} />
+                <Route path="/my-orders" element={<UserOrders />} />
+                <Route path="/orders/:orderId" element={<UserOrderDetails />} />
+                <Route path="/settings" element={<UserSettings />} />
+                <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="/request-book" element={<BookRequestPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/checkout/address" element={<DeliveryAddress />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Admin Protected Routes */}
-          <Route element={<ProtectedRoute allowedRoles={[RoleName.ADMIN, RoleName.SUPER_ADMIN]} />}>
-            <Route element={<UserLayout />}>
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/orders" element={<AdminOrders />} />
-              <Route path="/admin/orders/:orderId" element={<AdminOrderDetailsPage />} />
+            {/* Shared Protected Routes */}
+            <Route element={<ProtectedRoute allowedRoles={[RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN]} />}>
+              <Route element={<UserLayout />}>
+                <Route path="/notifications" element={<NotificationsPage />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Super Admin Protected Routes */}
-          <Route element={<ProtectedRoute allowedRoles={[RoleName.SUPER_ADMIN]} />}>
-            <Route element={<UserLayout />}>
-              <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
+            {/* Admin Protected Routes */}
+            <Route element={<ProtectedRoute allowedRoles={[RoleName.ADMIN, RoleName.SUPER_ADMIN]} />}>
+              <Route element={<UserLayout />}>
+                <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/orders" element={<AdminOrders />} />
+                <Route path="/admin/orders/:orderId" element={<AdminOrderDetailsPage />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
+
+            {/* Super Admin Protected Routes */}
+            <Route element={<ProtectedRoute allowedRoles={[RoleName.SUPER_ADMIN]} />}>
+              <Route element={<UserLayout />}>
+                <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
+              </Route>
+            </Route>
+          </Routes>
+        </Suspense>
         <div className="floating-actions-stack">
           <ThemeToggle className="theme-toggle-fixed" />
           <ChatWidget />
