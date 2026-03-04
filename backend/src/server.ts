@@ -85,7 +85,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { initSocket } from './socket/socketManager';
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {

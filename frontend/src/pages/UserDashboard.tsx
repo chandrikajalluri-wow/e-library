@@ -307,9 +307,15 @@ const UserDashboard: React.FC = () => {
 
                       <div className="card-footer">
                         <div className="due-info">
+                          <span className="due-label">Added On</span>
+                          <span className="due-date">
+                            {item.addedAt ? new Date(item.addedAt).toLocaleDateString('en-GB') : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="due-info">
                           <span className="due-label">{item.status === 'completed' ? 'Finished On' : (item.dueDate ? 'Ends On' : 'Access')}</span>
                           <span className="due-date">
-                            {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'Active Access'}
+                            {item.dueDate ? new Date(item.dueDate).toLocaleDateString('en-GB') : 'Active Access'}
                           </span>
                         </div>
                         {!(item.status === 'completed' && isDateExpired) && (
