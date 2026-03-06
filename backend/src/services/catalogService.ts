@@ -21,8 +21,9 @@ export const getAllCategories = async () => {
     const categoriesWithStats = await Promise.all(
         categories.map(async (cat: any) => {
             const bookCount = await Book.countDocuments({ category_id: cat._id });
+            const catObj = cat.toObject ? cat.toObject() : cat;
             return {
-                ...cat.toObject(),
+                ...catObj,
                 bookCount
             };
         })
