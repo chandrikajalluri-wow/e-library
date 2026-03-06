@@ -31,8 +31,10 @@ export const cacheMiddleware = (keyPrefix: string, ttlSeconds: number = 300, isU
             res.json = (body: any) => {
                 // Only cache successful responses
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                    redis?.set(cacheKey, JSON.stringify(body), 'EX', ttlSeconds)
-                        .catch(err => console.error('Redis cache set error:', err));
+                    const cacheOp = redis?.set(cacheKey, JSON.stringify(body), 'EX', ttlSeconds);
+                    if (cacheOp instanceof Promise) {
+                        cacheOp.catch(err => console.error('Redis cache set error:', err));
+                    }
                 }
                 return originalJson(body);
             };

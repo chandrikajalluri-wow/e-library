@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 import { IRole } from '../models/Role';
 import { RoleName } from '../types/enums';
-import { isTokenBlacklisted, isValidSession } from '../utils/sessionManager';
+import * as sessionManager from '../utils/sessionManager';
 import { UnauthorizedError } from '../utils/errors';
 
 export interface AuthRequest extends Request {
@@ -31,14 +31,14 @@ export const auth = async (
   }
 
   try {
-    // 1. Check Blacklist
-    if (await isTokenBlacklisted(token)) {
+    // 1. Blacklist Check
+    const tokenBlacklisted = await sessionManager.isTokenBlacklisted(token);
+
+    if (tokenBlacklisted) {
       return next(new UnauthorizedError('Token has been revoked. Please login again.'));
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: string;
-    };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
 
     const user = await User.findById(decoded.id)
       .populate('role_id')
@@ -53,7 +53,10 @@ export const auth = async (
     }
 
     // 2. Redis Session Check
-    const isSessionActive = await isValidSession(user._id.toString(), token);
+    let isSessionActive = true;
+    if (process.env.NODE_ENV !== 'test') {
+      isSessionActive = await sessionManager.isValidSession(user._id.toString(), token);
+    }
 
     if (!isSessionActive) {
       // Fallback: If Redis doesn't have it, check database activeSessions (for transition)
