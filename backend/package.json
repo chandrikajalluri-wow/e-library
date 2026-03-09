@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "commonjs",
   "scripts": {
-    "build": "tsc",
+    "build": "npx --node-options=\"--max-old-space-size=400\" tsc",
     "start": "node dist/server.js",
     "start:prod": "npm run build && node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
