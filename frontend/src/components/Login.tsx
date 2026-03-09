@@ -5,6 +5,7 @@ import Loader from './Loader';
 import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { RoleName } from '../types/enums';
 import { GoogleLogin } from '@react-oauth/google';
 import '../styles/Auth.css';
@@ -17,6 +18,7 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { setTheme } = useTheme();
+  const { login: authLogin } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -26,25 +28,23 @@ const Login: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { role, userId, theme, token } = await login(email, password);
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
-      localStorage.setItem('userId', userId);
+      const data = await login(email, password);
+      authLogin({ user: data.user || data, token: data.token, role: data.role });
 
-      if (theme && !localStorage.getItem('theme')) {
-        setTheme(theme);
-        localStorage.setItem('theme', theme);
+      if (data.theme && !localStorage.getItem('theme')) {
+        setTheme(data.theme);
+        localStorage.setItem('theme', data.theme);
       }
 
       setError('');
       toast.success(`Welcome, ${email}!`);
 
-      if (role === RoleName.SUPER_ADMIN) {
-        window.location.href = '/super-admin-dashboard';
-      } else if (role === RoleName.ADMIN) {
-        window.location.href = '/admin-dashboard';
+      if (data.role === RoleName.SUPER_ADMIN) {
+        navigate('/super-admin-dashboard');
+      } else if (data.role === RoleName.ADMIN) {
+        navigate('/admin-dashboard');
       } else {
-        window.location.href = '/books';
+        navigate('/books');
       }
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'Login failed, please try again';
@@ -58,24 +58,22 @@ const Login: React.FC = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true);
     try {
-      const { role, userId, theme, token } = await googleLogin(credentialResponse.credential);
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
-      localStorage.setItem('userId', userId);
+      const data = await googleLogin(credentialResponse.credential);
+      authLogin({ user: data.user || data, token: data.token, role: data.role });
 
-      if (theme && !localStorage.getItem('theme')) {
-        setTheme(theme);
-        localStorage.setItem('theme', theme);
+      if (data.theme && !localStorage.getItem('theme')) {
+        setTheme(data.theme);
+        localStorage.setItem('theme', data.theme);
       }
 
       toast.success('Welcome back!');
 
-      if (role === RoleName.SUPER_ADMIN) {
-        window.location.href = '/super-admin-dashboard';
-      } else if (role === RoleName.ADMIN) {
-        window.location.href = '/admin-dashboard';
+      if (data.role === RoleName.SUPER_ADMIN) {
+        navigate('/super-admin-dashboard');
+      } else if (data.role === RoleName.ADMIN) {
+        navigate('/admin-dashboard');
       } else {
-        window.location.href = '/books';
+        navigate('/books');
       }
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'Google Login failed';

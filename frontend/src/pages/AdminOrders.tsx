@@ -597,7 +597,7 @@ const AdminOrders: React.FC = () => {
                                                 <p className="label">Summary</p>
                                                 <div className="order-value-badge">
                                                     <CreditCard size={14} />
-                                                    <span>₹{order.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                    <span>₹{order.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                                 </div>
                                                 <div className="item-count-badge">
                                                     <Package size={13} />

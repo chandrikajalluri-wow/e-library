@@ -78,6 +78,31 @@
     letter-spacing: 0.8px;
 }
 
+.load-more-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    filter: brightness(1.1);
+}
+
+.load-more-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.spinner-mini {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin-mini 0.8s linear infinite;
+}
+
+@keyframes spin-mini {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* Specific adjustment for dashboard tabs to match */
 .pagination-controls,
 .saas-pagination {

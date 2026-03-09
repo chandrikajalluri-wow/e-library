@@ -566,7 +566,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                                     <div className="item-details-expanded flex-1">
                                         <div className="flex-between mb-2">
                                             <h4 className="item-title-l">{item.book_id?.title || 'Deleted Book'}</h4>
-                                            <span className="item-price-l">₹{item.priceAtOrder.toLocaleString('en-IN', { minimumFractionDigits: 2 })} / unit</span>
+                                            <span className="item-price-l">₹{item.priceAtOrder?.toLocaleString('en-IN', { minimumFractionDigits: 2 })} / unit</span>
                                         </div>
                                         <div className="flex-between items-center mt-6">
                                             <div className="qty-info flex-center-row gap-3">
@@ -575,7 +575,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                                             </div>
                                             <div className="item-total text-right">
                                                 <p className="m-0 text-xs text-muted font-bold uppercase mb-1">Item Subtotal</p>
-                                                <p className="m-0 text-3xl font-black text-primary">₹{(item.priceAtOrder * item.quantity).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                                                <p className="m-0 text-3xl font-black text-primary">₹{((item.priceAtOrder || 0) * (item.quantity || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -589,12 +589,12 @@ const AdminOrderDetailsPage: React.FC = () => {
                         <div className="summary-details">
                             <div className="row summary-row-bold">
                                 <span>Cart Subtotal</span>
-                                <span>₹{displayItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                <span>₹{displayItems.reduce((sum, item) => sum + ((item.priceAtOrder || 0) * (item.quantity || 0)), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div className="row summary-row-bold-last">
                                 <span>Shipping & Handling</span>
                                 <span className={`${order.deliveryFee === 0 ? 'free text-success' : ''}`}>
-                                    {order.deliveryFee === 0 ? 'FREE' : `₹${order.deliveryFee.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                                    {order.deliveryFee === 0 ? 'FREE' : `₹${order.deliveryFee?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                                 </span>
                             </div>
                         </div>
@@ -605,7 +605,7 @@ const AdminOrderDetailsPage: React.FC = () => {
                                 <p className="mt-1 text-xs text-muted">Net payable amount inclusive of tax</p>
                             </div>
                             <span className="total-value text-3xl font-black text-primary letter-spacing-neg-0-5">
-                                ₹{(displayItems.reduce((sum, item) => sum + (item.priceAtOrder * item.quantity), 0) + order.deliveryFee).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                ₹{(displayItems.reduce((sum, item) => sum + ((item.priceAtOrder || 0) * (item.quantity || 0)), 0) + (order.deliveryFee || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </span>
                         </div>
                     </div>

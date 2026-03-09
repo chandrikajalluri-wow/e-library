@@ -130,25 +130,38 @@ export const getAllOrders = async (query: any) => {
         delete filter.user_id;
     }
 
-    let sortOption: any = { createdAt: -1 };
-    if (sort === 'oldest') sortOption = { createdAt: 1 };
+    let sortOption: any = { _id: -1 };
+    if (sort === 'oldest') sortOption = { _id: 1 };
     else if (sort === 'total_asc') sortOption = { totalAmount: 1 };
     else if (sort === 'total_desc') sortOption = { totalAmount: -1 };
 
-    const pageNum = parseInt(page as string) || 1;
+    const pageNum = query.page ? parseInt(query.page as string) : undefined;
     const limitNum = parseInt(limit as string) || 10;
-    const skip = (pageNum - 1) * limitNum;
+    const after = query.after as string;
+
+    const sortDir = Object.values(sortOption)[0] === -1 ? -1 : 1;
+
+    if (after) {
+        filter._id = sortDir === -1 ? { $lt: after } : { $gt: after };
+    }
+
+    const skip = pageNum && !after ? (pageNum - 1) * limitNum : 0;
 
     const totalOrders = await Order.countDocuments(filter);
     const totalPages = Math.ceil(totalOrders / limitNum);
 
+    const statusCounts = await Order.aggregate([
+        { $match: filter },
+        { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+
     const counts = {
         total: totalOrders,
-        pending: await Order.countDocuments({ ...filter, status: 'pending' }),
-        processing: await Order.countDocuments({ ...filter, status: 'processing' }),
-        shipped: await Order.countDocuments({ ...filter, status: 'shipped' }),
-        delivered: await Order.countDocuments({ ...filter, status: 'delivered' }),
-        cancelled: await Order.countDocuments({ ...filter, status: 'cancelled' }),
+        pending: statusCounts.find(c => c._id === 'pending')?.count || 0,
+        processing: statusCounts.find(c => c._id === 'processing')?.count || 0,
+        shipped: statusCounts.find(c => c._id === 'shipped')?.count || 0,
+        delivered: statusCounts.find(c => c._id === 'delivered')?.count || 0,
+        cancelled: statusCounts.find(c => c._id === 'cancelled')?.count || 0,
     };
 
     const orders = await Order.find(filter)
@@ -157,9 +170,13 @@ export const getAllOrders = async (query: any) => {
         .populate('address_id')
         .sort(sortOption)
         .skip(skip)
-        .limit(limitNum);
+        .limit(limitNum + 1);
 
-    return { orders, totalOrders, totalPages, currentPage: pageNum, limit: limitNum, counts };
+    const hasMore = orders.length > limitNum;
+    if (hasMore) orders.pop();
+    const nextCursor = hasMore ? orders[orders.length - 1]._id.toString() : null;
+
+    return { orders, totalOrders, totalPages, currentPage: pageNum, limit: limitNum, counts, nextCursor, hasMore };
 };
 
 const isStatusTransitionAllowed = (current: string, next: string): boolean => {

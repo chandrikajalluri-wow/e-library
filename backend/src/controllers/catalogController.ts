@@ -82,13 +82,19 @@ export const getAllBooks = async (req: Request, res: Response, next: NextFunctio
         };
 
         const pagination = {
-            page: parseInt(req.query.page as string) || 1,
-            limit: parseInt(req.query.limit as string) || 10
+            page: req.query.page ? parseInt(req.query.page as string) : undefined,
+            limit: parseInt(req.query.limit as string) || 10,
+            after: req.query.after as string
         };
 
-        let sort: any = { createdAt: -1 };
+        let sort: any = { _id: -1 };
         if (req.query.sort) {
-            const sortStr = req.query.sort as string;
+            let sortStr = req.query.sort as string;
+            // Map legacy createdAt/timestamp to _id for stable cursor pagination
+            if (sortStr.includes('createdAt') || sortStr.includes('timestamp')) {
+                sortStr = sortStr.replace('createdAt', '_id').replace('timestamp', '_id');
+            }
+
             if (sortStr.startsWith('-')) {
                 sort = { [sortStr.substring(1)]: -1 };
             } else {

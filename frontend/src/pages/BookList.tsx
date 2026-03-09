@@ -35,9 +35,11 @@ const BookList: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string[]>(categoryParam ? categoryParam.split(',') : []);
-  const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [hasMoreLoading, setHasMoreLoading] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [filterType, setFilterType] = useState('all'); // 'all', 'premium', 'free'
   const [selectedLanguage, setSelectedLanguage] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState(searchParams.get('sort') || '');
@@ -75,18 +77,18 @@ const BookList: React.FC = () => {
 
   useEffect(() => {
     if (search === '') {
-      loadData();
+      loadData(false);
       return;
     }
     const timeoutId = setTimeout(() => {
-      loadData();
+      loadData(false);
     }, 500); // Debounce search
     return () => clearTimeout(timeoutId);
-  }, [search, selectedCategory, page, filterType, selectedLanguage, sortOrder]);
+  }, [search, selectedCategory, filterType, selectedLanguage, sortOrder]);
 
   // Reset page and update URL when filters change
   useEffect(() => {
-    setPage(1);
+    setNextCursor(null);
 
     const paramsObj: any = {};
     if (search) paramsObj.search = search;
@@ -112,15 +114,6 @@ const BookList: React.FC = () => {
     loadPersonalizedRecs();
   }, [userMembership]); // Reload if membership changes (e.g. login)
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchSectionRef.current) {
-        searchSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [page]);
-
   const loadPersonalizedRecs = async () => {
     try {
       if (localStorage.getItem('userId') && userMembership?.hasRecommendations) {
@@ -136,11 +129,7 @@ const BookList: React.FC = () => {
 
   const loadRecommendations = async () => {
     try {
-      if (userMembership?.hasRecommendations !== false) { // Show top recs if premium or not logged in? 
-        // Actually user said "don't show recommendations for you for basic users"
-        // Usually "Top Recommendations" are global, and "Recommended for You" are personalized.
-        // But the membership says "hasRecommendations: false" for basic.
-        // Let's hide both for now if they don't have recommendations permission.
+      if (userMembership?.hasRecommendations !== false) {
         const data = await getBooks('limit=4&sort=-rating');
         setRecommendations(data.books || data);
       } else {
@@ -151,15 +140,24 @@ const BookList: React.FC = () => {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (isMore = false) => {
     try {
-      setLoading(true);
-      // Build query string using URLSearchParams for robust encoding
+      if (isMore) {
+        setHasMoreLoading(true);
+      } else {
+        setLoading(true);
+      }
+
       const params = new URLSearchParams();
       params.append('search', search);
-      params.append('page', page.toString());
       params.append('limit', '10');
-      params.append('sort', sortOrder || '-createdAt');
+      params.append('sort', sortOrder || '-_id');
+
+      if (isMore && nextCursor) {
+        params.append('after', nextCursor);
+      } else if (!isMore) {
+        // For fresh load, reset cursor
+      }
 
       if (selectedCategory.length > 0) params.append('category', selectedCategory.join(','));
       if (filterType === 'premium') params.append('isPremium', 'true');
@@ -168,8 +166,18 @@ const BookList: React.FC = () => {
 
       const data = await getBooks(params.toString());
 
-      setBooks(data.books);
+      if (isMore) {
+        setBooks(prev => {
+          const newBooks = data.books.filter((nb: any) => !prev.some(pb => pb._id === nb._id));
+          return [...prev, ...newBooks];
+        });
+      } else {
+        setBooks(data.books);
+      }
+
       setTotal(data.total);
+      setNextCursor(data.nextCursor);
+      setHasMore(data.hasMore);
 
       if (categories.length === 0) {
         const catData = await getCategories();
@@ -179,6 +187,7 @@ const BookList: React.FC = () => {
       console.error(err);
     } finally {
       setLoading(false);
+      setHasMoreLoading(false);
     }
   };
 
@@ -198,7 +207,6 @@ const BookList: React.FC = () => {
     setSelectedCategory(pendingCategory);
     setSelectedLanguage(pendingLanguage);
     setFilterType(pendingFilterType);
-    setPage(1);
     setIsFilterOpen(false);
   };
 
@@ -226,7 +234,7 @@ const BookList: React.FC = () => {
   };
 
   const sortOptions = [
-    { label: 'Newest Arrivals', value: '-createdAt', icon: <Clock size={16} /> },
+    { label: 'Newest Arrivals', value: '-_id', icon: <Clock size={16} /> },
     { label: 'Price: Low to High', value: 'price', icon: <ArrowUpNarrowWide size={16} /> },
     { label: 'Price: High to Low', value: '-price', icon: <ArrowDownWideNarrow size={16} /> },
     { label: 'Top Rated', value: '-rating', icon: <Star size={16} /> },
@@ -611,37 +619,43 @@ const BookList: React.FC = () => {
             )
           }
           {
-            books.length > 0 && total > 10 && (
-              <div className="admin-pagination">
+            hasMore && (
+              <div className="load-more-container" style={{ textAlign: 'center', marginTop: '2rem', marginBottom: '2rem' }}>
                 <button
-                  className="pagination-btn"
-                  disabled={page === 1 || loading}
-                  onClick={() => {
-                    setPage(p => Math.max(1, p - 1));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  className="btn-primary load-more-btn"
+                  disabled={hasMoreLoading}
+                  onClick={() => loadData(true)}
+                  style={{
+                    padding: '0.8rem 2.5rem',
+                    borderRadius: '50px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    background: 'var(--primary-gradient)',
+                    border: 'none',
+                    color: 'white',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                    transition: 'transform 0.2s ease'
                   }}
                 >
-                  Previous
+                  {hasMoreLoading ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="spinner-mini"></div>
+                      Loading...
+                    </div>
+                  ) : 'Load More Books'}
                 </button>
-                <div className="pagination-info">
-                  <div className="pagination-info-pages">
-                    Page <span>{page}</span> of <span>{Math.ceil(total / 10)}</span>
-                  </div>
-                  <div className="total-count-mini">Total {total} books</div>
+                <div style={{ marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  Showing <strong>{books.length}</strong> of <strong>{total}</strong> books
                 </div>
-                <button
-                  className="pagination-btn"
-                  disabled={page === Math.ceil(total / 10) || loading}
-                  onClick={() => {
-                    setPage(p => Math.min(Math.ceil(total / 10), p + 1));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                >
-                  Next
-                </button>
               </div>
             )
           }
+          {!hasMore && books.length > 0 && total > 0 && (
+            <div style={{ textAlign: 'center', marginTop: '2rem', marginBottom: '2rem', color: 'var(--text-secondary)' }}>
+              You've reached the end of the collection.
+            </div>
+          )}
         </>
       )}
     </div>
