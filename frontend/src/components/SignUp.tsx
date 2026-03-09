@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
+import { useAuth } from '../context/AuthContext';
 import '../styles/Auth.css';
 
 const Signup: React.FC = () => {
@@ -17,6 +18,7 @@ const Signup: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
@@ -66,13 +68,11 @@ const Signup: React.FC = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true);
     try {
-      const { role, userId, token } = await googleLogin(credentialResponse.credential);
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
-      localStorage.setItem('userId', userId);
+      const data = await googleLogin(credentialResponse.credential);
+      authLogin({ user: data.user || data, token: data.token, role: data.role });
 
       toast.success('Welcome! Logged in with Google');
-      window.location.href = '/books';
+      navigate('/books');
     } catch (err: unknown) {
       const msg = (err as any)?.response?.data?.error || 'Google Login failed';
       toast.error(msg);

@@ -1,16 +1,18 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { RoleName } from '../types/enums';
+import { useAuth } from '../context/AuthContext';
 
 interface Props {
   allowedRoles: string[];
 }
 
 const ProtectedRoute: React.FC<Props> = ({ allowedRoles }) => {
-  const userId = localStorage.getItem('userId');
-  const role = localStorage.getItem('role');
+  const { token, role, isLoading } = useAuth();
 
-  if (!userId) return <Navigate to="/" replace />;
+  if (isLoading) return <div className="loading-fallback">Verifying authentication...</div>;
+
+  if (!token) return <Navigate to="/login" replace />;
 
   if (role && !allowedRoles.includes(role)) {
     // Role-aware redirection

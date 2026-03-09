@@ -1,39 +1,25 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Flame, Megaphone, Menu, X, ArrowLeftRight, FileQuestion } from 'lucide-react';
-import { getProfile } from '../services/userService';
-import { logout } from '../services/authService';
 import { RoleName } from '../types/enums';
 import ConfirmationModal from './ConfirmationModal';
 import NotificationCenter from './NotificationCenter';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import '../styles/UserNavbar.css';
 
 const UserNavbar: React.FC = () => {
     const navigate = useNavigate();
-    const role = localStorage.getItem('role');
+    const { role, user: userProfile, logout: authLogout, token: userId } = useAuth();
     const { getCartCount } = useCart();
     const cartCount = getCartCount();
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMoreOpen, setIsMoreOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [userProfile, setUserProfile] = useState<any>(null);
     const navbarRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
-        const fetchProfileData = async () => {
-            try {
-                if (localStorage.getItem('userId')) {
-                    const data = await getProfile();
-                    setUserProfile(data);
-                }
-            } catch (err) {
-                console.error("Failed to fetch profile in navbar", err);
-            }
-        };
-        fetchProfileData();
-
         const handleClickOutside = (event: MouseEvent) => {
             if (navbarRef.current && !navbarRef.current.contains(event.target as Node)) {
                 closeAll();
@@ -54,23 +40,13 @@ const UserNavbar: React.FC = () => {
 
     const handleLogoutConfirm = async () => {
         try {
-            await logout();
+            await authLogout();
         } catch (err) {
-            console.error("Logout API failed", err);
+            console.error("Logout failed", err);
         }
-        const userId = localStorage.getItem('userId');
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        localStorage.removeItem('userId');
-        if (userId) {
-            localStorage.removeItem(`cart_${userId}`);
-        }
-        localStorage.removeItem('cart');
-        localStorage.removeItem('readlist');
         setIsLogoutModalOpen(false);
         closeAll();
         navigate('/');
-        window.location.reload();
     };
 
     const NavIcon = ({ to, icon, label, className = '' }: { to: string; icon: React.ReactNode; label: string; className?: string }) => {
@@ -148,7 +124,7 @@ const UserNavbar: React.FC = () => {
                                     {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
                                 </div>
                             </Link>
-                            {userProfile?.streakCount > 0 && (
+                            {userProfile?.streakCount !== undefined && userProfile.streakCount > 0 && (
                                 <div className="streak-display mobile-nav-streak" title={`${userProfile.streakCount} Day Streak!`}>
                                     <Flame size={16} className="streak-icon" fill="currentColor" />
                                     <span>{userProfile.streakCount}</span>
@@ -156,7 +132,7 @@ const UserNavbar: React.FC = () => {
                             )}
                         </div>
                     )}
-                    {localStorage.getItem('userId') && (
+                    {userId && (
                         <div className="mobile-action-btn">
                             <NotificationCenter />
                         </div>
@@ -177,13 +153,13 @@ const UserNavbar: React.FC = () => {
                     {/* Public/Guest Navigation */}
                     {(role === RoleName.USER || !role) && (
                         <>
-                            {localStorage.getItem('userId') && (
+                            {userId && (
                                 <>
                                     <NavIcon to="/" label="Home" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>} />
                                     <NavIcon to="/books" label="Books" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v15.661a2.5 2.5 0 0 1-2.261 2.482L5 20.5a2.5 2.5 0 0 1-1-5z"></path><path d="M8 7h8"></path><path d="M8 11h8"></path></svg>} />
                                 </>
                             )}
-                            {!localStorage.getItem('userId') && (
+                            {!userId && (
                                 <Link to="/login" className="nav-icon-link mobile-only" onClick={closeAll}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg>
                                     <span className="icon-label">Sign In</span>
@@ -272,7 +248,7 @@ const UserNavbar: React.FC = () => {
                     )}
 
                     {/* Integrated Mobile Action Footer */}
-                    {localStorage.getItem('userId') && (
+                    {userId && (
                         <div className="mobile-only mobile-integrated-actions">
                             {role === RoleName.USER && (
                                 <>
@@ -291,9 +267,9 @@ const UserNavbar: React.FC = () => {
                 </div>
 
                 {/* Desktop Action Center */}
-                {localStorage.getItem('userId') ? (
+                {userId ? (
                     <div className="user-profile-dropdown-container desktop-only">
-                        {role === RoleName.USER && userProfile?.streakCount > 0 && (
+                        {role === RoleName.USER && userProfile?.streakCount !== undefined && userProfile.streakCount > 0 && (
                             <div className="streak-display" title={`${userProfile.streakCount} Day Streak!`}>
                                 <Flame size={16} className="streak-icon" fill="currentColor" />
                                 <span>{userProfile.streakCount}</span>
@@ -354,7 +330,7 @@ const UserNavbar: React.FC = () => {
                 type="warning"
                 confirmText="Sign Out"
             />
-        </nav>
+        </nav >
     );
 };
 

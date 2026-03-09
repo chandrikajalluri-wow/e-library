@@ -369,8 +369,9 @@ export const getAllReadlistEntries = async (req: AuthRequest, res: Response) => 
     try {
         const filters = { membership: req.query.membership, status: req.query.status };
         const pagination = {
-            page: parseInt(req.query.page as string) || 1,
-            limit: parseInt(req.query.limit as string) || 10
+            page: req.query.page ? parseInt(req.query.page as string) : undefined,
+            limit: parseInt(req.query.limit as string) || 10,
+            after: req.query.after as string
         };
         const result = await userProfileService.getAllReadlistEntries(filters, pagination);
         res.json(result);

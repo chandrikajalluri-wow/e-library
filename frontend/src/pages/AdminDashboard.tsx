@@ -771,7 +771,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                 </p>
               </div>
             )}
-            <div className={`admin - header - actions ${hideHeader ? 'actions-standalone' : ''} `}>
+            <div className="admin-header-actions">
               {activeTab === 'books' && currentUser?.role !== RoleName.SUPER_ADMIN && (
                 <motion.button
                   whileHover={{ scale: 1.02, translateY: -2 }}
@@ -855,7 +855,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   </svg>
                 </div>
                 <span className="stats-label">Total Books</span>
-                <span className="stats-value">{stats.totalBooks.toLocaleString()}</span>
+                <span className="stats-value">{stats.totalBooks?.toLocaleString()}</span>
               </div>
               <div className="card stats-card-content">
                 <div className="stats-icon-box">
@@ -864,7 +864,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                   </svg>
                 </div>
                 <span className="stats-label">Total Categories</span>
-                <span className="stats-value">{stats.totalCategories.toLocaleString()}</span>
+                <span className="stats-value">{stats.totalCategories?.toLocaleString()}</span>
+              </div>
+              <div className="card stats-card-content">
+                <div className="stats-icon-box">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+                <span className="stats-label">Total Users</span>
+                <span className="stats-value">{stats.totalUsers?.toLocaleString()}</span>
               </div>
               <div className="card stats-card-content">
                 <div className="stats-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></div>
@@ -1187,14 +1199,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                             </td>
                             <td>
                               <div className="stock-info">
-                                <span className={`stock - count ${book.noOfCopies <= 2 ? 'low-stock' : ''} `}>
+                                <span className={`stock-count ${book.noOfCopies <= 2 ? 'low-stock' : ''}`}>
                                   {book.noOfCopies}
                                 </span>
                                 <span className="stock-label">Copies</span>
                               </div>
                             </td>
                             <td>
-                              <span className={`saas - status - badge status - ${book.status.toLowerCase().replace(' ', '-')} `}>
+                              <span className={`saas-status-badge status-${book.status.toLowerCase().replace(' ', '-')}`}>
                                 {book.status === BookStatus.OUT_OF_STOCK ? 'OUT OF STOCK' : book.status}
                               </span>
                             </td>
@@ -1256,7 +1268,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
 
         {
           activeTab === 'categories' && (
-            <div className={`admin - categories - split - layout ${showCategoryForm ? 'form-open' : ''} ${currentUser?.role === RoleName.SUPER_ADMIN ? 'super-admin-categories' : ''} saas - reveal`}>
+            <div className={`admin-categories-split-layout ${showCategoryForm ? 'form-open' : ''} ${currentUser?.role === RoleName.SUPER_ADMIN ? 'super-admin-categories' : ''} saas-reveal`}>
               {showCategoryForm && (
                 <aside className="category-sidebar-panel saas-reveal-left">
                   <div className="card admin-form-section sticky-form">
@@ -1336,7 +1348,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
                     {categories
                       .filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
                       .map((c) => (
-                        <div key={c._id} className={`category - orb - card ${editingCategoryId === c._id ? 'is-editing' : ''} `}>
+                        <div key={c._id} className={`category-orb-card ${editingCategoryId === c._id ? 'is-editing' : ''}`}>
                           <div className="orb-card-glow"></div>
                           <div className="orb-card-content">
                             <div className="orb-header">

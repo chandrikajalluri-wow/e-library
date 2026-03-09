@@ -2,8 +2,9 @@ import { Model, Document, FilterQuery, UpdateQuery, QueryOptions } from 'mongoos
 import { NotFoundError } from '../utils/errors';
 
 export interface PaginationOptions {
-    page: number;
+    page?: number;
     limit: number;
+    after?: string;
 }
 
 export interface FindAllOptions {
@@ -23,28 +24,49 @@ export class BaseService<T extends Document> {
      * Find all records with optional filtering, pagination, sorting and population
      */
     async findAll(filter: FilterQuery<T> = {}, options: FindAllOptions = {}): Promise<any> {
-        const { pagination, sort = { createdAt: -1 }, populate, select } = options;
+        const { pagination, sort = { _id: 1 }, populate, select } = options;
 
-        let query: any = this.model.find(filter);
+        let queryFilter = { ...filter };
+
+        const sortDir = sort && Object.values(sort)[0] === -1 ? -1 : 1;
+
+        if (pagination?.after) {
+            queryFilter._id = sortDir === -1 ? { $lt: pagination.after } : { $gt: pagination.after };
+        }
+
+        let query: any = this.model.find(queryFilter);
 
         if (select) query = query.select(select);
         if (sort) query = query.sort(sort);
         if (populate) query = query.populate(populate as any);
 
         if (pagination) {
-            const skip = (pagination.page - 1) * pagination.limit;
-            query = query.skip(skip).limit(pagination.limit);
+            query = query.limit(pagination.limit + 1);
+            if (!pagination.after && pagination.page) {
+                const skip = (pagination.page - 1) * pagination.limit;
+                query = query.skip(skip);
+            }
         }
 
         const data = await query.exec();
         const total = await this.model.countDocuments(filter);
 
         if (pagination) {
+            const hasMore = data.length > pagination.limit;
+            if (hasMore) {
+                data.pop();
+            }
+
+            const lastItem = data.length > 0 ? data[data.length - 1] : null;
+            const nextCursor = hasMore && lastItem ? lastItem._id.toString() : null;
+
             return {
                 data,
                 total,
                 page: pagination.page,
-                pages: Math.ceil(total / pagination.limit)
+                pages: Math.ceil(total / pagination.limit),
+                nextCursor,
+                hasMore
             };
         }
 

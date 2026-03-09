@@ -99,7 +99,7 @@ export const deleteCategory = async (id: string, user: any) => {
 
 // --- Book Logic ---
 
-export const getAllBooks = async (filters: any, pagination: { page: number; limit: number }, sort: any) => {
+export const getAllBooks = async (filters: any, pagination: { page?: number; limit: number; after?: string }, sort: any) => {
     const { search, category, genre, showArchived, isPremium, addedBy, language, stock } = filters;
     const query: any = {};
 
@@ -148,6 +148,8 @@ export const getAllBooks = async (filters: any, pagination: { page: number; limi
         total: result.total,
         page: result.page,
         pages: result.pages,
+        nextCursor: result.nextCursor,
+        hasMore: result.hasMore
     };
 };
 

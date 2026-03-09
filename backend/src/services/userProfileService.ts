@@ -384,8 +384,8 @@ export const getActivityLogs = async (query: any) => {
     filter.user_id = { $in: userIdArray };
 
     const result = await activityLogService.findAll(filter, {
-        pagination: { page: pageNum, limit: limitNum },
-        sort: { timestamp: sortOrder },
+        pagination: { page: pageNum, limit: limitNum, after: query.after },
+        sort: { _id: -1 },
         populate: [
             {
                 path: 'user_id',
@@ -403,7 +403,9 @@ export const getActivityLogs = async (query: any) => {
         logs: result.data,
         totalPages: result.pages,
         currentPage: result.page,
-        totalLogs: result.total
+        totalLogs: result.total,
+        nextCursor: result.nextCursor,
+        hasMore: result.hasMore
     };
 };
 
@@ -791,11 +793,12 @@ export const updateReadingProgress = async (userId: string, bookId: string, prog
 // --- Admin Stats & Management (from userService) ---
 
 export const getAdminDashboardStats = async (addedBy?: string) => {
-    const [totalBooks, totalCategories, totalReads, activeReads] = await Promise.all([
+    const [totalBooks, totalCategories, totalReads, activeReads, totalUsers] = await Promise.all([
         bookRepo.count(addedBy ? { addedBy } : {}),
         Category.countDocuments(),
         readlistService.count(),
-        readlistService.count({ status: 'active' })
+        readlistService.count({ status: 'active' }),
+        userService.count({ isDeleted: { $ne: true } })
     ]);
 
     let totalOrders = 0;
@@ -833,8 +836,22 @@ export const getAdminDashboardStats = async (addedBy?: string) => {
             }
         });
     } else {
-        const orders: any[] = await mongoose.model('Order').find({});
-        totalOrders = orders.length;
+        const [totalOrdersResult, completedStats, pendingOrdersCount] = await Promise.all([
+            Order.countDocuments({}),
+            Order.aggregate([
+                { $match: { status: { $in: realizedStatuses } } },
+                { $group: { _id: null, totalRevenue: { $sum: "$totalAmount" }, count: { $sum: 1 } } }
+            ]),
+            Order.countDocuments({ status: { $in: pendingStatuses } })
+        ]);
+
+        totalOrders = totalOrdersResult;
+        pendingOrders = pendingOrdersCount;
+
+        if (completedStats.length > 0) {
+            totalRevenue += (completedStats[0].totalRevenue || 0);
+            completedOrders = completedStats[0].count;
+        }
 
         const premiumMembership = await membershipService.findOne({ name: new RegExp(`^${MembershipName.PREMIUM}$`, 'i') });
         if (premiumMembership) {
@@ -844,15 +861,6 @@ export const getAdminDashboardStats = async (addedBy?: string) => {
             });
             totalRevenue += ((premiumMembership as any).price || 99) * premiumMemberCount;
         }
-
-        orders.forEach(order => {
-            if (realizedStatuses.includes(order.status)) {
-                totalRevenue += (order.totalAmount || 0);
-                completedOrders++;
-            } else if (pendingStatuses.includes(order.status)) {
-                pendingOrders++;
-            }
-        });
     }
 
     const pendingSuggestions = await bookRequestService.count({ status: RequestStatus.PENDING });
@@ -893,11 +901,12 @@ export const getAdminDashboardStats = async (addedBy?: string) => {
         mostReadBook,
         mostWishlistedBook,
         mostActiveUser,
-        topBuyer
+        topBuyer,
+        totalUsers
     };
 };
 
-export const getAllReadlistEntries = async (filters: any, pagination: { page: number; limit: number }) => {
+export const getAllReadlistEntries = async (filters: any, pagination: { page?: number; limit: number; after?: string }) => {
     const { membership, status } = filters;
     const query: any = {};
 
@@ -929,7 +938,7 @@ export const getAllReadlistEntries = async (filters: any, pagination: { page: nu
             },
             { path: 'book_id', select: 'title' }
         ],
-        sort: { addedAt: -1 }
+        sort: { _id: -1 }
     });
 
     return {
@@ -937,6 +946,8 @@ export const getAllReadlistEntries = async (filters: any, pagination: { page: nu
         total: result.total,
         page: result.page,
         pages: result.pages,
+        nextCursor: result.nextCursor,
+        hasMore: result.hasMore
     };
 };
 
