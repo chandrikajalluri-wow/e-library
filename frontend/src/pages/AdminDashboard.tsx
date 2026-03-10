@@ -1402,7 +1402,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
           activeTab === 'requests' && (
             <section className="card admin-table-section saas-reveal">
               <div className="admin-table-header-box">
-                <h3 className="admin-table-title">Exchange Requests</h3>
+                <div className="admin-title-with-icon">
+                  <RefreshCw size={24} className="title-icon text-indigo-600" />
+                  <h3 className="admin-table-title">Exchange Requests</h3>
+                </div>
                 <div className="admin-actions-column">
                   <div className="admin-search-row">
                     <div className="admin-search-box">
@@ -1816,7 +1819,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ hideHeader = false }) =
           activeTab === 'logs' && (
             <section className="card admin-table-section">
               <div className="admin-table-header-box">
-                <h3 className="admin-table-title">Admin Activity Logs</h3>
+                <div className="admin-title-with-icon">
+                  <Globe size={24} className="title-icon text-indigo-600" />
+                  <h3 className="admin-table-title">Admin Activity Logs</h3>
+                </div>
                 <div className="admin-actions-column">
                   <div className="admin-search-row">
                     <div className="admin-search-box">
