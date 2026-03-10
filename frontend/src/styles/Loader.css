@@ -26,9 +26,9 @@
 
 /* Small variant for buttons */
 .spinner-small {
-    width: 14px;
-    height: 14px;
-    border-width: 2px;
+    width: 22px;
+    height: 22px;
+    border-width: 3px;
     display: inline-block;
     vertical-align: middle;
     margin-right: 8px;

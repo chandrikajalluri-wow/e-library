@@ -109,7 +109,7 @@
 .admin-table-header-box {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 2rem;
     margin-bottom: 2.5rem;
     flex-wrap: wrap;
@@ -121,6 +121,17 @@
     gap: 1rem;
     flex: 1;
     min-width: 300px;
+    justify-content: center;
+}
+
+.admin-title-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.admin-title-with-icon .title-icon {
+    flex-shrink: 0;
 }
 
 .admin-search-row {
@@ -945,6 +956,7 @@
 .admin-search-box,
 .admin-filter-box {
     display: flex;
+    flex-direction: row;
     align-items: center;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -953,11 +965,11 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
     overflow: hidden;
-    padding-left: 1rem;
+    padding: 0 1rem;
     position: relative;
     box-sizing: border-box;
     min-width: 240px;
-    /* Prevent squashing */
+    gap: 0.5rem;
 }
 
 .admin-search-box {
@@ -1018,18 +1030,32 @@
     color: var(--primary-color);
 }
 
-.admin-search-box input,
+.admin-search-box input {
+    flex: 1;
+    height: 100%;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 48px;
+    color: var(--text-primary);
+}
+
 .admin-filter-box select {
     flex: 1;
     height: 100%;
     background: transparent !important;
     border: none !important;
     outline: none !important;
-    padding: 0 0.75rem 0 0.5rem !important;
+    padding: 0 2rem 0 0 !important;
     font-size: 0.95rem;
     font-weight: 600;
+    line-height: 48px;
     color: var(--text-primary);
     cursor: pointer;
+    appearance: none;
 }
 
 [data-theme='dark'] .admin-search-box input,
@@ -1050,18 +1076,12 @@ body.dark-mode .admin-filter-box select {
 }
 
 
-.admin-filter-box select {
-    cursor: pointer;
-    appearance: none;
-    padding-right: 0.5rem !important;
-}
-
 /* Custom arrow for the enhanced select */
 .admin-filter-box::after {
     content: '';
     position: absolute;
     right: 1.15rem;
-    top: 40%;
+    top: 50%;
     width: 8px;
     height: 8px;
     border-right: 2px solid var(--text-secondary);

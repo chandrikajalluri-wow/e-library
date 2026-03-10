@@ -52,7 +52,7 @@ const ChatWidget: React.FC = () => {
             setMessages(history);
 
             // Initialize Socket
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
             const socketUrl = API_URL.replace('/api', '');
 
             if (!socketRef.current) {
