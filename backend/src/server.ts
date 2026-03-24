@@ -2,6 +2,9 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import app from './app';
 import { initSocket } from './socket/socketManager';
+import { BadgeService } from './services/badgeService';
+
+BadgeService.init();
 
 const PORT = process.env.PORT || 5000;
 const httpServer = createServer(app);

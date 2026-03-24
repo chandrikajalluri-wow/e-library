@@ -24,12 +24,6 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     try {
         const { email, password } = req.body;
         const result = await authService.login(email, password, req.headers['user-agent'] as string);
-        res.cookie('token', result.token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
         res.json(result);
     } catch (err) {
         next(err);
@@ -66,12 +60,6 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
 export const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const result = await authService.googleLogin(req.body.credential, req.headers['user-agent'] as string);
-        res.cookie('token', result.token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
         res.json(result);
     } catch (err) {
         next(err);
@@ -86,11 +74,6 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
             await blacklistToken(token, 7 * 24 * 60 * 60); // Blacklist for 7 days
         }
 
-        res.clearCookie('token', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-        });
         res.json({ message: 'Logged out successfully' });
     } catch (err) {
         next(err);

@@ -41,7 +41,7 @@ app.use(
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         allowedHeaders: ["Content-Type", "Authorization", "Range"],
         exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length"],
-        credentials: true,
+        credentials: false,
         optionsSuccessStatus: 200,
     })
 );

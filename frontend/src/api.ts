@@ -10,7 +10,8 @@ if (!API_URL.endsWith('/')) {
 
 const api = axios.create({
     baseURL: API_URL,
-    withCredentials: true,
+    withCredentials: false,
+
     timeout: 15000,
 });
 

@@ -371,102 +371,104 @@ const CartPage: React.FC = () => {
                             </div>
 
                             <aside className="cart-sidebar-right">
-                                {hasSelectedOutOfStock ? (
-                                    <motion.div
-                                        className="out-of-stock-warning warning-banner-soft p-6 flex-column gap-4"
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                    >
-                                        <div className="flex-center-row gap-3 text-danger">
-                                            <Zap size={24} />
-                                            <h3 className="m-0 text-lg font-semibold">Checkout Restricted</h3>
-                                        </div>
-                                        <p className="m-0 text-sm opacity-70">
-                                            Some items in your cart are currently <strong>out of stock</strong>.
-                                            Please remove these items to proceed with your order.
-                                        </p>
-                                        <button
-                                            onClick={() => navigate('/books')}
-                                            className="btn-reset text-sm font-semibold text-primary-color"
+                                {selectedCartItems.length > 0 && (
+                                    hasSelectedOutOfStock ? (
+                                        <motion.div
+                                            className="out-of-stock-warning warning-banner-soft p-6 flex-column gap-4"
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
                                         >
-                                            Find alternative books
-                                        </button>
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        className="price-summary-card"
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.3 }}
-                                    >
-                                        <h2 className="summary-title-alt">Order Summary</h2>
+                                            <div className="flex-center-row gap-3 text-danger">
+                                                <Zap size={24} />
+                                                <h3 className="m-0 text-lg font-semibold">Checkout Restricted</h3>
+                                            </div>
+                                            <p className="m-0 text-sm opacity-70">
+                                                Some items in your cart are currently <strong>out of stock</strong>.
+                                                Please remove these items to proceed with your order.
+                                            </p>
+                                            <button
+                                                onClick={() => navigate('/books')}
+                                                className="btn-reset text-sm font-semibold text-primary-color"
+                                            >
+                                                Find alternative books
+                                            </button>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            className="price-summary-card"
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.3 }}
+                                        >
+                                            <h2 className="summary-title-alt">Order Summary</h2>
 
-                                        {/* Shipping Progress */}
-                                        <div className="shipping-progress-section">
-                                            <div className="progress-labels">
-                                                <div className="progress-status">
-                                                    <Truck size={16} className={deliveryFee === 0 ? 'truck-free' : ''} />
-                                                    <span>{deliveryFee === 0 ? 'Free delivery unlocked!' : 'Delivery'}</span>
+                                            {/* Shipping Progress */}
+                                            <div className="shipping-progress-section">
+                                                <div className="progress-labels">
+                                                    <div className="progress-status">
+                                                        <Truck size={16} className={deliveryFee === 0 ? 'truck-free' : ''} />
+                                                        <span>{deliveryFee === 0 ? 'Free delivery unlocked!' : 'Delivery'}</span>
+                                                    </div>
+                                                    {deliveryFee > 0 && <span className="needed-amount">₹{(FREE_SHIPPING_THRESHOLD - subtotal).toFixed(0)} more for FREE</span>}
                                                 </div>
-                                                {deliveryFee > 0 && <span className="needed-amount">₹{(FREE_SHIPPING_THRESHOLD - subtotal).toFixed(0)} more for FREE</span>}
+                                                <div className="progress-track">
+                                                    <motion.div
+                                                        className="progress-fill"
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: `${progressToFree}%` }}
+                                                        transition={{ duration: 1, ease: "easeOut" }}
+                                                    ></motion.div>
+                                                </div>
                                             </div>
-                                            <div className="progress-track">
-                                                <motion.div
-                                                    className="progress-fill"
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${progressToFree}%` }}
-                                                    transition={{ duration: 1, ease: "easeOut" }}
-                                                ></motion.div>
-                                            </div>
-                                        </div>
 
-                                        <div className="summary-data-list">
-                                            <div className="data-row">
-                                                <span className="label">Subtotal ({totalItems} items)</span>
-                                                <span className="value">₹{subtotal.toFixed(2)}</span>
+                                            <div className="summary-data-list">
+                                                <div className="data-row">
+                                                    <span className="label">Subtotal ({totalItems} items)</span>
+                                                    <span className="value">₹{subtotal.toFixed(2)}</span>
+                                                </div>
+                                                <div className="data-row">
+                                                    <span className="label">Estimated Delivery charges</span>
+                                                    <span className={`value ${deliveryFee === 0 ? 'free-text' : ''}`}>
+                                                        {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
+                                                    </span>
+                                                </div>
+                                                <div className="data-row discount-row">
+                                                    <span className="label">Discount</span>
+                                                    <span className="value">-₹0.00</span>
+                                                </div>
                                             </div>
-                                            <div className="data-row">
-                                                <span className="label">Estimated Delivery charges</span>
-                                                <span className={`value ${deliveryFee === 0 ? 'free-text' : ''}`}>
-                                                    {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
-                                                </span>
-                                            </div>
-                                            <div className="data-row discount-row">
-                                                <span className="label">Discount</span>
-                                                <span className="value">-₹0.00</span>
-                                            </div>
-                                        </div>
 
-                                        <div className="total-divider"></div>
+                                            <div className="total-divider"></div>
 
-                                        <div className="total-payable-row">
-                                            <span className="total-label">Total Payable</span>
-                                            <div className="total-amount-group">
-                                                <span className="currency">₹</span>
-                                                <span className="amount">{totalPrice.toFixed(2)}</span>
+                                            <div className="total-payable-row">
+                                                <span className="total-label">Total Payable</span>
+                                                <div className="total-amount-group">
+                                                    <span className="currency">₹</span>
+                                                    <span className="amount">{totalPrice.toFixed(2)}</span>
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <button
-                                            className="premium-checkout-btn"
-                                            onClick={handleProceedToCheckout}
-                                            disabled={cartItems.length === 0}
-                                        >
-                                            <span>Proceed to Checkout</span>
-                                            <ChevronRight size={20} />
-                                        </button>
+                                            <button
+                                                className="premium-checkout-btn"
+                                                onClick={handleProceedToCheckout}
+                                                disabled={cartItems.length === 0}
+                                            >
+                                                <span>Proceed to Checkout</span>
+                                                <ChevronRight size={20} />
+                                            </button>
 
-                                        <div className="trust-badges">
-                                            <div className="badge">
-                                                <div className="badge-dot"></div>
-                                                <span>Secure Checkout</span>
+                                            <div className="trust-badges">
+                                                <div className="badge">
+                                                    <div className="badge-dot"></div>
+                                                    <span>Secure Checkout</span>
+                                                </div>
+                                                <div className="badge">
+                                                    <div className="badge-dot"></div>
+                                                    <span>Easy exchanges</span>
+                                                </div>
                                             </div>
-                                            <div className="badge">
-                                                <div className="badge-dot"></div>
-                                                <span>Easy exchanges</span>
-                                            </div>
-                                        </div>
-                                    </motion.div>
+                                        </motion.div>
+                                    )
                                 )}
                             </aside>
                         </div>

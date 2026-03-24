@@ -7,6 +7,7 @@ import { maskProfanity } from '../utils/profanityFilter';
 import { notifySuperAdmins } from '../utils/notification';
 import { ActivityAction, NotificationType } from '../types/enums';
 import { BaseService } from './baseService';
+import { eventBus, Events } from '../utils/eventBus';
 
 const baseService = new BaseService(Review);
 
@@ -45,13 +46,19 @@ export const addReview = async (userId: string, bookId: string, rating: number, 
     const avgRating = allReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / allReviews.length;
     const bookDoc = await Book.findByIdAndUpdate(bookId, { rating: Number(avgRating.toFixed(1)) }, { new: true });
 
-    await ActivityLog.create({
-        user_id: userId,
-        action: 'REVIEW_ADDED',
-        description: `Added review for: ${bookDoc?.title || 'Unknown Book'}`,
-        book_id: bookId,
-        timestamp: new Date()
-    });
+    try {
+        await ActivityLog.create({
+            user_id: userId,
+            action: 'REVIEW_ADDED',
+            description: `Added review for: ${bookDoc?.title || 'Unknown Book'}`,
+            book_id: bookId,
+            timestamp: new Date()
+        });
+    } catch (logErr) {
+        console.error('Failed to log review activity:', logErr);
+    }
+
+    eventBus.emitEvent(Events.REVIEW_ADDED, { userId, bookId });
 
     return review;
 };

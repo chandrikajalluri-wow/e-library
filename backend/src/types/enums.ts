@@ -43,7 +43,8 @@ export enum NotificationType {
     BOOK_CREATED = 'book_created',
     BOOK_UPDATED = 'book_updated',
     CATEGORY_CREATED = 'category_created',
-    CATEGORY_UPDATED = 'category_updated'
+    CATEGORY_UPDATED = 'category_updated',
+    BADGE = 'badge'
 }
 
 export enum InviteStatus {
@@ -80,6 +81,8 @@ export enum ActivityAction {
     ADD_TO_READLIST = 'ADD_TO_READLIST',
     ADD_TO_WISHLIST = 'ADD_TO_WISHLIST',
     REVIEW_ADDED = 'REVIEW_ADDED',
+    BOOK_COMPLETED = 'BOOK_COMPLETED',
+    BADGE_AWARDED = 'BADGE_AWARDED',
 }
 
 export enum UserTheme {

@@ -13,6 +13,7 @@ import ActivityLog from '../models/ActivityLog';
 
 import { BadRequestError, UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../utils/errors';
 import { saveSession } from '../utils/sessionManager';
+import { eventBus, Events } from '../utils/eventBus';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -146,7 +147,13 @@ export const login = async (email: string, password: string, userAgent: string =
         timestamp: new Date()
     });
 
-    return { token, role: roleDoc.name, userId: user._id };
+    eventBus.emitEvent(Events.USER_LOGIN, { userId: user._id.toString(), streakCount: user.streakCount });
+
+    const userObj = user.toObject();
+    delete (userObj as any).password;
+
+    return { token, role: roleDoc.name, user: userObj };
+
 };
 
 export const forgotPassword = async (email: string) => {
@@ -297,6 +304,8 @@ export const googleLogin = async (credential: string, userAgent: string = 'Unkno
         timestamp: new Date(),
         description: 'Logged in via Google'
     });
+
+    eventBus.emitEvent(Events.USER_LOGIN, { userId: user._id.toString(), streakCount: user.streakCount || 1 });
 
     return { token, role: roleDoc.name, userId: user._id };
 };

@@ -32,6 +32,11 @@ export interface IUser extends Document {
     book_id: Types.ObjectId;
     quantity: number;
   }[];
+  badges?: {
+    type: string;
+    awardedAt: Date;
+    metadata?: any;
+  }[];
   createdAt?: Date;
 }
 
@@ -68,6 +73,13 @@ const userSchema = new Schema<IUser>(
       {
         book_id: { type: Schema.Types.ObjectId, ref: 'Book' },
         quantity: { type: Number, default: 1 }
+      }
+    ],
+    badges: [
+      {
+        type: { type: String, required: true },
+        awardedAt: { type: Date, default: Date.now },
+        metadata: { type: Schema.Types.Mixed }
       }
     ],
     createdAt: { type: Date, default: Date.now },
