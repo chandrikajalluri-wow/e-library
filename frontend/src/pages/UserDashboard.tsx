@@ -6,8 +6,9 @@ import { getMyMembership, type Membership } from '../services/membershipService'
 
 
 import { toast } from 'react-toastify';
-import { BookOpen, Flame, Heart, Bookmark, ArrowRight, Zap } from 'lucide-react';
+import { BookOpen, Flame, Heart, Bookmark, ArrowRight, Zap, Award } from 'lucide-react';
 import Loader from '../components/Loader';
+import BadgeIcon from '../components/badges/BadgeIcon';
 import { getCategories } from '../services/categoryService';
 import { type Category } from '../types';
 import '../styles/UserDashboard.css';
@@ -146,6 +147,29 @@ const UserDashboard: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Badges Section */}
+      <section className="badges-section saas-reveal">
+        <h2 className="badges-title">
+          <Award size={24} className="title-icon" style={{ color: '#8b5cf6' }} />
+          Achievements & Badges
+        </h2>
+        <div className="badges-grid">
+          {userProfile?.badges && userProfile.badges.length > 0 ? (
+            userProfile.badges.map((badge: any, idx: number) => (
+              <BadgeIcon
+                key={idx}
+                type={badge.type}
+                name={getBadgeName(badge.type)}
+                description={getBadgeDescription(badge.type)}
+                awardedAt={badge.awardedAt}
+              />
+            ))
+          ) : (
+            <p className="no-badges-text">Start reading and engaging to earn badges!</p>
+          )}
+        </div>
+      </section>
 
 
 
@@ -321,6 +345,29 @@ const UserDashboard: React.FC = () => {
       </section>
     </div>
   );
+};
+
+// Helper functions for badge info
+const getBadgeName = (type: string) => {
+  const names: Record<string, string> = {
+    STREAK_7: '7-Day Streak',
+    STREAK_30: '30-Day Streak',
+    READER_LITE: 'Avid Reader',
+    READER_PRO: 'Reading Pro',
+    CRITIC: 'Book Critic',
+  };
+  return names[type] || 'Achievement';
+};
+
+const getBadgeDescription = (type: string) => {
+  const descs: Record<string, string> = {
+    STREAK_7: 'Logged in for 7 consecutive days',
+    STREAK_30: 'Logged in for 30 consecutive days',
+    READER_LITE: 'Completed 5 books',
+    READER_PRO: 'Completed 20 books',
+    CRITIC: 'Added 5 reviews',
+  };
+  return descs[type] || 'You earned a special achievement!';
 };
 
 export default UserDashboard;

@@ -10,8 +10,9 @@ if (!redisUrl) {
 }
 
 const redis = redisUrl ? new Redis(redisUrl, {
-    maxRetriesPerRequest: null,
+    maxRetriesPerRequest: 3,
     enableReadyCheck: false,
+    connectTimeout: 10000, // 10 seconds
 }) : null;
 
 if (redis) {

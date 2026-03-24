@@ -23,6 +23,7 @@ import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { revokeSession as revokeRedisSession, revokeAllUserSessions } from '../utils/sessionManager';
 import { BaseService } from './baseService';
+import { eventBus, Events } from '../utils/eventBus';
 
 // --- Base Service Instances ---
 const userService = new BaseService(User);
@@ -37,7 +38,19 @@ const bookRepo = new BaseService(Book); // Named bookRepo to avoid conflict with
 // --- Profile & Account Section (from userService) ---
 
 export const getMe = async (userId: string) => {
-    const user = await userService.findById(userId, ['membership_id', 'role_id'], '-password');
+    let user = await userService.findById(userId, ['membership_id', 'role_id'], '-password');
+
+    const now = new Date();
+    // Lazy Downgrade: If membership is not basic and has expired
+    if (user.membership_id && (user.membership_id as any).name !== MembershipName.BASIC && user.membershipExpiryDate && user.membershipExpiryDate < now) {
+        const basicMembership = await Membership.findOne({ name: MembershipName.BASIC });
+        if (basicMembership) {
+            user.membership_id = basicMembership._id;
+            await (user as any).save();
+            // Re-fetch populated user
+            user = await userService.findById(userId, ['membership_id', 'role_id'], '-password');
+        }
+    }
 
     const userObj: any = user.toObject();
     userObj.role = (user.role_id as any)?.name;
@@ -311,6 +324,8 @@ export const addToWishlist = async (userId: string, bookId: string) => {
     } catch (logErr) {
         console.error('Failed to log wishlist activity:', logErr);
     }
+
+    eventBus.emitEvent(Events.WISHLIST_ADDED, { userId, bookId });
 
     return item;
 };
@@ -649,12 +664,9 @@ export const getReadlist = async (userId: string) => {
 export const checkBookAccess = async (userId: string, bookId: string) => {
     const nowTime = new Date().getTime();
 
-    const readlistItem = await readlistService.findOne(
-        { user_id: userId, book_id: bookId, status: 'active' },
-        undefined,
-        undefined
-    ); // Note: BaseService.findOne sort logic is missing, I'll use the default or keep it.
-    // Actually BaseService.findOne doesn't support sort yet.
+    const readlistItem = await mongoose.model('Readlist').findOne(
+        { user_id: userId, book_id: bookId }
+    ).sort({ createdAt: -1 });
 
     const hasValidReadlist = readlistItem && readlistItem.dueDate && new Date(readlistItem.dueDate).getTime() > nowTime;
     const isExpired = !!readlistItem && !hasValidReadlist;
@@ -784,6 +796,7 @@ export const updateReadingProgress = async (userId: string, bookId: string, prog
 
     if (status === 'completed' && !progress.completedAt) {
         progress.completedAt = new Date();
+        eventBus.emitEvent(Events.BOOK_COMPLETED, { userId, bookId });
     }
 
     await progress.save();
