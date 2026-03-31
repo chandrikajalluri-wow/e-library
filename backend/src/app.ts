@@ -18,6 +18,7 @@ import membershipRoutes from './routes/memberships';
 import superAdminRoutes from './routes/superAdmin';
 import orderRoutes from './routes/orders';
 import aiRoutes from './routes/ai';
+import quizRoutes from './routes/quizRoutes';
 import { AppError } from './utils/errors';
 
 dotenv.config();
@@ -41,7 +42,7 @@ app.use(
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         allowedHeaders: ["Content-Type", "Authorization", "Range"],
         exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length"],
-        credentials: false,
+        credentials: true,
         optionsSuccessStatus: 200,
     })
 );
@@ -60,6 +61,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/memberships', membershipRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/quizzes', quizRoutes);
 
 // Global Error Handler
 app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {

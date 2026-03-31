@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
 import Loader from '../components/Loader';
 import ReportReviewModal from '../components/ReportReviewModal';
+import QuizModal from '../components/QuizModal';
 import '../styles/BookDetail.css';
 import '../styles/BookDetail.css';
 
@@ -35,6 +36,7 @@ const BookDetail: React.FC = () => {
   const [reportingReviewId, setReportingReviewId] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [isExplaining, setIsExplaining] = useState(false);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const currentUserId = localStorage.getItem('userId');
 
   const ensureHttps = (url: string) => {
@@ -53,7 +55,6 @@ const BookDetail: React.FC = () => {
       fetchSimilarBooks(id);
     }
   }, [id]);
-
 
 
   const fetchSimilarBooks = async (bookId: string) => {
@@ -515,6 +516,16 @@ const BookDetail: React.FC = () => {
                     Buy Now
                   </button>
                 )}
+ 
+                <button
+                  onClick={() => setIsQuizModalOpen(true)}
+                  className="btn-secondary take-quiz-btn"
+                  title="Test your knowledge by taking a quiz!"
+                  style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <BookOpen size={16} />
+                  Take Quiz
+                </button>
               </div>
 
               <button
@@ -772,6 +783,14 @@ const BookDetail: React.FC = () => {
         onClose={() => setIsReportModalOpen(false)}
         onReport={submitReport}
       />
+
+      {id && (
+        <QuizModal
+          bookId={id}
+          isOpen={isQuizModalOpen}
+          onClose={() => setIsQuizModalOpen(false)}
+        />
+      )}
     </div >
   );
 };
