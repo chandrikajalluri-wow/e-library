@@ -169,3 +169,71 @@ CRITICAL: Keep it engaging, warm, and under 150 words. Do not just summarize the
         throw new Error('Failed to get book explanation from AI');
     }
 };
+
+export const generateQuizForBook = async (
+    title: string,
+    author: string
+): Promise<any[]> => {
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error('GEMINI_API_KEY is not set in environment variables');
+        }
+
+        const prompt = `As an expert educator, create a 5-question multiple-choice quiz about the movie, book, or story "${title}" by ${author}.
+        
+INSTRUCTIONS:
+1. Generate exactly 5 questions based on the plot, characters, themes, or real-world facts about this book.
+2. Each question MUST have exactly 4 options.
+3. Provide the index (0 to 3) of the correct option.
+4. Provide a short explanation for the correct answer.
+
+Return ONLY a valid JSON array of objects with the following structure, with no markdown formatting or backticks:
+[
+  {
+    "questionText": "Question here?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctOptionIndex": 1,
+    "explanation": "Brief explanation here."
+  }
+]`;
+
+        const response = await axios.post(
+            apiUrl,
+            {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
+            },
+            {
+                params: { key: apiKey },
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
+
+        let text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) {
+            throw new Error('Invalid response from AI service');
+        }
+
+        // Clean up markdown code blocks if the AI includes them
+        text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+            throw new Error('Failed to parse AI response - no JSON array found');
+        }
+
+        const questions = JSON.parse(jsonMatch[0]);
+        
+        if (!Array.isArray(questions) || questions.length === 0) {
+             throw new Error('AI returned invalid format.');
+        }
+
+        return questions;
+
+    } catch (error: any) {
+        console.error('[AI Service] Generate Quiz Error:', error.response?.data || error.message);
+        throw new Error('Failed to generate quiz from AI');
+    }
+};
